@@ -1,0 +1,1136 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+<meta name="theme-color" content="#1c4d3e" />
+<meta name="description" content="Acompanhe suas metas diárias de calorias e nutrientes com o NutriTrack." />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="NutriTrack" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<link rel="icon" href="./icons/icon-192.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="./icons/icon-192.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet" />
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<title>NutriTrack — seu dia, no seu ritmo</title>
+<style>
+:root{
+  --radius: 0.75rem;
+  --bg: #f8f7f2;
+  --fg: #18352d;
+  --card: #ffffff;
+  --primary: #1c4d3e;
+  --primary-dark: #28634f;
+  --primary-foreground: #ffffff;
+  --muted: #71857e;
+  --border: #e2e9df;
+  --accent: #d3e9b9;
+}
+*{ box-sizing: border-box; }
+html{ min-width: 320px; background: var(--bg); }
+body{
+  margin: 0; min-width: 320px; background: var(--bg); color: var(--fg);
+  font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif; -webkit-font-smoothing: antialiased;
+  line-height: 1.45;
+}
+button, input, textarea{ font: inherit; color: inherit; }
+button{ cursor: pointer; border: none; background: none; padding: 0; }
+input, textarea{ border-radius: var(--radius); }
+.font-display{ font-family: 'Fraunces', Georgia, serif; }
+a{ color: inherit; }
+svg{ display: block; }
+.icon{ width: 1em; height: 1em; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.spin{ animation: spin 0.9s linear infinite; }
+@keyframes spin{ to{ transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce){ *,*::before,*::after{ animation-duration: 1ms !important; transition-duration: 1ms !important; } }
+
+/* ---------- telas de autenticação (login / cadastro / confirmar) ---------- */
+.auth-page{ display:flex; min-height:100vh; align-items:center; justify-content:center; background:var(--bg); padding:40px 20px; color:var(--fg); }
+.auth-box{ width:100%; max-width:400px; }
+.brand-row{ margin-bottom:32px; display:flex; align-items:center; justify-content:center; gap:12px; }
+.brand-icon{ display:flex; height:44px; width:44px; align-items:center; justify-content:center; border-radius:16px; background:var(--primary); color:#e7f5c7; box-shadow:0 8px 24px rgba(28,77,62,0.18); font-size:21px; }
+.brand-title{ font-size:20px; font-weight:600; letter-spacing:-0.03em; }
+.brand-title span{ color:#78a55b; }
+.brand-sub{ font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:0.16em; color:#779087; }
+.auth-card{ border-radius:28px; border:1px solid var(--border); background:var(--card); padding:28px; box-shadow:0 10px 28px rgba(43,73,53,0.06); }
+.auth-card h1{ margin:0; font-size:24px; font-weight:600; color:#1b3f34; }
+.auth-card .sub{ margin:4px 0 0; font-size:14px; color:var(--muted); }
+.form-stack{ margin-top:24px; display:flex; flex-direction:column; gap:12px; }
+.field-label{ display:block; margin-bottom:6px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:#9aa9a1; }
+.field-input{ width:100%; border-radius:12px; border:1px solid #dce5db; background:#f7f9f5; padding:12px 14px; font-size:14px; color:#18352d; outline:none; }
+.field-input::placeholder{ color:#9aa9a1; }
+.field-input:focus{ border-color:#8fbf78; }
+.btn-primary{ margin-top:8px; display:flex; width:100%; align-items:center; justify-content:center; gap:8px; border-radius:12px; background:var(--primary); padding:12px 16px; font-size:14px; font-weight:600; color:#fff; box-shadow:0 8px 20px rgba(28,77,62,0.15); transition:transform .15s, opacity .15s; }
+.btn-primary:hover:not(:disabled){ transform:translateY(-2px); }
+.btn-primary:disabled{ opacity:0.6; cursor:default; }
+.auth-footer{ margin-top:20px; text-align:center; font-size:14px; color:var(--muted); }
+.link-btn{ font-weight:600; color:#3d6355; text-decoration:underline; text-underline-offset:2px; }
+.link-btn:hover{ color:var(--primary); }
+.link-btn-block{ display:block; width:100%; margin-top:12px; text-align:center; font-size:14px; font-weight:500; color:#557268; text-decoration:underline; text-underline-offset:2px; }
+.link-btn-block:hover{ color:var(--primary); }
+.link-btn-block:disabled{ opacity:0.6; }
+.otp-row{ margin-top:24px; display:flex; justify-content:center; gap:8px; }
+.otp-box{ height:48px; width:42px; border-radius:12px; border:1px solid #dce5db; background:#f7f9f5; text-align:center; font-size:18px; font-weight:600; color:#18352d; outline:none; }
+.otp-box:focus{ border-color:#8fbf78; box-shadow:0 0 0 3px #c5dfa9; }
+
+/* ---------- sidebar ---------- */
+.app-shell{ display:flex; min-height:100vh; flex-direction:column; background:var(--bg); color:var(--fg); }
+.sidebar{ display:flex; width:100%; flex-shrink:0; flex-direction:column; gap:20px; border-bottom:1px solid var(--border); background:#fff; padding:24px 20px; }
+.sidebar .brand-row{ margin-bottom:0; justify-content:flex-start; }
+.side-card{ border-radius:16px; background:#f7f9f5; padding:16px; }
+.side-card-border{ border-radius:16px; border:1px solid #dce8dc; padding:16px; }
+.side-label{ font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.14em; color:#9aa9a1; }
+.side-name{ margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; font-weight:600; color:#31564a; }
+.side-email{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; color:#7c8c86; }
+.side-text{ margin-top:8px; font-size:12px; color:#7c8c86; }
+.btn-outline{ margin-top:12px; display:flex; width:100%; align-items:center; justify-content:center; gap:8px; border-radius:999px; border:1px solid #dce5db; background:#fff; padding:8px 12px; font-size:12px; font-weight:600; color:#557268; transition:background .15s; }
+.btn-outline:hover{ background:#f0f3ee; }
+.btn-primary-pill{ margin-top:12px; display:flex; width:100%; align-items:center; justify-content:center; gap:8px; border-radius:999px; background:var(--primary); padding:10px 12px; font-size:12px; font-weight:600; color:#fff; box-shadow:0 8px 20px rgba(28,77,62,0.15); transition:transform .15s, opacity .15s; }
+.btn-primary-pill:hover:not(:disabled){ transform:translateY(-2px); }
+.btn-primary-pill:disabled{ opacity:0.6; }
+.google-connected{ margin-top:8px; display:flex; align-items:center; gap:8px; font-size:14px; font-weight:500; color:#4b7048; }
+.google-connected span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.btn-danger-outline{ margin-top:auto; display:flex; align-items:center; justify-content:center; gap:8px; border-radius:999px; border:1px solid #f0d9d2; background:#fdf4f1; padding:10px 12px; font-size:12px; font-weight:600; color:#c35e4b; transition:background .15s; }
+.btn-danger-outline:hover{ background:#fbe9e3; }
+@media (min-width: 1024px){
+  .app-shell{ flex-direction:row; }
+  .sidebar{ height:100vh; width:288px; position:sticky; top:0; border-right:1px solid var(--border); border-bottom:none; padding:32px 24px; overflow-y:auto; }
+}
+
+/* ---------- tela bloqueada (sem Google) ---------- */
+.locked-page{ display:flex; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; padding:16px; text-align:center; }
+.locked-icon{ margin-bottom:20px; display:flex; height:56px; width:56px; align-items:center; justify-content:center; border-radius:999px; background:#eef6e4; color:#4b7048; font-size:24px; }
+.locked-title{ margin:0; font-size:26px; font-weight:600; color:#1b3f34; }
+.locked-desc{ margin-top:12px; max-width:380px; font-size:14px; line-height:1.7; color:var(--muted); }
+.btn-primary-lg{ margin-top:24px; display:flex; align-items:center; gap:8px; border-radius:999px; background:var(--primary); padding:12px 20px; font-size:14px; font-weight:600; color:#fff; box-shadow:0 8px 20px rgba(28,77,62,0.15); transition:transform .15s, opacity .15s; }
+.btn-primary-lg:hover:not(:disabled){ transform:translateY(-2px); }
+.btn-primary-lg:disabled{ opacity:0.6; }
+
+/* ---------- home ---------- */
+.home-content{ flex:1; min-width:0; }
+.home-inner{ margin:0 auto; max-width:1200px; padding:0 20px 56px; }
+@media (min-width: 640px){ .home-inner{ padding-left:32px; padding-right:32px; } }
+@media (min-width: 1024px){ .home-inner{ padding-left:48px; padding-right:48px; } }
+.home-header{ display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:24px 0; }
+@media (min-width: 640px){ .home-header{ gap:12px; } }
+@media (min-width: 1024px){ .home-header{ padding:32px 0; } }
+.btn-outline-pill{ display:none; align-items:center; gap:8px; border-radius:999px; border:1px solid #dce5db; background:rgba(255,255,255,.7); padding:10px 16px; font-size:14px; font-weight:500; color:#557268; transition:background .15s; }
+.btn-outline-pill:hover{ background:#fff; }
+@media (min-width: 640px){ .btn-outline-pill{ display:flex; } }
+.icon-btn-outline{ display:flex; height:40px; width:40px; align-items:center; justify-content:center; border-radius:999px; border:1px solid #dce5db; background:rgba(255,255,255,.7); color:#557268; }
+@media (min-width: 640px){ .icon-btn-outline{ display:none; } }
+.btn-primary-pill-lg{ display:flex; align-items:center; gap:8px; border-radius:999px; background:var(--primary); padding:10px 16px; font-size:14px; font-weight:600; color:#fff; box-shadow:0 8px 20px rgba(28,77,62,0.15); transition:transform .15s; }
+.btn-primary-pill-lg:hover{ transform:translateY(-2px); }
+.btn-primary-pill-lg .label{ display:none; }
+@media (min-width: 640px){ .btn-primary-pill-lg .label{ display:inline; } }
+
+.hero{ margin-bottom:32px; display:grid; gap:28px; }
+@media (min-width: 1024px){ .hero{ grid-template-columns:1.2fr 0.8fr; align-items:end; } }
+.hero-date{ margin-bottom:16px; display:flex; align-items:center; gap:8px; font-size:14px; font-weight:500; color:#789087; }
+.hero-title{ margin:0; max-width:640px; font-family:'Fraunces',serif; font-size:clamp(2.4rem,6vw,5.3rem); font-weight:500; line-height:0.96; letter-spacing:-0.065em; color:#1b3f34; }
+.hero-title em{ font-style:italic; color:#77a45c; }
+.hero-sub{ margin-top:20px; max-width:480px; font-size:15px; line-height:1.75; color:var(--muted); }
+.summary-card{ position:relative; overflow:hidden; border-radius:28px; background:#e6f1dc; padding:24px; }
+@media (min-width: 640px){ .summary-card{ padding:28px; } }
+.summary-ring{ position:absolute; right:-32px; top:-40px; height:144px; width:144px; border-radius:999px; border:18px solid rgba(205,228,189,.8); }
+.summary-inner{ position:relative; }
+.summary-label{ display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:#587a50; }
+.summary-stats{ margin-top:20px; display:flex; align-items:flex-end; justify-content:space-between; gap:20px; }
+.summary-remaining-value{ font-family:'Fraunces',serif; font-size:36px; font-weight:600; letter-spacing:-0.06em; color:#1d4b3d; }
+.summary-remaining-label{ margin-top:4px; font-size:14px; color:#6f8d67; }
+.summary-consumed{ text-align:right; }
+.summary-consumed-value{ font-size:24px; font-weight:600; letter-spacing:-0.04em; color:#1d4b3d; }
+.summary-consumed-label{ margin-top:4px; font-size:14px; color:#6f8d67; }
+.progress-track-light{ margin-top:20px; height:8px; overflow:hidden; border-radius:999px; background:rgba(255,255,255,.7); }
+.progress-fill-light{ height:100%; border-radius:999px; background:#6f9b59; transition:width .3s; }
+
+.goals-panel{ margin-bottom:28px; border-radius:24px; border:1px solid #dce8dc; background:#fff; padding:20px; box-shadow:0 12px 35px rgba(43,73,53,0.06); }
+.goals-panel-head{ margin-bottom:16px; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.goals-panel-head h2{ margin:0; font-family:'Fraunces',serif; font-size:20px; font-weight:600; }
+.goals-panel-head p{ margin:4px 0 0; font-size:14px; color:#7c8c86; }
+.icon-btn-ghost{ border-radius:999px; padding:8px; color:#81918a; }
+.icon-btn-ghost:hover{ background:#f3f6f1; }
+.goals-grid{ display:grid; gap:12px; grid-template-columns:1fr; }
+@media (min-width: 640px){ .goals-grid{ grid-template-columns:repeat(2,1fr); } }
+@media (min-width: 1024px){ .goals-grid{ grid-template-columns:repeat(5,1fr); } }
+.goal-field{ border-radius:16px; background:#f7f9f5; padding:14px; }
+.goal-field-head{ margin-bottom:8px; display:flex; justify-content:space-between; font-size:12px; font-weight:600; color:#688077; }
+.goal-field-input{ width:100%; background:transparent; border:none; font-family:'Fraunces',serif; font-size:24px; font-weight:600; color:#214c3d; outline:none; }
+
+.nutrient-grid{ margin-bottom:32px; display:grid; gap:16px; grid-template-columns:1fr; }
+@media (min-width: 640px){ .nutrient-grid{ grid-template-columns:repeat(2,1fr); } }
+@media (min-width: 1280px){ .nutrient-grid{ grid-template-columns:repeat(5,1fr); } }
+.nutrient-card{ border-radius:22px; border:1px solid #e5e9e1; background:#fff; padding:20px; box-shadow:0 10px 28px rgba(43,73,53,0.045); }
+.nutrient-card-head{ display:flex; align-items:center; justify-content:space-between; }
+.nutrient-card-left{ display:flex; align-items:center; gap:10px; }
+.nutrient-icon{ display:flex; height:36px; width:36px; align-items:center; justify-content:center; border-radius:12px; font-size:17px; }
+.nutrient-name{ font-size:14px; font-weight:600; color:#31564a; }
+.nutrient-unit{ font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.14em; color:#9aa9a1; }
+.nutrient-stats{ margin-top:16px; display:flex; align-items:flex-end; justify-content:space-between; gap:8px; }
+.stat-label{ font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.14em; color:#9aa9a1; }
+.stat-value-row{ margin-top:2px; display:flex; align-items:baseline; gap:4px; }
+.stat-value{ font-family:'Fraunces',serif; font-size:28px; font-weight:600; color:#214c3d; }
+.stat-unit{ font-size:12px; color:#93a199; }
+.stat-goal{ text-align:right; }
+.stat-goal-value{ margin-top:4px; font-size:14px; font-weight:600; color:#6e857c; }
+.progress-track{ margin-top:12px; height:6px; overflow:hidden; border-radius:999px; background:#edf1ec; }
+.progress-fill{ height:100%; border-radius:999px; transition:width .3s; }
+.nutrient-delta{ margin-top:8px; display:flex; align-items:center; gap:4px; font-size:12px; font-weight:500; }
+
+.dashboard-grid{ display:grid; gap:24px; grid-template-columns:1fr; }
+@media (min-width: 1280px){ .dashboard-grid{ grid-template-columns:minmax(0,1fr) 410px; } }
+.meal-card{ border-radius:26px; background:var(--primary); padding:20px; color:#fff; box-shadow:0 18px 40px rgba(28,77,62,0.16); }
+@media (min-width: 640px){ .meal-card{ padding:28px; } }
+.meal-card-eyebrow{ display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.15em; color:#a9c9a1; }
+.meal-card h2{ margin:8px 0 0; font-family:'Fraunces',serif; font-size:24px; font-weight:600; }
+.meal-card-desc{ margin-top:8px; font-size:14px; line-height:1.4; color:#b5cfc1; }
+.meal-form{ margin-top:24px; display:flex; flex-direction:column; gap:12px; }
+.meal-input, .meal-textarea{ width:100%; border-radius:12px; border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.09); padding:12px 14px; font-size:14px; color:#fff; outline:none; }
+.meal-input::placeholder, .meal-textarea::placeholder{ color:#9fb5aa; }
+.meal-input:focus, .meal-textarea:focus{ border-color:#c5dfa9; }
+.meal-textarea{ resize:none; line-height:1.5; }
+.btn-ghost-light{ display:flex; width:100%; align-items:center; justify-content:center; gap:8px; border-radius:12px; border:1px solid rgba(184,214,156,.3); background:rgba(255,255,255,.08); padding:12px 16px; font-size:14px; font-weight:600; color:#e3f2d3; transition:background .15s; }
+.btn-ghost-light:hover{ background:rgba(255,255,255,.14); }
+.meal-preview{ margin-top:20px; border-radius:16px; background:rgba(255,255,255,.09); padding:16px; }
+.meal-preview-head{ margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#b8d4ba; }
+.meal-preview-list{ display:flex; flex-direction:column; gap:8px; }
+.meal-preview-row{ display:flex; justify-content:space-between; font-size:14px; }
+.meal-preview-row .food-label{ color:#eff6e9; }
+.meal-preview-row .food-amount{ font-size:12px; color:#9fbeb0; }
+.meal-preview-row .food-kcal{ color:#d5e8c4; }
+.meal-preview-total{ margin-top:12px; border-top:1px solid rgba(255,255,255,.1); padding-top:12px; }
+.meal-preview-total-row{ display:flex; align-items:flex-end; justify-content:space-between; }
+.meal-preview-total-row .label{ font-size:14px; font-weight:600; color:#f0f7eb; }
+.meal-preview-total-row .value{ font-family:'Fraunces',serif; font-size:24px; font-weight:600; color:#d9efbd; }
+.meal-preview-macros{ margin-top:4px; text-align:right; font-size:12px; color:#a9c6b7; }
+.btn-accent{ margin-top:16px; display:flex; width:100%; align-items:center; justify-content:center; gap:8px; border-radius:12px; background:#d3e9b9; padding:12px 16px; font-size:14px; font-weight:700; color:#1c4d3e; transition:background .15s; }
+.btn-accent:hover{ background:#e0f2ca; }
+
+.history-card{ border-radius:26px; border:1px solid #e5e9e1; background:#fff; padding:20px; box-shadow:0 10px 28px rgba(43,73,53,0.045); }
+@media (min-width: 640px){ .history-card{ padding:28px; } }
+.history-card-head{ display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:16px; }
+.history-eyebrow{ display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.15em; color:#9aa9a1; }
+.history-card h2{ margin:8px 0 0; font-family:'Fraunces',serif; font-size:24px; font-weight:600; }
+.history-toggle{ display:flex; align-items:center; gap:8px; border-radius:999px; background:#f2f6ef; padding:6px 12px; font-size:12px; font-weight:600; color:#6e8d69; }
+.meal-list{ margin-top:24px; }
+.meal-empty{ display:flex; min-height:185px; flex-direction:column; align-items:center; justify-content:center; border-radius:16px; border:1px dashed #d9e4d8; background:#fafcf8; padding:20px; text-align:center; }
+.meal-empty-icon{ margin-bottom:12px; display:flex; height:44px; width:44px; align-items:center; justify-content:center; border-radius:999px; background:#e9f3e6; color:#76a162; }
+.meal-empty p:first-of-type{ margin:0; font-weight:500; color:#557268; }
+.meal-empty p:last-of-type{ margin:4px 0 0; font-size:14px; color:#96a49d; }
+.meal-row{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:16px 0; border-top:1px solid #edf0eb; }
+.meal-row:first-child{ border-top:none; padding-top:4px; }
+.meal-row-left{ display:flex; min-width:0; gap:12px; }
+.meal-row-icon{ display:flex; height:40px; width:40px; flex-shrink:0; align-items:center; justify-content:center; border-radius:12px; background:#f5f7f2; color:#6c8d68; }
+.meal-row-text{ min-width:0; }
+.meal-row-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; font-weight:600; color:#31564a; }
+.meal-row-meta{ margin-top:4px; font-size:12px; color:#9aa9a1; }
+.meal-row-right{ display:flex; flex-shrink:0; align-items:center; gap:12px; }
+.meal-row-stat{ text-align:right; }
+.meal-row-kcal{ font-size:14px; font-weight:600; color:#3d6355; }
+.meal-row-macro{ margin-top:4px; font-size:11px; color:#9aa9a1; }
+.meal-row-delete{ display:flex; height:32px; width:32px; align-items:center; justify-content:center; border-radius:999px; color:#b4c0b8; transition:background .15s,color .15s; }
+.meal-row-delete:hover{ background:#fff0ed; color:#ca6a58; }
+.history-panel{ margin-top:20px; border-radius:16px; background:#f7f9f5; padding:16px; }
+.history-panel-label{ margin-bottom:12px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.14em; color:#7b9187; }
+.history-panel-empty{ margin:0; font-size:14px; color:#94a49d; }
+.history-day{ padding:12px 0; border-top:1px solid #e8eee5; }
+.history-day:first-child{ border-top:none; }
+.history-day-head{ display:flex; align-items:center; justify-content:space-between; }
+.history-day-head .date{ font-size:14px; font-weight:500; color:#557268; }
+.history-day-head .total{ font-size:12px; color:#8a9c93; }
+.history-day-meals{ margin-top:8px; display:flex; flex-direction:column; gap:6px; }
+.history-day-meal{ display:flex; align-items:center; justify-content:space-between; font-size:12px; color:#7e9287; }
+.footnote{ margin-top:28px; display:flex; align-items:flex-start; gap:8px; font-size:12px; line-height:1.4; color:#92a099; }
+.footnote .icon{ margin-top:2px; color:#9db69a; flex-shrink:0; }
+
+/* ---------- modal (editar perfil) ---------- */
+.modal-overlay{ position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.4); padding:16px; }
+.modal-card{ width:100%; max-width:420px; border-radius:24px; border:1px solid #e5e9e1; background:#fff; padding:24px; box-shadow:0 25px 60px rgba(0,0,0,.2); }
+.modal-card h2{ margin:0; font-family:'Fraunces',serif; font-size:20px; font-weight:600; color:#1b3f34; }
+.modal-card .sub{ margin:4px 0 0; font-size:14px; color:#71857e; }
+.modal-body{ margin-top:20px; display:flex; flex-direction:column; gap:12px; }
+.modal-footer{ margin-top:20px; }
+
+/* ---------- toasts ---------- */
+.toast-container{ position:fixed; bottom:16px; right:16px; z-index:100; display:flex; flex-direction:column; gap:8px; max-width:min(360px, calc(100vw - 32px)); }
+.toast{ border-radius:12px; padding:12px 16px; font-size:14px; font-weight:500; box-shadow:0 12px 30px rgba(0,0,0,.12); border:1px solid transparent; animation:toastIn .2s ease; }
+@keyframes toastIn{ from{ opacity:0; transform:translateY(8px);} to{ opacity:1; transform:translateY(0);} }
+.toast-success{ background:#eaf4ee; color:#2a6b4b; border-color:#cfe7d9; }
+.toast-error{ background:#fcedec; color:#a23b32; border-color:#f6d6d2; }
+
+/* ---------- instalar app ---------- */
+.install-banner{ position:fixed; bottom:16px; left:16px; right:16px; z-index:50; margin:0 auto; display:flex; max-width:420px; align-items:center; gap:12px; border-radius:16px; border:1px solid #cfe1c7; background:#f6faef; padding:14px; box-shadow:0 16px 36px rgba(28,77,62,0.16); }
+@media (min-width: 640px){ .install-banner{ left:auto; right:24px; } }
+.install-icon{ display:flex; height:40px; width:40px; flex-shrink:0; align-items:center; justify-content:center; border-radius:12px; background:var(--primary); color:#d3e9b9; }
+.install-text{ min-width:0; flex:1; }
+.install-text .title{ font-size:14px; font-weight:600; color:#214c3d; }
+.install-text .sub{ margin-top:2px; font-size:12px; color:#71877c; }
+.install-btn{ border-radius:12px; background:var(--primary); padding:8px 12px; font-size:12px; font-weight:700; color:#fff; transition:background .15s; }
+.install-btn:hover{ background:#28634f; }
+.install-close{ border-radius:999px; padding:6px; color:#7b9187; }
+.install-close:hover{ background:#e7f0e2; }
+
+.hidden{ display:none !important; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast-container" class="toast-container" aria-live="polite"></div>
+<script>
+"use strict";
+
+/* ===================== ícones (SVG inline, sem dependência externa) ===================== */
+const ICON_PATHS = {
+  leaf: '<path d="M11 20A7 7 0 0 1 4 13c0-5 5-11 15-11 0 10-6 15-11 15Z"/><path d="M4 20c4-4 7-7 15-15"/>',
+  login: '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
+  usercog: '<circle cx="9" cy="7" r="4"/><path d="M2 21c0-4 3-7 7-7"/><circle cx="18" cy="17" r="3"/><path d="M18 12v1.5M18 20.5V22M13.5 17H15M21 17h1.5M14.9 13.9l1.1 1.1M20 20l1.1 1.1M14.9 20.1l1.1-1.1M20 14l1.1-1.1"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  sparkles: '<path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/><path d="M12 8l1.2 2.8L16 12l-2.8 1.2L12 16l-1.2-2.8L8 12l2.8-1.2Z"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M4 12h2M18 12h2M12 4v2M12 18v2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M6.3 17.7l1.4-1.4M16.3 7.7l1.4-1.4"/>',
+  rotate: '<path d="M3 12a9 9 0 1 1 3 6.7"/><path d="M3 17v-5h5"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  arrowup: '<path d="M7 17 17 7M7 7h10v10"/>',
+  arrowdown: '<path d="M7 7l10 10M17 7v10H7"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.6 1.4c0 1.6-2.1 2-2.1 3.4"/><path d="M12 17.5h.01"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  history: '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 5v5h5"/><path d="M12 8v5l3 2"/>',
+  utensils: '<path d="M6 3v7a2 2 0 0 0 4 0V3M8 10v11M17 3c-1.5 0-3 1.5-3 4v3c0 1 .5 1.5 1.5 1.5H17M17 3v18"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/>',
+  lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  download: '<path d="M12 3v13M6 11l6 6 6-6"/><path d="M4 20h16"/>',
+  loader: '<path d="M12 3a9 9 0 1 0 9 9"/>',
+  userplus: '<circle cx="9" cy="8" r="4"/><path d="M2 21c0-4.4 3.1-8 7-8s7 3.6 7 8"/><path d="M19 8v6M22 11h-6"/>',
+  flame: '<path d="M12 2c1 3-3 4-3 7a3 3 0 0 0 6 0c0-1-.5-1.5-.5-1.5S17 9 17 13a5 5 0 0 1-10 0c0-5 3-6 3-11Z"/>',
+  activity: '<path d="M22 12h-4l-3 9-6-18-3 9H2"/>',
+  wheat: '<path d="M12 22V2M9 6l3-2 3 2M9 10l3-2 3 2M9 14l3-2 3 2M9 18l3-2 3 2M6 8c-2 0-3 1-3 3M18 8c2 0 3 1 3 3M6 14c-2 0-3 1-3 3M18 14c2 0 3 1 3 3"/>',
+  droplet: '<path d="M12 2s7 8 7 13a7 7 0 0 1-14 0c0-5 7-13 7-13Z"/>',
+};
+function icon(name, cls) {
+  const p = ICON_PATHS[name] || "";
+  return '<svg class="icon' + (cls ? " " + cls : "") + '" viewBox="0 0 24 24">' + p + "</svg>";
+}
+
+/* ===================== utilidades ===================== */
+function readStorage(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch { return fallback; }
+}
+function writeStorage(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} }
+function todayKey() { return new Date().toISOString().slice(0, 10); }
+function formatNumber(value, digits) {
+  digits = digits || 0;
+  return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: digits, minimumFractionDigits: digits }).format(value);
+}
+function pct(value, goal) { return goal ? Math.min(100, Math.max(0, (value / goal) * 100)) : 0; }
+function addNutrients(a, b) { return { calories: a.calories + b.calories, protein: a.protein + b.protein, carbs: a.carbs + b.carbs, fat: a.fat + b.fat, fiber: a.fiber + b.fiber }; }
+function scale(values, m) { const out = {}; for (const k of Object.keys(values)) out[k] = values[k] * m; return out; }
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+/* ===================== toasts ===================== */
+function toast(message, type) {
+  const container = document.getElementById("toast-container");
+  const el = document.createElement("div");
+  el.className = "toast " + (type === "error" ? "toast-error" : "toast-success");
+  el.textContent = message;
+  container.appendChild(el);
+  setTimeout(() => { el.style.opacity = "0"; el.style.transition = "opacity .25s"; setTimeout(() => el.remove(), 250); }, 3800);
+}
+const toastSuccess = (m) => toast(m, "success");
+const toastError = (m) => toast(m, "error");
+
+/* ===================== backend Apps Script (login/cadastro/confirmação/dados) ===================== */
+// URL do "App da Web" publicado no Apps Script. Trocar aqui sempre que reimplantar com uma NOVA
+// implantação (versão "Nova versão" mantém a mesma URL e não precisa mexer aqui).
+const API_URL = "https://script.google.com/macros/s/AKfycbyuYBfRJ9AtM3vOoJndITbyNTsRnmS4MJMVeo_lZJ6-ukfHTqQGmcZClMkH3uOh5utEaQ/exec";
+
+async function chamarApi(acao, dados) {
+  const response = await fetch(API_URL, {
+    method: "POST",
+    // text/plain evita que o navegador dispare um preflight CORS (OPTIONS), que o Apps Script não trata.
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(Object.assign({ acao }, dados || {})),
+  });
+  if (!response.ok) throw new Error("Erro de rede (" + response.status + ")");
+  return response.json();
+}
+const authApi = {
+  cadastrar: (nome, email, senha) => chamarApi("cadastrar", { nome, email, senha }),
+  confirmarEmail: (email, codigo) => chamarApi("confirmarEmail", { email, codigo }),
+  reenviarCodigo: (email) => chamarApi("reenviarCodigo", { email }),
+  login: (email, senha) => chamarApi("login", { email, senha }),
+  atualizarPerfil: (email, senhaAtual, novoNome, novaSenha) => chamarApi("atualizarPerfil", { email, senhaAtual, novoNome, novaSenha }),
+};
+
+/* ===================== login com Google (Google Identity Services) ===================== */
+// O Client ID de app Web NÃO é segredo — é protegido pelas "Origens JavaScript autorizadas"
+// configuradas no Google Cloud Console, por isso pode ficar direto no código do front-end.
+const GOOGLE_CLIENT_ID = "324458100746-em71t2toc30d96up3adov613eljubt6h.apps.googleusercontent.com";
+const GOOGLE_SCOPES = ["openid", "email", "profile", "https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive.file"].join(" ");
+
+let gTokenClient = null;
+let gCurrentToken = null;
+
+function waitForGis() {
+  return new Promise((resolve) => {
+    (function check() {
+      if (window.google && window.google.accounts && window.google.accounts.oauth2) resolve();
+      else setTimeout(check, 150);
+    })();
+  });
+}
+async function ensureGoogleClient(onToken) {
+  await waitForGis();
+  gTokenClient = window.google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: GOOGLE_SCOPES,
+    callback: (response) => { gCurrentToken = response.access_token || null; onToken(gCurrentToken); },
+    error_callback: () => onToken(null),
+  });
+  return gTokenClient;
+}
+function googleSignIn() {
+  return new Promise((resolve) => {
+    ensureGoogleClient((token) => resolve(token)).then((client) => client.requestAccessToken({ prompt: "consent" }));
+  });
+}
+function googleSignInSilently() {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (token) => { if (settled) return; settled = true; resolve(token); };
+    ensureGoogleClient((token) => finish(token)).then((client) => {
+      client.requestAccessToken({ prompt: "" });
+      setTimeout(() => finish(gCurrentToken), 4000);
+    });
+  });
+}
+function googleSignOut() { gCurrentToken = null; }
+
+/* ===================== dados na planilha do Google (Sheets API v4) ===================== */
+const SHEET_MEALS = "Refeicoes";
+const SHEET_GOALS = "Metas";
+const SPREADSHEET_TITLE = "NutriTrack Dados";
+
+async function googleApiFetch(url, options) {
+  options = options || {};
+  if (!gCurrentToken) throw new Error("Sem sessão do Google ativa.");
+  const response = await fetch(url, Object.assign({}, options, {
+    headers: Object.assign({}, options.headers || {}, { Authorization: "Bearer " + gCurrentToken, "Content-Type": "application/json" }),
+  }));
+  if (!response.ok) { const text = await response.text().catch(() => ""); throw new Error("Google API " + response.status + ": " + text); }
+  return response.status === 204 ? null : response.json();
+}
+function fetchGoogleProfile() { return googleApiFetch("https://www.googleapis.com/oauth2/v3/userinfo"); }
+
+async function findOrCreateSpreadsheet(cacheKey) {
+  const cached = localStorage.getItem(cacheKey);
+  if (cached) return cached;
+  const query = encodeURIComponent("name='" + SPREADSHEET_TITLE + "' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false");
+  const list = await googleApiFetch("https://www.googleapis.com/drive/v3/files?q=" + query + "&fields=files(id,name)");
+  if (list && list.files && list.files.length) { localStorage.setItem(cacheKey, list.files[0].id); return list.files[0].id; }
+  const created = await googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets", {
+    method: "POST",
+    body: JSON.stringify({ properties: { title: SPREADSHEET_TITLE }, sheets: [{ properties: { title: SHEET_MEALS } }, { properties: { title: SHEET_GOALS } }] }),
+  });
+  const id = created.spreadsheetId;
+  await googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + "/values/" + SHEET_MEALS + "!A1:K1?valueInputOption=RAW", {
+    method: "PUT", body: JSON.stringify({ values: [["id", "date", "name", "description", "time", "calories", "protein", "carbs", "fat", "fiber", "detected"]] }),
+  });
+  await googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + "/values/" + SHEET_GOALS + "!A1:E1?valueInputOption=RAW", {
+    method: "PUT", body: JSON.stringify({ values: [["calories", "protein", "carbs", "fat", "fiber"]] }),
+  });
+  localStorage.setItem(cacheKey, id);
+  return id;
+}
+async function pullGoogleData(spreadsheetId) {
+  const [mealsRes, goalsRes] = await Promise.all([
+    googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets/" + spreadsheetId + "/values/" + SHEET_MEALS + "!A2:K10000"),
+    googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets/" + spreadsheetId + "/values/" + SHEET_GOALS + "!A2:E2"),
+  ]);
+  const meals = ((mealsRes && mealsRes.values) || []).map((row) => ({
+    id: Number(row[0]), date: row[1] || "", name: row[2] || "", description: row[3] || "", time: row[4] || "",
+    calories: Number(row[5]) || 0, protein: Number(row[6]) || 0, carbs: Number(row[7]) || 0, fat: Number(row[8]) || 0, fiber: Number(row[9]) || 0,
+    detected: (row[10] || "").split(";").filter(Boolean),
+  })).filter((m) => m.id && m.date);
+  const goalsRow = goalsRes && goalsRes.values && goalsRes.values[0];
+  const goals = goalsRow ? { calories: Number(goalsRow[0]) || 0, protein: Number(goalsRow[1]) || 0, carbs: Number(goalsRow[2]) || 0, fat: Number(goalsRow[3]) || 0, fiber: Number(goalsRow[4]) || 0 } : null;
+  return { meals, goals };
+}
+async function pushGoogleData(spreadsheetId, meals, goals) {
+  const mealRows = meals.map((m) => [m.id, m.date, m.name, m.description, m.time, m.calories, m.protein, m.carbs, m.fat, m.fiber, (m.detected || []).join(";")]);
+  await googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets/" + spreadsheetId + "/values/" + SHEET_MEALS + "!A2:K10000:clear", { method: "POST", body: JSON.stringify({}) });
+  if (mealRows.length) {
+    await googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets/" + spreadsheetId + "/values/" + SHEET_MEALS + "!A2?valueInputOption=RAW", { method: "PUT", body: JSON.stringify({ values: mealRows }) });
+  }
+  await googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets/" + spreadsheetId + "/values/" + SHEET_GOALS + "!A2:E2?valueInputOption=RAW", { method: "PUT", body: JSON.stringify({ values: [[goals.calories, goals.protein, goals.carbs, goals.fat, goals.fiber]] }) });
+}
+function mergeMeals(local, remote) {
+  const byId = new Map();
+  for (const m of local) byId.set(m.id, m);
+  for (const m of remote) if (!byId.has(m.id)) byId.set(m.id, m);
+  return Array.from(byId.values()).sort((a, b) => a.id - b.id);
+}
+
+/* ===================== reconhecimento de alimentos (igual ao original) ===================== */
+const nutrientMeta = {
+  calories: { label: "Calorias", unit: "kcal", color: "#eb7a55", soft: "#fff0e9", icon: "flame" },
+  protein: { label: "Proteína", unit: "g", color: "#5b8c78", soft: "#e9f3ed", icon: "activity" },
+  carbs: { label: "Carboidratos", unit: "g", color: "#d29a45", soft: "#fff5df", icon: "wheat" },
+  fat: { label: "Gorduras", unit: "g", color: "#b27691", soft: "#f8edf2", icon: "droplet" },
+  fiber: { label: "Fibras", unit: "g", color: "#71945c", soft: "#eef5e9", icon: "leaf" },
+};
+const defaultGoals = { calories: 1600, protein: 150, carbs: 130, fat: 53, fiber: 30 };
+const emptyNutrients = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
+
+const foodLibrary = [
+  { terms: ["pao frances", "pao de sal", "pao frances comum"], label: "Pão francês", baseAmount: "1 unidade (50 g)", values: { calories: 135, protein: 4.5, carbs: 28, fat: 1.5, fiber: 1.2 }, grams: 50 },
+  { terms: ["pao de forma tradicional", "pao de forma"], label: "Pão de forma", baseAmount: "2 fatias (50 g)", values: { calories: 130, protein: 4, carbs: 24, fat: 1.6, fiber: 1.4 }, grams: 50 },
+  { terms: ["pao de forma integral", "pao integral"], label: "Pão de forma integral", baseAmount: "2 fatias (50 g)", values: { calories: 120, protein: 5, carbs: 22, fat: 1.6, fiber: 3.2 }, grams: 50 },
+  { terms: ["pao de queijo"], label: "Pão de queijo", baseAmount: "1 unidade (30 g)", values: { calories: 100, protein: 2.3, carbs: 9, fat: 6, fiber: 0.2 }, grams: 30 },
+  { terms: ["tapioca"], label: "Tapioca", baseAmount: "1 unidade (60 g)", values: { calories: 130, protein: 0.2, carbs: 32, fat: 0.1, fiber: 0.3 }, grams: 60 },
+  { terms: ["macarrao cozido", "macarrao", "massa"], label: "Macarrão cozido", baseAmount: "100 g", values: { calories: 158, protein: 5.8, carbs: 31, fat: 0.9, fiber: 1.8 }, grams: 100 },
+  { terms: ["batata inglesa", "batata cozida", "batata"], label: "Batata inglesa cozida", baseAmount: "100 g", values: { calories: 87, protein: 1.9, carbs: 20, fat: 0.1, fiber: 1.8 }, grams: 100 },
+  { terms: ["batata doce"], label: "Batata doce cozida", baseAmount: "100 g", values: { calories: 86, protein: 1.6, carbs: 20, fat: 0.1, fiber: 3 }, grams: 100 },
+  { terms: ["mandioca", "aipim", "macaxeira"], label: "Mandioca cozida", baseAmount: "100 g", values: { calories: 125, protein: 0.6, carbs: 30, fat: 0.3, fiber: 1.6 }, grams: 100 },
+  { terms: ["arroz integral"], label: "Arroz integral cozido", baseAmount: "100 g", values: { calories: 124, protein: 2.6, carbs: 25.8, fat: 1, fiber: 2.7 }, grams: 100 },
+  { terms: ["arroz branco", "arroz cozido", "arroz"], label: "Arroz branco cozido", baseAmount: "100 g", values: { calories: 130, protein: 2.5, carbs: 28, fat: 0.3, fiber: 0.4 }, grams: 100 },
+  { terms: ["aveia em flocos", "aveia"], label: "Aveia em flocos", baseAmount: "2 colheres de sopa (30 g)", values: { calories: 117, protein: 4, carbs: 20, fat: 2.4, fiber: 3 }, grams: 30 },
+  { terms: ["granola"], label: "Granola", baseAmount: "30 g", values: { calories: 120, protein: 3, carbs: 19, fat: 4, fiber: 2.5 }, grams: 30 },
+  { terms: ["cuscuz"], label: "Cuscuz", baseAmount: "100 g", values: { calories: 112, protein: 2.5, carbs: 23, fat: 0.6, fiber: 1.4 }, grams: 100 },
+  { terms: ["ovo frito", "ovo de galinha frito", "ovo"], label: "Ovo frito", baseAmount: "1 unidade", values: { calories: 90, protein: 6.3, carbs: 0.4, fat: 7, fiber: 0 }, count: 1 },
+  { terms: ["ovo cozido"], label: "Ovo cozido", baseAmount: "1 unidade", values: { calories: 78, protein: 6.3, carbs: 0.6, fat: 5.3, fiber: 0 }, count: 1 },
+  { terms: ["omelete"], label: "Omelete", baseAmount: "2 ovos", values: { calories: 190, protein: 13, carbs: 1.5, fat: 15, fiber: 0 }, count: 2 },
+  { terms: ["peito de frango", "frango grelhado", "frango"], label: "Peito de frango", baseAmount: "100 g", values: { calories: 165, protein: 31, carbs: 0, fat: 3.6, fiber: 0 }, grams: 100 },
+  { terms: ["picanha", "picanha bovina"], label: "Picanha", baseAmount: "100 g", values: { calories: 289, protein: 26, carbs: 0, fat: 20, fiber: 0 }, grams: 100 },
+  { terms: ["carne moida refogada", "carne moida"], label: "Carne moída refogada", baseAmount: "100 g", values: { calories: 212, protein: 26, carbs: 0, fat: 11, fiber: 0 }, grams: 100 },
+  { terms: ["bife de patinho", "carne bovina magra", "patinho"], label: "Bife de patinho grelhado", baseAmount: "100 g", values: { calories: 205, protein: 32, carbs: 0, fat: 8, fiber: 0 }, grams: 100 },
+  { terms: ["file de tilapia", "peixe grelhado", "tilapia"], label: "Filé de tilápia grelhado", baseAmount: "100 g", values: { calories: 128, protein: 26, carbs: 0, fat: 2.7, fiber: 0 }, grams: 100 },
+  { terms: ["salmao grelhado", "salmao"], label: "Salmão grelhado", baseAmount: "100 g", values: { calories: 208, protein: 22, carbs: 0, fat: 13, fiber: 0 }, grams: 100 },
+  { terms: ["atum em lata", "atum"], label: "Atum em lata", baseAmount: "100 g", values: { calories: 116, protein: 26, carbs: 0, fat: 1, fiber: 0 }, grams: 100 },
+  { terms: ["camarao cozido", "camarao"], label: "Camarão cozido", baseAmount: "100 g", values: { calories: 99, protein: 24, carbs: 0.2, fat: 0.3, fiber: 0 }, grams: 100 },
+  { terms: ["lombo suino", "carne de porco", "lombo assado"], label: "Lombo suíno assado", baseAmount: "100 g", values: { calories: 211, protein: 27, carbs: 0, fat: 11, fiber: 0 }, grams: 100 },
+  { terms: ["linguica"], label: "Linguiça", baseAmount: "100 g", values: { calories: 300, protein: 13, carbs: 2, fat: 27, fiber: 0 }, grams: 100 },
+  { terms: ["bacon"], label: "Bacon", baseAmount: "30 g", values: { calories: 150, protein: 10, carbs: 0, fat: 12, fiber: 0 }, grams: 30 },
+  { terms: ["peito de peru", "presunto de peru"], label: "Peito de peru fatiado", baseAmount: "2 fatias (30 g)", values: { calories: 35, protein: 6, carbs: 1, fat: 1, fiber: 0 }, grams: 30 },
+  { terms: ["presunto"], label: "Presunto", baseAmount: "2 fatias (30 g)", values: { calories: 60, protein: 8, carbs: 1, fat: 3, fiber: 0 }, grams: 30 },
+  { terms: ["queijo minas"], label: "Queijo minas", baseAmount: "30 g", values: { calories: 72, protein: 5.6, carbs: 0.9, fat: 5.4, fiber: 0 }, grams: 30 },
+  { terms: ["queijo mussarela", "mussarela", "muçarela"], label: "Queijo mussarela", baseAmount: "30 g", values: { calories: 90, protein: 6.6, carbs: 0.6, fat: 6.9, fiber: 0 }, grams: 30 },
+  { terms: ["requeijao"], label: "Requeijão", baseAmount: "1 colher de sopa (20 g)", values: { calories: 55, protein: 1.5, carbs: 1, fat: 5, fiber: 0 }, grams: 20 },
+  { terms: ["leite integral", "leite"], label: "Leite integral", baseAmount: "1 copo (200 ml)", values: { calories: 122, protein: 6.4, carbs: 9.6, fat: 6.6, fiber: 0 }, ml: 200 },
+  { terms: ["leite desnatado"], label: "Leite desnatado", baseAmount: "1 copo (200 ml)", values: { calories: 70, protein: 6.8, carbs: 9.8, fat: 0.2, fiber: 0 }, ml: 200 },
+  { terms: ["iogurte natural", "iogurte"], label: "Iogurte natural", baseAmount: "1 pote (170 g)", values: { calories: 100, protein: 6, carbs: 8, fat: 5, fiber: 0 }, grams: 170 },
+  { terms: ["iogurte grego"], label: "Iogurte grego", baseAmount: "100 g", values: { calories: 97, protein: 9, carbs: 4, fat: 5, fiber: 0 }, grams: 100 },
+  { terms: ["whey protein", "whey"], label: "Whey protein", baseAmount: "1 dose (30 g)", values: { calories: 120, protein: 24, carbs: 3, fat: 1.5, fiber: 0 }, grams: 30 },
+  { terms: ["feijao", "feijao cozido"], label: "Feijão cozido", baseAmount: "100 g", values: { calories: 76, protein: 4.8, carbs: 13.6, fat: 0.5, fiber: 8.4 }, grams: 100 },
+  { terms: ["lentilha"], label: "Lentilha cozida", baseAmount: "100 g", values: { calories: 116, protein: 9, carbs: 20, fat: 0.4, fiber: 8 }, grams: 100 },
+  { terms: ["grao de bico"], label: "Grão de bico cozido", baseAmount: "100 g", values: { calories: 164, protein: 8.9, carbs: 27, fat: 2.6, fiber: 7.6 }, grams: 100 },
+  { terms: ["brocolis"], label: "Brócolis cozido", baseAmount: "100 g", values: { calories: 35, protein: 2.8, carbs: 7, fat: 0.4, fiber: 3.3 }, grams: 100 },
+  { terms: ["couve refogada", "couve"], label: "Couve refogada", baseAmount: "100 g", values: { calories: 35, protein: 2, carbs: 4, fat: 2, fiber: 3 }, grams: 100 },
+  { terms: ["tomate"], label: "Tomate", baseAmount: "1 unidade (100 g)", values: { calories: 18, protein: 0.9, carbs: 3.9, fat: 0.2, fiber: 1.2 }, grams: 100 },
+  { terms: ["cenoura"], label: "Cenoura crua", baseAmount: "100 g", values: { calories: 41, protein: 0.9, carbs: 10, fat: 0.2, fiber: 2.8 }, grams: 100 },
+  { terms: ["alface"], label: "Alface", baseAmount: "50 g", values: { calories: 7, protein: 0.7, carbs: 1.2, fat: 0.1, fiber: 0.7 }, grams: 50 },
+  { terms: ["salada mista", "salada"], label: "Salada mista", baseAmount: "100 g", values: { calories: 25, protein: 1.2, carbs: 4, fat: 0.5, fiber: 1.8 }, grams: 100 },
+  { terms: ["banana"], label: "Banana", baseAmount: "1 unidade", values: { calories: 90, protein: 1.1, carbs: 23, fat: 0.3, fiber: 2.6 }, count: 1 },
+  { terms: ["maca"], label: "Maçã", baseAmount: "1 unidade (130 g)", values: { calories: 68, protein: 0.3, carbs: 18, fat: 0.2, fiber: 3 }, count: 1 },
+  { terms: ["mamao"], label: "Mamão", baseAmount: "100 g", values: { calories: 40, protein: 0.6, carbs: 10, fat: 0.1, fiber: 1.8 }, grams: 100 },
+  { terms: ["morango"], label: "Morango", baseAmount: "100 g", values: { calories: 32, protein: 0.7, carbs: 7.7, fat: 0.3, fiber: 2 }, grams: 100 },
+  { terms: ["abacaxi"], label: "Abacaxi", baseAmount: "100 g", values: { calories: 50, protein: 0.5, carbs: 13, fat: 0.1, fiber: 1.4 }, grams: 100 },
+  { terms: ["manga"], label: "Manga", baseAmount: "1 unidade (200 g)", values: { calories: 120, protein: 1.6, carbs: 30, fat: 0.6, fiber: 3.4 }, count: 1 },
+  { terms: ["melancia"], label: "Melancia", baseAmount: "1 fatia (150 g)", values: { calories: 46, protein: 0.9, carbs: 11, fat: 0.2, fiber: 0.6 }, grams: 150 },
+  { terms: ["uva"], label: "Uva", baseAmount: "100 g", values: { calories: 69, protein: 0.7, carbs: 18, fat: 0.2, fiber: 0.9 }, grams: 100 },
+  { terms: ["abacate"], label: "Abacate", baseAmount: "100 g", values: { calories: 160, protein: 2, carbs: 8.5, fat: 14.7, fiber: 6.7 }, grams: 100 },
+  { terms: ["suco de laranja", "suco laranja"], label: "Suco de laranja", baseAmount: "300 ml", values: { calories: 135, protein: 2, carbs: 31, fat: 0.3, fiber: 0.5 }, ml: 300 },
+  { terms: ["cafe com leite"], label: "Café com leite", baseAmount: "1 xícara (200 ml)", values: { calories: 60, protein: 3, carbs: 6, fat: 2.5, fiber: 0 }, ml: 200 },
+  { terms: ["refrigerante", "coca cola", "coca"], label: "Refrigerante", baseAmount: "1 lata (350 ml)", values: { calories: 140, protein: 0, carbs: 37, fat: 0, fiber: 0 }, ml: 350 },
+  { terms: ["cerveja"], label: "Cerveja", baseAmount: "1 lata (350 ml)", values: { calories: 150, protein: 1.6, carbs: 12, fat: 0, fiber: 0 }, ml: 350 },
+  { terms: ["agua de coco"], label: "Água de coco", baseAmount: "1 copo (200 ml)", values: { calories: 40, protein: 0.6, carbs: 9, fat: 0.1, fiber: 0 }, ml: 200 },
+  { terms: ["chocolate ao leite", "chocolate"], label: "Chocolate ao leite", baseAmount: "1 barra pequena (25 g)", values: { calories: 130, protein: 1.9, carbs: 15, fat: 7.3, fiber: 0.8 }, grams: 25 },
+  { terms: ["barra de cereal"], label: "Barra de cereal", baseAmount: "1 unidade (25 g)", values: { calories: 95, protein: 1.3, carbs: 18, fat: 2, fiber: 1.2 }, grams: 25 },
+  { terms: ["castanha do para", "castanha"], label: "Castanha-do-pará", baseAmount: "5 unidades (15 g)", values: { calories: 92, protein: 2, carbs: 1.7, fat: 9.3, fiber: 1 }, grams: 15 },
+  { terms: ["amendoim"], label: "Amendoim", baseAmount: "30 g", values: { calories: 170, protein: 7.3, carbs: 6, fat: 14.5, fiber: 2.5 }, grams: 30 },
+  { terms: ["pipoca"], label: "Pipoca", baseAmount: "30 g", values: { calories: 110, protein: 2.3, carbs: 22, fat: 1.5, fiber: 4 }, grams: 30 },
+];
+
+function normalizeText(value) { return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
+
+function amountForFood(text, position, food) {
+  const before = text.slice(Math.max(0, position - 38), position);
+  const grams = before.match(/(\d+(?:[.,]\d+)?)\s*(?:g|gramas?|gramos?)\s*(?:de\s*)?$/i);
+  const ml = before.match(/(\d+(?:[.,]\d+)?)\s*(?:ml|mililitros?)\s*(?:de\s*)?$/i);
+  const units = before.match(/(\d+(?:[.,]\d+)?)\s*(?:unidades?|unid\.?|ovos?|pães?|paes?)\s*(?:de\s*)?$/i);
+  const numberOnly = before.match(/(?:^|[\s,;])(?:um|uma|um copo de)?\s*(\d+(?:[.,]\d+)?)\s*$/i);
+  const numberWord = /(?:^|[\s,;])(um|uma)\s*$/.test(before);
+  const number = (match) => (match ? Number(match[1].replace(",", ".")) : null);
+  if (food.grams && grams) { const value = number(grams); return { multiplier: value / food.grams, amount: formatNumber(value, 0) + " g" }; }
+  if (food.ml && ml) { const value = number(ml); return { multiplier: value / food.ml, amount: formatNumber(value, 0) + " ml" }; }
+  if (units) { const value = number(units); return { multiplier: value / (food.count || 1), amount: formatNumber(value, 0) + " unidade" + (value > 1 ? "s" : "") }; }
+  if (numberOnly && (food.grams || food.ml)) { const value = number(numberOnly); return { multiplier: value / (food.grams || food.ml || 1), amount: formatNumber(value, 0) + " " + (food.grams ? "g" : "ml") }; }
+  if (numberWord || /\bum\b|\buma\b/.test(before)) return { multiplier: 1, amount: food.baseAmount };
+  return { multiplier: 1, amount: food.baseAmount };
+}
+
+function detectFoods(description) {
+  const text = normalizeText(description);
+  const found = [];
+  const occupied = [];
+  for (const food of foodLibrary) {
+    const term = food.terms.slice().sort((a, b) => b.length - a.length).find((candidate) => text.includes(normalizeText(candidate)));
+    if (!term) continue;
+    const normalizedTerm = normalizeText(term);
+    const position = text.indexOf(normalizedTerm);
+    if (occupied.some((range) => position >= range.start && position < range.end)) continue;
+    const r = amountForFood(text, position, food);
+    found.push({ label: food.label, amount: r.amount, values: scale(food.values, r.multiplier) });
+    occupied.push({ start: position, end: position + normalizedTerm.length });
+  }
+  return found;
+}
+
+/* ===================== estado do app ===================== */
+const CHAVE_USUARIO = "nutri-track-usuario";
+const CHAVE_GOALS = "nutri-track-goals";
+const CHAVE_MEALS = "nutri-track-meals";
+const CHAVE_GCONNECTED = "nutri-track-google-connected";
+const CHAVE_GACCOUNT = "nutri-track-google-account";
+
+const state = {
+  usuario: readStorage(CHAVE_USUARIO, null), // {nome, email} | null -> controla tela de login/cadastro
+  tela: "login", // "login" | "cadastro" | "confirmar" (só usado quando usuario === null)
+  emailPendente: "",
+  account: readStorage(CHAVE_GACCOUNT, null), // conta Google conectada
+  syncing: false,
+  goals: readStorage(CHAVE_GOALS, defaultGoals),
+  meals: readStorage(CHAVE_MEALS, []),
+  preview: [],
+  mealName: "",
+  mealDescription: "",
+  showGoals: false,
+  showHistory: false,
+  showEditarPerfil: false,
+};
+let spreadsheetId = null;
+let pushTimer = null;
+
+function persistUsuario() { writeStorage(CHAVE_USUARIO, state.usuario); }
+function persistGoals() { writeStorage(CHAVE_GOALS, state.goals); }
+function persistMeals() { writeStorage(CHAVE_MEALS, state.meals); }
+
+/* ===================== helpers de derivação ===================== */
+function today() { return todayKey(); }
+function todayMeals() { const t = today(); return state.meals.filter((m) => m.date === t); }
+function consumedToday() { return todayMeals().reduce((sum, m) => addNutrients(sum, m), emptyNutrients); }
+function remainingToday() { const consumed = consumedToday(); const out = {}; for (const k of Object.keys(state.goals)) out[k] = state.goals[k] - consumed[k]; return out; }
+function mealTotal() { return state.preview.reduce((sum, f) => addNutrients(sum, f.values), emptyNutrients); }
+function historyDays() { return Array.from(new Set(state.meals.map((m) => m.date))).sort().reverse(); }
+function dateLabel(date) { return new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long" }).format(new Date(date + "T12:00:00")); }
+
+/* ===================== ações ===================== */
+async function acaoEntrar(email, senha) {
+  if (!email.trim() || !senha) { toastError("Preencha e-mail e senha."); return; }
+  const btn = document.getElementById("login-btn");
+  if (btn) btn.disabled = true;
+  try {
+    const resposta = await authApi.login(email.trim(), senha);
+    if (!resposta.ok) {
+      if (resposta.precisaConfirmar) { state.emailPendente = email.trim(); state.tela = "confirmar"; render(); return; }
+      toastError(resposta.erro || "Não foi possível entrar.");
+      return;
+    }
+    state.usuario = { nome: resposta.nome, email: resposta.email };
+    persistUsuario();
+    render();
+    tentarReconectarGoogleSilenciosamente();
+  } catch { toastError("Falha de conexão. Verifique sua internet e tente novamente."); }
+  finally { if (btn) btn.disabled = false; }
+}
+async function acaoCadastrar(nome, email, senha, confirmarSenha) {
+  if (!nome.trim() || !email.trim() || !senha) { toastError("Preencha todos os campos."); return; }
+  if (senha.length < 6) { toastError("A senha precisa ter pelo menos 6 caracteres."); return; }
+  if (senha !== confirmarSenha) { toastError("As senhas não coincidem."); return; }
+  const btn = document.getElementById("cadastro-btn");
+  if (btn) btn.disabled = true;
+  try {
+    const resposta = await authApi.cadastrar(nome.trim(), email.trim(), senha);
+    if (!resposta.ok) { toastError(resposta.erro || "Não foi possível cadastrar."); return; }
+    toastSuccess("Cadastro recebido! Confira seu e-mail para o código de confirmação.");
+    state.emailPendente = email.trim();
+    state.tela = "confirmar";
+    render();
+  } catch { toastError("Falha de conexão. Verifique sua internet e tente novamente."); }
+  finally { if (btn) btn.disabled = false; }
+}
+async function acaoConfirmarEmail(codigo) {
+  if (codigo.length !== 6) { toastError("Digite o código de 6 dígitos que enviamos por e-mail."); return; }
+  const btn = document.getElementById("confirmar-btn");
+  if (btn) btn.disabled = true;
+  try {
+    const resposta = await authApi.confirmarEmail(state.emailPendente, codigo);
+    if (!resposta.ok) { toastError(resposta.erro || "Código incorreto."); return; }
+    toastSuccess("E-mail confirmado! Agora é só entrar com sua senha.");
+    state.tela = "login";
+    render();
+  } catch { toastError("Falha de conexão. Verifique sua internet e tente novamente."); }
+  finally { if (btn) btn.disabled = false; }
+}
+async function acaoReenviarCodigo() {
+  const btn = document.getElementById("reenviar-btn");
+  if (btn) btn.disabled = true;
+  try {
+    const resposta = await authApi.reenviarCodigo(state.emailPendente);
+    if (!resposta.ok) { toastError(resposta.erro || "Não foi possível reenviar o código."); return; }
+    toastSuccess("Novo código enviado para o seu e-mail.");
+  } catch { toastError("Falha de conexão. Tente novamente."); }
+  finally { if (btn) btn.disabled = false; }
+}
+function acaoSair() {
+  localStorage.removeItem(CHAVE_USUARIO);
+  state.usuario = null;
+  state.tela = "login";
+  toastSuccess("Você saiu da sua conta.");
+  render();
+}
+async function acaoSalvarPerfil(nome, senhaAtual, novaSenha) {
+  if (!nome.trim()) { toastError("O nome não pode ficar em branco."); return; }
+  if (!senhaAtual) { toastError("Digite sua senha atual para confirmar as alterações."); return; }
+  if (novaSenha && novaSenha.length < 6) { toastError("A nova senha precisa ter pelo menos 6 caracteres."); return; }
+  const btn = document.getElementById("perfil-btn");
+  if (btn) btn.disabled = true;
+  try {
+    const resposta = await authApi.atualizarPerfil(state.usuario.email, senhaAtual, nome.trim(), novaSenha || undefined);
+    if (!resposta.ok) { toastError(resposta.erro || "Não foi possível salvar."); return; }
+    toastSuccess("Perfil atualizado.");
+    state.usuario = { nome: resposta.nome || nome.trim(), email: state.usuario.email };
+    persistUsuario();
+    state.showEditarPerfil = false;
+    render();
+  } catch { toastError("Falha de conexão. Tente novamente."); }
+  finally { if (btn) btn.disabled = false; }
+}
+
+async function tentarReconectarGoogleSilenciosamente() {
+  if (localStorage.getItem(CHAVE_GCONNECTED) !== "1") return;
+  state.syncing = true; render();
+  try {
+    const token = await googleSignInSilently();
+    if (!token) return;
+    const profile = await fetchGoogleProfile();
+    state.account = profile;
+    writeStorage(CHAVE_GACCOUNT, profile);
+    spreadsheetId = await findOrCreateSpreadsheet("nutri-track-sheet-" + profile.email);
+    const remote = await pullGoogleData(spreadsheetId);
+    state.meals = mergeMeals(state.meals, remote.meals);
+    persistMeals();
+    if (remote.goals) { state.goals = remote.goals; persistGoals(); }
+  } catch { /* sem sessão válida agora; a pessoa pode conectar de novo pela barra lateral */ }
+  finally { state.syncing = false; render(); }
+}
+async function acaoConectarGoogle() {
+  state.syncing = true; render();
+  try {
+    const token = await googleSignIn();
+    if (!token) { toastError("Não foi possível conectar com o Google."); return; }
+    const profile = await fetchGoogleProfile();
+    spreadsheetId = await findOrCreateSpreadsheet("nutri-track-sheet-" + profile.email);
+    const remote = await pullGoogleData(spreadsheetId);
+    const mergedMeals = mergeMeals(state.meals, remote.meals);
+    const mergedGoals = remote.goals || state.goals;
+    state.meals = mergedMeals; persistMeals();
+    state.goals = mergedGoals; persistGoals();
+    await pushGoogleData(spreadsheetId, mergedMeals, mergedGoals);
+    state.account = profile;
+    writeStorage(CHAVE_GACCOUNT, profile);
+    localStorage.setItem(CHAVE_GCONNECTED, "1");
+    toastSuccess("Conectado como " + profile.email + ". Seus dados agora sincronizam entre aparelhos.");
+  } catch { toastError("Falha ao conectar com o Google. Tente novamente."); }
+  finally { state.syncing = false; render(); }
+}
+function acaoDesconectarGoogle() {
+  googleSignOut();
+  state.account = null;
+  spreadsheetId = null;
+  localStorage.removeItem(CHAVE_GCONNECTED);
+  localStorage.removeItem(CHAVE_GACCOUNT);
+  toastSuccess("Desconectado do Google. Conecte de novo quando quiser voltar a sincronizar.");
+  render();
+}
+function agendarSincronizacao() {
+  if (!state.account || !spreadsheetId) return;
+  if (pushTimer) clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => {
+    pushGoogleData(spreadsheetId, state.meals, state.goals).catch(() => {
+      toastError("Não consegui sincronizar com o Google agora. Vou tentar de novo na próxima alteração.");
+    });
+  }, 1000);
+}
+
+function acaoAnalisar() {
+  const description = document.getElementById("meal-description").value;
+  if (!description.trim()) { toastError("Descreva o que você comeu para eu calcular."); return; }
+  const found = detectFoods(description);
+  state.preview = found;
+  if (!found.length) toastError("Não identifiquei alimentos conhecidos. Tente informar pão, ovo, frango, arroz, patinho, banana ou suco de laranja.");
+  else toastSuccess(found.length + " alimento" + (found.length > 1 ? "s" : "") + " identificado" + (found.length > 1 ? "s" : "") + ".");
+  render();
+}
+function acaoSalvarRefeicao() {
+  const nameInput = document.getElementById("meal-name");
+  const descInput = document.getElementById("meal-description");
+  const mealName = nameInput.value;
+  if (!mealName.trim()) { toastError("Informe o nome da refeição."); return; }
+  if (!state.preview.length) { toastError("Analise a descrição antes de salvar a refeição."); return; }
+  const now = new Date();
+  const total = mealTotal();
+  state.meals = state.meals.concat([Object.assign({}, total, {
+    id: Date.now(), date: today(), name: mealName.trim(), description: descInput.value.trim(),
+    detected: state.preview.map((f) => f.label), time: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+  })]);
+  persistMeals();
+  state.preview = [];
+  nameInput.value = ""; descInput.value = "";
+  toastSuccess("Refeição registrada no histórico.");
+  agendarSincronizacao();
+  render();
+}
+function acaoRemoverRefeicao(id) {
+  state.meals = state.meals.filter((m) => m.id !== id);
+  persistMeals();
+  agendarSincronizacao();
+  render();
+}
+function acaoZerarHoje() {
+  if (todayMeals().length === 0) return;
+  if (!window.confirm("Apagar todas as refeições registradas hoje? O histórico de dias anteriores será mantido.")) return;
+  const t = today();
+  state.meals = state.meals.filter((m) => m.date !== t);
+  persistMeals();
+  toastSuccess("Os registros de hoje foram removidos; o histórico anterior foi preservado.");
+  agendarSincronizacao();
+  render();
+}
+function acaoAtualizarMeta(key, value) {
+  state.goals = Object.assign({}, state.goals, { [key]: Math.max(0, Number(value) || 0) });
+  persistGoals();
+  agendarSincronizacao();
+  render();
+}
+
+/* ===================== submits (leem os campos direto do DOM) ===================== */
+function submitLogin() {
+  const email = document.getElementById("login-email").value;
+  const senha = document.getElementById("login-senha").value;
+  acaoEntrar(email, senha);
+}
+function submitCadastro() {
+  const nome = document.getElementById("cad-nome").value;
+  const email = document.getElementById("cad-email").value;
+  const senha = document.getElementById("cad-senha").value;
+  const confirmarSenha = document.getElementById("cad-confirmar").value;
+  acaoCadastrar(nome, email, senha, confirmarSenha);
+}
+function getOtpValue() {
+  return ["otp-0", "otp-1", "otp-2", "otp-3", "otp-4", "otp-5"].map((id) => (document.getElementById(id) || {}).value || "").join("");
+}
+function submitConfirmar() { acaoConfirmarEmail(getOtpValue()); }
+function otpInput(el, index) {
+  el.value = el.value.replace(/[^0-9]/g, "").slice(-1);
+  if (el.value && index < 5) { const next = document.getElementById("otp-" + (index + 1)); if (next) next.focus(); }
+  if (getOtpValue().length === 6) submitConfirmar();
+}
+function otpKeydown(event, index) {
+  if (event.key === "Backspace" && !event.target.value && index > 0) { const prev = document.getElementById("otp-" + (index - 1)); if (prev) prev.focus(); }
+  if (event.key === "Enter") submitConfirmar();
+}
+function submitPerfil() {
+  const nome = document.getElementById("perfil-nome").value;
+  const senhaAtual = document.getElementById("perfil-senha-atual").value;
+  const novaSenha = document.getElementById("perfil-nova-senha").value;
+  acaoSalvarPerfil(nome, senhaAtual, novaSenha);
+}
+
+/* ===================== templates ===================== */
+function brandRow() {
+  return '<div class="brand-row"><div class="brand-icon">' + icon("leaf") + '</div><div><div class="brand-title">Nutri<span>Track</span></div><div class="brand-sub">seu dia, no seu ritmo</div></div></div>';
+}
+
+function loginTemplate() {
+  return '' +
+    '<div class="auth-page"><div class="auth-box">' + brandRow() +
+    '<div class="auth-card">' +
+      '<h1>Entrar</h1><p class="sub">Acesse sua conta para continuar de onde parou.</p>' +
+      '<div class="form-stack">' +
+        '<div><label class="field-label">E-mail</label>' +
+        '<input id="login-email" type="email" class="field-input" placeholder="voce@email.com" value="' + esc(state.emailPendente) + '" onkeydown="if(event.key===\'Enter\'){document.getElementById(\'login-senha\').focus();}"/></div>' +
+        '<div><label class="field-label">Senha</label>' +
+        '<input id="login-senha" type="password" class="field-input" placeholder="••••••••" onkeydown="if(event.key===\'Enter\') submitLogin();"/></div>' +
+        '<button id="login-btn" class="btn-primary" onclick="submitLogin()">' + icon("login") + " Entrar</button>" +
+      "</div>" +
+    "</div>" +
+    '<p class="auth-footer">Não tem conta? <button class="link-btn" onclick="state.tela=\'cadastro\';render()">Cadastre-se</button></p>' +
+    "</div></div>";
+}
+function cadastroTemplate() {
+  return '' +
+    '<div class="auth-page"><div class="auth-box">' + brandRow() +
+    '<div class="auth-card">' +
+      '<h1>Criar conta</h1><p class="sub">Leva menos de um minuto.</p>' +
+      '<div class="form-stack">' +
+        '<div><label class="field-label">Nome</label><input id="cad-nome" class="field-input" placeholder="Seu nome"/></div>' +
+        '<div><label class="field-label">E-mail</label><input id="cad-email" type="email" class="field-input" placeholder="voce@email.com"/></div>' +
+        '<div><label class="field-label">Senha</label><input id="cad-senha" type="password" class="field-input" placeholder="Pelo menos 6 caracteres"/></div>' +
+        '<div><label class="field-label">Confirmar senha</label><input id="cad-confirmar" type="password" class="field-input" placeholder="Repita a senha" onkeydown="if(event.key===\'Enter\') submitCadastro();"/></div>' +
+        '<button id="cadastro-btn" class="btn-primary" onclick="submitCadastro()">' + icon("userplus") + " Cadastrar</button>" +
+      "</div>" +
+    "</div>" +
+    '<p class="auth-footer">Já tem conta? <button class="link-btn" onclick="state.tela=\'login\';render()">Entrar</button></p>' +
+    "</div></div>";
+}
+function confirmarTemplate() {
+  let boxes = "";
+  for (let i = 0; i < 6; i++) {
+    boxes += '<input id="otp-' + i + '" class="otp-box" maxlength="1" inputmode="numeric" autocomplete="one-time-code" oninput="otpInput(this,' + i + ')" onkeydown="otpKeydown(event,' + i + ')"/>';
+  }
+  return '' +
+    '<div class="auth-page"><div class="auth-box">' + brandRow() +
+    '<div class="auth-card">' +
+      '<h1>Confirme seu e-mail</h1><p class="sub">Enviamos um código de 6 dígitos para <strong>' + esc(state.emailPendente) + "</strong>.</p>" +
+      '<div class="otp-row">' + boxes + "</div>" +
+      '<button id="confirmar-btn" class="btn-primary" style="margin-top:24px" onclick="submitConfirmar()">' + icon("check") + " Confirmar</button>" +
+      '<button id="reenviar-btn" class="link-btn-block" onclick="acaoReenviarCodigo()">Reenviar código</button>' +
+    "</div>" +
+    '<p class="auth-footer"><button class="link-btn" onclick="state.tela=\'login\';render()">Voltar para o login</button></p>' +
+    "</div></div>";
+}
+function authTemplate() {
+  if (state.tela === "cadastro") return cadastroTemplate();
+  if (state.tela === "confirmar") return confirmarTemplate();
+  return loginTemplate();
+}
+
+function sidebarTemplate() {
+  const u = state.usuario;
+  const g = state.account;
+  return '' +
+    '<aside class="sidebar">' + brandRow() +
+    '<div class="side-card"><div class="side-label">Conta</div><div class="side-name">' + esc(u.nome) + '</div><div class="side-email">' + esc(u.email) + "</div>" +
+    '<button class="btn-outline" onclick="state.showEditarPerfil=true;render()">' + icon("usercog") + " Editar perfil</button>" +
+    "</div>" +
+    '<div class="side-card-border"><div class="side-label">Google</div>' +
+    (g ?
+      '<div class="google-connected">' + icon("check") + "<span>" + esc(g.email) + "</span></div>" +
+      '<p class="side-text">Seus dados sincronizam com essa conta.</p>' +
+      '<button class="btn-outline" onclick="acaoDesconectarGoogle()">' + icon("logout") + " Desconectar</button>"
+      :
+      '<p class="side-text">Conecte sua conta do Google para liberar o app e salvar seu histórico na nuvem.</p>' +
+      '<button class="btn-primary-pill" ' + (state.syncing ? "disabled" : "") + ' onclick="acaoConectarGoogle()">' + icon("login") + " " + (state.syncing ? "Conectando..." : "Conectar Google") + "</button>"
+    ) +
+    "</div>" +
+    '<button class="btn-danger-outline" onclick="acaoSair()">' + icon("logout") + " Sair da conta</button>" +
+    "</aside>";
+}
+
+function editarPerfilTemplate() {
+  if (!state.showEditarPerfil) return "";
+  const u = state.usuario;
+  return '' +
+    '<div class="modal-overlay" onclick="if(event.target===this){state.showEditarPerfil=false;render();}">' +
+    '<div class="modal-card">' +
+      "<h2>Editar perfil</h2><p class=\"sub\">Confirme sua senha atual para salvar alterações.</p>" +
+      '<div class="modal-body">' +
+        '<div><label class="field-label">Nome</label><input id="perfil-nome" class="field-input" value="' + esc(u.nome) + '"/></div>' +
+        '<div><label class="field-label">Nova senha (opcional)</label><input id="perfil-nova-senha" type="password" class="field-input" placeholder="Deixe em branco para não alterar"/></div>' +
+        '<div><label class="field-label">Senha atual</label><input id="perfil-senha-atual" type="password" class="field-input" placeholder="Confirme para salvar" onkeydown="if(event.key===\'Enter\') submitPerfil();"/></div>' +
+      "</div>" +
+      '<div class="modal-footer"><button id="perfil-btn" class="btn-primary" onclick="submitPerfil()">' + icon("usercog") + " Salvar alterações</button></div>" +
+    "</div></div>";
+}
+
+function lockedTemplate() {
+  return '' +
+    '<div class="locked-page">' +
+    '<div class="locked-icon">' + icon("lock") + "</div>" +
+    "<h1 class=\"locked-title\">Conecte sua conta do Google para continuar</h1>" +
+    '<p class="locked-desc">Suas refeições, metas e histórico só ficam disponíveis depois de conectar o Google — é onde tudo é salvo com segurança e sincronizado entre seus aparelhos.</p>' +
+    '<button class="btn-primary-lg" ' + (state.syncing ? "disabled" : "") + ' onclick="acaoConectarGoogle()">' + icon("login") + " " + (state.syncing ? "Conectando..." : "Conectar com Google") + "</button>" +
+    "</div>";
+}
+
+function nutrientCardsTemplate() {
+  const consumed = consumedToday();
+  return Object.keys(nutrientMeta).map((key) => {
+    const meta = nutrientMeta[key];
+    const over = consumed[key] > state.goals[key];
+    const digits = key === "calories" ? 0 : 1;
+    return '' +
+      '<div class="nutrient-card"><div class="nutrient-card-head">' +
+        '<div class="nutrient-card-left"><div class="nutrient-icon" style="background:' + meta.soft + ";color:" + meta.color + '">' + icon(meta.icon) + "</div>" +
+        '<span class="nutrient-name">' + meta.label + "</span></div>" +
+        '<span class="nutrient-unit">' + meta.unit + "</span>" +
+      "</div>" +
+      '<div class="nutrient-stats"><div><div class="stat-label">Consumido</div><div class="stat-value-row"><span class="stat-value">' + formatNumber(consumed[key], digits) + '</span><span class="stat-unit">' + meta.unit + "</span></div></div>" +
+      '<div class="stat-goal"><div class="stat-label">Meta diária</div><div class="stat-goal-value">' + formatNumber(state.goals[key], digits) + " " + meta.unit + "</div></div></div>" +
+      '<div class="progress-track"><div class="progress-fill" style="width:' + pct(consumed[key], state.goals[key]) + "%;background:" + (over ? "#d76c54" : meta.color) + '"></div></div>' +
+      '<div class="nutrient-delta" style="color:' + (over ? "#c35e4b" : "#789087") + '">' + icon(over ? "arrowup" : "arrowdown") + " " +
+      (over ? formatNumber(consumed[key] - state.goals[key], digits) + " " + meta.unit + " acima da meta" : formatNumber(Math.max(0, remainingToday()[key]), digits) + " " + meta.unit + " restantes") +
+      "</div></div>";
+  }).join("");
+}
+
+function goalsPanelTemplate() {
+  if (!state.showGoals) return "";
+  return '' +
+    '<section class="goals-panel"><div class="goals-panel-head">' +
+    "<div><h2>Metas máximas diárias</h2><p>A primeira meta é o limite de calorias; as demais orientam a composição.</p></div>" +
+    '<button class="icon-btn-ghost" onclick="state.showGoals=false;render()">' + icon("x") + "</button>" +
+    "</div>" +
+    '<div class="goals-grid">' + Object.keys(nutrientMeta).map((key) => {
+      const meta = nutrientMeta[key];
+      return '<label class="goal-field"><div class="goal-field-head"><span>' + meta.label + "</span><span>" + meta.unit + "</span></div>" +
+        '<input type="number" min="0" step="any" class="goal-field-input" value="' + state.goals[key] + '" onchange="acaoAtualizarMeta(\'' + key + "', this.value)\"/></label>";
+    }).join("") + "</div></section>";
+}
+
+function mealPreviewTemplate() {
+  if (!state.preview.length) return "";
+  const total = mealTotal();
+  return '' +
+    '<div class="meal-preview"><div class="meal-preview-head"><span>Alimentos identificados</span>' + icon("check") + "</div>" +
+    '<div class="meal-preview-list">' + state.preview.map((f) =>
+      '<div class="meal-preview-row"><span class="food-label">' + esc(f.label) + ' <span class="food-amount">· ' + esc(f.amount) + "</span></span>" +
+      '<span class="food-kcal">' + formatNumber(f.values.calories) + " kcal</span></div>"
+    ).join("") + "</div>" +
+    '<div class="meal-preview-total"><div class="meal-preview-total-row"><span class="label">Total da refeição</span><span class="value">' + formatNumber(total.calories) + " kcal</span></div>" +
+    '<div class="meal-preview-macros">P ' + formatNumber(total.protein, 1) + " · C " + formatNumber(total.carbs, 1) + " · G " + formatNumber(total.fat, 1) + " · F " + formatNumber(total.fiber, 1) + "</div></div>" +
+    '<button class="btn-accent" onclick="acaoSalvarRefeicao()">' + icon("check") + " Salvar no histórico</button>" +
+    "</div>";
+}
+
+function historyPanelTemplate() {
+  if (!state.showHistory) return "";
+  const days = historyDays();
+  if (!days.length) return '<div class="history-panel"><div class="history-panel-label">Histórico salvo</div><p class="history-panel-empty">Suas refeições aparecerão aqui depois do primeiro registro.</p></div>';
+  return '<div class="history-panel"><div class="history-panel-label">Histórico salvo</div>' + days.map((date) => {
+    const dayMeals = state.meals.filter((m) => m.date === date);
+    const dayTotal = dayMeals.reduce((sum, m) => sum + m.calories, 0);
+    return '<div class="history-day"><div class="history-day-head"><span class="date">' + dateLabel(date) + '</span><span class="total">' + formatNumber(dayTotal) + " kcal · " + dayMeals.length + " refeição" + (dayMeals.length > 1 ? "ões" : "") + "</span></div>" +
+      '<div class="history-day-meals">' + dayMeals.map((m) => '<div class="history-day-meal"><span>' + esc(m.name) + "</span><span>" + formatNumber(m.calories) + " kcal</span></div>").join("") + "</div></div>";
+  }).join("") + "</div>";
+}
+
+function mealListTemplate() {
+  const meals = todayMeals();
+  if (!meals.length) {
+    return '<div class="meal-empty"><div class="meal-empty-icon">' + icon("plus") + "</div><p>Nenhuma refeição registrada hoje</p><p>Descreva a primeira refeição no formulário ao lado.</p></div>";
+  }
+  return meals.map((m) =>
+    '<div class="meal-row"><div class="meal-row-left"><div class="meal-row-icon">' + icon("utensils") + '</div><div class="meal-row-text"><div class="meal-row-name">' + esc(m.name) + '</div><div class="meal-row-meta">' + icon("clock") + " " + esc(m.time) + " · " + esc(m.detected.join(", ")) + "</div></div></div>" +
+    '<div class="meal-row-right"><div class="meal-row-stat"><div class="meal-row-kcal">' + formatNumber(m.calories) + ' kcal</div><div class="meal-row-macro">P ' + formatNumber(m.protein, 1) + " · C " + formatNumber(m.carbs, 1) + " · G " + formatNumber(m.fat, 1) + "</div></div>" +
+    '<button class="meal-row-delete" aria-label="Remover refeição" onclick="acaoRemoverRefeicao(' + m.id + ')">' + icon("trash") + "</button></div></div>"
+  ).join("");
+}
+
+function fullHomeTemplate() {
+  const consumed = consumedToday();
+  const remaining = remainingToday();
+  return '' +
+    '<header class="home-header">' +
+      '<button class="btn-outline-pill" onclick="state.showGoals=!state.showGoals;render()">' + icon("settings") + " Metas do dia</button>" +
+      '<button class="icon-btn-outline" onclick="state.showGoals=!state.showGoals;render()">' + icon("settings") + "</button>" +
+      '<button class="btn-primary-pill-lg" onclick="acaoZerarHoje()">' + icon("rotate") + ' <span class="label">Zerar hoje</span></button>' +
+    "</header>" +
+    "<main>" +
+    '<section class="hero">' +
+      '<div><div class="hero-date">' + icon("calendar") + " " + dateLabel(today()) + "</div>" +
+      '<h1 class="hero-title">Alimente o que <em>importa.</em></h1>' +
+      '<p class="hero-sub">Descreva sua refeição do jeito que você fala. Nós estimamos os nutrientes, registramos e mostramos quanto ainda cabe no seu dia.</p></div>' +
+      '<div class="summary-card"><div class="summary-ring"></div><div class="summary-inner">' +
+        '<div class="summary-label">' + icon("sparkles") + " Seu resumo de hoje</div>" +
+        '<div class="summary-stats"><div><div class="summary-remaining-value">' + formatNumber(Math.max(0, remaining.calories)) + '</div><div class="summary-remaining-label">kcal restantes</div></div>' +
+        '<div class="summary-consumed"><div class="summary-consumed-value">' + formatNumber(consumed.calories) + '</div><div class="summary-consumed-label">de ' + formatNumber(state.goals.calories) + " kcal</div></div></div>" +
+        '<div class="progress-track-light"><div class="progress-fill-light" style="width:' + pct(consumed.calories, state.goals.calories) + '%"></div></div>' +
+      "</div></div>" +
+    "</section>" +
+    goalsPanelTemplate() +
+    '<section class="nutrient-grid">' + nutrientCardsTemplate() + "</section>" +
+    '<section class="dashboard-grid">' +
+      '<aside class="meal-card"><div class="meal-card-eyebrow">' + icon("sparkles") + " Nova refeição</div>" +
+      "<h2>O que você vai comer?</h2>" +
+      '<p class="meal-card-desc">Escreva naturalmente. Ex.: “1 pão francês, 1 ovo frito e 300 ml de suco de laranja”.</p>' +
+      '<div class="meal-form">' +
+        '<input id="meal-name" class="meal-input" placeholder="Nome: café da manhã" value="' + esc(state.mealName) + '"/>' +
+        '<textarea id="meal-description" class="meal-textarea" placeholder="Descreva os alimentos e quantidades..." rows="4">' + esc(state.mealDescription) + "</textarea>" +
+        '<button class="btn-ghost-light" onclick="acaoAnalisar()">' + icon("sparkles") + " Calcular refeição</button>" +
+      "</div>" +
+      mealPreviewTemplate() +
+      "</aside>" +
+      '<div class="history-card"><div class="history-card-head">' +
+        '<div><div class="history-eyebrow">' + icon("utensils") + " Refeições de hoje</div><h2>O que você comeu</h2></div>" +
+        '<button class="history-toggle" onclick="state.showHistory=!state.showHistory;render()">' + icon("history") + " Histórico (" + historyDays().length + ")</button>" +
+      "</div>" +
+      '<div class="meal-list">' + mealListTemplate() + "</div>" +
+      historyPanelTemplate() +
+      "</div>" +
+    "</section>" +
+    '<div class="footnote">' + icon("help") + "<p>Os valores são estimativas. O reconhecimento automático funciona com alimentos conhecidos e pode ser refinado com uma base nutricional maior.</p></div>" +
+    "</main>";
+}
+
+function homeTemplate() {
+  return '' +
+    '<div class="app-shell">' + sidebarTemplate() + editarPerfilTemplate() +
+    '<div class="home-content"><div class="home-inner">' +
+    (state.account ? fullHomeTemplate() : lockedTemplate()) +
+    "</div></div></div>";
+}
+
+/* ===================== render ===================== */
+function captureFormState() {
+  const nameEl = document.getElementById("meal-name");
+  const descEl = document.getElementById("meal-description");
+  if (nameEl) state.mealName = nameEl.value;
+  if (descEl) state.mealDescription = descEl.value;
+}
+function render() {
+  captureFormState();
+  document.getElementById("app").innerHTML = state.usuario ? homeTemplate() : authTemplate();
+}
+
+/* ===================== instalar como app (PWA) ===================== */
+let installPromptEvent = null;
+function initInstallPrompt() {
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    installPromptEvent = event;
+    const banner = document.createElement("div");
+    banner.className = "install-banner";
+    banner.id = "install-banner";
+    banner.innerHTML = '<div class="install-icon">' + icon("download") + '</div>' +
+      '<div class="install-text"><div class="title">Instalar o NutriTrack</div><div class="sub">Use como app, direto pelo Chrome.</div></div>' +
+      '<button class="install-btn" onclick="doInstall()">Instalar</button>' +
+      '<button class="install-close" aria-label="Fechar aviso de instalação" onclick="document.getElementById(\'install-banner\').remove()">' + icon("x") + "</button>";
+    document.body.appendChild(banner);
+  });
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
+}
+async function doInstall() {
+  if (!installPromptEvent) return;
+  await installPromptEvent.prompt();
+  installPromptEvent = null;
+  const banner = document.getElementById("install-banner");
+  if (banner) banner.remove();
+}
+
+/* ===================== inicialização ===================== */
+render();
+initInstallPrompt();
+if (state.usuario) tentarReconectarGoogleSilenciosamente();
+</script>
+</body>
+</html>
