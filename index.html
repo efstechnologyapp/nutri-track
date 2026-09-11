@@ -353,12 +353,11 @@ const toastError = (m) => toast(m, "error");
 const API_URL = "https://script.google.com/macros/s/AKfycbyuYBfRJ9AtM3vOoJndITbyNTsRnmS4MJMVeo_lZJ6-ukfHTqQGmcZClMkH3uOh5utEaQ/exec";
 
 async function chamarApi(acao, dados) {
-  const response = await fetch(API_URL, {
-    method: "POST",
-    // text/plain evita que o navegador dispare um preflight CORS (OPTIONS), que o Apps Script não trata.
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify(Object.assign({ acao }, dados || {})),
-  });
+  // Usamos GET (dados na própria URL) em vez de POST: o Apps Script devolve a resposta de um jeito
+  // (redirecionamento interno) que o navegador aceita para GET, mas bloqueia por CORS para POST.
+  const payload = JSON.stringify(Object.assign({ acao }, dados || {}));
+  const url = API_URL + "?data=" + encodeURIComponent(payload);
+  const response = await fetch(url, { method: "GET" });
   if (!response.ok) throw new Error("Erro de rede (" + response.status + ")");
   return response.json();
 }
