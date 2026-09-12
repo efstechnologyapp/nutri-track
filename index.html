@@ -79,8 +79,25 @@ svg{ display: block; }
 
 /* ---------- sidebar ---------- */
 .app-shell{ display:flex; min-height:100vh; flex-direction:column; background:var(--bg); color:var(--fg); }
-.sidebar{ display:flex; width:100%; flex-shrink:0; flex-direction:column; gap:20px; border-bottom:1px solid var(--border); background:#fff; padding:24px 20px; }
-.sidebar .brand-row{ margin-bottom:0; justify-content:flex-start; }
+.hamburger-btn{ position:fixed; top:16px; left:16px; z-index:250; display:flex; height:40px; width:40px; align-items:center; justify-content:center; border-radius:999px; border:1px solid var(--border); background:#fff; box-shadow:0 8px 20px rgba(43,73,53,0.1); cursor:pointer; }
+.hamburger-btn span{ display:block; width:18px; height:2px; background:#31564a; position:relative; }
+.hamburger-btn span::before, .hamburger-btn span::after{ content:''; position:absolute; left:0; width:18px; height:2px; background:#31564a; }
+.hamburger-btn span::before{ top:-6px; }
+.hamburger-btn span::after{ top:6px; }
+
+.sidebar-overlay{ position:fixed; inset:0; background:rgba(15,32,26,.45); z-index:300; display:none; }
+.sidebar-overlay.open{ display:block; }
+.sidebar-panel{ position:fixed; top:0; left:0; bottom:0; width:84%; max-width:320px; background:#fff; box-shadow:6px 0 24px rgba(0,0,0,.18); padding:26px 22px; transform:translateX(-100%); transition:transform .22s ease-out; display:flex; flex-direction:column; gap:20px; overflow-y:auto; }
+.sidebar-overlay.open .sidebar-panel{ transform:translateX(0); }
+.sidebar-panel .brand-row{ margin-bottom:0; justify-content:flex-start; }
+.sidebar-close{ align-self:flex-end; background:none; border:none; font-size:0; color:var(--muted); cursor:pointer; padding:4px; margin:-4px -4px 0 0; }
+.sidebar-close .icon{ width:20px; height:20px; }
+
+.avatar-wrap{ display:flex; flex-direction:column; align-items:center; margin-top:4px; }
+.avatar-circle{ width:84px; height:84px; border-radius:50%; background:#eef6e4; border:2px dashed var(--primary); display:flex; align-items:center; justify-content:center; color:var(--primary); font-size:28px; font-weight:700; overflow:hidden; cursor:pointer; position:relative; flex-shrink:0; }
+.avatar-circle img{ width:100%; height:100%; object-fit:cover; }
+.avatar-cam-badge{ position:absolute; bottom:0; right:0; background:var(--primary); color:#fff; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid #fff; }
+.avatar-cam-badge .icon{ width:13px; height:13px; }
 .side-card{ border-radius:16px; background:#f7f9f5; padding:16px; }
 .side-card-border{ border-radius:16px; border:1px solid #dce8dc; padding:16px; }
 .side-label{ font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.14em; color:#9aa9a1; }
@@ -96,10 +113,6 @@ svg{ display: block; }
 .google-connected span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .btn-danger-outline{ margin-top:auto; display:flex; align-items:center; justify-content:center; gap:8px; border-radius:999px; border:1px solid #f0d9d2; background:#fdf4f1; padding:10px 12px; font-size:12px; font-weight:600; color:#c35e4b; transition:background .15s; }
 .btn-danger-outline:hover{ background:#fbe9e3; }
-@media (min-width: 1024px){
-  .app-shell{ flex-direction:row; }
-  .sidebar{ height:100vh; width:288px; position:sticky; top:0; border-right:1px solid var(--border); border-bottom:none; padding:32px 24px; overflow-y:auto; }
-}
 
 /* ---------- tela bloqueada (sem Google) ---------- */
 .locked-page{ display:flex; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; padding:16px; text-align:center; }
@@ -311,6 +324,7 @@ const ICON_PATHS = {
   activity: '<path d="M22 12h-4l-3 9-6-18-3 9H2"/>',
   wheat: '<path d="M12 22V2M9 6l3-2 3 2M9 10l3-2 3 2M9 14l3-2 3 2M9 18l3-2 3 2M6 8c-2 0-3 1-3 3M18 8c2 0 3 1 3 3M6 14c-2 0-3 1-3 3M18 14c2 0 3 1 3 3"/>',
   droplet: '<path d="M12 2s7 8 7 13a7 7 0 0 1-14 0c0-5 7-13 7-13Z"/>',
+  camera: '<path d="M4 8a2 2 0 0 1 2-2h2l1.4-2h5.2L16 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8Z"/><circle cx="12" cy="13" r="3.5"/>',
 };
 function icon(name, cls) {
   const p = ICON_PATHS[name] || "";
@@ -367,6 +381,7 @@ const authApi = {
   reenviarCodigo: (email) => chamarApi("reenviarCodigo", { email }),
   login: (email, senha) => chamarApi("login", { email, senha }),
   atualizarPerfil: (email, senhaAtual, novoNome, novaSenha) => chamarApi("atualizarPerfil", { email, senhaAtual, novoNome, novaSenha }),
+  atualizarFoto: (email, foto) => chamarApi("atualizarFoto", { email, foto }),
 };
 
 /* ===================== login com Google (Google Identity Services) ===================== */
@@ -614,6 +629,7 @@ const state = {
   showGoals: false,
   showHistory: false,
   showEditarPerfil: false,
+  sidebarOpen: false,
 };
 let spreadsheetId = null;
 let pushTimer = null;
@@ -643,7 +659,7 @@ async function acaoEntrar(email, senha) {
       toastError(resposta.erro || "Não foi possível entrar.");
       return;
     }
-    state.usuario = { nome: resposta.nome, email: resposta.email };
+    state.usuario = { nome: resposta.nome, email: resposta.email, foto: resposta.foto || "" };
     persistUsuario();
     render();
     tentarReconectarGoogleSilenciosamente();
@@ -706,12 +722,54 @@ async function acaoSalvarPerfil(nome, senhaAtual, novaSenha) {
     const resposta = await authApi.atualizarPerfil(state.usuario.email, senhaAtual, nome.trim(), novaSenha || undefined);
     if (!resposta.ok) { toastError(resposta.erro || "Não foi possível salvar."); return; }
     toastSuccess("Perfil atualizado.");
-    state.usuario = { nome: resposta.nome || nome.trim(), email: state.usuario.email };
+    state.usuario = { nome: resposta.nome || nome.trim(), email: state.usuario.email, foto: state.usuario.foto || "" };
     persistUsuario();
     state.showEditarPerfil = false;
     render();
   } catch { toastError("Falha de conexão. Tente novamente."); }
   finally { if (btn) btn.disabled = false; }
+}
+
+/* ===================== sidebar (menu) ===================== */
+function acaoAbrirSidebar() { state.sidebarOpen = true; render(); }
+function acaoFecharSidebar() { state.sidebarOpen = false; render(); }
+
+/* ===================== foto de perfil ===================== */
+function compressImageDataUrl(file, maxSize) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        const scale = Math.min(1, maxSize / Math.max(width, height));
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = width; canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.7));
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+async function onAvatarSelected(event) {
+  const file = event.target.files && event.target.files[0];
+  event.target.value = "";
+  if (!file) return;
+  try {
+    const dataUrl = await compressImageDataUrl(file, 200);
+    state.usuario.foto = dataUrl;
+    persistUsuario();
+    render();
+    authApi.atualizarFoto(state.usuario.email, dataUrl).catch(() => {});
+  } catch (err) {
+    toastError("Não foi possível processar essa imagem.");
+  }
 }
 
 async function tentarReconectarGoogleSilenciosamente() {
@@ -916,8 +974,19 @@ function authTemplate() {
 function sidebarTemplate() {
   const u = state.usuario;
   const g = state.account;
+  const inicial = (u.nome || "?").trim().charAt(0).toUpperCase() || "?";
   return '' +
-    '<aside class="sidebar">' + brandRow() +
+    '<div class="sidebar-overlay' + (state.sidebarOpen ? " open" : "") + '" id="sidebarOverlay" onclick="if(event.target===this) acaoFecharSidebar()">' +
+    '<aside class="sidebar-panel">' +
+    '<button class="sidebar-close" onclick="acaoFecharSidebar()" aria-label="Fechar menu">' + icon("x") + "</button>" +
+    '<div class="avatar-wrap">' +
+      '<div class="avatar-circle" onclick="document.getElementById(\'avatar-input\').click()">' +
+      (u.foto ? '<img src="' + u.foto + '" alt="Foto de perfil"/>' : "<span>" + inicial + "</span>") +
+      '<div class="avatar-cam-badge">' + icon("camera") + "</div>" +
+      "</div>" +
+      '<input type="file" accept="image/*" id="avatar-input" style="display:none" onchange="onAvatarSelected(event)"/>' +
+    "</div>" +
+    brandRow() +
     '<div class="side-card"><div class="side-label">Conta</div><div class="side-name">' + esc(u.nome) + '</div><div class="side-email">' + esc(u.email) + "</div>" +
     '<button class="btn-outline" onclick="state.showEditarPerfil=true;render()">' + icon("usercog") + " Editar perfil</button>" +
     "</div>" +
@@ -932,7 +1001,7 @@ function sidebarTemplate() {
     ) +
     "</div>" +
     '<button class="btn-danger-outline" onclick="acaoSair()">' + icon("logout") + " Sair da conta</button>" +
-    "</aside>";
+    "</aside></div>";
 }
 
 function editarPerfilTemplate() {
@@ -1083,7 +1152,9 @@ function fullHomeTemplate() {
 
 function homeTemplate() {
   return '' +
-    '<div class="app-shell">' + sidebarTemplate() + editarPerfilTemplate() +
+    '<div class="app-shell">' +
+    '<button class="hamburger-btn" onclick="acaoAbrirSidebar()" aria-label="Abrir menu"><span></span></button>' +
+    sidebarTemplate() + editarPerfilTemplate() +
     '<div class="home-content"><div class="home-inner">' +
     (state.account ? fullHomeTemplate() : lockedTemplate()) +
     "</div></div></div>";

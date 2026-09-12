@@ -1,5 +1,4 @@
 // ===== CONFIGURAÇÃO =====
-const SHEET_ID = "1WuOCUz0nq0VQJ4W63pOCSGBMccpjk0m7qqDUAq6Bzbw";
 const ABA_USUARIOS = "Usuarios";
 const ABA_REFEICOES = "Refeicoes";
 const ABA_METAS = "Metas";
@@ -38,6 +37,7 @@ function processarAcao(dados) {
       case "reenviarCodigo": return responder(reenviarCodigo(dados));
       case "login": return responder(login(dados));
       case "atualizarPerfil": return responder(atualizarPerfil(dados));
+      case "atualizarFoto": return responder(atualizarFoto(dados));
       case "pullDados": return responder(pullDados(dados));
       case "pushDados": return responder(pushDados(dados));
       default: return responder({ ok: false, erro: "Ação desconhecida." });
@@ -51,7 +51,25 @@ function responder(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
-function planilha() { return SpreadsheetApp.openById(SHEET_ID); }
+// A planilha é criada automaticamente, na primeira vez que for necessária, na conta que executa o
+// script (a mesma da implantação, em "Executar como"). O ID dela fica guardado nas Propriedades do
+// Script, então não precisa configurar nenhum ID de planilha manualmente. Isso evita o erro "You do
+// not have permission to access the requested document", que acontece quando a planilha pertence a
+// uma conta do Google diferente da que roda o script.
+function planilha() {
+  const props = PropertiesService.getScriptProperties();
+  const idSalvo = props.getProperty("SHEET_ID");
+  if (idSalvo) {
+    try {
+      return SpreadsheetApp.openById(idSalvo);
+    } catch (err) {
+      // ID salvo não abre mais (planilha apagada, por exemplo) — cria uma nova abaixo.
+    }
+  }
+  const ss = SpreadsheetApp.create(NOME_APP + " - Dados");
+  props.setProperty("SHEET_ID", ss.getId());
+  return ss;
+}
 function abaUsuarios() { return planilha().getSheetByName(ABA_USUARIOS); }
 function abaRefeicoes() { return planilha().getSheetByName(ABA_REFEICOES); }
 function abaMetas() { return planilha().getSheetByName(ABA_METAS); }
@@ -60,7 +78,7 @@ function abaMetas() { return planilha().getSheetByName(ABA_METAS); }
 function garantirEstrutura() {
   const ss = planilha();
   const definicoes = {};
-  definicoes[ABA_USUARIOS] = ["nome", "email", "senhaHash", "salt", "confirmado", "codigo", "codigoExpira", "criadoEm"];
+  definicoes[ABA_USUARIOS] = ["nome", "email", "senhaHash", "salt", "confirmado", "codigo", "codigoExpira", "criadoEm", "fotoBase64"];
   definicoes[ABA_REFEICOES] = ["email", "id", "date", "name", "description", "time", "calories", "protein", "carbs", "fat", "fiber", "detected"];
   definicoes[ABA_METAS] = ["email", "calories", "protein", "carbs", "fat", "fiber"];
 
@@ -72,6 +90,12 @@ function garantirEstrutura() {
       aba.setFrozenRows(1);
     }
   });
+
+  // Migração: planilhas criadas antes da coluna de foto existir ganham a coluna agora.
+  var abaUsu = ss.getSheetByName(ABA_USUARIOS);
+  if (abaUsu.getRange(1, 9).getValue() !== "fotoBase64") {
+    abaUsu.getRange(1, 9).setValue("fotoBase64");
+  }
 
   var sheets = ss.getSheets();
   if (sheets.length > 3) {
@@ -99,7 +123,7 @@ function buscarUsuario(email) {
   const dados = abaUsuarios().getDataRange().getValues();
   for (let i = 1; i < dados.length; i++) {
     if (String(dados[i][1]).toLowerCase() === String(email).toLowerCase()) {
-      return { linha: i + 1, nome: dados[i][0], email: dados[i][1], senhaHash: dados[i][2], salt: dados[i][3], confirmado: dados[i][4], codigo: dados[i][5], codigoExpira: dados[i][6] };
+      return { linha: i + 1, nome: dados[i][0], email: dados[i][1], senhaHash: dados[i][2], salt: dados[i][3], confirmado: dados[i][4], codigo: dados[i][5], codigoExpira: dados[i][6], foto: dados[i][8] || "" };
     }
   }
   return null;
@@ -172,7 +196,7 @@ function login(dados) {
   const senhaHash = hashSenha(senha, usuario.salt);
   if (senhaHash !== usuario.senhaHash) return { ok: false, erro: "E-mail ou senha incorretos." };
 
-  return { ok: true, nome: usuario.nome, email: usuario.email };
+  return { ok: true, nome: usuario.nome, email: usuario.email, foto: usuario.foto || "" };
 }
 
 function atualizarPerfil(dados) {
@@ -195,6 +219,16 @@ function atualizarPerfil(dados) {
   }
 
   return { ok: true, nome: nomeFinal };
+}
+
+// Atualiza só a foto do perfil — não pede senha (o app já confia na sessão logada), igual ao
+// Custódia Digital faz com "update_photo".
+function atualizarFoto(dados) {
+  const { email, foto } = dados;
+  const usuario = buscarUsuario(email);
+  if (!usuario) return { ok: false, erro: "E-mail não encontrado." };
+  abaUsuarios().getRange(usuario.linha, 9).setValue(foto || "");
+  return { ok: true };
 }
 
 function pullDados(dados) {
