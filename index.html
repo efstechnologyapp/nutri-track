@@ -1018,10 +1018,16 @@ const enviosEmAndamento = [];
 
 // Envia uma ação ao backend; se falhar, guarda na fila para tentar de novo depois. Quem chama já
 // decide quando faz sentido chamar isso (conta conectada ao Google).
+// Retorna a promise (sempre resolvida, nunca rejeitada — falha vira fila, não uma exceção) pra quem
+// precisar ESPERAR esse envio terminar antes de fazer outra coisa que mexe no mesmo registro no
+// servidor (ver processarAnexoBioimpedanciaEmSegundoPlano/processarAnexoCalorimetriaEmSegundoPlano) —
+// sem isso, o envio do registro (que faz um "append" na planilha) e a atualização do link do anexo
+// (que lê, apaga e reescreve a aba inteira) podiam rodar ao mesmo tempo e um pisar no outro,
+// apagando campos que já tinham sido salvos certinho.
 function enviarComFila(tipo, args) {
   const item = { tipo, args };
   enviosEmAndamento.push(item);
-  Promise.resolve(authApi[tipo].apply(authApi, args)).then((resposta) => {
+  return Promise.resolve(authApi[tipo].apply(authApi, args)).then((resposta) => {
     if (!resposta || resposta.ok === false) throw new Error("falha ao sincronizar");
   }).catch(() => {
     const fila = lerFila();
@@ -1554,16 +1560,20 @@ function acaoSalvarBioimpedancia() {
   anexoSelecionadoBio = null;
   state.bioFormValores = {};
   toastSuccess(arquivoAnexo ? "Registro salvo. Enviando o anexo em segundo plano..." : "Registro de bioimpedância salvo.");
-  if (state.account) enviarComFila("salvarBioimpedanciaGoogle", [state.usuario.email, novoRegistro]);
+  const promessaRegistroBase = state.account ? enviarComFila("salvarBioimpedanciaGoogle", [state.usuario.email, novoRegistro]) : Promise.resolve();
   render();
-  if (arquivoAnexo) processarAnexoBioimpedanciaEmSegundoPlano(novoRegistro.id, arquivoAnexo);
+  if (arquivoAnexo) processarAnexoBioimpedanciaEmSegundoPlano(novoRegistro.id, arquivoAnexo, promessaRegistroBase);
 }
 
 // Envia o anexo depois que o registro já está salvo (ver comentário acima). Se der certo, atualiza o
 // registro (local e no servidor) com o link do arquivo; se falhar, o registro continua salvo do
 // mesmo jeito — só sem o anexo — e a pessoa é avisada para tentar anexar de novo mais tarde.
-async function processarAnexoBioimpedanciaEmSegundoPlano(idRegistro, file) {
-  const resultado = await enviarAnexoExame(file);
+// IMPORTANTE: espera "promessaRegistroBase" (o envio do registro em si) terminar antes de mandar a
+// atualização do anexo pro servidor — sem isso, os dois podiam chegar ao mesmo tempo (o primeiro
+// criando a linha, o segundo lendo/reescrevendo a aba inteira pra colar o link) e um apagar campos que
+// o outro tinha acabado de salvar.
+async function processarAnexoBioimpedanciaEmSegundoPlano(idRegistro, file, promessaRegistroBase) {
+  const [resultado] = await Promise.all([enviarAnexoExame(file), promessaRegistroBase]);
   if (!resultado.ok) {
     toastError((resultado.erro || "Não foi possível enviar o anexo") + " — o registro de bioimpedância foi salvo, só sem o exame anexado.");
     return;
@@ -1609,13 +1619,15 @@ function acaoSalvarCalorimetria() {
   anexoSelecionadoCalo = null;
   state.caloFormValores = {};
   toastSuccess(arquivoAnexo ? "Registro salvo. Enviando o anexo em segundo plano..." : "Registro de calorimetria salvo.");
-  if (state.account) enviarComFila("salvarCalorimetriaGoogle", [state.usuario.email, novoRegistro]);
+  const promessaRegistroBase = state.account ? enviarComFila("salvarCalorimetriaGoogle", [state.usuario.email, novoRegistro]) : Promise.resolve();
   render();
-  if (arquivoAnexo) processarAnexoCalorimetriaEmSegundoPlano(novoRegistro.id, arquivoAnexo);
+  if (arquivoAnexo) processarAnexoCalorimetriaEmSegundoPlano(novoRegistro.id, arquivoAnexo, promessaRegistroBase);
 }
 
-async function processarAnexoCalorimetriaEmSegundoPlano(idRegistro, file) {
-  const resultado = await enviarAnexoExame(file);
+// Ver comentário equivalente em processarAnexoBioimpedanciaEmSegundoPlano: espera o envio do registro
+// em si terminar antes de mandar a atualização do anexo, pra essas duas escritas nunca se cruzarem.
+async function processarAnexoCalorimetriaEmSegundoPlano(idRegistro, file, promessaRegistroBase) {
+  const [resultado] = await Promise.all([enviarAnexoExame(file), promessaRegistroBase]);
   if (!resultado.ok) {
     toastError((resultado.erro || "Não foi possível enviar o anexo") + " — o registro de calorimetria foi salvo, só sem o exame anexado.");
     return;
