@@ -260,6 +260,34 @@ svg{ display: block; }
 .footnote{ margin-top:28px; display:flex; align-items:flex-start; gap:8px; font-size:12px; line-height:1.4; color:#92a099; }
 .footnote .icon{ margin-top:2px; color:#9db69a; flex-shrink:0; }
 
+/* ---------- abas da home (Nutrição / Medidas e Aferições) ---------- */
+.home-tabs{ display:flex; gap:8px; padding:24px 0 0; overflow-x:auto; }
+@media (min-width: 1024px){ .home-tabs{ padding-top:32px; } }
+.home-tab{ display:flex; align-items:center; gap:8px; flex-shrink:0; border-radius:999px; border:1px solid #dce5db; background:#fff; padding:10px 16px; font-size:13px; font-weight:600; color:#7c8c86; transition:background .15s, color .15s; }
+.home-tab:hover{ background:#f0f3ee; }
+.home-tab.active{ border-color:var(--primary); background:var(--primary); color:#fff; }
+
+/* ---------- aba: medidas e aferições ---------- */
+.imc-card{ margin-top:24px; }
+.imc-value-row{ margin-top:16px; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+.imc-value{ font-family:'Fraunces',serif; font-size:36px; font-weight:600; color:#214c3d; }
+.imc-class{ border-radius:999px; background:#eef6e4; padding:4px 12px; font-size:12px; font-weight:600; color:#4b7048; }
+.imc-empty{ margin:16px 0 0; font-size:13px; line-height:1.5; color:#8a9c93; }
+.altura-field-fixed{ margin-top:16px; max-width:220px; }
+.medidas-section{ margin-top:24px; border-radius:22px; border:1px solid #e5e9e1; background:#fff; padding:20px; box-shadow:0 10px 28px rgba(43,73,53,0.045); }
+@media (min-width: 640px){ .medidas-section{ padding:24px; } }
+.medidas-section-title{ margin:0; display:flex; align-items:center; gap:8px; font-family:'Fraunces',serif; font-size:20px; font-weight:600; color:#1b3f34; }
+.medida-form{ margin-top:16px; display:flex; flex-direction:column; gap:12px; max-width:360px; }
+.medida-input-row{ display:flex; flex-direction:column; gap:12px; margin-top:4px; }
+.medidas-history-list{ margin-top:16px; display:flex; flex-direction:column; }
+.medida-history-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 0; border-top:1px solid #edf0eb; }
+.medida-history-row:first-child{ border-top:none; padding-top:4px; }
+.medida-history-left{ min-width:0; }
+.medida-history-tipo{ display:block; font-size:14px; font-weight:600; color:#31564a; }
+.medida-history-meta{ margin-top:4px; display:flex; align-items:center; gap:4px; font-size:12px; color:#9aa9a1; }
+.medida-history-right{ display:flex; flex-shrink:0; align-items:center; gap:12px; }
+.medida-history-valor{ font-size:14px; font-weight:600; color:#3d6355; }
+
 /* ---------- modal (editar perfil) ---------- */
 .modal-overlay{ position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.4); padding:16px; }
 .modal-card{ width:100%; max-width:420px; border-radius:24px; border:1px solid #e5e9e1; background:#fff; padding:24px; box-shadow:0 25px 60px rgba(0,0,0,.2); }
@@ -267,6 +295,8 @@ svg{ display: block; }
 .modal-card .sub{ margin:4px 0 0; font-size:14px; color:#71857e; }
 .modal-body{ margin-top:20px; display:flex; flex-direction:column; gap:12px; }
 .modal-footer{ margin-top:20px; }
+.criar-senha-btn{ display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:#3d6355; text-decoration:underline; text-underline-offset:2px; }
+.criar-senha-btn:hover{ color:var(--primary); }
 
 /* ---------- toasts ---------- */
 .toast-container{ position:fixed; bottom:16px; right:16px; z-index:100; display:flex; flex-direction:column; gap:8px; max-width:min(360px, calc(100vw - 32px)); }
@@ -325,6 +355,8 @@ const ICON_PATHS = {
   wheat: '<path d="M12 22V2M9 6l3-2 3 2M9 10l3-2 3 2M9 14l3-2 3 2M9 18l3-2 3 2M6 8c-2 0-3 1-3 3M18 8c2 0 3 1 3 3M6 14c-2 0-3 1-3 3M18 14c2 0 3 1 3 3"/>',
   droplet: '<path d="M12 2s7 8 7 13a7 7 0 0 1-14 0c0-5 7-13 7-13Z"/>',
   camera: '<path d="M4 8a2 2 0 0 1 2-2h2l1.4-2h5.2L16 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8Z"/><circle cx="12" cy="13" r="3.5"/>',
+  ruler: '<path d="M3 17 17 3l4 4L7 21Z"/><path d="M13 7l2 2M10.5 9.5l2 2M8 12l2 2M5.5 14.5l2 2"/>',
+  heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8Z"/>',
 };
 function icon(name, cls) {
   const p = ICON_PATHS[name] || "";
@@ -431,6 +463,7 @@ function googleSignOut() { gCurrentToken = null; }
 /* ===================== dados na planilha do Google (Sheets API v4) ===================== */
 const SHEET_MEALS = "Refeicoes";
 const SHEET_GOALS = "Metas";
+const SHEET_MEDIDAS = "Medidas";
 const SPREADSHEET_TITLE = "NutriTrack Dados";
 
 async function googleApiFetch(url, options) {
@@ -444,30 +477,50 @@ async function googleApiFetch(url, options) {
 }
 function fetchGoogleProfile() { return googleApiFetch("https://www.googleapis.com/oauth2/v3/userinfo"); }
 
+async function garantirAbaMedidas(id) {
+  // Planilhas criadas antes da aba "Medidas" existir ganham a aba agora (idempotente: só cria se faltar).
+  const meta = await googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + "?fields=sheets.properties.title");
+  const existe = meta && meta.sheets && meta.sheets.some((s) => s.properties && s.properties.title === SHEET_MEDIDAS);
+  if (existe) return;
+  await googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + ":batchUpdate", {
+    method: "POST", body: JSON.stringify({ requests: [{ addSheet: { properties: { title: SHEET_MEDIDAS } } }] }),
+  });
+  await googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + "/values/" + SHEET_MEDIDAS + "!A1:E1?valueInputOption=RAW", {
+    method: "PUT", body: JSON.stringify({ values: [["id", "date", "time", "tipo", "valor"]] }),
+  });
+}
 async function findOrCreateSpreadsheet(cacheKey) {
   const cached = localStorage.getItem(cacheKey);
-  if (cached) return cached;
+  if (cached) { await garantirAbaMedidas(cached).catch(() => {}); return cached; }
   const query = encodeURIComponent("name='" + SPREADSHEET_TITLE + "' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false");
   const list = await googleApiFetch("https://www.googleapis.com/drive/v3/files?q=" + query + "&fields=files(id,name)");
-  if (list && list.files && list.files.length) { localStorage.setItem(cacheKey, list.files[0].id); return list.files[0].id; }
+  if (list && list.files && list.files.length) {
+    localStorage.setItem(cacheKey, list.files[0].id);
+    await garantirAbaMedidas(list.files[0].id).catch(() => {});
+    return list.files[0].id;
+  }
   const created = await googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets", {
     method: "POST",
-    body: JSON.stringify({ properties: { title: SPREADSHEET_TITLE }, sheets: [{ properties: { title: SHEET_MEALS } }, { properties: { title: SHEET_GOALS } }] }),
+    body: JSON.stringify({ properties: { title: SPREADSHEET_TITLE }, sheets: [{ properties: { title: SHEET_MEALS } }, { properties: { title: SHEET_GOALS } }, { properties: { title: SHEET_MEDIDAS } }] }),
   });
   const id = created.spreadsheetId;
   await googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + "/values/" + SHEET_MEALS + "!A1:K1?valueInputOption=RAW", {
     method: "PUT", body: JSON.stringify({ values: [["id", "date", "name", "description", "time", "calories", "protein", "carbs", "fat", "fiber", "detected"]] }),
   });
-  await googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + "/values/" + SHEET_GOALS + "!A1:E1?valueInputOption=RAW", {
-    method: "PUT", body: JSON.stringify({ values: [["calories", "protein", "carbs", "fat", "fiber"]] }),
+  await googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + "/values/" + SHEET_GOALS + "!A1:F1?valueInputOption=RAW", {
+    method: "PUT", body: JSON.stringify({ values: [["calories", "protein", "carbs", "fat", "fiber", "altura"]] }),
+  });
+  await googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + "/values/" + SHEET_MEDIDAS + "!A1:E1?valueInputOption=RAW", {
+    method: "PUT", body: JSON.stringify({ values: [["id", "date", "time", "tipo", "valor"]] }),
   });
   localStorage.setItem(cacheKey, id);
   return id;
 }
 async function pullGoogleData(spreadsheetId) {
-  const [mealsRes, goalsRes] = await Promise.all([
+  const [mealsRes, goalsRes, medidasRes] = await Promise.all([
     googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets/" + spreadsheetId + "/values/" + SHEET_MEALS + "!A2:K10000"),
-    googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets/" + spreadsheetId + "/values/" + SHEET_GOALS + "!A2:E2"),
+    googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets/" + spreadsheetId + "/values/" + SHEET_GOALS + "!A2:F2"),
+    googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets/" + spreadsheetId + "/values/" + SHEET_MEDIDAS + "!A2:E10000").catch(() => null),
   ]);
   const meals = ((mealsRes && mealsRes.values) || []).map((row) => ({
     id: Number(row[0]), date: row[1] || "", name: row[2] || "", description: row[3] || "", time: row[4] || "",
@@ -476,15 +529,24 @@ async function pullGoogleData(spreadsheetId) {
   })).filter((m) => m.id && m.date);
   const goalsRow = goalsRes && goalsRes.values && goalsRes.values[0];
   const goals = goalsRow ? { calories: Number(goalsRow[0]) || 0, protein: Number(goalsRow[1]) || 0, carbs: Number(goalsRow[2]) || 0, fat: Number(goalsRow[3]) || 0, fiber: Number(goalsRow[4]) || 0 } : null;
-  return { meals, goals };
+  const altura = goalsRow && goalsRow[5] ? Number(goalsRow[5]) || null : null;
+  const medidas = ((medidasRes && medidasRes.values) || []).map((row) => ({
+    id: Number(row[0]), date: row[1] || "", time: row[2] || "", tipo: row[3] || "", valor: row[4] || "",
+  })).filter((m) => m.id && m.date && m.tipo);
+  return { meals, goals, altura, medidas };
 }
-async function pushGoogleData(spreadsheetId, meals, goals) {
+async function pushGoogleData(spreadsheetId, meals, goals, altura, medidas) {
   const mealRows = meals.map((m) => [m.id, m.date, m.name, m.description, m.time, m.calories, m.protein, m.carbs, m.fat, m.fiber, (m.detected || []).join(";")]);
   await googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets/" + spreadsheetId + "/values/" + SHEET_MEALS + "!A2:K10000:clear", { method: "POST", body: JSON.stringify({}) });
   if (mealRows.length) {
     await googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets/" + spreadsheetId + "/values/" + SHEET_MEALS + "!A2?valueInputOption=RAW", { method: "PUT", body: JSON.stringify({ values: mealRows }) });
   }
-  await googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets/" + spreadsheetId + "/values/" + SHEET_GOALS + "!A2:E2?valueInputOption=RAW", { method: "PUT", body: JSON.stringify({ values: [[goals.calories, goals.protein, goals.carbs, goals.fat, goals.fiber]] }) });
+  await googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets/" + spreadsheetId + "/values/" + SHEET_GOALS + "!A2:F2?valueInputOption=RAW", { method: "PUT", body: JSON.stringify({ values: [[goals.calories, goals.protein, goals.carbs, goals.fat, goals.fiber, altura || ""]] }) });
+  const medidasRows = (medidas || []).map((m) => [m.id, m.date, m.time, m.tipo, m.valor]);
+  await googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets/" + spreadsheetId + "/values/" + SHEET_MEDIDAS + "!A2:E10000:clear", { method: "POST", body: JSON.stringify({}) }).catch(() => {});
+  if (medidasRows.length) {
+    await googleApiFetch("https://sheets.googleapis.com/v4/spreadsheets/" + spreadsheetId + "/values/" + SHEET_MEDIDAS + "!A2?valueInputOption=RAW", { method: "PUT", body: JSON.stringify({ values: medidasRows }) }).catch(() => {});
+  }
 }
 function mergeMeals(local, remote) {
   const byId = new Map();
@@ -492,6 +554,7 @@ function mergeMeals(local, remote) {
   for (const m of remote) if (!byId.has(m.id)) byId.set(m.id, m);
   return Array.from(byId.values()).sort((a, b) => a.id - b.id);
 }
+const mergeMedidas = mergeMeals;
 
 /* ===================== reconhecimento de alimentos (igual ao original) ===================== */
 const nutrientMeta = {
@@ -614,6 +677,20 @@ const CHAVE_GOALS = "nutri-track-goals";
 const CHAVE_MEALS = "nutri-track-meals";
 const CHAVE_GCONNECTED = "nutri-track-google-connected";
 const CHAVE_GACCOUNT = "nutri-track-google-account";
+const CHAVE_ALTURA = "nutri-track-altura";
+const CHAVE_MEDIDAS = "nutri-track-medidas";
+
+/* ===================== medidas e aferições ===================== */
+const medidaTipos = {
+  peso: { label: "Peso", unidade: "kg", placeholder: "Ex.: 72.5", exemplo: "Informe em quilos, ex.: 72.5" },
+  pescoco: { label: "Medida do pescoço", unidade: "cm", placeholder: "Ex.: 38", exemplo: "Informe em centímetros, ex.: 38" },
+  cintura: { label: "Medida da cintura", unidade: "cm", placeholder: "Ex.: 84", exemplo: "Informe em centímetros, ex.: 84" },
+  pressao: { label: "Pressão arterial", unidade: "mmHg", placeholder: "Ex.: 120/80", exemplo: "Informe como sistólica/diastólica, ex.: 120/80", texto: true },
+  batimentos: { label: "Batimentos cardíacos", unidade: "bpm", placeholder: "Ex.: 72", exemplo: "Informe em batimentos por minuto, ex.: 72" },
+  glicemia: { label: "Glicemia", unidade: "mg/dL", placeholder: "Ex.: 95", exemplo: "Informe em mg/dL, ex.: 95" },
+  temperatura: { label: "Temperatura", unidade: "°C", placeholder: "Ex.: 36.5", exemplo: "Informe em graus Celsius, ex.: 36.5" },
+  saturacao: { label: "Saturação (SpO₂)", unidade: "%", placeholder: "Ex.: 98", exemplo: "Informe em porcentagem, ex.: 98" },
+};
 
 const state = {
   usuario: readStorage(CHAVE_USUARIO, null), // {nome, email} | null -> controla tela de login/cadastro
@@ -629,7 +706,12 @@ const state = {
   showGoals: false,
   showHistory: false,
   showEditarPerfil: false,
+  showNovaSenha: false,
   sidebarOpen: false,
+  activeTab: "nutricao", // "nutricao" | "medidas"
+  altura: readStorage(CHAVE_ALTURA, null), // cm
+  medidas: readStorage(CHAVE_MEDIDAS, []),
+  medidaTipo: "",
 };
 let spreadsheetId = null;
 let pushTimer = null;
@@ -637,6 +719,8 @@ let pushTimer = null;
 function persistUsuario() { writeStorage(CHAVE_USUARIO, state.usuario); }
 function persistGoals() { writeStorage(CHAVE_GOALS, state.goals); }
 function persistMeals() { writeStorage(CHAVE_MEALS, state.meals); }
+function persistAltura() { writeStorage(CHAVE_ALTURA, state.altura); }
+function persistMedidas() { writeStorage(CHAVE_MEDIDAS, state.medidas); }
 
 /* ===================== helpers de derivação ===================== */
 function today() { return todayKey(); }
@@ -646,6 +730,26 @@ function remainingToday() { const consumed = consumedToday(); const out = {}; fo
 function mealTotal() { return state.preview.reduce((sum, f) => addNutrients(sum, f.values), emptyNutrients); }
 function historyDays() { return Array.from(new Set(state.meals.map((m) => m.date))).sort().reverse(); }
 function dateLabel(date) { return new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long" }).format(new Date(date + "T12:00:00")); }
+function ultimoRegistroMedida(tipo) {
+  const registros = state.medidas.filter((m) => m.tipo === tipo).sort((a, b) => b.id - a.id);
+  return registros.length ? registros[0] : null;
+}
+function calcularImc() {
+  const registro = ultimoRegistroMedida("peso");
+  const alturaM = Number(state.altura) / 100;
+  if (!registro || !alturaM) return null;
+  const peso = Number(registro.valor);
+  if (!peso) return null;
+  return peso / (alturaM * alturaM);
+}
+function classificarImc(imc) {
+  if (imc < 18.5) return "Abaixo do peso";
+  if (imc < 25) return "Peso normal";
+  if (imc < 30) return "Sobrepeso";
+  if (imc < 35) return "Obesidade grau I";
+  if (imc < 40) return "Obesidade grau II";
+  return "Obesidade grau III";
+}
 
 /* ===================== ações ===================== */
 async function acaoEntrar(email, senha) {
@@ -725,6 +829,7 @@ async function acaoSalvarPerfil(nome, senhaAtual, novaSenha) {
     state.usuario = { nome: resposta.nome || nome.trim(), email: state.usuario.email, foto: state.usuario.foto || "" };
     persistUsuario();
     state.showEditarPerfil = false;
+    state.showNovaSenha = false;
     render();
   } catch { toastError("Falha de conexão. Tente novamente."); }
   finally { if (btn) btn.disabled = false; }
@@ -733,6 +838,46 @@ async function acaoSalvarPerfil(nome, senhaAtual, novaSenha) {
 /* ===================== sidebar (menu) ===================== */
 function acaoAbrirSidebar() { state.sidebarOpen = true; render(); }
 function acaoFecharSidebar() { state.sidebarOpen = false; render(); }
+function acaoAbrirEditarPerfil() { state.showEditarPerfil = true; state.showNovaSenha = false; render(); }
+function acaoMostrarCampoNovaSenha() { state.showNovaSenha = true; render(); }
+
+/* ===================== abas da home ===================== */
+function acaoTrocarAba(aba) { state.activeTab = aba; render(); }
+
+/* ===================== medidas e aferições ===================== */
+function acaoAtualizarAltura(value) {
+  state.altura = Math.max(0, Number(value) || 0) || null;
+  persistAltura();
+  agendarSincronizacao();
+  render();
+}
+function acaoSelecionarTipoMedida(tipo) { state.medidaTipo = tipo; render(); }
+function acaoSalvarMedida() {
+  const tipo = state.medidaTipo;
+  if (!tipo || !medidaTipos[tipo]) { toastError("Selecione o tipo de medição."); return; }
+  const input = document.getElementById("medida-valor");
+  const valorBruto = input ? input.value.trim() : "";
+  if (!valorBruto) { toastError("Informe o valor da medição."); return; }
+  const meta = medidaTipos[tipo];
+  const valor = meta.texto ? valorBruto : valorBruto.replace(",", ".");
+  if (!meta.texto && isNaN(Number(valor))) { toastError("Informe um valor numérico válido."); return; }
+  const now = new Date();
+  state.medidas = state.medidas.concat([{
+    id: Date.now(), date: today(), time: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+    tipo, valor,
+  }]);
+  persistMedidas();
+  state.medidaTipo = "";
+  toastSuccess("Registro salvo no histórico.");
+  agendarSincronizacao();
+  render();
+}
+function acaoRemoverMedida(id) {
+  state.medidas = state.medidas.filter((m) => m.id !== id);
+  persistMedidas();
+  agendarSincronizacao();
+  render();
+}
 
 /* ===================== foto de perfil ===================== */
 function compressImageDataUrl(file, maxSize) {
@@ -786,6 +931,9 @@ async function tentarReconectarGoogleSilenciosamente() {
     state.meals = mergeMeals(state.meals, remote.meals);
     persistMeals();
     if (remote.goals) { state.goals = remote.goals; persistGoals(); }
+    if (remote.altura) { state.altura = remote.altura; persistAltura(); }
+    state.medidas = mergeMedidas(state.medidas, remote.medidas);
+    persistMedidas();
   } catch { /* sem sessão válida agora; a pessoa pode conectar de novo pela barra lateral */ }
   finally { state.syncing = false; render(); }
 }
@@ -799,9 +947,13 @@ async function acaoConectarGoogle() {
     const remote = await pullGoogleData(spreadsheetId);
     const mergedMeals = mergeMeals(state.meals, remote.meals);
     const mergedGoals = remote.goals || state.goals;
+    const mergedAltura = remote.altura || state.altura;
+    const mergedMedidas = mergeMedidas(state.medidas, remote.medidas);
     state.meals = mergedMeals; persistMeals();
     state.goals = mergedGoals; persistGoals();
-    await pushGoogleData(spreadsheetId, mergedMeals, mergedGoals);
+    state.altura = mergedAltura; persistAltura();
+    state.medidas = mergedMedidas; persistMedidas();
+    await pushGoogleData(spreadsheetId, mergedMeals, mergedGoals, mergedAltura, mergedMedidas);
     state.account = profile;
     writeStorage(CHAVE_GACCOUNT, profile);
     localStorage.setItem(CHAVE_GCONNECTED, "1");
@@ -822,7 +974,7 @@ function agendarSincronizacao() {
   if (!state.account || !spreadsheetId) return;
   if (pushTimer) clearTimeout(pushTimer);
   pushTimer = setTimeout(() => {
-    pushGoogleData(spreadsheetId, state.meals, state.goals).catch(() => {
+    pushGoogleData(spreadsheetId, state.meals, state.goals, state.altura, state.medidas).catch(() => {
       toastError("Não consegui sincronizar com o Google agora. Vou tentar de novo na próxima alteração.");
     });
   }, 1000);
@@ -908,7 +1060,8 @@ function otpKeydown(event, index) {
 function submitPerfil() {
   const nome = document.getElementById("perfil-nome").value;
   const senhaAtual = document.getElementById("perfil-senha-atual").value;
-  const novaSenha = document.getElementById("perfil-nova-senha").value;
+  const novaSenhaEl = document.getElementById("perfil-nova-senha");
+  const novaSenha = novaSenhaEl ? novaSenhaEl.value : "";
   acaoSalvarPerfil(nome, senhaAtual, novaSenha);
 }
 
@@ -988,7 +1141,7 @@ function sidebarTemplate() {
     "</div>" +
     brandRow() +
     '<div class="side-card"><div class="side-label">Conta</div><div class="side-name">' + esc(u.nome) + '</div><div class="side-email">' + esc(u.email) + "</div>" +
-    '<button class="btn-outline" onclick="state.showEditarPerfil=true;render()">' + icon("usercog") + " Editar perfil</button>" +
+    '<button class="btn-outline" onclick="acaoAbrirEditarPerfil()">' + icon("usercog") + " Editar perfil</button>" +
     "</div>" +
     '<div class="side-card-border"><div class="side-label">Google</div>' +
     (g ?
@@ -1013,7 +1166,11 @@ function editarPerfilTemplate() {
       "<h2>Editar perfil</h2><p class=\"sub\">Confirme sua senha atual para salvar alterações.</p>" +
       '<div class="modal-body">' +
         '<div><label class="field-label">Nome</label><input id="perfil-nome" class="field-input" value="' + esc(u.nome) + '"/></div>' +
-        '<div><label class="field-label">Nova senha (opcional)</label><input id="perfil-nova-senha" type="password" class="field-input" placeholder="Deixe em branco para não alterar"/></div>' +
+        (state.showNovaSenha ?
+          '<div><label class="field-label">Nova senha</label><input id="perfil-nova-senha" type="password" class="field-input" placeholder="Pelo menos 6 caracteres" autofocus/></div>'
+          :
+          '<button type="button" class="criar-senha-btn" onclick="acaoMostrarCampoNovaSenha()">' + icon("usercog") + " Criar nova senha</button>"
+        ) +
         '<div><label class="field-label">Senha atual</label><input id="perfil-senha-atual" type="password" class="field-input" placeholder="Confirme para salvar" onkeydown="if(event.key===\'Enter\') submitPerfil();"/></div>' +
       "</div>" +
       '<div class="modal-footer"><button id="perfil-btn" class="btn-primary" onclick="submitPerfil()">' + icon("usercog") + " Salvar alterações</button></div>" +
@@ -1104,7 +1261,81 @@ function mealListTemplate() {
   ).join("");
 }
 
+function homeTabsTemplate() {
+  return '<div class="home-tabs">' +
+    '<button class="home-tab' + (state.activeTab === "nutricao" ? " active" : "") + '" onclick="acaoTrocarAba(\'nutricao\')">' + icon("utensils") + " Nutrição</button>" +
+    '<button class="home-tab' + (state.activeTab === "medidas" ? " active" : "") + '" onclick="acaoTrocarAba(\'medidas\')">' + icon("activity") + " Medidas e Aferições</button>" +
+    "</div>";
+}
+
+function imcCardTemplate() {
+  const imc = calcularImc();
+  return '' +
+    '<div class="nutrient-card imc-card"><div class="nutrient-card-head">' +
+      '<div class="nutrient-card-left"><div class="nutrient-icon" style="background:#eef6e4;color:#4b7048">' + icon("activity") + '</div>' +
+      '<span class="nutrient-name">IMC (Índice de Massa Corporal)</span></div>' +
+    "</div>" +
+    (imc ?
+      '<div class="imc-value-row"><span class="imc-value">' + formatNumber(imc, 1) + '</span><span class="imc-class">' + classificarImc(imc) + "</span></div>"
+      :
+      '<p class="imc-empty">Registre seu peso na seção abaixo e informe sua altura para calcular o IMC.</p>'
+    ) +
+    "</div>" +
+    '<div class="altura-field-fixed"><label class="field-label">Altura (cm)</label>' +
+    '<input type="number" min="0" step="0.1" class="field-input" placeholder="Ex.: 172" value="' + (state.altura ? esc(state.altura) : "") + '" onchange="acaoAtualizarAltura(this.value)"/></div>';
+}
+
+function medidasFormTemplate() {
+  const tipo = state.medidaTipo;
+  const meta = tipo ? medidaTipos[tipo] : null;
+  return '' +
+    '<section class="medidas-section">' +
+      '<h2 class="medidas-section-title">' + icon("plus") + " Medidas e Aferições</h2>" +
+      '<div class="medida-form">' +
+        '<div><label class="field-label">Tipo de medição</label>' +
+        '<select class="field-input" onchange="acaoSelecionarTipoMedida(this.value)">' +
+          '<option value="">Selecione...</option>' +
+          Object.keys(medidaTipos).map((key) => '<option value="' + key + '"' + (tipo === key ? " selected" : "") + ">" + medidaTipos[key].label + "</option>").join("") +
+        "</select></div>" +
+        (meta ?
+          '<div class="medida-input-row"><div><label class="field-label">' + meta.label + " (" + meta.unidade + ")</label>" +
+          '<input id="medida-valor" class="field-input" placeholder="' + meta.placeholder + '" onkeydown="if(event.key===\'Enter\') acaoSalvarMedida();"/>' +
+          '<p class="imc-empty" style="margin-top:6px">' + meta.exemplo + "</p></div>" +
+          '<button class="btn-primary" onclick="acaoSalvarMedida()">' + icon("check") + " Salvar registro</button></div>"
+          : ""
+        ) +
+      "</div>" +
+    "</section>";
+}
+
+function medidasHistoricoTemplate() {
+  const registros = state.medidas.slice().sort((a, b) => b.id - a.id);
+  return '' +
+    '<section class="medidas-section">' +
+      '<h2 class="medidas-section-title">' + icon("history") + " Histórico de Medidas e Aferições</h2>" +
+      (registros.length ?
+        '<div class="medidas-history-list">' + registros.map((r) => {
+          const meta = medidaTipos[r.tipo] || { label: r.tipo, unidade: "" };
+          return '<div class="medida-history-row"><div class="medida-history-left"><span class="medida-history-tipo">' + esc(meta.label) + "</span>" +
+            '<span class="medida-history-meta">' + icon("clock") + " " + dateLabel(r.date) + " · " + esc(r.time) + "</span></div>" +
+            '<div class="medida-history-right"><span class="medida-history-valor">' + esc(String(r.valor)) + " " + esc(meta.unidade) + "</span>" +
+            '<button class="meal-row-delete" aria-label="Remover registro" onclick="acaoRemoverMedida(' + r.id + ')">' + icon("trash") + "</button></div></div>";
+        }).join("") + "</div>"
+        :
+        '<p class="history-panel-empty" style="margin-top:16px">Seus registros de medidas e aferições aparecerão aqui depois do primeiro registro.</p>'
+      ) +
+    "</section>";
+}
+
+function medidasTabTemplate() {
+  return '<main>' + imcCardTemplate() + medidasFormTemplate() + medidasHistoricoTemplate() + "</main>";
+}
+
 function fullHomeTemplate() {
+  return homeTabsTemplate() + (state.activeTab === "medidas" ? medidasTabTemplate() : nutricaoTabTemplate());
+}
+
+function nutricaoTabTemplate() {
   const consumed = consumedToday();
   const remaining = remainingToday();
   return '' +
