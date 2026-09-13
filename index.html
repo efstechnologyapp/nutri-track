@@ -96,6 +96,9 @@ svg{ display: block; }
 .avatar-wrap{ display:flex; flex-direction:column; align-items:center; margin-top:4px; }
 .avatar-circle{ width:84px; height:84px; border-radius:50%; background:#eef6e4; border:2px dashed var(--primary); display:flex; align-items:center; justify-content:center; color:var(--primary); font-size:28px; font-weight:700; overflow:hidden; cursor:pointer; position:relative; flex-shrink:0; }
 .avatar-circle img{ width:100%; height:100%; object-fit:cover; }
+.sidebar-greeting{ margin-top:12px; text-align:center; }
+.sidebar-greeting-ola{ margin:0; font-family:'Fraunces',serif; font-size:17px; font-weight:600; color:#1b3f34; }
+.sidebar-greeting-idade{ margin:4px 0 0; font-size:12px; color:#7c8c86; }
 .avatar-cam-badge{ position:absolute; bottom:0; right:0; background:var(--primary); color:#fff; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid #fff; }
 .avatar-cam-badge .icon{ width:13px; height:13px; }
 .side-card{ border-radius:16px; background:#f7f9f5; padding:16px; }
@@ -436,7 +439,7 @@ const authApi = {
   confirmarEmail: (email, codigo) => chamarApi("confirmarEmail", { email, codigo }),
   reenviarCodigo: (email) => chamarApi("reenviarCodigo", { email }),
   login: (email, senha) => chamarApi("login", { email, senha }),
-  atualizarPerfil: (email, senhaAtual, novoNome, novaSenha) => chamarApi("atualizarPerfil", { email, senhaAtual, novoNome, novaSenha }),
+  atualizarPerfil: (email, senhaAtual, novoNome, novaSenha, dataNascimento) => chamarApi("atualizarPerfil", { email, senhaAtual, novoNome, novaSenha, dataNascimento }),
   atualizarFoto: (email, foto) => chamarApi("atualizarFoto", { email, foto }),
   conectarGoogle: (email, code) => chamarApi("conectarGoogle", { email, code }),
   desconectarGoogle: (email) => chamarApi("desconectarGoogle", { email }),
@@ -675,6 +678,29 @@ function remainingToday() { const consumed = consumedToday(); const out = {}; fo
 function mealTotal() { return state.preview.reduce((sum, f) => addNutrients(sum, f.values), emptyNutrients); }
 function historyDays() { return Array.from(new Set(state.meals.map((m) => m.date))).sort().reverse(); }
 function dateLabel(date) { return new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long" }).format(new Date(date + "T12:00:00")); }
+// Calcula a idade exata (anos, meses e dias) a partir da data de nascimento (string "YYYY-MM-DD").
+function calcularIdadeExata(dataNascimento) {
+  if (!dataNascimento) return null;
+  const nasc = new Date(dataNascimento + "T00:00:00");
+  if (isNaN(nasc.getTime())) return null;
+  const hoje = new Date();
+  let anos = hoje.getFullYear() - nasc.getFullYear();
+  let meses = hoje.getMonth() - nasc.getMonth();
+  let dias = hoje.getDate() - nasc.getDate();
+  if (dias < 0) {
+    meses -= 1;
+    dias += new Date(hoje.getFullYear(), hoje.getMonth(), 0).getDate();
+  }
+  if (meses < 0) { anos -= 1; meses += 12; }
+  if (anos < 0) return null; // data de nascimento no futuro
+  return { anos, meses, dias };
+}
+function formatarIdadeExata(idade) {
+  const anos = idade.anos + (idade.anos === 1 ? " ano" : " anos");
+  const meses = String(idade.meses).padStart(2, "0") + (idade.meses === 1 ? " mês" : " meses");
+  const dias = String(idade.dias).padStart(2, "0") + (idade.dias === 1 ? " dia" : " dias");
+  return anos + ", " + meses + " e " + dias;
+}
 function ultimoRegistroMedida(tipo) {
   const registros = state.medidas.filter((m) => m.tipo === tipo).sort((a, b) => b.id - a.id);
   return registros.length ? registros[0] : null;
@@ -748,7 +774,7 @@ async function acaoEntrar(email, senha) {
       toastError(resposta.erro || "Não foi possível entrar.");
       return;
     }
-    state.usuario = { nome: resposta.nome, email: resposta.email, foto: resposta.foto || "" };
+    state.usuario = { nome: resposta.nome, email: resposta.email, foto: resposta.foto || "", dataNascimento: resposta.dataNascimento || "" };
     persistUsuario();
     render();
     sincronizarDoServidor();
@@ -801,17 +827,17 @@ function acaoSair() {
   toastSuccess("Você saiu da sua conta.");
   render();
 }
-async function acaoSalvarPerfil(nome, senhaAtual, novaSenha) {
+async function acaoSalvarPerfil(nome, senhaAtual, novaSenha, dataNascimento) {
   if (!nome.trim()) { toastError("O nome não pode ficar em branco."); return; }
   if (!senhaAtual) { toastError("Digite sua senha atual para confirmar as alterações."); return; }
   if (novaSenha && novaSenha.length < 6) { toastError("A nova senha precisa ter pelo menos 6 caracteres."); return; }
   const btn = document.getElementById("perfil-btn");
   if (btn) btn.disabled = true;
   try {
-    const resposta = await authApi.atualizarPerfil(state.usuario.email, senhaAtual, nome.trim(), novaSenha || undefined);
+    const resposta = await authApi.atualizarPerfil(state.usuario.email, senhaAtual, nome.trim(), novaSenha || undefined, dataNascimento || "");
     if (!resposta.ok) { toastError(resposta.erro || "Não foi possível salvar."); return; }
     toastSuccess("Perfil atualizado.");
-    state.usuario = { nome: resposta.nome || nome.trim(), email: state.usuario.email, foto: state.usuario.foto || "" };
+    state.usuario = { nome: resposta.nome || nome.trim(), email: state.usuario.email, foto: state.usuario.foto || "", dataNascimento: dataNascimento || "" };
     persistUsuario();
     state.showEditarPerfil = false;
     state.showNovaSenha = false;
@@ -1098,10 +1124,11 @@ function otpKeydown(event, index) {
 }
 function submitPerfil() {
   const nome = document.getElementById("perfil-nome").value;
+  const dataNascimento = document.getElementById("perfil-data-nascimento").value;
   const senhaAtual = document.getElementById("perfil-senha-atual").value;
   const novaSenhaEl = document.getElementById("perfil-nova-senha");
   const novaSenha = novaSenhaEl ? novaSenhaEl.value : "";
-  acaoSalvarPerfil(nome, senhaAtual, novaSenha);
+  acaoSalvarPerfil(nome, senhaAtual, novaSenha, dataNascimento);
 }
 
 /* ===================== templates ===================== */
@@ -1177,6 +1204,12 @@ function sidebarTemplate() {
       '<div class="avatar-cam-badge">' + icon("camera") + "</div>" +
       "</div>" +
       '<input type="file" accept="image/*" id="avatar-input" style="display:none" onchange="onAvatarSelected(event)"/>' +
+      '<div class="sidebar-greeting"><p class="sidebar-greeting-ola">Olá ' + esc((u.nome || "").trim().split(" ")[0] || "") + "!</p>" +
+      (function () {
+        const idade = calcularIdadeExata(u.dataNascimento);
+        return idade ? '<p class="sidebar-greeting-idade">Sua idade hoje: ' + formatarIdadeExata(idade) + ".</p>" : "";
+      })() +
+      "</div>" +
     "</div>" +
     brandRow() +
     '<div class="side-card"><div class="side-label">Conta</div><div class="side-name">' + esc(u.nome) + '</div><div class="side-email">' + esc(u.email) + "</div>" +
@@ -1205,6 +1238,7 @@ function editarPerfilTemplate() {
       "<h2>Editar perfil</h2><p class=\"sub\">Confirme sua senha atual para salvar alterações.</p>" +
       '<div class="modal-body">' +
         '<div><label class="field-label">Nome</label><input id="perfil-nome" class="field-input" value="' + esc(u.nome) + '"/></div>' +
+        '<div><label class="field-label">Data de nascimento</label><input id="perfil-data-nascimento" type="date" class="field-input" value="' + esc(u.dataNascimento || "") + '"/></div>' +
         (state.showNovaSenha ?
           '<div><label class="field-label">Nova senha</label><input id="perfil-nova-senha" type="password" class="field-input" placeholder="Pelo menos 6 caracteres" autofocus/></div>'
           :
