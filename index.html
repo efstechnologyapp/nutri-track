@@ -877,6 +877,11 @@ async function onAvatarSelected(event) {
 // pode ser chamada sempre que o app abre (ou depois do login) sem nunca abrir nenhuma tela do Google:
 // é uma chamada comum ao mesmo servidor que já cuida do login. Se a conta não estiver conectada ao
 // Google, o servidor simplesmente responde dizendo isso, e o app continua funcionando só localmente.
+// Roda toda vez que o app abre (ou depois de logar) já conectado ao Google. A partir do momento em
+// que a conta está conectada, toda alteração (salvar, apagar, editar) já tenta subir pro servidor na
+// hora — então o servidor é a fonte da verdade. Por isso aqui SUBSTITUÍMOS a lista local pela que
+// vem do servidor, em vez de só somar: é o que garante que uma exclusão feita em outro aparelho
+// também desapareça aqui, e não só reapareça depois de sincronizar.
 async function sincronizarDoServidor() {
   if (!state.usuario) return;
   try {
@@ -887,14 +892,23 @@ async function sincronizarDoServidor() {
     }
     state.account = { email: resposta.googleEmail || (state.account && state.account.email) || "" };
     writeStorage(CHAVE_GACCOUNT, state.account);
-    state.meals = mergeMeals(state.meals, resposta.meals || []);
-    persistMeals();
+    state.meals = resposta.meals || []; persistMeals();
     if (resposta.goals) { state.goals = resposta.goals; persistGoals(); }
     if (resposta.altura) { state.altura = resposta.altura; persistAltura(); }
-    state.medidas = mergeMedidas(state.medidas, resposta.medidas || []);
-    persistMedidas();
+    state.medidas = resposta.medidas || []; persistMedidas();
     render();
   } catch { /* falha de rede — mantém os dados locais e tenta de novo na próxima abertura */ }
+}
+// Ao conectar pela primeira vez (ou reconectar depois de desconectar), pode haver refeições/medidas
+// que só existem neste aparelho ainda (registradas antes de conectar, ou feitas offline) — como daqui
+// pra frente cada ação já sobe sozinha, essa é a única vez que precisamos empurrar manualmente o que
+// ficou pra trás, pra igualar este aparelho com o servidor antes de tratá-lo como fonte da verdade.
+function publicarRegistrosLocaisPendentes(remoto) {
+  const idsRefeicoes = new Set((remoto.meals || []).map((m) => m.id));
+  const idsMedidas = new Set((remoto.medidas || []).map((m) => m.id));
+  state.meals.filter((m) => !idsRefeicoes.has(m.id)).forEach((m) => authApi.salvarRefeicaoGoogle(state.usuario.email, m).catch(() => {}));
+  state.medidas.filter((m) => !idsMedidas.has(m.id)).forEach((m) => authApi.salvarMedidaGoogle(state.usuario.email, m).catch(() => {}));
+  if (!remoto.goals) authApi.atualizarMetasGoogle(state.usuario.email, state.goals, state.altura).catch(() => {});
 }
 // Única função que efetivamente abre algo do Google — e só roda quando a pessoa clica no botão
 // "Conectar Google" na barra lateral. Pede um código de autorização com access_type "offline", manda
@@ -906,6 +920,7 @@ async function acaoConectarGoogle() {
     const code = await solicitarCodigoGoogle();
     const resposta = await authApi.conectarGoogle(state.usuario.email, code);
     if (!resposta.ok) { toastError(resposta.erro || "Não foi possível conectar com o Google."); return; }
+    publicarRegistrosLocaisPendentes(resposta);
     state.account = { email: resposta.googleEmail || "" };
     writeStorage(CHAVE_GACCOUNT, state.account);
     state.meals = mergeMeals(state.meals, resposta.meals || []); persistMeals();

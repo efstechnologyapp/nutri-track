@@ -271,6 +271,14 @@ function segredoGoogle() {
   return segredo;
 }
 
+// Função "isca": não é chamada por nada, serve só para você rodar manualmente uma vez pelo editor
+// (menu de funções ao lado do botão "Executar") e forçar a tela "Autorização necessária" a aparecer,
+// pedindo a permissão de "se conectar a um serviço externo" que o restante do código já usa. Depois de
+// autorizar uma vez, pode deixar essa função aqui parada — ela não afeta nada do app.
+function autorizarChamadasExternas() {
+  UrlFetchApp.fetch("https://www.google.com");
+}
+
 // Faz uma chamada autenticada (com o access_token da PESSOA, não do backend) à API do Google
 // Sheets/Drive, e devolve o JSON já decodificado.
 function googleFetch(url, accessToken, method, payload) {
@@ -337,18 +345,46 @@ function renovarAccessTokenGoogle(refreshToken) {
 // Devolve { id, accessToken } da planilha "NutriTrack Dados" na conta do Google da PESSOA (cria se
 // ainda não existir). O ID fica em cache nas Propriedades do Script para não precisar buscar no Drive
 // toda vez.
+// Verifica quais das 3 abas (Refeicoes, Metas, Medidas) já existem na planilha da pessoa e cria (com
+// cabeçalho) só as que ainda faltarem. Isso cobre o caso de uma planilha criada antes de alguma dessas
+// abas existir no código (ex.: pessoa conectou o Google antes da função de medidas ser adicionada).
+function garantirAbasPlanilhaUsuario(id, accessToken) {
+  const definicoes = {
+    Refeicoes: ["id", "date", "name", "description", "time", "calories", "protein", "carbs", "fat", "fiber", "detected"],
+    Metas: ["calories", "protein", "carbs", "fat", "fiber", "altura"],
+    Medidas: ["id", "date", "time", "tipo", "valor"],
+  };
+  const meta = googleFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + "?fields=sheets.properties.title", accessToken);
+  const existentes = (meta.sheets || []).map(function (s) { return s.properties.title; });
+  const faltando = Object.keys(definicoes).filter(function (nome) { return existentes.indexOf(nome) === -1; });
+  if (!faltando.length) return;
+
+  googleFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + ":batchUpdate", accessToken, "post", {
+    requests: faltando.map(function (nome) { return { addSheet: { properties: { title: nome } } }; }),
+  });
+  faltando.forEach(function (nome) {
+    const ultimaColuna = String.fromCharCode(64 + definicoes[nome].length);
+    googleFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + "/values/" + nome + "!A1:" + ultimaColuna + "1?valueInputOption=RAW", accessToken, "put",
+      { values: [definicoes[nome]] });
+  });
+}
+
 function planilhaUsuarioGoogle(usuario) {
   if (!usuario.googleRefreshToken) throw new Error("Conta não conectada ao Google.");
   const accessToken = renovarAccessTokenGoogle(usuario.googleRefreshToken);
   const props = PropertiesService.getScriptProperties();
   const chaveCache = "SPREADSHEET_" + usuario.email.toLowerCase();
   let id = props.getProperty(chaveCache);
-  if (id) return { id: id, accessToken: accessToken };
+  if (id) {
+    garantirAbasPlanilhaUsuario(id, accessToken);
+    return { id: id, accessToken: accessToken };
+  }
 
   const query = encodeURIComponent("name='" + GOOGLE_SPREADSHEET_TITLE + "' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false");
   const lista = googleFetch("https://www.googleapis.com/drive/v3/files?q=" + query + "&fields=files(id,name)", accessToken);
   if (lista.files && lista.files.length) {
     id = lista.files[0].id;
+    garantirAbasPlanilhaUsuario(id, accessToken);
   } else {
     const criada = googleFetch("https://sheets.googleapis.com/v4/spreadsheets", accessToken, "post", {
       properties: { title: GOOGLE_SPREADSHEET_TITLE },
