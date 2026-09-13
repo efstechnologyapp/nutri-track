@@ -688,6 +688,8 @@ const state = {
   enviandoAnexo: false,
   showHistoricoBioimpedancia: false,
   historicoAbaAtiva: "bioimpedancia", // "bioimpedancia" | "calorimetria"
+  bioFormValores: {},
+  caloFormValores: {},
 };
 function persistUsuario() { writeStorage(CHAVE_USUARIO, state.usuario); }
 function persistGoals() { writeStorage(CHAVE_GOALS, state.goals); }
@@ -1509,6 +1511,8 @@ function acaoAbrirFormBioimpedancia(aba) {
   state.bioAbaFormulario = aba === "calorimetria" ? "calorimetria" : "bioimpedancia";
   anexoSelecionadoBio = null;
   anexoSelecionadoCalo = null;
+  state.bioFormValores = {};
+  state.caloFormValores = {};
   render();
 }
 function acaoTrocarAbaFormBioimpedancia(aba) { state.bioAbaFormulario = aba; render(); }
@@ -1516,6 +1520,8 @@ function acaoFecharFormBioimpedancia() {
   state.showFormBioimpedancia = false;
   anexoSelecionadoBio = null;
   anexoSelecionadoCalo = null;
+  state.bioFormValores = {};
+  state.caloFormValores = {};
   render();
 }
 function onAnexoBioSelecionado(event) {
@@ -1570,6 +1576,7 @@ async function acaoSalvarBioimpedancia() {
   persistBioimpedancia();
   state.showFormBioimpedancia = false;
   anexoSelecionadoBio = null;
+  state.bioFormValores = {};
   toastSuccess("Registro de bioimpedância salvo.");
   if (state.account) enviarComFila("salvarBioimpedanciaGoogle", [state.usuario.email, novoRegistro]);
   render();
@@ -1611,6 +1618,7 @@ async function acaoSalvarCalorimetria() {
   persistCalorimetria();
   state.showFormBioimpedancia = false;
   anexoSelecionadoCalo = null;
+  state.caloFormValores = {};
   toastSuccess("Registro de calorimetria salvo.");
   if (state.account) enviarComFila("salvarCalorimetriaGoogle", [state.usuario.email, novoRegistro]);
   render();
@@ -1634,12 +1642,13 @@ function anexoCampoTemplate(idInput, arquivoSelecionado, onChangeFn, onRemoveFn)
 }
 
 function bioimpedanciaFormCamposTemplate() {
+  const valores = state.bioFormValores || {};
   const campo = (id, label, unidade, placeholder) =>
     '<div><label class="field-label">' + label + (unidade ? " (" + unidade + ")" : "") + '</label>' +
-    '<input id="bio-' + id + '" type="number" min="0" step="0.1" class="field-input" placeholder="' + placeholder + '"/></div>';
+    '<input id="bio-' + id + '" type="number" min="0" step="0.1" class="field-input" value="' + esc(valores[id] != null ? valores[id] : "") + '" placeholder="' + placeholder + '"/></div>';
   return '' +
     '<div class="bioimpedancia-form-grid">' +
-      '<div><label class="field-label">Data da medição</label><input id="bio-data" type="date" class="field-input" value="' + esc(today()) + '"/></div>' +
+      '<div><label class="field-label">Data da medição</label><input id="bio-data" type="date" class="field-input" value="' + esc(valores.data != null ? valores.data : today()) + '"/></div>' +
       campo("altura", "Altura", "cm", "Ex.: 172") +
       campo("peso", "Peso", "kg", "Ex.: 78,5") +
       campo("gordura", "% de gordura corporal", "%", "Ex.: 22,4") +
@@ -1657,12 +1666,13 @@ function bioimpedanciaFormCamposTemplate() {
     "</div>";
 }
 function calorimetriaFormCamposTemplate() {
+  const valores = state.caloFormValores || {};
   const campo = (id, label, unidade, placeholder) =>
     '<div><label class="field-label">' + label + (unidade ? " (" + unidade + ")" : "") + '</label>' +
-    '<input id="calo-' + id + '" type="number" min="0" step="0.1" class="field-input" placeholder="' + placeholder + '"/></div>';
+    '<input id="calo-' + id + '" type="number" min="0" step="0.1" class="field-input" value="' + esc(valores[id] != null ? valores[id] : "") + '" placeholder="' + placeholder + '"/></div>';
   return '' +
     '<div class="bioimpedancia-form-grid">' +
-      '<div><label class="field-label">Data do exame</label><input id="calo-data" type="date" class="field-input" value="' + esc(today()) + '"/></div>' +
+      '<div><label class="field-label">Data do exame</label><input id="calo-data" type="date" class="field-input" value="' + esc(valores.data != null ? valores.data : today()) + '"/></div>' +
       campo("tmb", "Taxa Metabólica Basal (TMB)", "kcal", "Ex.: 1650") +
       campo("get", "Gasto Energético Total (GET)", "kcal", "Ex.: 2400") +
     "</div>" +
@@ -1870,6 +1880,28 @@ function captureFormState() {
   const descEl = document.getElementById("meal-description");
   if (nameEl) state.mealName = nameEl.value;
   if (descEl) state.mealDescription = descEl.value;
+
+  // O formulário de bioimpedância/calorimetria também precisa sobreviver a um render() no meio do
+  // preenchimento (ex.: ao escolher um anexo, que atualiza a prévia do arquivo chamando render()) —
+  // sem isso, o render() reconstrói o HTML do zero e os campos já digitados voltavam em branco.
+  const bioDataEl = document.getElementById("bio-data");
+  if (bioDataEl) {
+    const valores = { data: bioDataEl.value };
+    BIOIMPEDANCIA_CAMPOS.forEach((c) => {
+      const el = document.getElementById("bio-" + c);
+      if (el) valores[c] = el.value;
+    });
+    state.bioFormValores = valores;
+  }
+  const caloDataEl = document.getElementById("calo-data");
+  if (caloDataEl) {
+    const valores = { data: caloDataEl.value };
+    CALORIMETRIA_CAMPOS.forEach((c) => {
+      const el = document.getElementById("calo-" + c);
+      if (el) valores[c] = el.value;
+    });
+    state.caloFormValores = valores;
+  }
 }
 function render() {
   captureFormState();
