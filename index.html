@@ -308,6 +308,15 @@ svg{ display: block; }
 .bioimpedancia-form-acoes{ margin-top:20px; display:flex; gap:12px; flex-wrap:wrap; }
 .bioimpedancia-form-acoes .btn-primary{ margin-top:0; flex:1; min-width:160px; }
 .bioimpedancia-form-acoes .bioimpedancia-btn-secundario{ flex:0 0 auto; }
+.medidas-section-title-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+.bioimpedancia-anexo-btn{ margin-top:8px; display:inline-flex; align-items:center; gap:8px; border-radius:999px; border:1.5px dashed #cddccb; background:#f7faf5; padding:9px 16px; font-size:13px; font-weight:600; color:#557268; cursor:pointer; transition:background .15s, border-color .15s; }
+.bioimpedancia-anexo-btn:hover{ background:#eef6e4; border-color:#8fbf78; }
+.bioimpedancia-anexo-preview{ margin-top:8px; display:flex; align-items:center; gap:8px; border-radius:12px; background:#f7f9f5; padding:9px 12px; font-size:13px; font-weight:600; color:#31564a; }
+.bioimpedancia-anexo-preview span{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+.bioimpedancia-anexo-remover{ display:flex; align-items:center; justify-content:center; color:#9aa9a1; flex:0 0 auto; }
+.bioimpedancia-anexo-remover:hover{ color:#c0503f; }
+.bioimpedancia-anexo-link{ margin-top:4px; display:inline-flex; align-items:center; gap:4px; font-size:12px; font-weight:600; color:#4b7048; }
+.bioimpedancia-anexo-link:hover{ text-decoration:underline; }
 @media (min-width: 640px){ .medidas-section{ padding:24px; } }
 .medidas-section-title{ margin:0; display:flex; align-items:center; gap:8px; font-family:'Fraunces',serif; font-size:20px; font-weight:600; color:#1b3f34; }
 .medida-form{ margin-top:16px; display:flex; flex-direction:column; gap:12px; max-width:360px; }
@@ -390,6 +399,8 @@ const ICON_PATHS = {
   camera: '<path d="M4 8a2 2 0 0 1 2-2h2l1.4-2h5.2L16 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8Z"/><circle cx="12" cy="13" r="3.5"/>',
   ruler: '<path d="M3 17 17 3l4 4L7 21Z"/><path d="M13 7l2 2M10.5 9.5l2 2M8 12l2 2M5.5 14.5l2 2"/>',
   heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8Z"/>',
+  paperclip: '<path d="M21 12.5 12.5 21a5 5 0 0 1-7-7L14 5.5a3.5 3.5 0 0 1 5 5L10.5 19a2 2 0 0 1-3-3L15 8.5"/>',
+  file: '<path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v4a1 1 0 0 0 1 1h4"/>',
 };
 function icon(name, cls) {
   const p = ICON_PATHS[name] || "";
@@ -674,6 +685,9 @@ const state = {
   calorimetria: readStorage(CHAVE_CALORIMETRIA, []),
   showFormBioimpedancia: false,
   bioAbaFormulario: "bioimpedancia", // "bioimpedancia" | "calorimetria"
+  enviandoAnexo: false,
+  showHistoricoBioimpedancia: false,
+  historicoAbaAtiva: "bioimpedancia", // "bioimpedancia" | "calorimetria"
 };
 function persistUsuario() { writeStorage(CHAVE_USUARIO, state.usuario); }
 function persistGoals() { writeStorage(CHAVE_GOALS, state.goals); }
@@ -903,7 +917,7 @@ function acaoRemoverMedida(id) {
 }
 
 /* ===================== foto de perfil ===================== */
-function compressImageDataUrl(file, maxSize) {
+function compressImageDataUrl(file, maxSize, quality) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -916,7 +930,7 @@ function compressImageDataUrl(file, maxSize) {
         const canvas = document.createElement("canvas");
         canvas.width = width; canvas.height = height;
         canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL("image/jpeg", 0.7));
+        resolve(canvas.toDataURL("image/jpeg", quality || 0.7));
       };
       img.onerror = reject;
       img.src = reader.result;
@@ -937,6 +951,82 @@ async function onAvatarSelected(event) {
     authApi.atualizarFoto(state.usuario.email, dataUrl).catch(() => {});
   } catch (err) {
     toastError("Não foi possível processar essa imagem.");
+  }
+}
+
+/* ===================== anexo de exame (bioimpedância/calorimetria) ===================== */
+// Fotos são comprimidas (igual à foto de perfil, só que num tamanho maior, pra manter o exame
+// legível) antes de virar base64; PDF é enviado como veio, sem como comprimir.
+async function prepararConteudoAnexo(file) {
+  if (file.type && file.type.startsWith("image/")) {
+    const dataUrl = await compressImageDataUrl(file, 1600, 0.75);
+    return { base64: dataUrl.split(",")[1], tipoMime: "image/jpeg", nomeArquivo: (file.name || "exame").replace(/\.[^.]+$/, "") + ".jpg" };
+  }
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+  return { base64: dataUrl.split(",")[1], tipoMime: file.type || "application/octet-stream", nomeArquivo: file.name || "exame" };
+}
+
+// O anexo pode ter alguns MB em base64 — grande demais pra caber na URL do chamarApi (que usa GET).
+// Por isso este envio usa um <form method="POST"> de verdade, mandado pra dentro de um <iframe>
+// escondido: isso NÃO é uma chamada fetch/XHR, então não esbarra na trava de CORS que bloqueia POST
+// nesse backend (ver comentário no Code.gs). Só nesse caso especial usamos POST, e a "resposta" chega
+// de volta como uma mensagem (postMessage) que o iframe manda pro app, não como o retorno do fetch.
+function enviarAnexoViaFormOculto(payload) {
+  return new Promise((resolve) => {
+    const iframeName = "anexo-frame-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+    const iframe = document.createElement("iframe");
+    iframe.name = iframeName;
+    iframe.style.display = "none";
+    document.body.appendChild(iframe);
+
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = API_URL;
+    form.target = iframeName;
+    form.style.display = "none";
+    const campoDados = document.createElement("input");
+    campoDados.type = "hidden";
+    campoDados.name = "data";
+    campoDados.value = JSON.stringify(payload);
+    form.appendChild(campoDados);
+    document.body.appendChild(form);
+
+    let finalizado = false;
+    let timeoutId;
+    const finalizar = (resultado) => {
+      if (finalizado) return;
+      finalizado = true;
+      window.removeEventListener("message", onMessage);
+      clearTimeout(timeoutId);
+      form.remove();
+      setTimeout(() => iframe.remove(), 500);
+      resolve(resultado);
+    };
+    const onMessage = (event) => {
+      if (event.source !== iframe.contentWindow) return;
+      const resultado = event.data;
+      if (!resultado || typeof resultado !== "object" || !("ok" in resultado)) return;
+      finalizar(resultado);
+    };
+    window.addEventListener("message", onMessage);
+    timeoutId = setTimeout(() => finalizar({ ok: false, erro: "Tempo esgotado ao enviar o anexo. Verifique sua conexão e tente novamente." }), 45000);
+
+    form.submit();
+  });
+}
+
+async function enviarAnexoExame(file) {
+  try {
+    if (file.size > 15 * 1024 * 1024) return { ok: false, erro: "Arquivo muito grande (máximo 15 MB)." };
+    const { base64, tipoMime, nomeArquivo } = await prepararConteudoAnexo(file);
+    return await enviarAnexoViaFormOculto({ acao: "enviarAnexoExame", email: state.usuario.email, nomeArquivo, tipoMime, conteudoBase64: base64 });
+  } catch (err) {
+    return { ok: false, erro: "Não foi possível processar esse arquivo." };
   }
 }
 
@@ -1408,18 +1498,49 @@ function imcCardTemplate() {
 }
 
 /* ===================== bioimpedância e calorimetria ===================== */
+// Arquivo escolhido (mas ainda não enviado/salvo) em cada aba de cadastro. Fica fora de "state" de
+// propósito: um File não dá pra guardar no localStorage, e não faz sentido sobreviver a um reload —
+// se a pessoa recarregar a página no meio do cadastro, é razoável que precise escolher o arquivo de novo.
+let anexoSelecionadoBio = null;
+let anexoSelecionadoCalo = null;
+
 function acaoAbrirFormBioimpedancia(aba) {
   state.showFormBioimpedancia = true;
   state.bioAbaFormulario = aba === "calorimetria" ? "calorimetria" : "bioimpedancia";
+  anexoSelecionadoBio = null;
+  anexoSelecionadoCalo = null;
   render();
 }
 function acaoTrocarAbaFormBioimpedancia(aba) { state.bioAbaFormulario = aba; render(); }
-function acaoFecharFormBioimpedancia() { state.showFormBioimpedancia = false; render(); }
+function acaoFecharFormBioimpedancia() {
+  state.showFormBioimpedancia = false;
+  anexoSelecionadoBio = null;
+  anexoSelecionadoCalo = null;
+  render();
+}
+function onAnexoBioSelecionado(event) {
+  anexoSelecionadoBio = (event.target.files && event.target.files[0]) || null;
+  render();
+}
+function onAnexoCaloSelecionado(event) {
+  anexoSelecionadoCalo = (event.target.files && event.target.files[0]) || null;
+  render();
+}
+function acaoRemoverAnexoSelecionadoBio() { anexoSelecionadoBio = null; render(); }
+function acaoRemoverAnexoSelecionadoCalo() { anexoSelecionadoCalo = null; render(); }
+
+function acaoAbrirHistoricoBioimpedancia(aba) {
+  state.showHistoricoBioimpedancia = true;
+  state.historicoAbaAtiva = aba === "calorimetria" ? "calorimetria" : "bioimpedancia";
+  render();
+}
+function acaoTrocarAbaHistoricoBioimpedancia(aba) { state.historicoAbaAtiva = aba; render(); }
+function acaoFecharHistoricoBioimpedancia() { state.showHistoricoBioimpedancia = false; render(); }
 
 const BIOIMPEDANCIA_CAMPOS = ["altura", "peso", "gordura", "massaMagra", "massaMuscular", "aguaCorporal", "gorduraVisceral", "idadeMetabolica"];
 const CALORIMETRIA_CAMPOS = ["tmb", "get"];
 
-function acaoSalvarBioimpedancia() {
+async function acaoSalvarBioimpedancia() {
   const dataEl = document.getElementById("bio-data");
   const data = dataEl ? dataEl.value : "";
   if (!data) { toastError("Informe a data da medição."); return; }
@@ -1429,14 +1550,26 @@ function acaoSalvarBioimpedancia() {
     valores[c] = el ? el.value.trim().replace(",", ".") : "";
   });
   if (!valores.altura || isNaN(Number(valores.altura))) { toastError("Informe a altura."); return; }
+
+  let anexoUrl = "";
+  if (anexoSelecionadoBio) {
+    if (!state.account) { toastError("Conecte sua conta do Google para anexar arquivos."); return; }
+    state.enviandoAnexo = true; render();
+    const resultado = await enviarAnexoExame(anexoSelecionadoBio);
+    state.enviandoAnexo = false;
+    if (!resultado.ok) { toastError(resultado.erro || "Não foi possível enviar o anexo. Tente novamente."); render(); return; }
+    anexoUrl = resultado.url;
+  }
+
   const now = new Date();
   const novoRegistro = Object.assign(
-    { id: Date.now(), date: data, time: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) },
+    { id: Date.now(), date: data, time: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }), anexoUrl },
     BIOIMPEDANCIA_CAMPOS.reduce((acc, c) => { acc[c] = valores[c] ? Number(valores[c]) : null; return acc; }, {})
   );
   state.bioimpedancia = state.bioimpedancia.concat([novoRegistro]);
   persistBioimpedancia();
   state.showFormBioimpedancia = false;
+  anexoSelecionadoBio = null;
   toastSuccess("Registro de bioimpedância salvo.");
   if (state.account) enviarComFila("salvarBioimpedanciaGoogle", [state.usuario.email, novoRegistro]);
   render();
@@ -1447,7 +1580,7 @@ function acaoRemoverBioimpedancia(id) {
   if (state.account) enviarComFila("removerBioimpedanciaGoogle", [state.usuario.email, id]);
   render();
 }
-function acaoSalvarCalorimetria() {
+async function acaoSalvarCalorimetria() {
   const dataEl = document.getElementById("calo-data");
   const data = dataEl ? dataEl.value : "";
   if (!data) { toastError("Informe a data do exame."); return; }
@@ -1458,14 +1591,26 @@ function acaoSalvarCalorimetria() {
   });
   if (!valores.tmb || isNaN(Number(valores.tmb))) { toastError("Informe a Taxa Metabólica Basal (TMB)."); return; }
   if (!valores.get || isNaN(Number(valores.get))) { toastError("Informe o Gasto Energético Total (GET)."); return; }
+
+  let anexoUrl = "";
+  if (anexoSelecionadoCalo) {
+    if (!state.account) { toastError("Conecte sua conta do Google para anexar arquivos."); return; }
+    state.enviandoAnexo = true; render();
+    const resultado = await enviarAnexoExame(anexoSelecionadoCalo);
+    state.enviandoAnexo = false;
+    if (!resultado.ok) { toastError(resultado.erro || "Não foi possível enviar o anexo. Tente novamente."); render(); return; }
+    anexoUrl = resultado.url;
+  }
+
   const now = new Date();
   const novoRegistro = {
     id: Date.now(), date: data, time: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-    tmb: Number(valores.tmb), get: Number(valores.get),
+    tmb: Number(valores.tmb), get: Number(valores.get), anexoUrl,
   };
   state.calorimetria = state.calorimetria.concat([novoRegistro]);
   persistCalorimetria();
   state.showFormBioimpedancia = false;
+  anexoSelecionadoCalo = null;
   toastSuccess("Registro de calorimetria salvo.");
   if (state.account) enviarComFila("salvarCalorimetriaGoogle", [state.usuario.email, novoRegistro]);
   render();
@@ -1475,6 +1620,17 @@ function acaoRemoverCalorimetria(id) {
   persistCalorimetria();
   if (state.account) enviarComFila("removerCalorimetriaGoogle", [state.usuario.email, id]);
   render();
+}
+
+function anexoCampoTemplate(idInput, arquivoSelecionado, onChangeFn, onRemoveFn) {
+  return '<div><label class="field-label">Anexar exame/resultado (opcional)</label>' +
+    (arquivoSelecionado
+      ? '<div class="bioimpedancia-anexo-preview">' + icon("file") + "<span>" + esc(arquivoSelecionado.name) + "</span>" +
+        '<button type="button" class="bioimpedancia-anexo-remover" aria-label="Remover anexo selecionado" onclick="' + onRemoveFn + '()">' + icon("x") + "</button></div>"
+      : '<label class="bioimpedancia-anexo-btn" for="' + idInput + '">' + icon("paperclip") + " Escolher foto ou PDF" +
+        '<input id="' + idInput + '" type="file" accept="image/*,application/pdf" style="display:none" onchange="' + onChangeFn + '(event)"/></label>'
+    ) +
+    "</div>";
 }
 
 function bioimpedanciaFormCamposTemplate() {
@@ -1493,9 +1649,11 @@ function bioimpedanciaFormCamposTemplate() {
       campo("gorduraVisceral", "Gordura visceral", "nível", "Ex.: 8") +
       campo("idadeMetabolica", "Idade metabólica", "anos", "Ex.: 30") +
     "</div>" +
+    anexoCampoTemplate("bio-anexo-input", anexoSelecionadoBio, "onAnexoBioSelecionado", "acaoRemoverAnexoSelecionadoBio") +
+    (state.enviandoAnexo ? '<p class="imc-empty" style="margin-top:8px">Enviando anexo...</p>' : "") +
     '<div class="bioimpedancia-form-acoes">' +
-      '<button class="bioimpedancia-btn-secundario" onclick="acaoFecharFormBioimpedancia()">Cancelar</button>' +
-      '<button class="btn-primary" onclick="acaoSalvarBioimpedancia()">' + icon("check") + " Salvar</button>" +
+      '<button class="bioimpedancia-btn-secundario" onclick="acaoFecharFormBioimpedancia()"' + (state.enviandoAnexo ? " disabled" : "") + '>Cancelar</button>' +
+      '<button class="btn-primary" onclick="acaoSalvarBioimpedancia()"' + (state.enviandoAnexo ? " disabled" : "") + '>' + icon("check") + " Salvar</button>" +
     "</div>";
 }
 function calorimetriaFormCamposTemplate() {
@@ -1508,9 +1666,11 @@ function calorimetriaFormCamposTemplate() {
       campo("tmb", "Taxa Metabólica Basal (TMB)", "kcal", "Ex.: 1650") +
       campo("get", "Gasto Energético Total (GET)", "kcal", "Ex.: 2400") +
     "</div>" +
+    anexoCampoTemplate("calo-anexo-input", anexoSelecionadoCalo, "onAnexoCaloSelecionado", "acaoRemoverAnexoSelecionadoCalo") +
+    (state.enviandoAnexo ? '<p class="imc-empty" style="margin-top:8px">Enviando anexo...</p>' : "") +
     '<div class="bioimpedancia-form-acoes">' +
-      '<button class="bioimpedancia-btn-secundario" onclick="acaoFecharFormBioimpedancia()">Cancelar</button>' +
-      '<button class="btn-primary" onclick="acaoSalvarCalorimetria()">' + icon("check") + " Salvar</button>" +
+      '<button class="bioimpedancia-btn-secundario" onclick="acaoFecharFormBioimpedancia()"' + (state.enviandoAnexo ? " disabled" : "") + '>Cancelar</button>' +
+      '<button class="btn-primary" onclick="acaoSalvarCalorimetria()"' + (state.enviandoAnexo ? " disabled" : "") + '>' + icon("check") + " Salvar</button>" +
     "</div>";
 }
 function bioimpedanciaFormTemplate() {
@@ -1525,26 +1685,48 @@ function bioimpedanciaFormTemplate() {
       (aba === "calorimetria" ? calorimetriaFormCamposTemplate() : bioimpedanciaFormCamposTemplate()) +
     "</section>";
 }
-function bioimpedanciaHistoricoTemplate() {
-  const registros = state.bioimpedancia.slice().sort((a, b) => b.id - a.id).slice(1);
-  if (!registros.length) return "";
+
+// Formata "AAAA-MM-DD" como "DD/MM/AAAA", pro formato pedido no histórico (diferente do dateLabel()
+// por extenso usado no resto do app).
+function dataCurta(dateStr) {
+  const partes = String(dateStr || "").split("-");
+  if (partes.length !== 3) return dateStr || "";
+  return partes[2] + "/" + partes[1] + "/" + partes[0];
+}
+
+function historicoListaTemplate(registros, tipoLabel, acaoRemover) {
+  if (!registros.length) return '<p class="imc-empty" style="margin-top:14px">Nenhum registro de ' + tipoLabel.toLowerCase() + " ainda.</p>";
   return '<div class="medidas-history-list" style="margin-top:14px">' + registros.map((r) =>
-    '<div class="medida-history-row"><div class="medida-history-left"><span class="medida-history-tipo">Bioimpedância — Altura ' + (r.altura ? formatNumber(r.altura, 1) : "—") + " cm · Peso " + (r.peso ? formatNumber(r.peso, 1) : "—") + " kg</span>" +
-    '<span class="medida-history-meta">' + icon("clock") + " " + dateLabel(r.date) + "</span></div>" +
-    '<button class="meal-row-delete" aria-label="Remover registro" onclick="acaoRemoverBioimpedancia(' + r.id + ')">' + icon("trash") + "</button></div>"
+    '<div class="medida-history-row"><div class="medida-history-left"><span class="medida-history-tipo">' + tipoLabel + " registrada em " + dataCurta(r.date) + "</span>" +
+    (r.anexoUrl
+      ? '<a class="bioimpedancia-anexo-link" href="' + esc(r.anexoUrl) + '" target="_blank" rel="noopener">' + icon("file") + " Ver exame</a>"
+      : '<span class="medida-history-meta">Sem exame anexado</span>') +
+    "</div>" +
+    '<button class="meal-row-delete" aria-label="Remover registro" onclick="' + acaoRemover + "(" + r.id + ')">' + icon("trash") + "</button></div>"
   ).join("") + "</div>";
 }
-function calorimetriaHistoricoTemplate() {
-  const registros = state.calorimetria.slice().sort((a, b) => b.id - a.id).slice(1);
-  if (!registros.length) return "";
-  return '<div class="medidas-history-list" style="margin-top:14px">' + registros.map((r) =>
-    '<div class="medida-history-row"><div class="medida-history-left"><span class="medida-history-tipo">Calorimetria — TMB ' + (r.tmb ? formatNumber(r.tmb) : "—") + " · GET " + (r.get ? formatNumber(r.get) : "—") + '</span>' +
-    '<span class="medida-history-meta">' + icon("clock") + " " + dateLabel(r.date) + "</span></div>" +
-    '<button class="meal-row-delete" aria-label="Remover registro" onclick="acaoRemoverCalorimetria(' + r.id + ')">' + icon("trash") + "</button></div>"
-  ).join("") + "</div>";
+
+function historicoBioimpedanciaTemplate() {
+  const aba = state.historicoAbaAtiva;
+  const registrosBio = state.bioimpedancia.slice().sort((a, b) => b.id - a.id);
+  const registrosCalo = state.calorimetria.slice().sort((a, b) => b.id - a.id);
+  return '' +
+    '<section class="medidas-section">' +
+      '<h2 class="medidas-section-title">' + icon("history") + " Histórico de registros</h2>" +
+      '<div class="bioimpedancia-form-tabs">' +
+        '<button class="bioimpedancia-form-tab' + (aba === "bioimpedancia" ? " active" : "") + '" onclick="acaoTrocarAbaHistoricoBioimpedancia(\'bioimpedancia\')">Bioimpedância</button>' +
+        '<button class="bioimpedancia-form-tab' + (aba === "calorimetria" ? " active" : "") + '" onclick="acaoTrocarAbaHistoricoBioimpedancia(\'calorimetria\')">Calorimetria</button>' +
+      "</div>" +
+      (aba === "calorimetria"
+        ? historicoListaTemplate(registrosCalo, "Calorimetria", "acaoRemoverCalorimetria")
+        : historicoListaTemplate(registrosBio, "Bioimpedância", "acaoRemoverBioimpedancia")) +
+      '<div class="bioimpedancia-form-acoes"><button class="bioimpedancia-btn-secundario" onclick="acaoFecharHistoricoBioimpedancia()">Voltar</button></div>' +
+    "</section>";
 }
+
 function bioimpedanciaSectionTemplate() {
   if (state.showFormBioimpedancia) return bioimpedanciaFormTemplate();
+  if (state.showHistoricoBioimpedancia) return historicoBioimpedanciaTemplate();
   const ultimoBio = ultimaBioimpedancia();
   const ultimoCalo = ultimaCalorimetria();
   if (!ultimoBio && !ultimoCalo) {
@@ -1556,7 +1738,10 @@ function bioimpedanciaSectionTemplate() {
   const linha = (valor, label) => '<div class="bioimpedancia-resumo-linha"><span class="bioimpedancia-resumo-valor-sm">' + valor + '</span><span class="bioimpedancia-resumo-label">' + label + "</span></div>";
   return '<section class="medidas-section">' +
     '<div class="medidas-section-title-row"><h2 class="medidas-section-title">' + icon("ruler") + " Bioimpedância e Calorimetria</h2>" +
-    '<button class="bioimpedancia-btn-secundario" onclick="acaoAbrirFormBioimpedancia()">' + icon("plus") + " Nova medição</button></div>" +
+    '<div class="medidas-section-title-actions">' +
+      '<button class="bioimpedancia-btn-secundario" onclick="acaoAbrirHistoricoBioimpedancia()">' + icon("history") + " Histórico de registros</button>" +
+      '<button class="bioimpedancia-btn-secundario" onclick="acaoAbrirFormBioimpedancia()">' + icon("plus") + " Nova medição</button>" +
+    "</div></div>" +
     '<div class="bioimpedancia-resumo">' +
       '<div class="bioimpedancia-resumo-item"><span class="bioimpedancia-resumo-valor">' + (ultimoBio && ultimoBio.altura ? formatNumber(ultimoBio.altura, 1) : "—") + '</span><span class="bioimpedancia-resumo-label">Altura (cm)</span></div>' +
       '<div class="bioimpedancia-resumo-item bioimpedancia-resumo-item-multi">' +
@@ -1570,8 +1755,6 @@ function bioimpedanciaSectionTemplate() {
       "</div>" +
     "</div>" +
     '<p class="bioimpedancia-atualizado">Bioimpedância: ' + (ultimoBio ? dateLabel(ultimoBio.date) : "sem registro") + " · Calorimetria: " + (ultimoCalo ? dateLabel(ultimoCalo.date) : "sem registro") + "</p>" +
-    bioimpedanciaHistoricoTemplate() +
-    calorimetriaHistoricoTemplate() +
     "</section>";
 }
 
