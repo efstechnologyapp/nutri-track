@@ -1394,6 +1394,15 @@ async function doInstall() {
 render();
 initInstallPrompt();
 if (state.usuario) sincronizarDoServidor();
+
+// Ao trocar de app/aba e voltar (ex.: usar o celular depois do PC), busca de novo os dados no nosso
+// próprio backend — nunca no Google diretamente — para refletir o que foi salvo em outro aparelho
+// enquanto este ficava parado em segundo plano. Sem isso, o app só atualizava na abertura (boot), e
+// ficava com dados desatualizados até ser fechado e reaberto de verdade.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") sincronizarDoServidor();
+});
+window.addEventListener("focus", () => sincronizarDoServidor());
 </script>
 </body>
 </html>
