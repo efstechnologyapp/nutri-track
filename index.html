@@ -604,6 +604,7 @@ const CHAVE_MEALS = "nutri-track-meals";
 const CHAVE_GACCOUNT = "nutri-track-google-account";
 const CHAVE_ALTURA = "nutri-track-altura";
 const CHAVE_MEDIDAS = "nutri-track-medidas";
+const CHAVE_FILA = "nutri-track-fila-pendente";
 
 /* ===================== medidas e aferições ===================== */
 const medidaTipos = {
@@ -803,7 +804,7 @@ function acaoTrocarAba(aba) { state.activeTab = aba; render(); }
 function acaoAtualizarAltura(value) {
   state.altura = Math.max(0, Number(value) || 0) || null;
   persistAltura();
-  if (state.account) authApi.atualizarMetasGoogle(state.usuario.email, state.goals, state.altura).catch(() => {});
+  if (state.account) enviarComFila("atualizarMetasGoogle", [state.usuario.email, state.goals, state.altura]);
   render();
 }
 function acaoSelecionarTipoMedida(tipo) { state.medidaTipo = tipo; render(); }
@@ -825,13 +826,13 @@ function acaoSalvarMedida() {
   persistMedidas();
   state.medidaTipo = "";
   toastSuccess("Registro salvo no histórico.");
-  if (state.account) authApi.salvarMedidaGoogle(state.usuario.email, novaMedida).catch(() => {});
+  if (state.account) enviarComFila("salvarMedidaGoogle", [state.usuario.email, novaMedida]);
   render();
 }
 function acaoRemoverMedida(id) {
   state.medidas = state.medidas.filter((m) => m.id !== id);
   persistMedidas();
-  if (state.account) authApi.removerMedidaGoogle(state.usuario.email, id).catch(() => {});
+  if (state.account) enviarComFila("removerMedidaGoogle", [state.usuario.email, id]);
   render();
 }
 
@@ -873,17 +874,68 @@ async function onAvatarSelected(event) {
   }
 }
 
+// ===== fila de pendências =====
+// Toda alteração (salvar/apagar refeição ou medida, editar metas/altura) tenta subir pro servidor na
+// hora. Se essa chamada falhar (sem internet, backend fora do ar por um instante, etc.), em vez de
+// simplesmente perder essa alteração (como acontecia antes), ela fica guardada aqui no aparelho e a
+// gente tenta reenviar sozinho na próxima vez que o app sincronizar — sem precisar que a pessoa refaça
+// nada. Isso é o que faz o app se recuperar de qualquer falha passageira, em vez de deixar um dado
+// "preso" só num aparelho pra sempre.
+function lerFila() { return readStorage(CHAVE_FILA, []); }
+function gravarFila(fila) { writeStorage(CHAVE_FILA, fila); }
+
+// Envia uma ação ao backend; se falhar, guarda na fila para tentar de novo depois. Quem chama já
+// decide quando faz sentido chamar isso (conta conectada ao Google).
+function enviarComFila(tipo, args) {
+  Promise.resolve(authApi[tipo].apply(authApi, args)).then((resposta) => {
+    if (!resposta || resposta.ok === false) throw new Error("falha ao sincronizar");
+  }).catch(() => {
+    const fila = lerFila();
+    fila.push({ tipo, args });
+    gravarFila(fila);
+  });
+}
+
+// Tenta reenviar tudo que ficou pendente, na ordem em que foi criado. O que continuar falhando
+// permanece na fila para a próxima tentativa.
+async function processarFilaPendente() {
+  if (!state.account) return;
+  const fila = lerFila();
+  if (!fila.length) return;
+  const restante = [];
+  for (const item of fila) {
+    try {
+      const resposta = await authApi[item.tipo].apply(authApi, item.args);
+      if (!resposta || resposta.ok === false) restante.push(item);
+    } catch (err) {
+      restante.push(item);
+    }
+  }
+  gravarFila(restante);
+}
+
+// Uma refeição/medida que ainda está pendente de envio (ainda na fila) pode não aparecer na resposta
+// autoritativa do servidor ainda — sem isso ela sumiria da tela até terminar de sincronizar. Aqui a
+// gente reinclui esses itens pendentes na lista vinda do servidor, até que o envio seja confirmado.
+function mesclarComPendentes(listaServidor, tipoCriacao) {
+  const fila = lerFila();
+  const idsServidor = new Set(listaServidor.map((item) => item.id));
+  const pendentes = fila.filter((item) => item.tipo === tipoCriacao).map((item) => item.args[1]).filter((item) => !idsServidor.has(item.id));
+  return listaServidor.concat(pendentes);
+}
+
 // Busca os dados no NOSSO backend (Code.gs) — nunca fala diretamente com o Google. É por isso que
 // pode ser chamada sempre que o app abre (ou depois do login) sem nunca abrir nenhuma tela do Google:
 // é uma chamada comum ao mesmo servidor que já cuida do login. Se a conta não estiver conectada ao
 // Google, o servidor simplesmente responde dizendo isso, e o app continua funcionando só localmente.
-// Roda toda vez que o app abre (ou depois de logar) já conectado ao Google. A partir do momento em
-// que a conta está conectada, toda alteração (salvar, apagar, editar) já tenta subir pro servidor na
-// hora — então o servidor é a fonte da verdade. Por isso aqui SUBSTITUÍMOS a lista local pela que
+// Roda toda vez que o app abre (ou volta a ficar visível) já conectado ao Google. A partir do momento
+// em que a conta está conectada, toda alteração (salvar, apagar, editar) já tenta subir pro servidor
+// na hora — então o servidor é a fonte da verdade. Por isso aqui SUBSTITUÍMOS a lista local pela que
 // vem do servidor, em vez de só somar: é o que garante que uma exclusão feita em outro aparelho
 // também desapareça aqui, e não só reapareça depois de sincronizar.
 async function sincronizarDoServidor() {
   if (!state.usuario) return;
+  await processarFilaPendente();
   try {
     const resposta = await authApi.carregarDadosGoogle(state.usuario.email);
     if (!resposta.ok) {
@@ -892,10 +944,10 @@ async function sincronizarDoServidor() {
     }
     state.account = { email: resposta.googleEmail || (state.account && state.account.email) || "" };
     writeStorage(CHAVE_GACCOUNT, state.account);
-    state.meals = resposta.meals || []; persistMeals();
+    state.meals = mesclarComPendentes(resposta.meals || [], "salvarRefeicaoGoogle"); persistMeals();
     if (resposta.goals) { state.goals = resposta.goals; persistGoals(); }
     if (resposta.altura) { state.altura = resposta.altura; persistAltura(); }
-    state.medidas = resposta.medidas || []; persistMedidas();
+    state.medidas = mesclarComPendentes(resposta.medidas || [], "salvarMedidaGoogle"); persistMedidas();
     render();
   } catch { /* falha de rede — mantém os dados locais e tenta de novo na próxima abertura */ }
 }
@@ -906,9 +958,9 @@ async function sincronizarDoServidor() {
 function publicarRegistrosLocaisPendentes(remoto) {
   const idsRefeicoes = new Set((remoto.meals || []).map((m) => m.id));
   const idsMedidas = new Set((remoto.medidas || []).map((m) => m.id));
-  state.meals.filter((m) => !idsRefeicoes.has(m.id)).forEach((m) => authApi.salvarRefeicaoGoogle(state.usuario.email, m).catch(() => {}));
-  state.medidas.filter((m) => !idsMedidas.has(m.id)).forEach((m) => authApi.salvarMedidaGoogle(state.usuario.email, m).catch(() => {}));
-  if (!remoto.goals) authApi.atualizarMetasGoogle(state.usuario.email, state.goals, state.altura).catch(() => {});
+  state.meals.filter((m) => !idsRefeicoes.has(m.id)).forEach((m) => enviarComFila("salvarRefeicaoGoogle", [state.usuario.email, m]));
+  state.medidas.filter((m) => !idsMedidas.has(m.id)).forEach((m) => enviarComFila("salvarMedidaGoogle", [state.usuario.email, m]));
+  if (!remoto.goals) enviarComFila("atualizarMetasGoogle", [state.usuario.email, state.goals, state.altura]);
 }
 // Única função que efetivamente abre algo do Google — e só roda quando a pessoa clica no botão
 // "Conectar Google" na barra lateral. Pede um código de autorização com access_type "offline", manda
@@ -965,13 +1017,13 @@ function acaoSalvarRefeicao() {
   state.preview = [];
   nameInput.value = ""; descInput.value = "";
   toastSuccess("Refeição registrada no histórico.");
-  if (state.account) authApi.salvarRefeicaoGoogle(state.usuario.email, novaRefeicao).catch(() => {});
+  if (state.account) enviarComFila("salvarRefeicaoGoogle", [state.usuario.email, novaRefeicao]);
   render();
 }
 function acaoRemoverRefeicao(id) {
   state.meals = state.meals.filter((m) => m.id !== id);
   persistMeals();
-  if (state.account) authApi.removerRefeicaoGoogle(state.usuario.email, id).catch(() => {});
+  if (state.account) enviarComFila("removerRefeicaoGoogle", [state.usuario.email, id]);
   render();
 }
 function acaoZerarHoje() {
@@ -981,13 +1033,13 @@ function acaoZerarHoje() {
   state.meals = state.meals.filter((m) => m.date !== t);
   persistMeals();
   toastSuccess("Os registros de hoje foram removidos; o histórico anterior foi preservado.");
-  if (state.account) authApi.zerarHojeGoogle(state.usuario.email, t).catch(() => {});
+  if (state.account) enviarComFila("zerarHojeGoogle", [state.usuario.email, t]);
   render();
 }
 function acaoAtualizarMeta(key, value) {
   state.goals = Object.assign({}, state.goals, { [key]: Math.max(0, Number(value) || 0) });
   persistGoals();
-  if (state.account) authApi.atualizarMetasGoogle(state.usuario.email, state.goals, state.altura).catch(() => {});
+  if (state.account) enviarComFila("atualizarMetasGoogle", [state.usuario.email, state.goals, state.altura]);
   render();
 }
 
