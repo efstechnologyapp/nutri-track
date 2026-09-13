@@ -974,61 +974,24 @@ async function prepararConteudoAnexo(file) {
 }
 
 // O anexo pode ter alguns MB em base64 — grande demais pra caber na URL do chamarApi (que usa GET).
-// Por isso este envio usa um <form method="POST"> de verdade, mandado pra dentro de um <iframe>
-// escondido: isso NÃO é uma chamada fetch/XHR, então não esbarra na trava de CORS que bloqueia POST
-// nesse backend (ver comentário no Code.gs). Só nesse caso especial usamos POST, e a "resposta" chega
-// de volta como uma mensagem (postMessage) que o iframe manda pro app, não como o retorno do fetch.
-function enviarAnexoViaFormOculto(payload) {
-  return new Promise((resolve) => {
-    const iframeName = "anexo-frame-" + Date.now() + "-" + Math.random().toString(36).slice(2);
-    const iframe = document.createElement("iframe");
-    iframe.name = iframeName;
-    iframe.style.display = "none";
-    document.body.appendChild(iframe);
-
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = API_URL;
-    form.target = iframeName;
-    form.style.display = "none";
-    const campoDados = document.createElement("input");
-    campoDados.type = "hidden";
-    campoDados.name = "data";
-    campoDados.value = JSON.stringify(payload);
-    form.appendChild(campoDados);
-    document.body.appendChild(form);
-
-    let finalizado = false;
-    let timeoutId;
-    const finalizar = (resultado) => {
-      if (finalizado) return;
-      finalizado = true;
-      window.removeEventListener("message", onMessage);
-      clearTimeout(timeoutId);
-      form.remove();
-      setTimeout(() => iframe.remove(), 500);
-      resolve(resultado);
-    };
-    const onMessage = (event) => {
-      if (event.source !== iframe.contentWindow) return;
-      const resultado = event.data;
-      if (!resultado || typeof resultado !== "object" || !("ok" in resultado)) return;
-      finalizar(resultado);
-    };
-    window.addEventListener("message", onMessage);
-    timeoutId = setTimeout(() => finalizar({ ok: false, erro: "Tempo esgotado ao enviar o anexo. Verifique sua conexão e tente novamente." }), 45000);
-
-    form.submit();
-  });
+// Por isso este envio usa POST de verdade via fetch, mas com o corpo mandado como texto puro (sem
+// definir Content-Type: application/json) — isso faz o navegador tratar a chamada como uma
+// "requisição simples" de CORS, que não dispara o pedido de verificação prévia (preflight OPTIONS)
+// que esse backend (Apps Script) não consegue responder. É esse preflight que bloqueava POST aqui,
+// não o POST em si — então a resposta pode ser lida normalmente, do mesmo jeito que no chamarApi.
+async function enviarAnexoViaPost(payload) {
+  const response = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+  if (!response.ok) throw new Error("Erro de rede (" + response.status + ")");
+  return response.json();
 }
 
 async function enviarAnexoExame(file) {
   try {
     if (file.size > 15 * 1024 * 1024) return { ok: false, erro: "Arquivo muito grande (máximo 15 MB)." };
     const { base64, tipoMime, nomeArquivo } = await prepararConteudoAnexo(file);
-    return await enviarAnexoViaFormOculto({ acao: "enviarAnexoExame", email: state.usuario.email, nomeArquivo, tipoMime, conteudoBase64: base64 });
+    return await enviarAnexoViaPost({ acao: "enviarAnexoExame", email: state.usuario.email, nomeArquivo, tipoMime, conteudoBase64: base64 });
   } catch (err) {
-    return { ok: false, erro: "Não foi possível processar esse arquivo." };
+    return { ok: false, erro: "Não foi possível enviar o anexo. Verifique sua conexão e tente novamente." };
   }
 }
 
