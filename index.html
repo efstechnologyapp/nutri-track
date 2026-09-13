@@ -273,6 +273,14 @@ svg{ display: block; }
 .imc-value{ font-family:'Fraunces',serif; font-size:36px; font-weight:600; color:#214c3d; }
 .imc-class{ border-radius:999px; background:#eef6e4; padding:4px 12px; font-size:12px; font-weight:600; color:#4b7048; }
 .imc-empty{ margin:16px 0 0; font-size:13px; line-height:1.5; color:#8a9c93; }
+.imc-chart{ margin-top:20px; }
+.imc-chart-marker-wrap{ position:relative; height:30px; }
+.imc-chart-marker{ position:absolute; bottom:0; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; }
+.imc-chart-marker-value{ border-radius:8px; background:#1b3f34; padding:3px 8px; font-size:11px; font-weight:700; color:#fff; white-space:nowrap; box-shadow:0 4px 10px rgba(27,63,52,0.25); }
+.imc-chart-marker-pin{ width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-top:6px solid #1b3f34; margin-top:-1px; }
+.imc-chart-track{ height:14px; border-radius:999px; }
+.imc-chart-ticks{ position:relative; height:16px; margin-top:4px; }
+.imc-chart-tick{ position:absolute; transform:translateX(-50%); font-size:10px; font-weight:500; color:#9aa9a1; white-space:nowrap; }
 .altura-field-fixed{ margin-top:16px; max-width:220px; }
 .medidas-section{ margin-top:24px; border-radius:22px; border:1px solid #e5e9e1; background:#fff; padding:20px; box-shadow:0 10px 28px rgba(43,73,53,0.045); }
 @media (min-width: 640px){ .medidas-section{ padding:24px; } }
@@ -742,13 +750,46 @@ function calcularImc() {
   if (!peso) return null;
   return peso / (alturaM * alturaM);
 }
-function classificarImc(imc) {
-  if (imc < 18.5) return "Abaixo do peso";
-  if (imc < 25) return "Peso normal";
-  if (imc < 30) return "Sobrepeso";
-  if (imc < 35) return "Obesidade grau I";
-  if (imc < 40) return "Obesidade grau II";
-  return "Obesidade grau III";
+const IMC_FAIXAS = [
+  { ate: 18.5, label: "Abaixo do peso", cor: "#6fb3d9", corSuave: "#e7f3fa" },
+  { ate: 25, label: "Peso normal", cor: "#4b9350", corSuave: "#e9f5e9" },
+  { ate: 30, label: "Sobrepeso", cor: "#d9a92e", corSuave: "#faf2dc" },
+  { ate: 35, label: "Obesidade grau I", cor: "#dd8636", corSuave: "#fbecdb" },
+  { ate: 40, label: "Obesidade grau II", cor: "#d1652f", corSuave: "#f9e4d8" },
+  { ate: Infinity, label: "Obesidade grau III", cor: "#c13f34", corSuave: "#f7ddd9" },
+];
+function faixaImc(imc) { return IMC_FAIXAS.find((f) => imc < f.ate); }
+function classificarImc(imc) { return faixaImc(imc).label; }
+/* Limites (em kg/m²) usados para desenhar as faixas coloridas do gráfico de IMC. */
+const IMC_ESCALA_MIN = 15;
+const IMC_ESCALA_MAX = 45;
+const IMC_ESCALA_CORTES = [18.5, 25, 30, 35, 40];
+function imcChartTemplate(imc) {
+  const pct = (v) => Math.min(100, Math.max(0, ((v - IMC_ESCALA_MIN) / (IMC_ESCALA_MAX - IMC_ESCALA_MIN) * 100)));
+  const cores = IMC_FAIXAS.map((f) => f.cor);
+  const cortesPct = IMC_ESCALA_CORTES.map(pct);
+  const stops = [];
+  stops.push(cores[0] + " 0%");
+  for (let i = 0; i < cortesPct.length; i++) {
+    stops.push(cores[i] + " " + cortesPct[i].toFixed(1) + "%");
+    stops.push(cores[i + 1] + " " + cortesPct[i].toFixed(1) + "%");
+  }
+  stops.push(cores[cores.length - 1] + " 100%");
+  const gradient = "linear-gradient(to right," + stops.join(",") + ")";
+  const marcadorPct = imc == null ? null : Math.min(97, Math.max(3, pct(imc)));
+  return '' +
+    '<div class="imc-chart">' +
+      '<div class="imc-chart-marker-wrap">' +
+        (marcadorPct == null ? "" :
+          '<div class="imc-chart-marker" style="left:' + marcadorPct.toFixed(1) + '%">' +
+            '<div class="imc-chart-marker-value">' + formatNumber(imc, 1) + "</div>" +
+            '<div class="imc-chart-marker-pin"></div>' +
+          "</div>"
+        ) +
+      "</div>" +
+      '<div class="imc-chart-track" style="background:' + gradient + '"></div>' +
+      '<div class="imc-chart-ticks">' + IMC_ESCALA_CORTES.map((t, i) => '<span class="imc-chart-tick" style="left:' + cortesPct[i].toFixed(1) + '%">' + t + "</span>").join("") + "</div>" +
+    "</div>";
 }
 
 /* ===================== ações ===================== */
@@ -1270,16 +1311,18 @@ function homeTabsTemplate() {
 
 function imcCardTemplate() {
   const imc = calcularImc();
+  const faixa = imc ? faixaImc(imc) : null;
   return '' +
     '<div class="nutrient-card imc-card"><div class="nutrient-card-head">' +
       '<div class="nutrient-card-left"><div class="nutrient-icon" style="background:#eef6e4;color:#4b7048">' + icon("activity") + '</div>' +
       '<span class="nutrient-name">IMC (Índice de Massa Corporal)</span></div>' +
     "</div>" +
     (imc ?
-      '<div class="imc-value-row"><span class="imc-value">' + formatNumber(imc, 1) + '</span><span class="imc-class">' + classificarImc(imc) + "</span></div>"
+      '<div class="imc-value-row"><span class="imc-value">' + formatNumber(imc, 1) + '</span><span class="imc-class" style="background:' + faixa.corSuave + ";color:" + faixa.cor + '">' + faixa.label + "</span></div>"
       :
       '<p class="imc-empty">Registre seu peso na seção abaixo e informe sua altura para calcular o IMC.</p>'
     ) +
+    imcChartTemplate(imc) +
     "</div>" +
     '<div class="altura-field-fixed"><label class="field-label">Altura (cm)</label>' +
     '<input type="number" min="0" step="0.1" class="field-input" placeholder="Ex.: 172" value="' + (state.altura ? esc(state.altura) : "") + '" onchange="acaoAtualizarAltura(this.value)"/></div>';
