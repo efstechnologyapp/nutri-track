@@ -294,10 +294,16 @@ svg{ display: block; }
 .bioimpedancia-resumo-item{ border-radius:16px; background:#f7f9f5; padding:14px 10px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; }
 .bioimpedancia-resumo-valor{ font-family:'Fraunces',serif; font-size:22px; font-weight:600; color:#214c3d; }
 .bioimpedancia-resumo-label{ font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:#9aa9a1; }
+.bioimpedancia-resumo-item-multi{ justify-content:center; gap:6px; }
+.bioimpedancia-resumo-linha{ display:flex; align-items:baseline; justify-content:center; gap:6px; flex-wrap:wrap; }
+.bioimpedancia-resumo-valor-sm{ font-family:'Fraunces',serif; font-size:15px; font-weight:600; color:#214c3d; }
 .bioimpedancia-atualizado{ margin:12px 0 0; font-size:12px; color:#9aa9a1; }
+.bioimpedancia-form-tabs{ margin-top:16px; display:flex; gap:8px; border-bottom:1px solid #e5e9e1; }
+.bioimpedancia-form-tab{ padding:10px 4px; margin-bottom:-1px; border-bottom:2px solid transparent; font-size:14px; font-weight:600; color:#9aa9a1; }
+.bioimpedancia-form-tab.active{ color:#1b3f34; border-bottom-color:var(--primary); }
 .bioimpedancia-form-bloco{ margin-top:18px; }
 .bioimpedancia-form-subtitulo{ margin:0 0 12px; font-size:14px; font-weight:700; color:#4b7048; text-transform:uppercase; letter-spacing:0.06em; }
-.bioimpedancia-form-grid{ display:grid; grid-template-columns:1fr; gap:12px; }
+.bioimpedancia-form-grid{ margin-top:18px; display:grid; grid-template-columns:1fr; gap:12px; }
 @media (min-width: 560px){ .bioimpedancia-form-grid{ grid-template-columns:1fr 1fr; } }
 .bioimpedancia-form-acoes{ margin-top:20px; display:flex; gap:12px; flex-wrap:wrap; }
 .bioimpedancia-form-acoes .btn-primary{ margin-top:0; flex:1; min-width:160px; }
@@ -439,7 +445,8 @@ const authApi = {
   confirmarEmail: (email, codigo) => chamarApi("confirmarEmail", { email, codigo }),
   reenviarCodigo: (email) => chamarApi("reenviarCodigo", { email }),
   login: (email, senha) => chamarApi("login", { email, senha }),
-  atualizarPerfil: (email, senhaAtual, novoNome, novaSenha, dataNascimento) => chamarApi("atualizarPerfil", { email, senhaAtual, novoNome, novaSenha, dataNascimento }),
+  buscarPerfil: (email) => chamarApi("buscarPerfil", { email }),
+  atualizarPerfil: (email, senhaAtual, novoNome, novaSenha, dataNascimento, sexo) => chamarApi("atualizarPerfil", { email, senhaAtual, novoNome, novaSenha, dataNascimento, sexo }),
   atualizarFoto: (email, foto) => chamarApi("atualizarFoto", { email, foto }),
   conectarGoogle: (email, code) => chamarApi("conectarGoogle", { email, code }),
   desconectarGoogle: (email) => chamarApi("desconectarGoogle", { email }),
@@ -452,6 +459,8 @@ const authApi = {
   removerMedidaGoogle: (email, id) => chamarApi("removerMedidaGoogle", { email, id }),
   salvarBioimpedanciaGoogle: (email, registro) => chamarApi("salvarBioimpedanciaGoogle", { email, registro }),
   removerBioimpedanciaGoogle: (email, id) => chamarApi("removerBioimpedanciaGoogle", { email, id }),
+  salvarCalorimetriaGoogle: (email, registro) => chamarApi("salvarCalorimetriaGoogle", { email, registro }),
+  removerCalorimetriaGoogle: (email, id) => chamarApi("removerCalorimetriaGoogle", { email, id }),
 };
 
 /* ===================== conexão com Google (Google Identity Services) ===================== */
@@ -627,6 +636,7 @@ const CHAVE_ALTURA = "nutri-track-altura";
 const CHAVE_MEDIDAS = "nutri-track-medidas";
 const CHAVE_FILA = "nutri-track-fila-pendente";
 const CHAVE_BIOIMPEDANCIA = "nutri-track-bioimpedancia";
+const CHAVE_CALORIMETRIA = "nutri-track-calorimetria";
 
 /* ===================== medidas e aferições ===================== */
 const medidaTipos = {
@@ -661,7 +671,9 @@ const state = {
   medidas: readStorage(CHAVE_MEDIDAS, []),
   medidaTipo: "",
   bioimpedancia: readStorage(CHAVE_BIOIMPEDANCIA, []),
+  calorimetria: readStorage(CHAVE_CALORIMETRIA, []),
   showFormBioimpedancia: false,
+  bioAbaFormulario: "bioimpedancia", // "bioimpedancia" | "calorimetria"
 };
 function persistUsuario() { writeStorage(CHAVE_USUARIO, state.usuario); }
 function persistGoals() { writeStorage(CHAVE_GOALS, state.goals); }
@@ -669,6 +681,7 @@ function persistMeals() { writeStorage(CHAVE_MEALS, state.meals); }
 function persistAltura() { writeStorage(CHAVE_ALTURA, state.altura); }
 function persistMedidas() { writeStorage(CHAVE_MEDIDAS, state.medidas); }
 function persistBioimpedancia() { writeStorage(CHAVE_BIOIMPEDANCIA, state.bioimpedancia); }
+function persistCalorimetria() { writeStorage(CHAVE_CALORIMETRIA, state.calorimetria); }
 
 /* ===================== helpers de derivação ===================== */
 function today() { return todayKey(); }
@@ -709,6 +722,10 @@ function ultimoRegistroMedida(tipo) {
 // avulso) — é lá que a pessoa informa a altura junto com o resto dos dados do exame/balança.
 function ultimaBioimpedancia() {
   const registros = state.bioimpedancia.slice().sort((a, b) => b.id - a.id);
+  return registros.length ? registros[0] : null;
+}
+function ultimaCalorimetria() {
+  const registros = state.calorimetria.slice().sort((a, b) => b.id - a.id);
   return registros.length ? registros[0] : null;
 }
 function calcularImc() {
@@ -774,7 +791,7 @@ async function acaoEntrar(email, senha) {
       toastError(resposta.erro || "Não foi possível entrar.");
       return;
     }
-    state.usuario = { nome: resposta.nome, email: resposta.email, foto: resposta.foto || "", dataNascimento: resposta.dataNascimento || "" };
+    state.usuario = { nome: resposta.nome, email: resposta.email, foto: resposta.foto || "", dataNascimento: resposta.dataNascimento || "", sexo: resposta.sexo || "" };
     persistUsuario();
     render();
     sincronizarDoServidor();
@@ -827,17 +844,17 @@ function acaoSair() {
   toastSuccess("Você saiu da sua conta.");
   render();
 }
-async function acaoSalvarPerfil(nome, senhaAtual, novaSenha, dataNascimento) {
+async function acaoSalvarPerfil(nome, senhaAtual, novaSenha, dataNascimento, sexo) {
   if (!nome.trim()) { toastError("O nome não pode ficar em branco."); return; }
   if (!senhaAtual) { toastError("Digite sua senha atual para confirmar as alterações."); return; }
   if (novaSenha && novaSenha.length < 6) { toastError("A nova senha precisa ter pelo menos 6 caracteres."); return; }
   const btn = document.getElementById("perfil-btn");
   if (btn) btn.disabled = true;
   try {
-    const resposta = await authApi.atualizarPerfil(state.usuario.email, senhaAtual, nome.trim(), novaSenha || undefined, dataNascimento || "");
+    const resposta = await authApi.atualizarPerfil(state.usuario.email, senhaAtual, nome.trim(), novaSenha || undefined, dataNascimento || "", sexo || "");
     if (!resposta.ok) { toastError(resposta.erro || "Não foi possível salvar."); return; }
     toastSuccess("Perfil atualizado.");
-    state.usuario = { nome: resposta.nome || nome.trim(), email: state.usuario.email, foto: state.usuario.foto || "", dataNascimento: dataNascimento || "" };
+    state.usuario = { nome: resposta.nome || nome.trim(), email: state.usuario.email, foto: state.usuario.foto || "", dataNascimento: dataNascimento || "", sexo: sexo || "" };
     persistUsuario();
     state.showEditarPerfil = false;
     state.showNovaSenha = false;
@@ -973,6 +990,26 @@ function mesclarComPendentes(listaServidor, tipoCriacao) {
   return listaServidor.concat(pendentes);
 }
 
+// Mantém nome/foto/data de nascimento/sexo atualizados em qualquer aparelho logado na mesma conta.
+// Esses campos ficam guardados na nossa própria conta de usuário (não dependem do Google estar
+// conectado), mas antes só eram buscados no momento do login — por isso um dado editado no celular
+// não aparecia no PC (e vice-versa) enquanto o app continuasse aberto e logado lá. Roda sempre junto
+// da sincronização normal (abertura do app, volta de segundo plano, foco na janela).
+async function sincronizarPerfilDoServidor() {
+  try {
+    const resposta = await authApi.buscarPerfil(state.usuario.email);
+    if (!resposta || !resposta.ok) return;
+    const mudou = state.usuario.nome !== resposta.nome || (state.usuario.foto || "") !== (resposta.foto || "") ||
+      (state.usuario.dataNascimento || "") !== (resposta.dataNascimento || "") || (state.usuario.sexo || "") !== (resposta.sexo || "");
+    if (!mudou) return;
+    state.usuario = Object.assign({}, state.usuario, {
+      nome: resposta.nome, foto: resposta.foto || "", dataNascimento: resposta.dataNascimento || "", sexo: resposta.sexo || "",
+    });
+    persistUsuario();
+    render();
+  } catch { /* falha de rede — mantém os dados de perfil locais e tenta de novo na próxima abertura */ }
+}
+
 // Busca os dados no NOSSO backend (Code.gs) — nunca fala diretamente com o Google. É por isso que
 // pode ser chamada sempre que o app abre (ou depois do login) sem nunca abrir nenhuma tela do Google:
 // é uma chamada comum ao mesmo servidor que já cuida do login. Se a conta não estiver conectada ao
@@ -985,6 +1022,7 @@ function mesclarComPendentes(listaServidor, tipoCriacao) {
 async function sincronizarDoServidor() {
   if (!state.usuario) return;
   await processarFilaPendente();
+  await sincronizarPerfilDoServidor();
   try {
     const resposta = await authApi.carregarDadosGoogle(state.usuario.email);
     if (!resposta.ok) {
@@ -998,6 +1036,7 @@ async function sincronizarDoServidor() {
     if (resposta.altura) { state.altura = resposta.altura; persistAltura(); }
     state.medidas = mesclarComPendentes(resposta.medidas || [], "salvarMedidaGoogle"); persistMedidas();
     state.bioimpedancia = mesclarComPendentes(resposta.bioimpedancia || [], "salvarBioimpedanciaGoogle"); persistBioimpedancia();
+    state.calorimetria = mesclarComPendentes(resposta.calorimetria || [], "salvarCalorimetriaGoogle"); persistCalorimetria();
     render();
   } catch { /* falha de rede — mantém os dados locais e tenta de novo na próxima abertura */ }
 }
@@ -1009,9 +1048,11 @@ function publicarRegistrosLocaisPendentes(remoto) {
   const idsRefeicoes = new Set((remoto.meals || []).map((m) => m.id));
   const idsMedidas = new Set((remoto.medidas || []).map((m) => m.id));
   const idsBioimpedancia = new Set((remoto.bioimpedancia || []).map((b) => b.id));
+  const idsCalorimetria = new Set((remoto.calorimetria || []).map((c) => c.id));
   state.meals.filter((m) => !idsRefeicoes.has(m.id)).forEach((m) => enviarComFila("salvarRefeicaoGoogle", [state.usuario.email, m]));
   state.medidas.filter((m) => !idsMedidas.has(m.id)).forEach((m) => enviarComFila("salvarMedidaGoogle", [state.usuario.email, m]));
   state.bioimpedancia.filter((b) => !idsBioimpedancia.has(b.id)).forEach((b) => enviarComFila("salvarBioimpedanciaGoogle", [state.usuario.email, b]));
+  state.calorimetria.filter((c) => !idsCalorimetria.has(c.id)).forEach((c) => enviarComFila("salvarCalorimetriaGoogle", [state.usuario.email, c]));
   if (!remoto.goals) enviarComFila("atualizarMetasGoogle", [state.usuario.email, state.goals, state.altura]);
 }
 // Única função que efetivamente abre algo do Google — e só roda quando a pessoa clica no botão
@@ -1032,6 +1073,7 @@ async function acaoConectarGoogle() {
     if (resposta.altura) { state.altura = resposta.altura; persistAltura(); }
     state.medidas = mergeMedidas(state.medidas, resposta.medidas || []); persistMedidas();
     state.bioimpedancia = mergeMedidas(state.bioimpedancia, resposta.bioimpedancia || []); persistBioimpedancia();
+    state.calorimetria = mergeMedidas(state.calorimetria, resposta.calorimetria || []); persistCalorimetria();
     toastSuccess("Conectado como " + state.account.email + ". Seus dados agora sincronizam entre aparelhos — sem precisar conectar de novo.");
   } catch (err) { toastError((err && err.message) || "Falha ao conectar com o Google. Tente novamente."); }
   finally { state.syncing = false; render(); }
@@ -1125,10 +1167,11 @@ function otpKeydown(event, index) {
 function submitPerfil() {
   const nome = document.getElementById("perfil-nome").value;
   const dataNascimento = document.getElementById("perfil-data-nascimento").value;
+  const sexo = document.getElementById("perfil-sexo").value;
   const senhaAtual = document.getElementById("perfil-senha-atual").value;
   const novaSenhaEl = document.getElementById("perfil-nova-senha");
   const novaSenha = novaSenhaEl ? novaSenhaEl.value : "";
-  acaoSalvarPerfil(nome, senhaAtual, novaSenha, dataNascimento);
+  acaoSalvarPerfil(nome, senhaAtual, novaSenha, dataNascimento, sexo);
 }
 
 /* ===================== templates ===================== */
@@ -1239,6 +1282,12 @@ function editarPerfilTemplate() {
       '<div class="modal-body">' +
         '<div><label class="field-label">Nome</label><input id="perfil-nome" class="field-input" value="' + esc(u.nome) + '"/></div>' +
         '<div><label class="field-label">Data de nascimento</label><input id="perfil-data-nascimento" type="date" class="field-input" value="' + esc(u.dataNascimento || "") + '"/></div>' +
+        '<div><label class="field-label">Sexo</label><select id="perfil-sexo" class="field-input">' +
+          '<option value="">Selecione...</option>' +
+          '<option value="feminino"' + (u.sexo === "feminino" ? " selected" : "") + ">Feminino</option>" +
+          '<option value="masculino"' + (u.sexo === "masculino" ? " selected" : "") + ">Masculino</option>" +
+          '<option value="prefiro_nao_informar"' + (u.sexo === "prefiro_nao_informar" ? " selected" : "") + ">Prefiro não informar</option>" +
+        "</select></div>" +
         (state.showNovaSenha ?
           '<div><label class="field-label">Nova senha</label><input id="perfil-nova-senha" type="password" class="field-input" placeholder="Pelo menos 6 caracteres" autofocus/></div>'
           :
@@ -1359,27 +1408,36 @@ function imcCardTemplate() {
 }
 
 /* ===================== bioimpedância e calorimetria ===================== */
-function acaoAbrirFormBioimpedancia() { state.showFormBioimpedancia = true; render(); }
+function acaoAbrirFormBioimpedancia(aba) {
+  state.showFormBioimpedancia = true;
+  state.bioAbaFormulario = aba === "calorimetria" ? "calorimetria" : "bioimpedancia";
+  render();
+}
+function acaoTrocarAbaFormBioimpedancia(aba) { state.bioAbaFormulario = aba; render(); }
 function acaoFecharFormBioimpedancia() { state.showFormBioimpedancia = false; render(); }
-const BIOIMPEDANCIA_CAMPOS = ["altura", "peso", "gordura", "massaMagra", "massaMuscular", "aguaCorporal", "gorduraVisceral", "idadeMetabolica", "tmb", "get"];
+
+const BIOIMPEDANCIA_CAMPOS = ["altura", "peso", "gordura", "massaMagra", "massaMuscular", "aguaCorporal", "gorduraVisceral", "idadeMetabolica"];
+const CALORIMETRIA_CAMPOS = ["tmb", "get"];
+
 function acaoSalvarBioimpedancia() {
+  const dataEl = document.getElementById("bio-data");
+  const data = dataEl ? dataEl.value : "";
+  if (!data) { toastError("Informe a data da medição."); return; }
   const valores = {};
   BIOIMPEDANCIA_CAMPOS.forEach((c) => {
     const el = document.getElementById("bio-" + c);
     valores[c] = el ? el.value.trim().replace(",", ".") : "";
   });
   if (!valores.altura || isNaN(Number(valores.altura))) { toastError("Informe a altura."); return; }
-  if (!valores.tmb || isNaN(Number(valores.tmb))) { toastError("Informe a Taxa Metabólica Basal (TMB)."); return; }
-  if (!valores.get || isNaN(Number(valores.get))) { toastError("Informe o Gasto Energético Total (GET)."); return; }
   const now = new Date();
   const novoRegistro = Object.assign(
-    { id: Date.now(), date: today(), time: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) },
+    { id: Date.now(), date: data, time: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) },
     BIOIMPEDANCIA_CAMPOS.reduce((acc, c) => { acc[c] = valores[c] ? Number(valores[c]) : null; return acc; }, {})
   );
   state.bioimpedancia = state.bioimpedancia.concat([novoRegistro]);
   persistBioimpedancia();
   state.showFormBioimpedancia = false;
-  toastSuccess("Registro de bioimpedância e calorimetria salvo.");
+  toastSuccess("Registro de bioimpedância salvo.");
   if (state.account) enviarComFila("salvarBioimpedanciaGoogle", [state.usuario.email, novoRegistro]);
   render();
 }
@@ -1389,67 +1447,131 @@ function acaoRemoverBioimpedancia(id) {
   if (state.account) enviarComFila("removerBioimpedanciaGoogle", [state.usuario.email, id]);
   render();
 }
-function bioimpedanciaFormTemplate() {
+function acaoSalvarCalorimetria() {
+  const dataEl = document.getElementById("calo-data");
+  const data = dataEl ? dataEl.value : "";
+  if (!data) { toastError("Informe a data do exame."); return; }
+  const valores = {};
+  CALORIMETRIA_CAMPOS.forEach((c) => {
+    const el = document.getElementById("calo-" + c);
+    valores[c] = el ? el.value.trim().replace(",", ".") : "";
+  });
+  if (!valores.tmb || isNaN(Number(valores.tmb))) { toastError("Informe a Taxa Metabólica Basal (TMB)."); return; }
+  if (!valores.get || isNaN(Number(valores.get))) { toastError("Informe o Gasto Energético Total (GET)."); return; }
+  const now = new Date();
+  const novoRegistro = {
+    id: Date.now(), date: data, time: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+    tmb: Number(valores.tmb), get: Number(valores.get),
+  };
+  state.calorimetria = state.calorimetria.concat([novoRegistro]);
+  persistCalorimetria();
+  state.showFormBioimpedancia = false;
+  toastSuccess("Registro de calorimetria salvo.");
+  if (state.account) enviarComFila("salvarCalorimetriaGoogle", [state.usuario.email, novoRegistro]);
+  render();
+}
+function acaoRemoverCalorimetria(id) {
+  state.calorimetria = state.calorimetria.filter((r) => r.id !== id);
+  persistCalorimetria();
+  if (state.account) enviarComFila("removerCalorimetriaGoogle", [state.usuario.email, id]);
+  render();
+}
+
+function bioimpedanciaFormCamposTemplate() {
   const campo = (id, label, unidade, placeholder) =>
     '<div><label class="field-label">' + label + (unidade ? " (" + unidade + ")" : "") + '</label>' +
     '<input id="bio-' + id + '" type="number" min="0" step="0.1" class="field-input" placeholder="' + placeholder + '"/></div>';
   return '' +
+    '<div class="bioimpedancia-form-grid">' +
+      '<div><label class="field-label">Data da medição</label><input id="bio-data" type="date" class="field-input" value="' + esc(today()) + '"/></div>' +
+      campo("altura", "Altura", "cm", "Ex.: 172") +
+      campo("peso", "Peso", "kg", "Ex.: 78,5") +
+      campo("gordura", "% de gordura corporal", "%", "Ex.: 22,4") +
+      campo("massaMagra", "Massa magra", "kg", "Ex.: 60,8") +
+      campo("massaMuscular", "Massa muscular", "kg", "Ex.: 55,2") +
+      campo("aguaCorporal", "Água corporal", "%", "Ex.: 55,0") +
+      campo("gorduraVisceral", "Gordura visceral", "nível", "Ex.: 8") +
+      campo("idadeMetabolica", "Idade metabólica", "anos", "Ex.: 30") +
+    "</div>" +
+    '<div class="bioimpedancia-form-acoes">' +
+      '<button class="bioimpedancia-btn-secundario" onclick="acaoFecharFormBioimpedancia()">Cancelar</button>' +
+      '<button class="btn-primary" onclick="acaoSalvarBioimpedancia()">' + icon("check") + " Salvar</button>" +
+    "</div>";
+}
+function calorimetriaFormCamposTemplate() {
+  const campo = (id, label, unidade, placeholder) =>
+    '<div><label class="field-label">' + label + (unidade ? " (" + unidade + ")" : "") + '</label>' +
+    '<input id="calo-' + id + '" type="number" min="0" step="0.1" class="field-input" placeholder="' + placeholder + '"/></div>';
+  return '' +
+    '<div class="bioimpedancia-form-grid">' +
+      '<div><label class="field-label">Data do exame</label><input id="calo-data" type="date" class="field-input" value="' + esc(today()) + '"/></div>' +
+      campo("tmb", "Taxa Metabólica Basal (TMB)", "kcal", "Ex.: 1650") +
+      campo("get", "Gasto Energético Total (GET)", "kcal", "Ex.: 2400") +
+    "</div>" +
+    '<div class="bioimpedancia-form-acoes">' +
+      '<button class="bioimpedancia-btn-secundario" onclick="acaoFecharFormBioimpedancia()">Cancelar</button>' +
+      '<button class="btn-primary" onclick="acaoSalvarCalorimetria()">' + icon("check") + " Salvar</button>" +
+    "</div>";
+}
+function bioimpedanciaFormTemplate() {
+  const aba = state.bioAbaFormulario;
+  return '' +
     '<section class="medidas-section">' +
       '<h2 class="medidas-section-title">' + icon("ruler") + " Bioimpedância e Calorimetria</h2>" +
-      '<div class="bioimpedancia-form-bloco">' +
-        '<h3 class="bioimpedancia-form-subtitulo">Bioimpedância</h3>' +
-        '<div class="bioimpedancia-form-grid">' +
-          campo("altura", "Altura", "cm", "Ex.: 172") +
-          campo("peso", "Peso", "kg", "Ex.: 78,5") +
-          campo("gordura", "% de gordura corporal", "%", "Ex.: 22,4") +
-          campo("massaMagra", "Massa magra", "kg", "Ex.: 60,8") +
-          campo("massaMuscular", "Massa muscular", "kg", "Ex.: 55,2") +
-          campo("aguaCorporal", "Água corporal", "%", "Ex.: 55,0") +
-          campo("gorduraVisceral", "Gordura visceral", "nível", "Ex.: 8") +
-          campo("idadeMetabolica", "Idade metabólica", "anos", "Ex.: 30") +
-        "</div>" +
+      '<div class="bioimpedancia-form-tabs">' +
+        '<button class="bioimpedancia-form-tab' + (aba === "bioimpedancia" ? " active" : "") + '" onclick="acaoTrocarAbaFormBioimpedancia(\'bioimpedancia\')">Bioimpedância</button>' +
+        '<button class="bioimpedancia-form-tab' + (aba === "calorimetria" ? " active" : "") + '" onclick="acaoTrocarAbaFormBioimpedancia(\'calorimetria\')">Calorimetria</button>' +
       "</div>" +
-      '<div class="bioimpedancia-form-bloco">' +
-        '<h3 class="bioimpedancia-form-subtitulo">Calorimetria</h3>' +
-        '<div class="bioimpedancia-form-grid">' +
-          campo("tmb", "Taxa Metabólica Basal (TMB)", "kcal", "Ex.: 1650") +
-          campo("get", "Gasto Energético Total (GET)", "kcal", "Ex.: 2400") +
-        "</div>" +
-      "</div>" +
-      '<div class="bioimpedancia-form-acoes">' +
-        '<button class="bioimpedancia-btn-secundario" onclick="acaoFecharFormBioimpedancia()">Cancelar</button>' +
-        '<button class="btn-primary" onclick="acaoSalvarBioimpedancia()">' + icon("check") + " Salvar</button>" +
-      "</div>" +
+      (aba === "calorimetria" ? calorimetriaFormCamposTemplate() : bioimpedanciaFormCamposTemplate()) +
     "</section>";
 }
 function bioimpedanciaHistoricoTemplate() {
   const registros = state.bioimpedancia.slice().sort((a, b) => b.id - a.id).slice(1);
   if (!registros.length) return "";
   return '<div class="medidas-history-list" style="margin-top:14px">' + registros.map((r) =>
-    '<div class="medida-history-row"><div class="medida-history-left"><span class="medida-history-tipo">Altura ' + (r.altura ? formatNumber(r.altura, 1) : "—") + " cm · TMB " + (r.tmb ? formatNumber(r.tmb) : "—") + " · GET " + (r.get ? formatNumber(r.get) : "—") + '</span>' +
-    '<span class="medida-history-meta">' + icon("clock") + " " + dateLabel(r.date) + " · " + esc(r.time) + "</span></div>" +
+    '<div class="medida-history-row"><div class="medida-history-left"><span class="medida-history-tipo">Bioimpedância — Altura ' + (r.altura ? formatNumber(r.altura, 1) : "—") + " cm · Peso " + (r.peso ? formatNumber(r.peso, 1) : "—") + " kg</span>" +
+    '<span class="medida-history-meta">' + icon("clock") + " " + dateLabel(r.date) + "</span></div>" +
     '<button class="meal-row-delete" aria-label="Remover registro" onclick="acaoRemoverBioimpedancia(' + r.id + ')">' + icon("trash") + "</button></div>"
+  ).join("") + "</div>";
+}
+function calorimetriaHistoricoTemplate() {
+  const registros = state.calorimetria.slice().sort((a, b) => b.id - a.id).slice(1);
+  if (!registros.length) return "";
+  return '<div class="medidas-history-list" style="margin-top:14px">' + registros.map((r) =>
+    '<div class="medida-history-row"><div class="medida-history-left"><span class="medida-history-tipo">Calorimetria — TMB ' + (r.tmb ? formatNumber(r.tmb) : "—") + " · GET " + (r.get ? formatNumber(r.get) : "—") + '</span>' +
+    '<span class="medida-history-meta">' + icon("clock") + " " + dateLabel(r.date) + "</span></div>" +
+    '<button class="meal-row-delete" aria-label="Remover registro" onclick="acaoRemoverCalorimetria(' + r.id + ')">' + icon("trash") + "</button></div>"
   ).join("") + "</div>";
 }
 function bioimpedanciaSectionTemplate() {
   if (state.showFormBioimpedancia) return bioimpedanciaFormTemplate();
-  const ultimo = ultimaBioimpedancia();
-  if (!ultimo) {
+  const ultimoBio = ultimaBioimpedancia();
+  const ultimoCalo = ultimaCalorimetria();
+  if (!ultimoBio && !ultimoCalo) {
     return '<section class="medidas-section">' +
       '<h2 class="medidas-section-title">' + icon("ruler") + " Bioimpedância e Calorimetria</h2>" +
       '<button class="bioimpedancia-add-btn" onclick="acaoAbrirFormBioimpedancia()">' + icon("plus") + "<span>Clique aqui para cadastrar as informações</span></button>" +
       "</section>";
   }
+  const linha = (valor, label) => '<div class="bioimpedancia-resumo-linha"><span class="bioimpedancia-resumo-valor-sm">' + valor + '</span><span class="bioimpedancia-resumo-label">' + label + "</span></div>";
   return '<section class="medidas-section">' +
     '<div class="medidas-section-title-row"><h2 class="medidas-section-title">' + icon("ruler") + " Bioimpedância e Calorimetria</h2>" +
     '<button class="bioimpedancia-btn-secundario" onclick="acaoAbrirFormBioimpedancia()">' + icon("plus") + " Nova medição</button></div>" +
     '<div class="bioimpedancia-resumo">' +
-      '<div class="bioimpedancia-resumo-item"><span class="bioimpedancia-resumo-valor">' + (ultimo.altura ? formatNumber(ultimo.altura, 1) : "—") + '</span><span class="bioimpedancia-resumo-label">Altura (cm)</span></div>' +
-      '<div class="bioimpedancia-resumo-item"><span class="bioimpedancia-resumo-valor">' + (ultimo.tmb ? formatNumber(ultimo.tmb) : "—") + '</span><span class="bioimpedancia-resumo-label">TMB (kcal)</span></div>' +
-      '<div class="bioimpedancia-resumo-item"><span class="bioimpedancia-resumo-valor">' + (ultimo.get ? formatNumber(ultimo.get) : "—") + '</span><span class="bioimpedancia-resumo-label">GET (kcal)</span></div>' +
+      '<div class="bioimpedancia-resumo-item"><span class="bioimpedancia-resumo-valor">' + (ultimoBio && ultimoBio.altura ? formatNumber(ultimoBio.altura, 1) : "—") + '</span><span class="bioimpedancia-resumo-label">Altura (cm)</span></div>' +
+      '<div class="bioimpedancia-resumo-item bioimpedancia-resumo-item-multi">' +
+        linha(ultimoCalo && ultimoCalo.tmb ? formatNumber(ultimoCalo.tmb) : "—", "TMB (kcal)") +
+        linha(ultimoCalo && ultimoCalo.get ? formatNumber(ultimoCalo.get) : "—", "GET (kcal)") +
+      "</div>" +
+      '<div class="bioimpedancia-resumo-item bioimpedancia-resumo-item-multi">' +
+        linha(ultimoBio && ultimoBio.peso ? formatNumber(ultimoBio.peso, 1) : "—", "Peso (kg)") +
+        linha(ultimoBio && ultimoBio.massaMuscular ? formatNumber(ultimoBio.massaMuscular, 1) : "—", "Massa musc. (kg)") +
+        linha(ultimoBio && ultimoBio.gordura ? formatNumber(ultimoBio.gordura, 1) : "—", "Gordura (%)") +
+      "</div>" +
     "</div>" +
-    '<p class="bioimpedancia-atualizado">Atualizado em ' + dateLabel(ultimo.date) + "</p>" +
+    '<p class="bioimpedancia-atualizado">Bioimpedância: ' + (ultimoBio ? dateLabel(ultimoBio.date) : "sem registro") + " · Calorimetria: " + (ultimoCalo ? dateLabel(ultimoCalo.date) : "sem registro") + "</p>" +
     bioimpedanciaHistoricoTemplate() +
+    calorimetriaHistoricoTemplate() +
     "</section>";
 }
 
