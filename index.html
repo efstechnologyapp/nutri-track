@@ -281,8 +281,24 @@ svg{ display: block; }
 .imc-chart-track{ height:14px; border-radius:999px; }
 .imc-chart-ticks{ position:relative; height:16px; margin-top:4px; }
 .imc-chart-tick{ position:absolute; transform:translateX(-50%); font-size:10px; font-weight:500; color:#9aa9a1; white-space:nowrap; }
-.altura-field-fixed{ margin-top:16px; max-width:220px; }
 .medidas-section{ margin-top:24px; border-radius:22px; border:1px solid #e5e9e1; background:#fff; padding:20px; box-shadow:0 10px 28px rgba(43,73,53,0.045); }
+.medidas-section-title-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.bioimpedancia-btn-secundario{ display:flex; align-items:center; gap:8px; border-radius:999px; border:1px solid #dce5db; background:rgba(255,255,255,.7); padding:9px 14px; font-size:13px; font-weight:600; color:#557268; transition:background .15s; }
+.bioimpedancia-btn-secundario:hover{ background:#f2f6f0; }
+.bioimpedancia-add-btn{ margin-top:16px; display:flex; width:100%; flex-direction:column; align-items:center; justify-content:center; gap:8px; border-radius:16px; border:1.5px dashed #cddccb; background:#f7faf5; padding:28px 16px; color:#557268; font-size:14px; font-weight:600; transition:background .15s, border-color .15s; }
+.bioimpedancia-add-btn:hover{ background:#eef6e4; border-color:#8fbf78; }
+.bioimpedancia-resumo{ margin-top:16px; display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; }
+.bioimpedancia-resumo-item{ border-radius:16px; background:#f7f9f5; padding:14px 10px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; }
+.bioimpedancia-resumo-valor{ font-family:'Fraunces',serif; font-size:22px; font-weight:600; color:#214c3d; }
+.bioimpedancia-resumo-label{ font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:#9aa9a1; }
+.bioimpedancia-atualizado{ margin:12px 0 0; font-size:12px; color:#9aa9a1; }
+.bioimpedancia-form-bloco{ margin-top:18px; }
+.bioimpedancia-form-subtitulo{ margin:0 0 12px; font-size:14px; font-weight:700; color:#4b7048; text-transform:uppercase; letter-spacing:0.06em; }
+.bioimpedancia-form-grid{ display:grid; grid-template-columns:1fr; gap:12px; }
+@media (min-width: 560px){ .bioimpedancia-form-grid{ grid-template-columns:1fr 1fr; } }
+.bioimpedancia-form-acoes{ margin-top:20px; display:flex; gap:12px; flex-wrap:wrap; }
+.bioimpedancia-form-acoes .btn-primary{ margin-top:0; flex:1; min-width:160px; }
+.bioimpedancia-form-acoes .bioimpedancia-btn-secundario{ flex:0 0 auto; }
 @media (min-width: 640px){ .medidas-section{ padding:24px; } }
 .medidas-section-title{ margin:0; display:flex; align-items:center; gap:8px; font-family:'Fraunces',serif; font-size:20px; font-weight:600; color:#1b3f34; }
 .medida-form{ margin-top:16px; display:flex; flex-direction:column; gap:12px; max-width:360px; }
@@ -431,6 +447,8 @@ const authApi = {
   atualizarMetasGoogle: (email, goals, altura) => chamarApi("atualizarMetasGoogle", { email, goals, altura }),
   salvarMedidaGoogle: (email, medida) => chamarApi("salvarMedidaGoogle", { email, medida }),
   removerMedidaGoogle: (email, id) => chamarApi("removerMedidaGoogle", { email, id }),
+  salvarBioimpedanciaGoogle: (email, registro) => chamarApi("salvarBioimpedanciaGoogle", { email, registro }),
+  removerBioimpedanciaGoogle: (email, id) => chamarApi("removerBioimpedanciaGoogle", { email, id }),
 };
 
 /* ===================== conexão com Google (Google Identity Services) ===================== */
@@ -605,6 +623,7 @@ const CHAVE_GACCOUNT = "nutri-track-google-account";
 const CHAVE_ALTURA = "nutri-track-altura";
 const CHAVE_MEDIDAS = "nutri-track-medidas";
 const CHAVE_FILA = "nutri-track-fila-pendente";
+const CHAVE_BIOIMPEDANCIA = "nutri-track-bioimpedancia";
 
 /* ===================== medidas e aferições ===================== */
 const medidaTipos = {
@@ -638,12 +657,15 @@ const state = {
   altura: readStorage(CHAVE_ALTURA, null), // cm
   medidas: readStorage(CHAVE_MEDIDAS, []),
   medidaTipo: "",
+  bioimpedancia: readStorage(CHAVE_BIOIMPEDANCIA, []),
+  showFormBioimpedancia: false,
 };
 function persistUsuario() { writeStorage(CHAVE_USUARIO, state.usuario); }
 function persistGoals() { writeStorage(CHAVE_GOALS, state.goals); }
 function persistMeals() { writeStorage(CHAVE_MEALS, state.meals); }
 function persistAltura() { writeStorage(CHAVE_ALTURA, state.altura); }
 function persistMedidas() { writeStorage(CHAVE_MEDIDAS, state.medidas); }
+function persistBioimpedancia() { writeStorage(CHAVE_BIOIMPEDANCIA, state.bioimpedancia); }
 
 /* ===================== helpers de derivação ===================== */
 function today() { return todayKey(); }
@@ -657,9 +679,16 @@ function ultimoRegistroMedida(tipo) {
   const registros = state.medidas.filter((m) => m.tipo === tipo).sort((a, b) => b.id - a.id);
   return registros.length ? registros[0] : null;
 }
+// A altura agora vem do registro mais recente de Bioimpedância e Calorimetria (não é mais um campo
+// avulso) — é lá que a pessoa informa a altura junto com o resto dos dados do exame/balança.
+function ultimaBioimpedancia() {
+  const registros = state.bioimpedancia.slice().sort((a, b) => b.id - a.id);
+  return registros.length ? registros[0] : null;
+}
 function calcularImc() {
   const registro = ultimoRegistroMedida("peso");
-  const alturaM = Number(state.altura) / 100;
+  const bio = ultimaBioimpedancia();
+  const alturaM = Number(bio && bio.altura) / 100;
   if (!registro || !alturaM) return null;
   const peso = Number(registro.valor);
   if (!peso) return null;
@@ -801,12 +830,6 @@ function acaoMostrarCampoNovaSenha() { state.showNovaSenha = true; render(); }
 function acaoTrocarAba(aba) { state.activeTab = aba; render(); }
 
 /* ===================== medidas e aferições ===================== */
-function acaoAtualizarAltura(value) {
-  state.altura = Math.max(0, Number(value) || 0) || null;
-  persistAltura();
-  if (state.account) enviarComFila("atualizarMetasGoogle", [state.usuario.email, state.goals, state.altura]);
-  render();
-}
 function acaoSelecionarTipoMedida(tipo) { state.medidaTipo = tipo; render(); }
 function acaoSalvarMedida() {
   const tipo = state.medidaTipo;
@@ -948,6 +971,7 @@ async function sincronizarDoServidor() {
     if (resposta.goals) { state.goals = resposta.goals; persistGoals(); }
     if (resposta.altura) { state.altura = resposta.altura; persistAltura(); }
     state.medidas = mesclarComPendentes(resposta.medidas || [], "salvarMedidaGoogle"); persistMedidas();
+    state.bioimpedancia = mesclarComPendentes(resposta.bioimpedancia || [], "salvarBioimpedanciaGoogle"); persistBioimpedancia();
     render();
   } catch { /* falha de rede — mantém os dados locais e tenta de novo na próxima abertura */ }
 }
@@ -958,8 +982,10 @@ async function sincronizarDoServidor() {
 function publicarRegistrosLocaisPendentes(remoto) {
   const idsRefeicoes = new Set((remoto.meals || []).map((m) => m.id));
   const idsMedidas = new Set((remoto.medidas || []).map((m) => m.id));
+  const idsBioimpedancia = new Set((remoto.bioimpedancia || []).map((b) => b.id));
   state.meals.filter((m) => !idsRefeicoes.has(m.id)).forEach((m) => enviarComFila("salvarRefeicaoGoogle", [state.usuario.email, m]));
   state.medidas.filter((m) => !idsMedidas.has(m.id)).forEach((m) => enviarComFila("salvarMedidaGoogle", [state.usuario.email, m]));
+  state.bioimpedancia.filter((b) => !idsBioimpedancia.has(b.id)).forEach((b) => enviarComFila("salvarBioimpedanciaGoogle", [state.usuario.email, b]));
   if (!remoto.goals) enviarComFila("atualizarMetasGoogle", [state.usuario.email, state.goals, state.altura]);
 }
 // Única função que efetivamente abre algo do Google — e só roda quando a pessoa clica no botão
@@ -979,6 +1005,7 @@ async function acaoConectarGoogle() {
     if (resposta.goals) { state.goals = resposta.goals; persistGoals(); }
     if (resposta.altura) { state.altura = resposta.altura; persistAltura(); }
     state.medidas = mergeMedidas(state.medidas, resposta.medidas || []); persistMedidas();
+    state.bioimpedancia = mergeMedidas(state.bioimpedancia, resposta.bioimpedancia || []); persistBioimpedancia();
     toastSuccess("Conectado como " + state.account.email + ". Seus dados agora sincronizam entre aparelhos — sem precisar conectar de novo.");
   } catch (err) { toastError((err && err.message) || "Falha ao conectar com o Google. Tente novamente."); }
   finally { state.syncing = false; render(); }
@@ -1291,12 +1318,105 @@ function imcCardTemplate() {
     (imc ?
       '<div class="imc-value-row"><span class="imc-value">' + formatNumber(imc, 1) + '</span><span class="imc-class" style="background:' + faixa.corSuave + ";color:" + faixa.cor + '">' + faixa.label + "</span></div>"
       :
-      '<p class="imc-empty">Registre seu peso na seção abaixo e informe sua altura para calcular o IMC.</p>'
+      '<p class="imc-empty">Registre seu peso nas Medidas e sua altura na seção de Bioimpedância abaixo para calcular o IMC.</p>'
     ) +
     imcChartTemplate(imc) +
+    "</div>";
+}
+
+/* ===================== bioimpedância e calorimetria ===================== */
+function acaoAbrirFormBioimpedancia() { state.showFormBioimpedancia = true; render(); }
+function acaoFecharFormBioimpedancia() { state.showFormBioimpedancia = false; render(); }
+const BIOIMPEDANCIA_CAMPOS = ["altura", "peso", "gordura", "massaMagra", "massaMuscular", "aguaCorporal", "gorduraVisceral", "idadeMetabolica", "tmb", "get"];
+function acaoSalvarBioimpedancia() {
+  const valores = {};
+  BIOIMPEDANCIA_CAMPOS.forEach((c) => {
+    const el = document.getElementById("bio-" + c);
+    valores[c] = el ? el.value.trim().replace(",", ".") : "";
+  });
+  if (!valores.altura || isNaN(Number(valores.altura))) { toastError("Informe a altura."); return; }
+  if (!valores.tmb || isNaN(Number(valores.tmb))) { toastError("Informe a Taxa Metabólica Basal (TMB)."); return; }
+  if (!valores.get || isNaN(Number(valores.get))) { toastError("Informe o Gasto Energético Total (GET)."); return; }
+  const now = new Date();
+  const novoRegistro = Object.assign(
+    { id: Date.now(), date: today(), time: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) },
+    BIOIMPEDANCIA_CAMPOS.reduce((acc, c) => { acc[c] = valores[c] ? Number(valores[c]) : null; return acc; }, {})
+  );
+  state.bioimpedancia = state.bioimpedancia.concat([novoRegistro]);
+  persistBioimpedancia();
+  state.showFormBioimpedancia = false;
+  toastSuccess("Registro de bioimpedância e calorimetria salvo.");
+  if (state.account) enviarComFila("salvarBioimpedanciaGoogle", [state.usuario.email, novoRegistro]);
+  render();
+}
+function acaoRemoverBioimpedancia(id) {
+  state.bioimpedancia = state.bioimpedancia.filter((r) => r.id !== id);
+  persistBioimpedancia();
+  if (state.account) enviarComFila("removerBioimpedanciaGoogle", [state.usuario.email, id]);
+  render();
+}
+function bioimpedanciaFormTemplate() {
+  const campo = (id, label, unidade, placeholder) =>
+    '<div><label class="field-label">' + label + (unidade ? " (" + unidade + ")" : "") + '</label>' +
+    '<input id="bio-' + id + '" type="number" min="0" step="0.1" class="field-input" placeholder="' + placeholder + '"/></div>';
+  return '' +
+    '<section class="medidas-section">' +
+      '<h2 class="medidas-section-title">' + icon("ruler") + " Bioimpedância e Calorimetria</h2>" +
+      '<div class="bioimpedancia-form-bloco">' +
+        '<h3 class="bioimpedancia-form-subtitulo">Bioimpedância</h3>' +
+        '<div class="bioimpedancia-form-grid">' +
+          campo("altura", "Altura", "cm", "Ex.: 172") +
+          campo("peso", "Peso", "kg", "Ex.: 78,5") +
+          campo("gordura", "% de gordura corporal", "%", "Ex.: 22,4") +
+          campo("massaMagra", "Massa magra", "kg", "Ex.: 60,8") +
+          campo("massaMuscular", "Massa muscular", "kg", "Ex.: 55,2") +
+          campo("aguaCorporal", "Água corporal", "%", "Ex.: 55,0") +
+          campo("gorduraVisceral", "Gordura visceral", "nível", "Ex.: 8") +
+          campo("idadeMetabolica", "Idade metabólica", "anos", "Ex.: 30") +
+        "</div>" +
+      "</div>" +
+      '<div class="bioimpedancia-form-bloco">' +
+        '<h3 class="bioimpedancia-form-subtitulo">Calorimetria</h3>' +
+        '<div class="bioimpedancia-form-grid">' +
+          campo("tmb", "Taxa Metabólica Basal (TMB)", "kcal", "Ex.: 1650") +
+          campo("get", "Gasto Energético Total (GET)", "kcal", "Ex.: 2400") +
+        "</div>" +
+      "</div>" +
+      '<div class="bioimpedancia-form-acoes">' +
+        '<button class="bioimpedancia-btn-secundario" onclick="acaoFecharFormBioimpedancia()">Cancelar</button>' +
+        '<button class="btn-primary" onclick="acaoSalvarBioimpedancia()">' + icon("check") + " Salvar</button>" +
+      "</div>" +
+    "</section>";
+}
+function bioimpedanciaHistoricoTemplate() {
+  const registros = state.bioimpedancia.slice().sort((a, b) => b.id - a.id).slice(1);
+  if (!registros.length) return "";
+  return '<div class="medidas-history-list" style="margin-top:14px">' + registros.map((r) =>
+    '<div class="medida-history-row"><div class="medida-history-left"><span class="medida-history-tipo">Altura ' + (r.altura ? formatNumber(r.altura, 1) : "—") + " cm · TMB " + (r.tmb ? formatNumber(r.tmb) : "—") + " · GET " + (r.get ? formatNumber(r.get) : "—") + '</span>' +
+    '<span class="medida-history-meta">' + icon("clock") + " " + dateLabel(r.date) + " · " + esc(r.time) + "</span></div>" +
+    '<button class="meal-row-delete" aria-label="Remover registro" onclick="acaoRemoverBioimpedancia(' + r.id + ')">' + icon("trash") + "</button></div>"
+  ).join("") + "</div>";
+}
+function bioimpedanciaSectionTemplate() {
+  if (state.showFormBioimpedancia) return bioimpedanciaFormTemplate();
+  const ultimo = ultimaBioimpedancia();
+  if (!ultimo) {
+    return '<section class="medidas-section">' +
+      '<h2 class="medidas-section-title">' + icon("ruler") + " Bioimpedância e Calorimetria</h2>" +
+      '<button class="bioimpedancia-add-btn" onclick="acaoAbrirFormBioimpedancia()">' + icon("plus") + "<span>Clique aqui para cadastrar as informações</span></button>" +
+      "</section>";
+  }
+  return '<section class="medidas-section">' +
+    '<div class="medidas-section-title-row"><h2 class="medidas-section-title">' + icon("ruler") + " Bioimpedância e Calorimetria</h2>" +
+    '<button class="bioimpedancia-btn-secundario" onclick="acaoAbrirFormBioimpedancia()">' + icon("plus") + " Nova medição</button></div>" +
+    '<div class="bioimpedancia-resumo">' +
+      '<div class="bioimpedancia-resumo-item"><span class="bioimpedancia-resumo-valor">' + (ultimo.altura ? formatNumber(ultimo.altura, 1) : "—") + '</span><span class="bioimpedancia-resumo-label">Altura (cm)</span></div>' +
+      '<div class="bioimpedancia-resumo-item"><span class="bioimpedancia-resumo-valor">' + (ultimo.tmb ? formatNumber(ultimo.tmb) : "—") + '</span><span class="bioimpedancia-resumo-label">TMB (kcal)</span></div>' +
+      '<div class="bioimpedancia-resumo-item"><span class="bioimpedancia-resumo-valor">' + (ultimo.get ? formatNumber(ultimo.get) : "—") + '</span><span class="bioimpedancia-resumo-label">GET (kcal)</span></div>' +
     "</div>" +
-    '<div class="altura-field-fixed"><label class="field-label">Altura (cm)</label>' +
-    '<input type="number" min="0" step="0.1" class="field-input" placeholder="Ex.: 172" value="' + (state.altura ? esc(state.altura) : "") + '" onchange="acaoAtualizarAltura(this.value)"/></div>';
+    '<p class="bioimpedancia-atualizado">Atualizado em ' + dateLabel(ultimo.date) + "</p>" +
+    bioimpedanciaHistoricoTemplate() +
+    "</section>";
 }
 
 function medidasFormTemplate() {
@@ -1342,7 +1462,7 @@ function medidasHistoricoTemplate() {
 }
 
 function medidasTabTemplate() {
-  return '<main>' + imcCardTemplate() + medidasFormTemplate() + medidasHistoricoTemplate() + "</main>";
+  return '<main>' + imcCardTemplate() + bioimpedanciaSectionTemplate() + medidasFormTemplate() + medidasHistoricoTemplate() + "</main>";
 }
 
 function fullHomeTemplate() {

@@ -54,6 +54,8 @@ function processarAcao(dados) {
       case "atualizarMetasGoogle": return responder(atualizarMetasGoogle(dados));
       case "salvarMedidaGoogle": return responder(salvarMedidaGoogle(dados));
       case "removerMedidaGoogle": return responder(removerMedidaGoogle(dados));
+      case "salvarBioimpedanciaGoogle": return responder(salvarBioimpedanciaGoogle(dados));
+      case "removerBioimpedanciaGoogle": return responder(removerBioimpedanciaGoogle(dados));
       default: return responder({ ok: false, erro: "Ação desconhecida." });
     }
   } catch (err) {
@@ -353,6 +355,7 @@ function garantirAbasPlanilhaUsuario(id, accessToken) {
     Refeicoes: ["id", "date", "name", "description", "time", "calories", "protein", "carbs", "fat", "fiber", "detected"],
     Metas: ["calories", "protein", "carbs", "fat", "fiber", "altura"],
     Medidas: ["id", "date", "time", "tipo", "valor"],
+    Bioimpedancia: ["id", "date", "time", "altura", "peso", "gordura", "massaMagra", "massaMuscular", "aguaCorporal", "gorduraVisceral", "idadeMetabolica", "tmb", "get"],
   };
   const meta = googleFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + "?fields=sheets.properties.title", accessToken);
   const existentes = (meta.sheets || []).map(function (s) { return s.properties.title; });
@@ -388,7 +391,7 @@ function planilhaUsuarioGoogle(usuario) {
   } else {
     const criada = googleFetch("https://sheets.googleapis.com/v4/spreadsheets", accessToken, "post", {
       properties: { title: GOOGLE_SPREADSHEET_TITLE },
-      sheets: [{ properties: { title: "Refeicoes" } }, { properties: { title: "Metas" } }, { properties: { title: "Medidas" } }],
+      sheets: [{ properties: { title: "Refeicoes" } }, { properties: { title: "Metas" } }, { properties: { title: "Medidas" } }, { properties: { title: "Bioimpedancia" } }],
     });
     id = criada.spreadsheetId;
     googleFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + "/values/Refeicoes!A1:K1?valueInputOption=RAW", accessToken, "put",
@@ -397,6 +400,8 @@ function planilhaUsuarioGoogle(usuario) {
       { values: [["calories", "protein", "carbs", "fat", "fiber", "altura"]] });
     googleFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + "/values/Medidas!A1:E1?valueInputOption=RAW", accessToken, "put",
       { values: [["id", "date", "time", "tipo", "valor"]] });
+    googleFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + "/values/Bioimpedancia!A1:M1?valueInputOption=RAW", accessToken, "put",
+      { values: [["id", "date", "time", "altura", "peso", "gordura", "massaMagra", "massaMuscular", "aguaCorporal", "gorduraVisceral", "idadeMetabolica", "tmb", "get"]] });
   }
   props.setProperty(chaveCache, id);
   return { id: id, accessToken: accessToken };
@@ -442,6 +447,7 @@ function carregarDadosGoogleInterno(usuario) {
   const mealsRes = googleFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + "/values/Refeicoes!A2:K10000", accessToken);
   const goalsRes = googleFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + "/values/Metas!A2:F2", accessToken);
   const medidasRes = googleFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + "/values/Medidas!A2:E10000", accessToken);
+  const bioimpedanciaRes = googleFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + "/values/Bioimpedancia!A2:M10000", accessToken);
   const meals = (mealsRes.values || []).map(r => ({
     id: Number(r[0]), date: r[1] || "", name: r[2] || "", description: r[3] || "", time: r[4] || "",
     calories: Number(r[5]) || 0, protein: Number(r[6]) || 0, carbs: Number(r[7]) || 0, fat: Number(r[8]) || 0, fiber: Number(r[9]) || 0,
@@ -451,7 +457,20 @@ function carregarDadosGoogleInterno(usuario) {
   const goals = goalsRow ? { calories: Number(goalsRow[0]) || 0, protein: Number(goalsRow[1]) || 0, carbs: Number(goalsRow[2]) || 0, fat: Number(goalsRow[3]) || 0, fiber: Number(goalsRow[4]) || 0 } : null;
   const altura = goalsRow && goalsRow[5] ? Number(goalsRow[5]) || null : null;
   const medidas = (medidasRes.values || []).map(r => ({ id: Number(r[0]), date: r[1] || "", time: r[2] || "", tipo: r[3] || "", valor: r[4] || "" })).filter(m => m.id && m.date && m.tipo);
-  return { meals, goals, altura, medidas };
+  const bioimpedancia = (bioimpedanciaRes.values || []).map(r => ({
+    id: Number(r[0]), date: r[1] || "", time: r[2] || "",
+    altura: r[3] !== "" && r[3] != null ? Number(r[3]) : null,
+    peso: r[4] !== "" && r[4] != null ? Number(r[4]) : null,
+    gordura: r[5] !== "" && r[5] != null ? Number(r[5]) : null,
+    massaMagra: r[6] !== "" && r[6] != null ? Number(r[6]) : null,
+    massaMuscular: r[7] !== "" && r[7] != null ? Number(r[7]) : null,
+    aguaCorporal: r[8] !== "" && r[8] != null ? Number(r[8]) : null,
+    gorduraVisceral: r[9] !== "" && r[9] != null ? Number(r[9]) : null,
+    idadeMetabolica: r[10] !== "" && r[10] != null ? Number(r[10]) : null,
+    tmb: r[11] !== "" && r[11] != null ? Number(r[11]) : null,
+    get: r[12] !== "" && r[12] != null ? Number(r[12]) : null,
+  })).filter(b => b.id && b.date);
+  return { meals, goals, altura, medidas, bioimpedancia };
 }
 
 function carregarDadosGoogle(dados) {
@@ -540,6 +559,32 @@ function removerMedidaGoogle(dados) {
     const linhas = (atuais.values || []).filter(r => Number(r[0]) !== Number(idMedida));
     googleFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + "/values/Medidas!A2:E10000:clear", accessToken, "post", {});
     if (linhas.length) googleFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + "/values/Medidas!A2?valueInputOption=RAW", accessToken, "put", { values: linhas });
+    return { ok: true };
+  } catch (err) { return { ok: false, erro: String(err) }; }
+}
+
+function salvarBioimpedanciaGoogle(dados) {
+  const { email, registro: r } = dados;
+  const usuario = buscarUsuario(email);
+  if (!usuario || !usuario.googleRefreshToken) return { ok: false };
+  try {
+    const { id, accessToken } = planilhaUsuarioGoogle(usuario);
+    const linha = [r.id, r.date, r.time, r.altura, r.peso, r.gordura, r.massaMagra, r.massaMuscular, r.aguaCorporal, r.gorduraVisceral, r.idadeMetabolica, r.tmb, r.get];
+    googleFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + "/values/Bioimpedancia!A2:append?valueInputOption=RAW", accessToken, "post", { values: [linha] });
+    return { ok: true };
+  } catch (err) { return { ok: false, erro: String(err) }; }
+}
+
+function removerBioimpedanciaGoogle(dados) {
+  const { email, id: idRegistro } = dados;
+  const usuario = buscarUsuario(email);
+  if (!usuario || !usuario.googleRefreshToken) return { ok: false };
+  try {
+    const { id, accessToken } = planilhaUsuarioGoogle(usuario);
+    const atuais = googleFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + "/values/Bioimpedancia!A2:M10000", accessToken);
+    const linhas = (atuais.values || []).filter(r => Number(r[0]) !== Number(idRegistro));
+    googleFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + "/values/Bioimpedancia!A2:M10000:clear", accessToken, "post", {});
+    if (linhas.length) googleFetch("https://sheets.googleapis.com/v4/spreadsheets/" + id + "/values/Bioimpedancia!A2?valueInputOption=RAW", accessToken, "put", { values: linhas });
     return { ok: true };
   } catch (err) { return { ok: false, erro: String(err) }; }
 }
