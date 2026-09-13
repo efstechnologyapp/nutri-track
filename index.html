@@ -1007,15 +1007,29 @@ async function enviarAnexoExame(file) {
 function lerFila() { return readStorage(CHAVE_FILA, []); }
 function gravarFila(fila) { writeStorage(CHAVE_FILA, fila); }
 
+// Envios que já começaram mas ainda não terminaram (nem com sucesso, nem com falha) — só existe na
+// memória (não precisa sobreviver a um recarregamento de página). Numa rede lenta (celular), um envio
+// pode legitimamente demorar vários segundos (o backend às vezes precisa de mais de uma chamada ao
+// Google por trás); se uma sincronização automática rodar nesse meio-tempo, ela buscaria a lista do
+// servidor SEM esse registro ainda (porque ele nem terminou de chegar lá) e o apagaria da tela como se
+// tivesse sido excluído em outro aparelho. Guardar aqui o que está "a caminho" evita isso — ver
+// mesclarComPendentes logo abaixo, que consulta esta lista além da fila de reenvio.
+const enviosEmAndamento = [];
+
 // Envia uma ação ao backend; se falhar, guarda na fila para tentar de novo depois. Quem chama já
 // decide quando faz sentido chamar isso (conta conectada ao Google).
 function enviarComFila(tipo, args) {
+  const item = { tipo, args };
+  enviosEmAndamento.push(item);
   Promise.resolve(authApi[tipo].apply(authApi, args)).then((resposta) => {
     if (!resposta || resposta.ok === false) throw new Error("falha ao sincronizar");
   }).catch(() => {
     const fila = lerFila();
     fila.push({ tipo, args });
     gravarFila(fila);
+  }).finally(() => {
+    const i = enviosEmAndamento.indexOf(item);
+    if (i !== -1) enviosEmAndamento.splice(i, 1);
   });
 }
 
@@ -1037,13 +1051,14 @@ async function processarFilaPendente() {
   gravarFila(restante);
 }
 
-// Uma refeição/medida que ainda está pendente de envio (ainda na fila) pode não aparecer na resposta
-// autoritativa do servidor ainda — sem isso ela sumiria da tela até terminar de sincronizar. Aqui a
-// gente reinclui esses itens pendentes na lista vinda do servidor, até que o envio seja confirmado.
+// Uma refeição/medida que ainda está pendente de envio (na fila de reenvio OU ainda a caminho pela
+// primeira vez, ver enviosEmAndamento acima) pode não aparecer na resposta autoritativa do servidor
+// ainda — sem isso ela sumiria da tela até terminar de sincronizar. Aqui a gente reinclui esses itens
+// pendentes na lista vinda do servidor, até que o envio seja confirmado.
 function mesclarComPendentes(listaServidor, tipoCriacao) {
-  const fila = lerFila();
+  const pendentesFila = lerFila().concat(enviosEmAndamento);
   const idsServidor = new Set(listaServidor.map((item) => item.id));
-  const pendentes = fila.filter((item) => item.tipo === tipoCriacao).map((item) => item.args[1]).filter((item) => !idsServidor.has(item.id));
+  const pendentes = pendentesFila.filter((item) => item.tipo === tipoCriacao).map((item) => item.args[1]).filter((item) => !idsServidor.has(item.id));
   return listaServidor.concat(pendentes);
 }
 
@@ -1926,14 +1941,24 @@ render();
 initInstallPrompt();
 if (state.usuario) sincronizarDoServidor();
 
+// Em celular, abrir um seletor nativo (ex.: o calendário do campo de data) costuma disparar um
+// "visibilitychange" no navegador (a página é considerada momentaneamente escondida enquanto o
+// seletor do sistema fica por cima) — sem essa checagem, isso re-sincronizava e reconstruía o
+// formulário bem no meio da escolha da data, fazendo o valor escolhido às vezes não "pegar" de
+// primeira. Por isso, enquanto um formulário de edição estiver aberto, a sincronização espera —
+// mexer nos dados de outro aparelho pode esperar até a pessoa terminar de editar.
+function formularioDeEdicaoAberto() {
+  return state.showFormBioimpedancia || state.showEditarPerfil || state.showGoals;
+}
+
 // Ao trocar de app/aba e voltar (ex.: usar o celular depois do PC), busca de novo os dados no nosso
 // próprio backend — nunca no Google diretamente — para refletir o que foi salvo em outro aparelho
 // enquanto este ficava parado em segundo plano. Sem isso, o app só atualizava na abertura (boot), e
 // ficava com dados desatualizados até ser fechado e reaberto de verdade.
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") sincronizarDoServidor();
+  if (document.visibilityState === "visible" && !formularioDeEdicaoAberto()) sincronizarDoServidor();
 });
-window.addEventListener("focus", () => sincronizarDoServidor());
+window.addEventListener("focus", () => { if (!formularioDeEdicaoAberto()) sincronizarDoServidor(); });
 </script>
 </body>
 </html>
