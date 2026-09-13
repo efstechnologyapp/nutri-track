@@ -472,6 +472,8 @@ const authApi = {
   removerBioimpedanciaGoogle: (email, id) => chamarApi("removerBioimpedanciaGoogle", { email, id }),
   salvarCalorimetriaGoogle: (email, registro) => chamarApi("salvarCalorimetriaGoogle", { email, registro }),
   removerCalorimetriaGoogle: (email, id) => chamarApi("removerCalorimetriaGoogle", { email, id }),
+  atualizarAnexoBioimpedanciaGoogle: (email, id, anexoUrl) => chamarApi("atualizarAnexoBioimpedanciaGoogle", { email, id, anexoUrl }),
+  atualizarAnexoCalorimetriaGoogle: (email, id, anexoUrl) => chamarApi("atualizarAnexoCalorimetriaGoogle", { email, id, anexoUrl }),
 };
 
 /* ===================== conexão com Google (Google Identity Services) ===================== */
@@ -1509,7 +1511,7 @@ function acaoFecharHistoricoBioimpedancia() { state.showHistoricoBioimpedancia =
 const BIOIMPEDANCIA_CAMPOS = ["altura", "peso", "gordura", "massaMagra", "massaMuscular", "aguaCorporal", "gorduraVisceral", "idadeMetabolica"];
 const CALORIMETRIA_CAMPOS = ["tmb", "get"];
 
-async function acaoSalvarBioimpedancia() {
+function acaoSalvarBioimpedancia() {
   const dataEl = document.getElementById("bio-data");
   const data = dataEl ? dataEl.value : "";
   if (!data) { toastError("Informe a data da medição."); return; }
@@ -1519,29 +1521,44 @@ async function acaoSalvarBioimpedancia() {
     valores[c] = el ? el.value.trim().replace(",", ".") : "";
   });
   if (!valores.altura || isNaN(Number(valores.altura))) { toastError("Informe a altura."); return; }
+  if (anexoSelecionadoBio && !state.account) { toastError("Conecte sua conta do Google para anexar arquivos."); return; }
 
-  let anexoUrl = "";
-  if (anexoSelecionadoBio) {
-    if (!state.account) { toastError("Conecte sua conta do Google para anexar arquivos."); return; }
-    state.enviandoAnexo = true; render();
-    const resultado = await enviarAnexoExame(anexoSelecionadoBio);
-    state.enviandoAnexo = false;
-    if (!resultado.ok) { toastError(resultado.erro || "Não foi possível enviar o anexo. Tente novamente."); render(); return; }
-    anexoUrl = resultado.url;
-  }
-
+  // O registro é salvo AGORA MESMO (dado nunca depende do anexo terminar de enviar — evita perder a
+  // medição inteira se o envio do arquivo for interrompido, ex.: celular bloqueia a tela no meio de
+  // uma rede mais lenta). O anexo, quando selecionado, é enviado depois, em segundo plano, e só
+  // "gruda" no registro já salvo quando terminar (ver processarAnexoBioimpedanciaEmSegundoPlano).
   const now = new Date();
   const novoRegistro = Object.assign(
-    { id: Date.now(), date: data, time: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }), anexoUrl },
+    { id: Date.now(), date: data, time: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }), anexoUrl: "" },
     BIOIMPEDANCIA_CAMPOS.reduce((acc, c) => { acc[c] = valores[c] ? Number(valores[c]) : null; return acc; }, {})
   );
+  const arquivoAnexo = anexoSelecionadoBio;
   state.bioimpedancia = state.bioimpedancia.concat([novoRegistro]);
   persistBioimpedancia();
   state.showFormBioimpedancia = false;
   anexoSelecionadoBio = null;
   state.bioFormValores = {};
-  toastSuccess("Registro de bioimpedância salvo.");
+  toastSuccess(arquivoAnexo ? "Registro salvo. Enviando o anexo em segundo plano..." : "Registro de bioimpedância salvo.");
   if (state.account) enviarComFila("salvarBioimpedanciaGoogle", [state.usuario.email, novoRegistro]);
+  render();
+  if (arquivoAnexo) processarAnexoBioimpedanciaEmSegundoPlano(novoRegistro.id, arquivoAnexo);
+}
+
+// Envia o anexo depois que o registro já está salvo (ver comentário acima). Se der certo, atualiza o
+// registro (local e no servidor) com o link do arquivo; se falhar, o registro continua salvo do
+// mesmo jeito — só sem o anexo — e a pessoa é avisada para tentar anexar de novo mais tarde.
+async function processarAnexoBioimpedanciaEmSegundoPlano(idRegistro, file) {
+  const resultado = await enviarAnexoExame(file);
+  if (!resultado.ok) {
+    toastError((resultado.erro || "Não foi possível enviar o anexo") + " — o registro de bioimpedância foi salvo, só sem o exame anexado.");
+    return;
+  }
+  const registro = state.bioimpedancia.find((r) => r.id === idRegistro);
+  if (!registro) return; // registro foi removido enquanto o anexo ainda enviava
+  registro.anexoUrl = resultado.url;
+  persistBioimpedancia();
+  toastSuccess("Exame anexado ao registro de bioimpedância.");
+  if (state.account) enviarComFila("atualizarAnexoBioimpedanciaGoogle", [state.usuario.email, idRegistro, resultado.url]);
   render();
 }
 function acaoRemoverBioimpedancia(id) {
@@ -1550,7 +1567,7 @@ function acaoRemoverBioimpedancia(id) {
   if (state.account) enviarComFila("removerBioimpedanciaGoogle", [state.usuario.email, id]);
   render();
 }
-async function acaoSalvarCalorimetria() {
+function acaoSalvarCalorimetria() {
   const dataEl = document.getElementById("calo-data");
   const data = dataEl ? dataEl.value : "";
   if (!data) { toastError("Informe a data do exame."); return; }
@@ -1561,29 +1578,39 @@ async function acaoSalvarCalorimetria() {
   });
   if (!valores.tmb || isNaN(Number(valores.tmb))) { toastError("Informe a Taxa Metabólica Basal (TMB)."); return; }
   if (!valores.get || isNaN(Number(valores.get))) { toastError("Informe o Gasto Energético Total (GET)."); return; }
+  if (anexoSelecionadoCalo && !state.account) { toastError("Conecte sua conta do Google para anexar arquivos."); return; }
 
-  let anexoUrl = "";
-  if (anexoSelecionadoCalo) {
-    if (!state.account) { toastError("Conecte sua conta do Google para anexar arquivos."); return; }
-    state.enviandoAnexo = true; render();
-    const resultado = await enviarAnexoExame(anexoSelecionadoCalo);
-    state.enviandoAnexo = false;
-    if (!resultado.ok) { toastError(resultado.erro || "Não foi possível enviar o anexo. Tente novamente."); render(); return; }
-    anexoUrl = resultado.url;
-  }
-
+  // Mesma lógica da bioimpedância (ver comentário lá): o registro é salvo já, o anexo vai depois em
+  // segundo plano e só é "colado" ao registro quando (e se) terminar de enviar.
   const now = new Date();
   const novoRegistro = {
     id: Date.now(), date: data, time: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-    tmb: Number(valores.tmb), get: Number(valores.get), anexoUrl,
+    tmb: Number(valores.tmb), get: Number(valores.get), anexoUrl: "",
   };
+  const arquivoAnexo = anexoSelecionadoCalo;
   state.calorimetria = state.calorimetria.concat([novoRegistro]);
   persistCalorimetria();
   state.showFormBioimpedancia = false;
   anexoSelecionadoCalo = null;
   state.caloFormValores = {};
-  toastSuccess("Registro de calorimetria salvo.");
+  toastSuccess(arquivoAnexo ? "Registro salvo. Enviando o anexo em segundo plano..." : "Registro de calorimetria salvo.");
   if (state.account) enviarComFila("salvarCalorimetriaGoogle", [state.usuario.email, novoRegistro]);
+  render();
+  if (arquivoAnexo) processarAnexoCalorimetriaEmSegundoPlano(novoRegistro.id, arquivoAnexo);
+}
+
+async function processarAnexoCalorimetriaEmSegundoPlano(idRegistro, file) {
+  const resultado = await enviarAnexoExame(file);
+  if (!resultado.ok) {
+    toastError((resultado.erro || "Não foi possível enviar o anexo") + " — o registro de calorimetria foi salvo, só sem o exame anexado.");
+    return;
+  }
+  const registro = state.calorimetria.find((r) => r.id === idRegistro);
+  if (!registro) return;
+  registro.anexoUrl = resultado.url;
+  persistCalorimetria();
+  toastSuccess("Exame anexado ao registro de calorimetria.");
+  if (state.account) enviarComFila("atualizarAnexoCalorimetriaGoogle", [state.usuario.email, idRegistro, resultado.url]);
   render();
 }
 function acaoRemoverCalorimetria(id) {
@@ -1622,10 +1649,9 @@ function bioimpedanciaFormCamposTemplate() {
       campo("idadeMetabolica", "Idade metabólica", "anos", "Ex.: 30") +
     "</div>" +
     anexoCampoTemplate("bio-anexo-input", anexoSelecionadoBio, "onAnexoBioSelecionado", "acaoRemoverAnexoSelecionadoBio") +
-    (state.enviandoAnexo ? '<p class="imc-empty" style="margin-top:8px">Enviando anexo...</p>' : "") +
     '<div class="bioimpedancia-form-acoes">' +
-      '<button class="bioimpedancia-btn-secundario" onclick="acaoFecharFormBioimpedancia()"' + (state.enviandoAnexo ? " disabled" : "") + '>Cancelar</button>' +
-      '<button class="btn-primary" onclick="acaoSalvarBioimpedancia()"' + (state.enviandoAnexo ? " disabled" : "") + '>' + icon("check") + " Salvar</button>" +
+      '<button class="bioimpedancia-btn-secundario" onclick="acaoFecharFormBioimpedancia()">Cancelar</button>' +
+      '<button class="btn-primary" onclick="acaoSalvarBioimpedancia()">' + icon("check") + " Salvar</button>" +
     "</div>";
 }
 function calorimetriaFormCamposTemplate() {
@@ -1640,10 +1666,9 @@ function calorimetriaFormCamposTemplate() {
       campo("get", "Gasto Energético Total (GET)", "kcal", "Ex.: 2400") +
     "</div>" +
     anexoCampoTemplate("calo-anexo-input", anexoSelecionadoCalo, "onAnexoCaloSelecionado", "acaoRemoverAnexoSelecionadoCalo") +
-    (state.enviandoAnexo ? '<p class="imc-empty" style="margin-top:8px">Enviando anexo...</p>' : "") +
     '<div class="bioimpedancia-form-acoes">' +
-      '<button class="bioimpedancia-btn-secundario" onclick="acaoFecharFormBioimpedancia()"' + (state.enviandoAnexo ? " disabled" : "") + '>Cancelar</button>' +
-      '<button class="btn-primary" onclick="acaoSalvarCalorimetria()"' + (state.enviandoAnexo ? " disabled" : "") + '>' + icon("check") + " Salvar</button>" +
+      '<button class="bioimpedancia-btn-secundario" onclick="acaoFecharFormBioimpedancia()">Cancelar</button>' +
+      '<button class="btn-primary" onclick="acaoSalvarCalorimetria()">' + icon("check") + " Salvar</button>" +
     "</div>";
 }
 function bioimpedanciaFormTemplate() {
