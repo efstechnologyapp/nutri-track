@@ -376,6 +376,7 @@ svg{ display: block; }
 .diario-kcal-lista{ display:flex; flex-direction:column; gap:16px; }
 .diario-kcal-dia{ border-radius:16px; background:#f7f9f5; padding:16px 18px; }
 .diario-kcal-dia-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.diario-kcal-dia-head-direita{ display:flex; align-items:center; gap:4px; }
 .diario-kcal-dia-data{ display:flex; align-items:center; gap:6px; font-size:14px; font-weight:600; color:#31564a; text-transform:capitalize; }
 .diario-kcal-dia-data .icon{ width:16px; height:16px; color:#8a9c93; flex-shrink:0; }
 .diario-kcal-dia-kcal{ font-size:15px; font-weight:700; color:#3d6355; }
@@ -659,6 +660,7 @@ const authApi = {
   atualizarFotoTreinoGoogle: (email, id, fotoUrl) => chamarApi("atualizarFotoTreinoGoogle", { email, id, fotoUrl }),
   salvarExercicioCustomizadoGoogle: (email, exercicio) => chamarApi("salvarExercicioCustomizadoGoogle", { email, exercicio }),
   salvarDiarioKcalGoogle: (email, registro) => chamarApi("salvarDiarioKcalGoogle", { email, registro }),
+  removerDiarioKcalGoogle: (email, id) => chamarApi("removerDiarioKcalGoogle", { email, id }),
 };
 
 /* ===================== conexão com Google (Google Identity Services) ===================== */
@@ -1854,15 +1856,31 @@ function acaoEncerrarDia() {
   const t = today();
   const totais = meals.reduce((sum, m) => addNutrients(sum, m), emptyNutrients);
   const refeicoes = meals.map((m) => {
-    const r = { name: m.name, time: m.time };
+    const r = { name: m.name, time: m.time, alimentos: m.detected || [] };
     NUTRIENT_KEYS.forEach((k) => { r[k] = m[k] || 0; });
     return r;
   });
   const registro = Object.assign({ id: Date.now(), date: t, refeicoes: refeicoes }, totais);
   state.diarioKcal = state.diarioKcal.filter((r) => r.date !== t).concat([registro]);
   persistDiarioKcal();
+  // Zera o dia -- as refeições já foram guardadas no registro do Diário acima, então os cards de
+  // consumo (macro/micronutrientes) e o resumo do topo, que são todos calculados a partir de
+  // todayMeals()/consumedToday(), voltam a mostrar zero, prontos pra um novo dia (mesma limpeza feita
+  // por acaoZerarHoje(), só que aqui sem pedir confirmação, já que os dados não se perdem).
+  state.meals = state.meals.filter((m) => m.date !== t);
+  persistMeals();
   toastSuccess("Dia encerrado — resumo de " + dateLabel(t) + " guardado no Diário de Kcal.");
-  if (state.account) enviarComFila("salvarDiarioKcalGoogle", [state.usuario.email, registro]);
+  if (state.account) {
+    enviarComFila("salvarDiarioKcalGoogle", [state.usuario.email, registro]);
+    enviarComFila("zerarHojeGoogle", [state.usuario.email, t]);
+  }
+  render();
+}
+// Remove um registro (dia) já encerrado no Diário de Kcal -- ver diarioKcalRegistroTemplate().
+function acaoRemoverDiarioKcal(id) {
+  state.diarioKcal = state.diarioKcal.filter((r) => r.id !== id);
+  persistDiarioKcal();
+  if (state.account) enviarComFila("removerDiarioKcalGoogle", [state.usuario.email, id]);
   render();
 }
 function acaoAtualizarMeta(key, value) {
@@ -3445,18 +3463,23 @@ function fullHomeTemplate() {
 }
 
 // Linha de uma refeição dentro de um registro do Diário de Kcal -- mostra o total DA REFEIÇÃO (já
-// calculado na hora do registro), não alimento por alimento.
+// calculado na hora do registro, não alimento por alimento) com os alimentos daquela refeição entre
+// parênteses, ao lado do nome (ex.: "08:00 · Café da manhã (Pão francês, Ovo frito)").
 function diarioKcalRefeicaoTemplate(ref) {
+  const alimentos = ref.alimentos && ref.alimentos.length ? " (" + ref.alimentos.map(esc).join(", ") + ")" : "";
   return '<div class="diario-kcal-refeicao">' +
-    '<span class="diario-kcal-refeicao-nome">' + icon("clock") + " " + esc(ref.time) + " · " + esc(ref.name) + "</span>" +
+    '<span class="diario-kcal-refeicao-nome">' + icon("clock") + " " + esc(ref.time) + " · " + esc(ref.name) + alimentos + "</span>" +
     '<span class="diario-kcal-refeicao-valores">' + formatNumber(ref.calories) + " kcal · P " + formatNumber(ref.protein, 1) + " · C " + formatNumber(ref.carbs, 1) + " · G " + formatNumber(ref.fat, 1) + "</span>" +
   "</div>";
 }
 // Um dia encerrado no Diário de Kcal: total de calorias/macro/micronutrientes daquele dia (congelado no
-// momento do "Encerrar dia", ver acaoEncerrarDia()) + a lista das refeições daquele dia.
+// momento do "Encerrar dia", ver acaoEncerrarDia()) + a lista das refeições daquele dia + o ícone de
+// excluir esse registro (ver acaoRemoverDiarioKcal()).
 function diarioKcalRegistroTemplate(r) {
   return '<div class="diario-kcal-dia">' +
-    '<div class="diario-kcal-dia-head"><span class="diario-kcal-dia-data">' + icon("calendar") + " " + dateLabel(r.date) + "</span><span class=\"diario-kcal-dia-kcal\">" + formatNumber(r.calories) + " kcal</span></div>" +
+    '<div class="diario-kcal-dia-head"><span class="diario-kcal-dia-data">' + icon("calendar") + " " + dateLabel(r.date) + "</span>" +
+      '<span class="diario-kcal-dia-head-direita"><span class="diario-kcal-dia-kcal">' + formatNumber(r.calories) + " kcal</span>" +
+      '<button class="meal-row-delete" aria-label="Excluir registro de ' + esc(dateLabel(r.date)) + '" onclick="acaoRemoverDiarioKcal(' + r.id + ')">' + icon("trash") + "</button></span></div>" +
     '<div class="diario-kcal-dia-macros">Proteína ' + formatNumber(r.protein, 1) + "g · Carboidratos " + formatNumber(r.carbs, 1) + "g · Gorduras " + formatNumber(r.fat, 1) + "g · Fibras " + formatNumber(r.fiber, 1) + "g</div>" +
     '<div class="diario-kcal-dia-micros">' + Object.keys(micronutrientMeta).map((k) => micronutrientMeta[k].label + ": " + formatNumber(r[k] || 0, 1) + " " + micronutrientMeta[k].unit).join(" · ") + "</div>" +
     '<div class="diario-kcal-refeicoes">' + (r.refeicoes || []).map(diarioKcalRefeicaoTemplate).join("") + "</div>" +
