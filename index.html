@@ -336,6 +336,8 @@ svg{ display: block; }
 .meal-row-distancia .icon{ width:14px; height:14px; flex-shrink:0; margin-top:1px; }
 .meal-row-grupos-musculares{ margin-top:4px; display:flex; align-items:flex-start; gap:4px; font-size:12px; font-weight:600; color:#4b7048; }
 .meal-row-grupos-musculares .icon{ width:14px; height:14px; flex-shrink:0; margin-top:1px; }
+.meal-row-calorias-queimadas{ margin-top:4px; display:flex; align-items:flex-start; gap:4px; font-size:12px; font-weight:600; color:#c9762f; }
+.meal-row-calorias-queimadas .icon{ width:14px; height:14px; flex-shrink:0; margin-top:1px; }
 .meal-row-nota .icon{ width:14px; height:14px; flex-shrink:0; margin-top:1px; }
 .meal-row-right{ display:flex; flex-shrink:0; align-items:center; gap:12px; }
 .meal-row-stat{ text-align:right; }
@@ -365,6 +367,7 @@ svg{ display: block; }
 .history-day-meal-nota{ margin:2px 0 0; font-size:11px; font-style:italic; color:#9aa9a1; }
 .history-day-meal-distancia{ margin:2px 0 0; font-size:11px; font-weight:600; color:#4b7048; }
 .history-day-meal-grupos-musculares{ margin:2px 0 0; font-size:11px; font-weight:600; color:#4b7048; }
+.history-day-meal-calorias-queimadas{ margin:2px 0 0; font-size:11px; font-weight:600; color:#c9762f; }
 .history-day-meal-static{ cursor:default; }
 .history-day-meal-static:hover{ background:transparent; }
 
@@ -382,6 +385,8 @@ svg{ display: block; }
 .diario-kcal-dia-kcal{ font-size:15px; font-weight:700; color:#3d6355; }
 .diario-kcal-dia-macros{ margin-top:6px; font-size:12.5px; color:#6e8d69; }
 .diario-kcal-dia-micros{ margin-top:4px; font-size:11.5px; color:#9aa9a1; }
+.diario-kcal-dia-queimadas{ margin-top:8px; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:600; color:#c9762f; }
+.diario-kcal-dia-queimadas .icon{ width:14px; height:14px; flex-shrink:0; }
 .diario-kcal-refeicoes{ margin-top:12px; display:flex; flex-direction:column; gap:6px; border-top:1px solid #e8eee5; padding-top:10px; }
 .diario-kcal-refeicao{ display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:12px; color:#557268; flex-wrap:wrap; }
 .diario-kcal-refeicao-nome{ display:flex; align-items:center; gap:5px; font-weight:600; }
@@ -1872,7 +1877,10 @@ function acaoEncerrarDia() {
     NUTRIENT_KEYS.forEach((k) => { r[k] = m[k] || 0; });
     return r;
   });
-  const registro = Object.assign({ id: Date.now(), date: t, refeicoes: refeicoes }, totais);
+  // Calorias queimadas nos treinos do dia (ver estimarCaloriasQueimadas()) -- entram como informação
+  // separada no registro, ao lado das calorias consumidas; não afeta a meta/saldo de consumo.
+  const caloriasQueimadas = todayTreinos().reduce((soma, tr) => soma + (tr.caloriasQueimadas || 0), 0);
+  const registro = Object.assign({ id: Date.now(), date: t, refeicoes: refeicoes, caloriasQueimadas: caloriasQueimadas }, totais);
   state.diarioKcal = state.diarioKcal.filter((r) => r.date !== t).concat([registro]);
   persistDiarioKcal();
   // NÃO apaga as refeições -- elas continuam em "Refeições de hoje" e no Histórico normalmente. Só
@@ -2467,6 +2475,83 @@ function calcularCamposDistanciaTreino(esporte, duracaoMin) {
     paceMinPorKm: distanciaKm ? calcularPaceMinPorKm(distanciaKm, duracaoMin) : null,
   };
 }
+
+/* ===================== estimativa de calorias queimadas ===================== */
+// Estimativa de calorias gastas no treino, pelo método padrão de MET (Equivalente Metabólico de
+// Tarefa): calorias = MET × peso(kg) × duração(horas). É uma estimativa, não uma medição -- não temos
+// frequência cardíaca nem VO2 real, só o que a pessoa registrou (esporte, duração, ritmo quando há
+// distância, e no caso de Musculação, séries/exercícios).
+//
+// Faixas de velocidade -> MET, baseadas em valores usuais do Compêndio de Atividades Físicas. Só se
+// aplica a Corrida/Caminhada/Ciclismo quando há distância percorrida (ver ESPORTES_COM_DISTANCIA) --
+// sem ritmo real, a intensidade fica pouco confiável pra estimar.
+function metPorRitmo(esporte, velocidadeMediaKmh) {
+  if (esporte === "Caminhada") {
+    if (velocidadeMediaKmh < 4) return 2.8;
+    if (velocidadeMediaKmh < 5.5) return 3.5;
+    if (velocidadeMediaKmh < 6.5) return 4.3;
+    if (velocidadeMediaKmh < 7.5) return 5.0;
+    return 6.5;
+  }
+  if (esporte === "Corrida") {
+    if (velocidadeMediaKmh < 8) return 6.0;
+    if (velocidadeMediaKmh < 9.5) return 8.3;
+    if (velocidadeMediaKmh < 10.5) return 9.8;
+    if (velocidadeMediaKmh < 11.5) return 10.5;
+    if (velocidadeMediaKmh < 13) return 11.0;
+    if (velocidadeMediaKmh < 14.5) return 11.8;
+    if (velocidadeMediaKmh < 16) return 12.8;
+    return 14.5;
+  }
+  if (esporte === "Ciclismo") {
+    if (velocidadeMediaKmh < 16) return 4.0;
+    if (velocidadeMediaKmh < 19) return 6.8;
+    if (velocidadeMediaKmh < 22.5) return 8.0;
+    if (velocidadeMediaKmh < 25.5) return 10.0;
+    if (velocidadeMediaKmh < 30) return 12.0;
+    return 15.8;
+  }
+  return null;
+}
+// MET médio (fixo) pros esportes sem dado de ritmo -- valores aproximados de intensidade moderada do
+// Compêndio de Atividades Físicas. Menos precisos que os calculados por ritmo, mas melhores que nada.
+const MET_ESPORTE_FIXO = {
+  Boxe: 7.8,
+  Futebol: 7.0,
+  "Jiu-jitsu": 10.0,
+  "Muay Thai": 10.3,
+  Natação: 6.0,
+  Tênis: 7.3,
+};
+// Musculação não tem ritmo pra usar, e não existe fórmula validada ligando peso levantado a calorias
+// (o gasto vem majoritariamente do custo metabólico do esforço e da recuperação entre séries, não do
+// trabalho mecânico de erguer a barra). Por isso a intensidade aqui é estimada pela "densidade" do
+// treino -- quantas séries no total foram feitas por minuto: mais séries num tempo mais curto sugere
+// menos descanso entre elas (treino mais intenso, estilo circuito); poucas séries num tempo mais longo
+// sugere mais descanso (estilo tradicional). É uma aproximação grosseira, não uma medição precisa.
+function metMusculacao(gruposMusculares, duracaoMin) {
+  const totalSeries = (gruposMusculares || []).reduce((soma, g) => soma + (g.exercicios || []).reduce((s, ex) => s + (ex.series || 0), 0), 0);
+  const densidade = duracaoMin > 0 ? totalSeries / duracaoMin : 0;
+  if (densidade >= 0.6) return 6.0;
+  if (densidade >= 0.3) return 5.0;
+  return 3.5;
+}
+// Estima as calorias gastas de um treino já montado (precisa de esporte, duracaoMin e, quando houver,
+// velocidadeMediaKmh/gruposMusculares -- os mesmos campos que já ficam no registro do treino). Usa o
+// peso mais recente registrado em Medidas e Aferições (ver ultimoRegistroMedida()); sem peso registrado
+// ou sem duração, não dá pra estimar e a função devolve null (o campo "caloriasQueimadas" do treino
+// fica null/ausente nesse caso, e simplesmente não aparece na tela).
+function estimarCaloriasQueimadas(treino) {
+  const registroPeso = ultimoRegistroMedida("peso");
+  const pesoKg = registroPeso ? Number(registroPeso.valor) : null;
+  if (!pesoKg || !treino.duracaoMin) return null;
+  let met = null;
+  if (treino.velocidadeMediaKmh) met = metPorRitmo(treino.esporte, treino.velocidadeMediaKmh);
+  else if (treino.esporte === "Musculação") met = metMusculacao(treino.gruposMusculares, treino.duracaoMin);
+  else met = MET_ESPORTE_FIXO[treino.esporte] || null;
+  if (!met) return null;
+  return met * pesoKg * (treino.duracaoMin / 60);
+}
 function acaoEncerrarTreino() {
   if (!state.treinoAtivo) return;
   if (treinoFotoSelecionada && !state.account) { toastError("Conecte sua conta do Google para anexar fotos."); return; }
@@ -2482,6 +2567,7 @@ function acaoEncerrarTreino() {
     horaInicio: state.treinoAtivo.horaInicioClock, horaFim: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
     duracaoMin, fotoUrl: "", nota, gruposMusculares,
   }, camposDistancia);
+  novoTreino.caloriasQueimadas = estimarCaloriasQueimadas(novoTreino);
   // Mesmo padrão "salva primeiro, anexo depois" já usado nos exames de bioimpedância/calorimetria
   // (ver processarAnexoBioimpedanciaEmSegundoPlano): o treino nunca fica refém do envio da foto.
   const arquivoFoto = treinoFotoSelecionada;
@@ -2552,6 +2638,7 @@ function acaoSalvarTreino() {
   const gruposMusculares = obterGruposMuscularesParaSalvar();
 
   const novoTreino = Object.assign({ id: Date.now(), date: dataTreino, esporte, horaInicio, horaFim, duracaoMin, fotoUrl: "", nota, gruposMusculares }, camposDistancia);
+  novoTreino.caloriasQueimadas = estimarCaloriasQueimadas(novoTreino);
   const arquivoFoto = treinoFotoSelecionada;
   state.treinos = state.treinos.concat([novoTreino]);
   persistTreinos();
@@ -2611,6 +2698,12 @@ function treinoGruposMuscularesResumoTexto(t) {
   if (!t.gruposMusculares || !t.gruposMusculares.length) return "";
   return t.gruposMusculares.map(treinoGrupoResumoTexto).join(" · ");
 }
+// "~420 kcal" -- ou "" se não deu pra estimar (sem peso registrado em Medidas e Aferições, ou esporte
+// sem MET aplicável). Ver estimarCaloriasQueimadas().
+function treinoCaloriasResumoTexto(t) {
+  if (!t.caloriasQueimadas) return "";
+  return "~" + formatNumber(t.caloriasQueimadas) + " kcal";
+}
 function treinoListTemplate() {
   const treinos = todayTreinos();
   if (!treinos.length) {
@@ -2625,6 +2718,7 @@ function treinoListTemplate() {
     '<div class="meal-row-text"><div class="meal-row-name">' + emojiEsporte(t.esporte) + " " + esc(t.esporte) + '</div><div class="meal-row-meta">' + icon("clock") + " " + esc(t.horaInicio) + " – " + esc(t.horaFim) + "</div>" +
     (t.distanciaKm ? '<div class="meal-row-distancia">' + icon("zap") + " " + esc(treinoDistanciaResumoTexto(t)) + "</div>" : "") +
     (t.gruposMusculares && t.gruposMusculares.length ? '<div class="meal-row-grupos-musculares">' + icon("activity") + " " + esc(treinoGruposMuscularesResumoTexto(t)) + "</div>" : "") +
+    (t.caloriasQueimadas ? '<div class="meal-row-calorias-queimadas">' + icon("flame") + " " + esc(treinoCaloriasResumoTexto(t)) + " queimadas (estimativa)</div>" : "") +
     (t.nota ? '<div class="meal-row-nota">' + icon("help") + " " + esc(t.nota) + "</div>" : "") +
     "</div></div>" +
     '<div class="meal-row-right"><div class="meal-row-stat"><div class="meal-row-kcal">' + esc(formatarDuracao(t.duracaoMin)) + "</div></div>" +
@@ -2651,10 +2745,11 @@ function treinoHistoryPanelTemplate() {
       (dayTreinos.length
         ? '<div class="history-day"><div class="history-day-head"><span class="date">' + dateLabel(selectedDate) + '</span><span class="total">' + dayTreinos.length + " treino" + (dayTreinos.length > 1 ? "s" : "") + "</span></div>" +
           '<div class="history-day-meals">' + dayTreinos.map((t) =>
-            '<div class="history-day-meal history-day-meal-static' + ((t.nota || t.distanciaKm || (t.gruposMusculares && t.gruposMusculares.length)) ? " history-day-meal-com-nota" : "") + '">' +
+            '<div class="history-day-meal history-day-meal-static' + ((t.nota || t.distanciaKm || t.caloriasQueimadas || (t.gruposMusculares && t.gruposMusculares.length)) ? " history-day-meal-com-nota" : "") + '">' +
               '<div class="history-day-meal-linha"><span>' + emojiEsporte(t.esporte) + " " + esc(t.esporte) + " · " + esc(t.horaInicio) + "–" + esc(t.horaFim) + "</span><span>" + esc(formatarDuracao(t.duracaoMin)) + (t.fotoUrl ? ' <a class="history-day-meal-foto-link" href="' + esc(t.fotoUrl) + '" target="_blank" rel="noopener" aria-label="Ver foto do treino">' + icon("camera") + "</a>" : "") + "</span></div>" +
               (t.distanciaKm ? '<p class="history-day-meal-distancia">' + esc(treinoDistanciaResumoTexto(t)) + "</p>" : "") +
               (t.gruposMusculares && t.gruposMusculares.length ? '<p class="history-day-meal-grupos-musculares">' + esc(treinoGruposMuscularesResumoTexto(t)) + "</p>" : "") +
+              (t.caloriasQueimadas ? '<p class="history-day-meal-calorias-queimadas">' + esc(treinoCaloriasResumoTexto(t)) + " queimadas (estimativa)</p>" : "") +
               (t.nota ? '<p class="history-day-meal-nota">' + esc(t.nota) + "</p>" : "") +
             "</div>"
           ).join("") + "</div></div>"
@@ -3492,6 +3587,7 @@ function diarioKcalRegistroTemplate(r) {
       '<button class="meal-row-delete" aria-label="Excluir registro de ' + esc(dateLabel(r.date)) + '" onclick="acaoRemoverDiarioKcal(' + r.id + ')">' + icon("trash") + "</button></span></div>" +
     '<div class="diario-kcal-dia-macros">Proteína ' + formatNumber(r.protein, 1) + "g · Carboidratos " + formatNumber(r.carbs, 1) + "g · Gorduras " + formatNumber(r.fat, 1) + "g · Fibras " + formatNumber(r.fiber, 1) + "g</div>" +
     '<div class="diario-kcal-dia-micros">' + Object.keys(micronutrientMeta).map((k) => micronutrientMeta[k].label + ": " + formatNumber(r[k] || 0, 1) + " " + micronutrientMeta[k].unit).join(" · ") + "</div>" +
+    (r.caloriasQueimadas ? '<div class="diario-kcal-dia-queimadas">' + icon("flame") + " ~" + formatNumber(r.caloriasQueimadas) + " kcal queimadas nos treinos do dia (estimativa)</div>" : "") +
     '<div class="diario-kcal-refeicoes">' + (r.refeicoes || []).map(diarioKcalRefeicaoTemplate).join("") + "</div>" +
   "</div>";
 }
