@@ -261,6 +261,8 @@ svg{ display: block; }
 .treino-cronometro-acoes button{ flex:1; width:auto; margin-top:0; }
 .treino-cancelar-btn{ display:block; width:100%; margin-top:12px; text-align:center; font-size:12px; font-weight:600; color:#9fb5aa; text-decoration:underline; text-underline-offset:2px; }
 .treino-nota-campo{ margin-top:16px; }
+.treino-distancia-campo{ margin-top:16px; }
+.treino-distancia-nota{ margin:6px 0 0; font-size:11px; line-height:1.5; color:#9fb5aa; }
 .treino-foto-campo{ margin-top:16px; }
 .treino-foto-btn{ display:flex; width:100%; align-items:center; justify-content:center; gap:8px; border-radius:12px; border:1.5px dashed rgba(255,255,255,.28); background:rgba(255,255,255,.05); padding:12px 16px; font-size:13px; font-weight:600; color:#cfe4c8; cursor:pointer; transition:background .15s, border-color .15s; }
 .treino-foto-btn:hover{ background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.45); }
@@ -307,6 +309,8 @@ svg{ display: block; }
 .meal-row-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; font-weight:600; color:#31564a; }
 .meal-row-meta{ margin-top:4px; font-size:12px; color:#9aa9a1; }
 .meal-row-nota{ margin-top:4px; display:flex; align-items:flex-start; gap:4px; font-size:12px; color:#7c8c84; font-style:italic; }
+.meal-row-distancia{ margin-top:4px; display:flex; align-items:flex-start; gap:4px; font-size:12px; font-weight:600; color:#4b7048; }
+.meal-row-distancia .icon{ width:14px; height:14px; flex-shrink:0; margin-top:1px; }
 .meal-row-nota .icon{ width:14px; height:14px; flex-shrink:0; margin-top:1px; }
 .meal-row-right{ display:flex; flex-shrink:0; align-items:center; gap:12px; }
 .meal-row-stat{ text-align:right; }
@@ -334,6 +338,7 @@ svg{ display: block; }
 .history-day-meal-com-nota{ display:block; }
 .history-day-meal-linha{ display:flex; align-items:center; justify-content:space-between; }
 .history-day-meal-nota{ margin:2px 0 0; font-size:11px; font-style:italic; color:#9aa9a1; }
+.history-day-meal-distancia{ margin:2px 0 0; font-size:11px; font-weight:600; color:#4b7048; }
 .history-day-meal-static{ cursor:default; }
 .history-day-meal-static:hover{ background:transparent; }
 .history-day-meal span:last-child{ display:inline-flex; align-items:center; gap:4px; }
@@ -872,6 +877,9 @@ const MEAL_TIPOS = ["Caf\u00e9 da manh\u00e3", "Lanche da manh\u00e3", "Almo\u00
 // Em ordem alfab\u00e9tica.
 const ESPORTE_TIPOS = ["Boxe", "Caminhada", "Ciclismo", "Corrida", "Futebol", "Jiu-jitsu", "Muay Thai", "Muscula\u00e7\u00e3o", "Nata\u00e7\u00e3o", "T\u00eanis"];
 
+// Esportes em que faz sentido registrar dist\u00e2ncia percorrida (pra calcular velocidade m\u00e9dia/pace).
+const ESPORTES_COM_DISTANCIA = ["Corrida", "Caminhada", "Ciclismo"];
+
 // Emoji exibido ao lado do esporte em cada registro de treino (lista de hoje e hist\u00f3rico).
 const ESPORTE_EMOJI = {
   "Boxe": "\ud83e\udd4a", "Caminhada": "\ud83d\udeb6", "Ciclismo": "\ud83d\udeb4", "Corrida": "\ud83c\udfc3", "Futebol": "\u26bd",
@@ -1001,6 +1009,7 @@ const state = {
   treinoHoraInicio: "",
   treinoHoraFim: "",
   treinoNota: "", // observação livre sobre o treino (ex.: "treino pesado", "alto astral") — opcional
+  treinoDistanciaKm: "", // distância percorrida (km), só pra esportes em ESPORTES_COM_DISTANCIA — opcional
   showHistoryTreinos: false,
   historyDataTreinos: null, // data selecionada no histórico de treinos (null = mostra hoje)
   treinoModo: "cronometro", // "cronometro" | "manual" — só é relevante quando não há treino em andamento
@@ -1043,6 +1052,30 @@ function formatarDuracao(min) {
   const m = min % 60;
   if (h > 0) return h + "h" + (m > 0 ? String(m).padStart(2, "0") + "min" : "");
   return m + " min";
+}
+// Velocidade média (km/h) a partir da distância percorrida e da duração do treino -- cálculo simples
+// (distância / tempo), sem GPS: a pessoa informa a distância manualmente (ex.: de um relógio, app de
+// mapa ou percurso conhecido), e o app calcula o resto automaticamente antes de salvar.
+function calcularVelocidadeMediaKmh(distanciaKm, duracaoMin) {
+  distanciaKm = Number(distanciaKm) || 0;
+  duracaoMin = Number(duracaoMin) || 0;
+  if (!distanciaKm || !duracaoMin) return null;
+  return Math.round((distanciaKm / (duracaoMin / 60)) * 10) / 10;
+}
+// Pace em minutos por km (valor decimal, ex.: 5.5 = 5min30s/km) -- convertido pra "mm:ss/km" só na
+// hora de exibir (ver formatarPace()), pra manter o valor bruto fácil de salvar/recalcular.
+function calcularPaceMinPorKm(distanciaKm, duracaoMin) {
+  distanciaKm = Number(distanciaKm) || 0;
+  duracaoMin = Number(duracaoMin) || 0;
+  if (!distanciaKm || !duracaoMin) return null;
+  return duracaoMin / distanciaKm;
+}
+function formatarPace(paceMinPorKm) {
+  if (paceMinPorKm == null || isNaN(paceMinPorKm)) return "";
+  let minutos = Math.floor(paceMinPorKm);
+  let segundos = Math.round((paceMinPorKm - minutos) * 60);
+  if (segundos === 60) { minutos += 1; segundos = 0; } // corrige o arredondamento "estourando" pra 60
+  return minutos + ":" + String(segundos).padStart(2, "0") + " min/km";
 }
 // Tempo ativo (em ms) do treino em andamento — soma dos trechos já concluídos com o trecho atual (se
 // não estiver pausado). Usado tanto pro cronômetro na tela quanto pra duração final salva.
@@ -2050,6 +2083,22 @@ function acaoRetomarTreino() {
   render();
 }
 
+// Lê o campo de distância (só existe na tela pros esportes em ESPORTES_COM_DISTANCIA -- ver
+// treinoDistanciaCampoTemplate()) e calcula velocidade média/pace a partir dela e da duração.
+// Reaproveitado tanto pelo cronômetro (acaoEncerrarTreino) quanto pelo registro manual
+// (acaoSalvarTreino), pra manter os três campos calculados do mesmo jeito nos dois modos. Sem GPS,
+// sem rastreamento -- só a conta simples de distância/tempo em cima do que a pessoa informou.
+function calcularCamposDistanciaTreino(esporte, duracaoMin) {
+  const distanciaEl = document.getElementById("treino-distancia");
+  const distanciaKm = (ESPORTES_COM_DISTANCIA.includes(esporte) && distanciaEl && distanciaEl.value !== "")
+    ? Number(distanciaEl.value.trim().replace(",", ".")) || null
+    : null;
+  return {
+    distanciaKm,
+    velocidadeMediaKmh: distanciaKm ? calcularVelocidadeMediaKmh(distanciaKm, duracaoMin) : null,
+    paceMinPorKm: distanciaKm ? calcularPaceMinPorKm(distanciaKm, duracaoMin) : null,
+  };
+}
 function acaoEncerrarTreino() {
   if (!state.treinoAtivo) return;
   if (treinoFotoSelecionada && !state.account) { toastError("Conecte sua conta do Google para anexar fotos."); return; }
@@ -2057,11 +2106,13 @@ function acaoEncerrarTreino() {
   const now = new Date();
   const notaEl = document.getElementById("treino-nota");
   const nota = notaEl ? notaEl.value : "";
-  const novoTreino = {
+  const distanciaEl = document.getElementById("treino-distancia");
+  const camposDistancia = calcularCamposDistanciaTreino(state.treinoAtivo.esporte, duracaoMin);
+  const novoTreino = Object.assign({
     id: Date.now(), date: state.treinoAtivo.date, esporte: state.treinoAtivo.esporte,
     horaInicio: state.treinoAtivo.horaInicioClock, horaFim: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
     duracaoMin, fotoUrl: "", nota,
-  };
+  }, camposDistancia);
   // Mesmo padrão "salva primeiro, anexo depois" já usado nos exames de bioimpedância/calorimetria
   // (ver processarAnexoBioimpedanciaEmSegundoPlano): o treino nunca fica refém do envio da foto.
   const arquivoFoto = treinoFotoSelecionada;
@@ -2072,7 +2123,9 @@ function acaoEncerrarTreino() {
   pararTickTreino();
   state.treinoEsporte = "";
   state.treinoNota = "";
+  state.treinoDistanciaKm = "";
   if (notaEl) notaEl.value = ""; // ver comentário em acaoSalvarTreino sobre limpar o DOM diretamente
+  if (distanciaEl) distanciaEl.value = "";
   limparFotoTreinoSelecionada();
   toastSuccess(arquivoFoto ? "Treino registrado. Enviando a foto em segundo plano..." : "Treino registrado.");
   const promessaRegistroBase = state.account ? enviarComFila("salvarTreinoGoogle", [state.usuario.email, novoTreino]) : Promise.resolve();
@@ -2119,19 +2172,23 @@ function acaoSalvarTreino() {
   if (treinoFotoSelecionada && !state.account) { toastError("Conecte sua conta do Google para anexar fotos."); return; }
   const notaEl = document.getElementById("treino-nota");
   const nota = notaEl ? notaEl.value : "";
+  const distanciaEl = document.getElementById("treino-distancia");
+  const camposDistancia = calcularCamposDistanciaTreino(esporte, duracaoMin);
 
-  const novoTreino = { id: Date.now(), date: today(), esporte, horaInicio, horaFim, duracaoMin, fotoUrl: "", nota };
+  const novoTreino = Object.assign({ id: Date.now(), date: today(), esporte, horaInicio, horaFim, duracaoMin, fotoUrl: "", nota }, camposDistancia);
   const arquivoFoto = treinoFotoSelecionada;
   state.treinos = state.treinos.concat([novoTreino]);
   persistTreinos();
   state.treinoEsporte = "";
   state.treinoNota = "";
+  state.treinoDistanciaKm = "";
   // Limpa os campos no DOM diretamente (não só no state) — como os inputs continuam montados na
   // tela após salvar, o captureFormState() chamado no início do próximo render() ia recapturar o
   // valor antigo ainda presente nos inputs e desfazer a limpeza do state.
   inicioEl.value = "";
   fimEl.value = "";
   if (notaEl) notaEl.value = "";
+  if (distanciaEl) distanciaEl.value = "";
   limparFotoTreinoSelecionada();
   toastSuccess(arquivoFoto ? "Treino registrado. Enviando a foto em segundo plano..." : "Treino registrado.");
   const promessaRegistroBase = state.account ? enviarComFila("salvarTreinoGoogle", [state.usuario.email, novoTreino]) : Promise.resolve();
@@ -2146,6 +2203,15 @@ function acaoRemoverTreino(id) {
   render();
 }
 
+// "5,2 km · 8,7 km/h · 6:00 min/km" -- ou "" se o treino não tem distância registrada. Reaproveitado
+// na lista de hoje e no histórico.
+function treinoDistanciaResumoTexto(t) {
+  if (!t.distanciaKm) return "";
+  let texto = formatNumber(t.distanciaKm, 2) + " km";
+  if (t.velocidadeMediaKmh) texto += " · " + formatNumber(t.velocidadeMediaKmh, 1) + " km/h";
+  if (t.paceMinPorKm) texto += " · " + formatarPace(t.paceMinPorKm);
+  return texto;
+}
 function treinoListTemplate() {
   const treinos = todayTreinos();
   if (!treinos.length) {
@@ -2158,6 +2224,7 @@ function treinoListTemplate() {
       : '<div class="meal-row-icon">' + icon("activity") + "</div>"
     ) +
     '<div class="meal-row-text"><div class="meal-row-name">' + emojiEsporte(t.esporte) + " " + esc(t.esporte) + '</div><div class="meal-row-meta">' + icon("clock") + " " + esc(t.horaInicio) + " – " + esc(t.horaFim) + "</div>" +
+    (t.distanciaKm ? '<div class="meal-row-distancia">' + icon("zap") + " " + esc(treinoDistanciaResumoTexto(t)) + "</div>" : "") +
     (t.nota ? '<div class="meal-row-nota">' + icon("help") + " " + esc(t.nota) + "</div>" : "") +
     "</div></div>" +
     '<div class="meal-row-right"><div class="meal-row-stat"><div class="meal-row-kcal">' + esc(formatarDuracao(t.duracaoMin)) + "</div></div>" +
@@ -2184,8 +2251,9 @@ function treinoHistoryPanelTemplate() {
       (dayTreinos.length
         ? '<div class="history-day"><div class="history-day-head"><span class="date">' + dateLabel(selectedDate) + '</span><span class="total">' + dayTreinos.length + " treino" + (dayTreinos.length > 1 ? "s" : "") + "</span></div>" +
           '<div class="history-day-meals">' + dayTreinos.map((t) =>
-            '<div class="history-day-meal history-day-meal-static' + (t.nota ? " history-day-meal-com-nota" : "") + '">' +
+            '<div class="history-day-meal history-day-meal-static' + ((t.nota || t.distanciaKm) ? " history-day-meal-com-nota" : "") + '">' +
               '<div class="history-day-meal-linha"><span>' + emojiEsporte(t.esporte) + " " + esc(t.esporte) + " · " + esc(t.horaInicio) + "–" + esc(t.horaFim) + "</span><span>" + esc(formatarDuracao(t.duracaoMin)) + (t.fotoUrl ? ' <a class="history-day-meal-foto-link" href="' + esc(t.fotoUrl) + '" target="_blank" rel="noopener" aria-label="Ver foto do treino">' + icon("camera") + "</a>" : "") + "</span></div>" +
+              (t.distanciaKm ? '<p class="history-day-meal-distancia">' + esc(treinoDistanciaResumoTexto(t)) + "</p>" : "") +
               (t.nota ? '<p class="history-day-meal-nota">' + esc(t.nota) + "</p>" : "") +
             "</div>"
           ).join("") + "</div></div>"
@@ -2798,6 +2866,19 @@ function treinoNotaCampoTemplate() {
     '<textarea id="treino-nota" class="meal-textarea" rows="2" placeholder="Ex.: treino pesado, alto astral, senti dor no joelho...">' + esc(state.treinoNota) + "</textarea></div>";
 }
 
+// Campo pra informar a distância percorrida (opcional) -- só aparece pra Corrida, Caminhada e
+// Ciclismo (ver ESPORTES_COM_DISTANCIA). Não depende de GPS nem de rastreamento em tempo real: a
+// pessoa digita o valor de onde já tiver (relógio, app de mapa, percurso conhecido), e o app calcula
+// sozinho a velocidade média e o pace a partir dessa distância e da duração do treino, antes de
+// salvar (ver acaoEncerrarTreino()/acaoSalvarTreino()).
+function treinoDistanciaCampoTemplate() {
+  if (!ESPORTES_COM_DISTANCIA.includes(state.treinoEsporte)) return "";
+  return '<div class="treino-distancia-campo"><label class="meal-form-label" for="treino-distancia">Distância percorrida (opcional)</label>' +
+    '<input id="treino-distancia" type="number" min="0" step="0.01" class="meal-input" placeholder="Ex.: 5,2 (em km)" value="' + esc(state.treinoDistanciaKm) + '"/>' +
+    '<p class="treino-distancia-nota">Informe se souber (relógio, app de mapa, percurso conhecido) — calculamos a velocidade média e o pace automaticamente a partir da distância e da duração do treino.</p>' +
+  "</div>";
+}
+
 // Foto do treino: só pode ser adicionada no momento do registro (encerrar o cronômetro ou salvar
 // manualmente) — não dá pra anexar depois num treino já salvo. Exatamente 1 foto por treino.
 // treinoFotoSelecionada/treinoFotoPreviewUrl ficam fora do state (File não é serializável).
@@ -2820,6 +2901,7 @@ function treinoCronometroAtivoTemplate() {
   return '' +
     '<p class="meal-card-desc">' + emojiEsporte(a.esporte) + " " + esc(a.esporte) + " · iniciado às " + esc(a.horaInicioClock) + (a.pausado ? " · pausado" : "") + "</p>" +
     '<div class="treino-cronometro">' + formatarCronometro(ms) + "</div>" +
+    treinoDistanciaCampoTemplate() +
     treinoNotaCampoTemplate() +
     treinoFotoCampoTemplate() +
     '<div class="treino-cronometro-acoes">' +
@@ -2846,6 +2928,7 @@ function treinoFormManualTemplate() {
       '<div><label class="meal-form-label">Início</label><input id="treino-hora-inicio" type="time" class="meal-input" value="' + esc(state.treinoHoraInicio) + '"/></div>' +
       '<div><label class="meal-form-label">Término</label><input id="treino-hora-fim" type="time" class="meal-input" value="' + esc(state.treinoHoraFim) + '"/></div>' +
     "</div>" +
+    treinoDistanciaCampoTemplate() +
     treinoNotaCampoTemplate() +
     treinoFotoCampoTemplate() +
     '<button class="btn-ghost-light" onclick="acaoSalvarTreino()">' + icon("check") + " Salvar treino</button>" +
@@ -2994,6 +3077,8 @@ function captureFormState() {
   if (treinoFimEl) state.treinoHoraFim = treinoFimEl.value;
   const treinoNotaEl = document.getElementById("treino-nota");
   if (treinoNotaEl) state.treinoNota = treinoNotaEl.value;
+  const treinoDistanciaEl = document.getElementById("treino-distancia");
+  if (treinoDistanciaEl) state.treinoDistanciaKm = treinoDistanciaEl.value;
 }
 function render() {
   captureFormState();
