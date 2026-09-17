@@ -62,6 +62,7 @@ svg{ display: block; }
 .form-stack{ margin-top:24px; display:flex; flex-direction:column; gap:12px; }
 .field-label{ display:block; margin-bottom:6px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:#9aa9a1; }
 .field-input{ width:100%; border-radius:12px; border:1px solid #dce5db; background:#f7f9f5; padding:12px 14px; font-size:14px; color:#18352d; outline:none; }
+.medida-nota-textarea{ resize:none; line-height:1.5; font-family:inherit; }
 .field-input::placeholder{ color:#9aa9a1; }
 .field-input:focus{ border-color:#8fbf78; }
 .btn-primary{ margin-top:8px; display:flex; width:100%; align-items:center; justify-content:center; gap:8px; border-radius:12px; background:var(--primary); padding:12px 16px; font-size:14px; font-weight:600; color:#fff; box-shadow:0 8px 20px rgba(28,77,62,0.15); transition:transform .15s, opacity .15s; }
@@ -153,6 +154,9 @@ svg{ display: block; }
 .summary-card{ position:relative; overflow:hidden; border-radius:28px; background:#e6f1dc; padding:24px; }
 @media (min-width: 640px){ .summary-card{ padding:28px; } }
 .summary-ring{ position:absolute; right:-32px; top:-40px; height:144px; width:144px; border-radius:999px; border:18px solid rgba(205,228,189,.8); }
+.summary-edit-btn{ position:absolute; top:16px; right:16px; z-index:1; display:flex; height:34px; width:34px; align-items:center; justify-content:center; border-radius:999px; background:rgba(255,255,255,.75); color:#4b7048; transition:background .15s; }
+.summary-edit-btn:hover{ background:#fff; }
+@media (min-width: 640px){ .summary-edit-btn{ top:20px; right:20px; } }
 .summary-inner{ position:relative; }
 .summary-label{ display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:#587a50; }
 .summary-stats{ margin-top:20px; display:flex; align-items:flex-end; justify-content:space-between; gap:20px; }
@@ -177,9 +181,15 @@ svg{ display: block; }
 .goal-field-head{ margin-bottom:8px; display:flex; justify-content:space-between; font-size:12px; font-weight:600; color:#688077; }
 .goal-field-input{ width:100%; background:transparent; border:none; font-family:'Fraunces',serif; font-size:24px; font-weight:600; color:#214c3d; outline:none; }
 
+.nutrient-tabs{ margin-bottom:16px; display:flex; gap:8px; border-bottom:1px solid #e5e9e1; }
+.nutrient-tab{ padding:10px 4px; margin-bottom:-1px; border-bottom:2px solid transparent; font-size:14px; font-weight:600; color:#9aa9a1; }
+.nutrient-tab.active{ color:#1b3f34; border-bottom-color:var(--primary); }
 .nutrient-grid{ margin-bottom:32px; display:grid; gap:16px; grid-template-columns:1fr; }
 @media (min-width: 640px){ .nutrient-grid{ grid-template-columns:repeat(2,1fr); } }
 @media (min-width: 1280px){ .nutrient-grid{ grid-template-columns:repeat(5,1fr); } }
+.nutrient-grid-micro{ grid-template-columns:1fr; }
+@media (min-width: 640px){ .nutrient-grid-micro{ grid-template-columns:repeat(2,1fr); } }
+@media (min-width: 1280px){ .nutrient-grid-micro{ grid-template-columns:repeat(4,1fr); } }
 .nutrient-card{ border-radius:22px; border:1px solid #e5e9e1; background:#fff; padding:20px; box-shadow:0 10px 28px rgba(43,73,53,0.045); }
 .nutrient-card-head{ display:flex; align-items:center; justify-content:space-between; }
 .nutrient-card-left{ display:flex; align-items:center; gap:10px; }
@@ -205,10 +215,29 @@ svg{ display: block; }
 .meal-card h2{ margin:8px 0 0; font-family:'Fraunces',serif; font-size:24px; font-weight:600; }
 .meal-card-desc{ margin-top:8px; font-size:14px; line-height:1.4; color:#b5cfc1; }
 .meal-form{ margin-top:24px; display:flex; flex-direction:column; gap:12px; }
-.meal-input, .meal-textarea{ width:100%; border-radius:12px; border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.09); padding:12px 14px; font-size:14px; color:#fff; outline:none; }
+.meal-input, .meal-textarea, .meal-select{ width:100%; border-radius:12px; border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.09); padding:12px 14px; font-size:14px; color:#fff; outline:none; }
 .meal-input::placeholder, .meal-textarea::placeholder{ color:#9fb5aa; }
-.meal-input:focus, .meal-textarea:focus{ border-color:#c5dfa9; }
+.meal-input:focus, .meal-textarea:focus, .meal-select:focus{ border-color:#c5dfa9; }
 .meal-textarea{ resize:none; line-height:1.5; }
+.meal-select{ appearance:none; -webkit-appearance:none; cursor:pointer; background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239fbeb0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; background-size:16px; padding-right:40px; }
+.meal-select option{ color:#18352d; background:#fff; }
+.meal-form-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.meal-form-label{ display:block; margin-bottom:6px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:#9fb5aa; }
+.treino-modo-tabs{ margin-top:16px; display:flex; gap:8px; }
+.treino-modo-tab{ display:flex; flex:1; align-items:center; justify-content:center; gap:6px; border-radius:10px; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06); padding:9px 10px; font-size:12px; font-weight:600; color:#b8d4ba; transition:background .15s, color .15s; }
+.treino-modo-tab.active{ background:rgba(255,255,255,.16); color:#fff; border-color:rgba(255,255,255,.3); }
+.treino-cronometro{ margin-top:24px; text-align:center; font-family:'Fraunces',serif; font-size:48px; font-weight:600; letter-spacing:0.02em; color:#fff; font-variant-numeric:tabular-nums; }
+.treino-cronometro-acoes{ margin-top:20px; display:flex; gap:10px; }
+.treino-cronometro-acoes button{ flex:1; width:auto; margin-top:0; }
+.treino-cancelar-btn{ display:block; width:100%; margin-top:12px; text-align:center; font-size:12px; font-weight:600; color:#9fb5aa; text-decoration:underline; text-underline-offset:2px; }
+.treino-nota-campo{ margin-top:16px; }
+.treino-foto-campo{ margin-top:16px; }
+.treino-foto-btn{ display:flex; width:100%; align-items:center; justify-content:center; gap:8px; border-radius:12px; border:1.5px dashed rgba(255,255,255,.28); background:rgba(255,255,255,.05); padding:12px 16px; font-size:13px; font-weight:600; color:#cfe4c8; cursor:pointer; transition:background .15s, border-color .15s; }
+.treino-foto-btn:hover{ background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.45); }
+.treino-foto-preview{ position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:14px; background:rgba(255,255,255,.06); }
+.treino-foto-preview img{ display:block; width:100%; max-height:220px; object-fit:cover; }
+.treino-foto-remover{ position:absolute; top:8px; right:8px; display:flex; height:30px; width:30px; align-items:center; justify-content:center; border-radius:999px; background:rgba(20,40,32,.72); color:#fff; backdrop-filter:blur(2px); }
+.treino-foto-remover:hover{ background:rgba(20,40,32,.9); }
 .btn-ghost-light{ display:flex; width:100%; align-items:center; justify-content:center; gap:8px; border-radius:12px; border:1px solid rgba(184,214,156,.3); background:rgba(255,255,255,.08); padding:12px 16px; font-size:14px; font-weight:600; color:#e3f2d3; transition:background .15s; }
 .btn-ghost-light:hover{ background:rgba(255,255,255,.14); }
 .meal-preview{ margin-top:20px; border-radius:16px; background:rgba(255,255,255,.09); padding:16px; }
@@ -237,13 +266,18 @@ svg{ display: block; }
 .meal-empty-icon{ margin-bottom:12px; display:flex; height:44px; width:44px; align-items:center; justify-content:center; border-radius:999px; background:#e9f3e6; color:#76a162; }
 .meal-empty p:first-of-type{ margin:0; font-weight:500; color:#557268; }
 .meal-empty p:last-of-type{ margin:4px 0 0; font-size:14px; color:#96a49d; }
-.meal-row{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:16px 0; border-top:1px solid #edf0eb; }
+.meal-row{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:16px 0; border-top:1px solid #edf0eb; cursor:pointer; }
 .meal-row:first-child{ border-top:none; padding-top:4px; }
+.meal-row-static{ cursor:default; }
 .meal-row-left{ display:flex; min-width:0; gap:12px; }
 .meal-row-icon{ display:flex; height:40px; width:40px; flex-shrink:0; align-items:center; justify-content:center; border-radius:12px; background:#f5f7f2; color:#6c8d68; }
+.meal-row-icon-foto{ padding:0; overflow:hidden; }
+.meal-row-icon-foto img{ width:100%; height:100%; object-fit:cover; }
 .meal-row-text{ min-width:0; }
 .meal-row-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; font-weight:600; color:#31564a; }
 .meal-row-meta{ margin-top:4px; font-size:12px; color:#9aa9a1; }
+.meal-row-nota{ margin-top:4px; display:flex; align-items:flex-start; gap:4px; font-size:12px; color:#7c8c84; font-style:italic; }
+.meal-row-nota .icon{ width:14px; height:14px; flex-shrink:0; margin-top:1px; }
 .meal-row-right{ display:flex; flex-shrink:0; align-items:center; gap:12px; }
 .meal-row-stat{ text-align:right; }
 .meal-row-kcal{ font-size:14px; font-weight:600; color:#3d6355; }
@@ -253,13 +287,29 @@ svg{ display: block; }
 .history-panel{ margin-top:20px; border-radius:16px; background:#f7f9f5; padding:16px; }
 .history-panel-label{ margin-bottom:12px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.14em; color:#7b9187; }
 .history-panel-empty{ margin:0; font-size:14px; color:#94a49d; }
+.history-panel-date-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin:-4px 0 12px; }
+.history-panel-date-label{ display:flex; align-items:center; gap:6px; font-size:13px; color:#557268; }
+.history-panel-date-label .icon{ width:16px; height:16px; color:#8a9c93; flex-shrink:0; }
+.history-panel-date-input{ border:1px solid #dbe3d8; border-radius:10px; padding:6px 10px; font-size:13px; font-family:inherit; color:#31564a; background:#fff; }
+.history-panel-hoje-btn{ border:none; background:#eef3ea; color:#4a6b58; font-size:12px; font-weight:600; padding:6px 12px; border-radius:999px; cursor:pointer; }
+.history-panel-hoje-btn:hover{ background:#e3ecdf; }
 .history-day{ padding:12px 0; border-top:1px solid #e8eee5; }
 .history-day:first-child{ border-top:none; }
 .history-day-head{ display:flex; align-items:center; justify-content:space-between; }
 .history-day-head .date{ font-size:14px; font-weight:500; color:#557268; }
 .history-day-head .total{ font-size:12px; color:#8a9c93; }
 .history-day-meals{ margin-top:8px; display:flex; flex-direction:column; gap:6px; }
-.history-day-meal{ display:flex; align-items:center; justify-content:space-between; font-size:12px; color:#7e9287; }
+.history-day-meal{ display:flex; align-items:center; justify-content:space-between; font-size:12px; color:#7e9287; cursor:pointer; border-radius:8px; padding:4px 6px; margin:0 -6px; transition:background .15s; }
+.history-day-meal:hover{ background:#f2f5ef; }
+.history-day-meal-com-nota{ display:block; }
+.history-day-meal-linha{ display:flex; align-items:center; justify-content:space-between; }
+.history-day-meal-nota{ margin:2px 0 0; font-size:11px; font-style:italic; color:#9aa9a1; }
+.history-day-meal-static{ cursor:default; }
+.history-day-meal-static:hover{ background:transparent; }
+.history-day-meal span:last-child{ display:inline-flex; align-items:center; gap:4px; }
+.history-day-meal-foto-link{ display:inline-flex; color:#6c8d68; }
+.history-day-meal-foto-link:hover{ color:#3d6355; }
+.history-day-meal-foto-link .icon{ width:14px; height:14px; }
 .footnote{ margin-top:28px; display:flex; align-items:flex-start; gap:8px; font-size:12px; line-height:1.4; color:#92a099; }
 .footnote .icon{ margin-top:2px; color:#9db69a; flex-shrink:0; }
 
@@ -327,6 +377,7 @@ svg{ display: block; }
 .medida-history-left{ min-width:0; }
 .medida-history-tipo{ display:block; font-size:14px; font-weight:600; color:#31564a; }
 .medida-history-meta{ margin-top:4px; display:flex; align-items:center; gap:4px; font-size:12px; color:#9aa9a1; }
+.medida-history-nota{ margin-top:4px; display:flex; align-items:flex-start; gap:4px; font-size:12px; color:#7c8c84; font-style:italic; }
 .medida-history-right{ display:flex; flex-shrink:0; align-items:center; gap:12px; }
 .medida-history-valor{ font-size:14px; font-weight:600; color:#3d6355; }
 
@@ -337,6 +388,25 @@ svg{ display: block; }
 .modal-card .sub{ margin:4px 0 0; font-size:14px; color:#71857e; }
 .modal-body{ margin-top:20px; display:flex; flex-direction:column; gap:12px; }
 .modal-footer{ margin-top:20px; }
+.modal-card-wide{ max-width:560px; max-height:85vh; overflow-y:auto; }
+.meal-detalhe-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.meal-detalhe-close{ display:flex; height:32px; width:32px; flex-shrink:0; align-items:center; justify-content:center; border-radius:999px; color:#9aa9a1; }
+.meal-detalhe-close:hover{ background:#f5f7f2; }
+.meal-detalhe-total{ margin-top:14px; border-radius:16px; background:#f5f7f2; padding:14px 16px; }
+.meal-detalhe-total-row{ display:flex; justify-content:space-between; font-size:14px; font-weight:600; color:#31564a; }
+.meal-detalhe-total-macros{ margin-top:4px; font-size:12px; color:#789087; }
+.meal-detalhe-alimento{ margin-top:16px; border-top:1px solid #edf0eb; padding-top:16px; }
+.meal-detalhe-alimento:first-of-type{ border-top:none; }
+.meal-detalhe-alimento-head{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+.meal-detalhe-alimento-nome{ font-size:15px; font-weight:600; color:#1b3f34; }
+.meal-detalhe-alimento-qtd{ font-size:12px; color:#9aa9a1; }
+.meal-detalhe-macros{ margin-top:8px; display:flex; flex-wrap:wrap; gap:6px; }
+.meal-detalhe-chip{ border-radius:999px; background:#f5f7f2; padding:5px 10px; font-size:12px; font-weight:600; color:#3d6355; }
+.meal-detalhe-micros{ margin-top:8px; display:grid; grid-template-columns:repeat(2,1fr); gap:4px 12px; }
+@media (min-width: 420px){ .meal-detalhe-micros{ grid-template-columns:repeat(4,1fr); } }
+.meal-detalhe-micro{ font-size:11px; color:#9aa9a1; }
+.meal-detalhe-micro span{ color:#5c7369; font-weight:600; }
+.meal-detalhe-sem-dados{ margin-top:16px; font-size:13px; color:#9aa9a1; }
 .criar-senha-btn{ display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:#3d6355; text-decoration:underline; text-underline-offset:2px; }
 .criar-senha-btn:hover{ color:var(--primary); }
 
@@ -401,6 +471,13 @@ const ICON_PATHS = {
   heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8Z"/>',
   paperclip: '<path d="M21 12.5 12.5 21a5 5 0 0 1-7-7L14 5.5a3.5 3.5 0 0 1 5 5L10.5 19a2 2 0 0 1-3-3L15 8.5"/>',
   file: '<path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v4a1 1 0 0 0 1 1h4"/>',
+  eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  shield: '<path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6Z"/>',
+  zap: '<path d="M13 2 3 14h7l-1 8 10-12h-7l1-8Z"/>',
+  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  play: '<path d="M6 3.5v17l15-8.5Z"/>',
+  pause: '<path d="M7 3h4v18H7Z"/><path d="M13 3h4v18h-4Z"/>',
 };
 function icon(name, cls) {
   const p = ICON_PATHS[name] || "";
@@ -421,7 +498,12 @@ function formatNumber(value, digits) {
   return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: digits, minimumFractionDigits: digits }).format(value);
 }
 function pct(value, goal) { return goal ? Math.min(100, Math.max(0, (value / goal) * 100)) : 0; }
-function addNutrients(a, b) { return { calories: a.calories + b.calories, protein: a.protein + b.protein, carbs: a.carbs + b.carbs, fat: a.fat + b.fat, fiber: a.fiber + b.fiber }; }
+// Lista fixa de chaves de nutrientes (macro + micro) somadas por addNutrients. É uma lista fixa (não
+// derivada de Object.keys(nutrientMeta/micronutrientMeta)) de propósito: addNutrients soma tanto
+// `food.values` (só nutrientes) quanto registros de refeição inteiros (que têm outros campos, como
+// id/name/description) — somar só as chaves conhecidas evita tentar somar "id" ou concatenar "name".
+const NUTRIENT_KEYS = ["calories", "protein", "carbs", "fat", "fiber", "vitA", "vitC", "vitD", "calcio", "ferro", "magnesio", "potassio", "zinco"];
+function addNutrients(a, b) { const out = {}; NUTRIENT_KEYS.forEach((k) => { out[k] = (a[k] || 0) + (b[k] || 0); }); return out; }
 function scale(values, m) { const out = {}; for (const k of Object.keys(values)) out[k] = values[k] * m; return out; }
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
@@ -474,6 +556,11 @@ const authApi = {
   removerCalorimetriaGoogle: (email, id) => chamarApi("removerCalorimetriaGoogle", { email, id }),
   atualizarAnexoBioimpedanciaGoogle: (email, id, anexoUrl) => chamarApi("atualizarAnexoBioimpedanciaGoogle", { email, id, anexoUrl }),
   atualizarAnexoCalorimetriaGoogle: (email, id, anexoUrl) => chamarApi("atualizarAnexoCalorimetriaGoogle", { email, id, anexoUrl }),
+  atualizarBioimpedanciaGoogle: (email, registro) => chamarApi("atualizarBioimpedanciaGoogle", { email, registro }),
+  atualizarCalorimetriaGoogle: (email, registro) => chamarApi("atualizarCalorimetriaGoogle", { email, registro }),
+  salvarTreinoGoogle: (email, treino) => chamarApi("salvarTreinoGoogle", { email, treino }),
+  removerTreinoGoogle: (email, id) => chamarApi("removerTreinoGoogle", { email, id }),
+  atualizarFotoTreinoGoogle: (email, id, fotoUrl) => chamarApi("atualizarFotoTreinoGoogle", { email, id, fotoUrl }),
 };
 
 /* ===================== conexão com Google (Google Identity Services) ===================== */
@@ -534,76 +621,140 @@ const nutrientMeta = {
   fiber: { label: "Fibras", unit: "g", color: "#71945c", soft: "#eef5e9", icon: "leaf" },
 };
 const defaultGoals = { calories: 1600, protein: 150, carbs: 130, fat: 53, fiber: 30 };
-const emptyNutrients = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
+// Micronutrientes: diferente das metas de macro (editáveis pela pessoa em "Metas do dia" e
+// sincronizadas com o Google), esses valores de referência são fixos — são a Ingestão Diária de
+// Referência (IDR) padrão para um adulto, não uma meta pessoal configurável.
+const micronutrientMeta = {
+  vitA: { label: "Vitamina A", unit: "mcg", color: "#c98a3f", soft: "#fbeed9", icon: "eye" },
+  vitC: { label: "Vitamina C", unit: "mg", color: "#8fa84a", soft: "#eef3e0", icon: "leaf" },
+  vitD: { label: "Vitamina D", unit: "mcg", color: "#d1a53b", soft: "#fbf3d9", icon: "sun" },
+  calcio: { label: "Cálcio", unit: "mg", color: "#8a97a8", soft: "#eef1f5", icon: "shield" },
+  ferro: { label: "Ferro", unit: "mg", color: "#b25b4a", soft: "#f8ece9", icon: "zap" },
+  magnesio: { label: "Magnésio", unit: "mg", color: "#6b8f71", soft: "#eaf2ea", icon: "activity" },
+  potassio: { label: "Potássio", unit: "mg", color: "#5b8ab2", soft: "#e9f1f7", icon: "droplet" },
+  zinco: { label: "Zinco", unit: "mg", color: "#8d7ab0", soft: "#f1edf7", icon: "sparkles" },
+};
+const MICRO_GOALS = { vitA: 600, vitC: 45, vitD: 5, calcio: 1000, ferro: 14, magnesio: 260, potassio: 3500, zinco: 7 };
+const emptyNutrients = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 0, ferro: 0, magnesio: 0, potassio: 0, zinco: 0 };
 
 const foodLibrary = [
-  { terms: ["pao frances", "pao de sal", "pao frances comum"], label: "Pão francês", baseAmount: "1 unidade (50 g)", values: { calories: 135, protein: 4.5, carbs: 28, fat: 1.5, fiber: 1.2 }, grams: 50 },
-  { terms: ["pao de forma tradicional", "pao de forma"], label: "Pão de forma", baseAmount: "2 fatias (50 g)", values: { calories: 130, protein: 4, carbs: 24, fat: 1.6, fiber: 1.4 }, grams: 50 },
-  { terms: ["pao de forma integral", "pao integral"], label: "Pão de forma integral", baseAmount: "2 fatias (50 g)", values: { calories: 120, protein: 5, carbs: 22, fat: 1.6, fiber: 3.2 }, grams: 50 },
-  { terms: ["pao de queijo"], label: "Pão de queijo", baseAmount: "1 unidade (30 g)", values: { calories: 100, protein: 2.3, carbs: 9, fat: 6, fiber: 0.2 }, grams: 30 },
-  { terms: ["tapioca"], label: "Tapioca", baseAmount: "1 unidade (60 g)", values: { calories: 130, protein: 0.2, carbs: 32, fat: 0.1, fiber: 0.3 }, grams: 60 },
-  { terms: ["macarrao cozido", "macarrao", "massa"], label: "Macarrão cozido", baseAmount: "100 g", values: { calories: 158, protein: 5.8, carbs: 31, fat: 0.9, fiber: 1.8 }, grams: 100 },
-  { terms: ["batata inglesa", "batata cozida", "batata"], label: "Batata inglesa cozida", baseAmount: "100 g", values: { calories: 87, protein: 1.9, carbs: 20, fat: 0.1, fiber: 1.8 }, grams: 100 },
-  { terms: ["batata doce"], label: "Batata doce cozida", baseAmount: "100 g", values: { calories: 86, protein: 1.6, carbs: 20, fat: 0.1, fiber: 3 }, grams: 100 },
-  { terms: ["mandioca", "aipim", "macaxeira"], label: "Mandioca cozida", baseAmount: "100 g", values: { calories: 125, protein: 0.6, carbs: 30, fat: 0.3, fiber: 1.6 }, grams: 100 },
-  { terms: ["arroz integral"], label: "Arroz integral cozido", baseAmount: "100 g", values: { calories: 124, protein: 2.6, carbs: 25.8, fat: 1, fiber: 2.7 }, grams: 100 },
-  { terms: ["arroz branco", "arroz cozido", "arroz"], label: "Arroz branco cozido", baseAmount: "100 g", values: { calories: 130, protein: 2.5, carbs: 28, fat: 0.3, fiber: 0.4 }, grams: 100 },
-  { terms: ["aveia em flocos", "aveia"], label: "Aveia em flocos", baseAmount: "2 colheres de sopa (30 g)", values: { calories: 117, protein: 4, carbs: 20, fat: 2.4, fiber: 3 }, grams: 30 },
-  { terms: ["granola"], label: "Granola", baseAmount: "30 g", values: { calories: 120, protein: 3, carbs: 19, fat: 4, fiber: 2.5 }, grams: 30 },
-  { terms: ["cuscuz"], label: "Cuscuz", baseAmount: "100 g", values: { calories: 112, protein: 2.5, carbs: 23, fat: 0.6, fiber: 1.4 }, grams: 100 },
-  { terms: ["ovo frito", "ovo de galinha frito", "ovo"], label: "Ovo frito", baseAmount: "1 unidade", values: { calories: 90, protein: 6.3, carbs: 0.4, fat: 7, fiber: 0 }, count: 1 },
-  { terms: ["ovo cozido"], label: "Ovo cozido", baseAmount: "1 unidade", values: { calories: 78, protein: 6.3, carbs: 0.6, fat: 5.3, fiber: 0 }, count: 1 },
-  { terms: ["omelete"], label: "Omelete", baseAmount: "2 ovos", values: { calories: 190, protein: 13, carbs: 1.5, fat: 15, fiber: 0 }, count: 2 },
-  { terms: ["peito de frango", "frango grelhado", "frango"], label: "Peito de frango", baseAmount: "100 g", values: { calories: 165, protein: 31, carbs: 0, fat: 3.6, fiber: 0 }, grams: 100 },
-  { terms: ["picanha", "picanha bovina"], label: "Picanha", baseAmount: "100 g", values: { calories: 289, protein: 26, carbs: 0, fat: 20, fiber: 0 }, grams: 100 },
-  { terms: ["carne moida refogada", "carne moida"], label: "Carne moída refogada", baseAmount: "100 g", values: { calories: 212, protein: 26, carbs: 0, fat: 11, fiber: 0 }, grams: 100 },
-  { terms: ["bife de patinho", "carne bovina magra", "patinho"], label: "Bife de patinho grelhado", baseAmount: "100 g", values: { calories: 205, protein: 32, carbs: 0, fat: 8, fiber: 0 }, grams: 100 },
-  { terms: ["file de tilapia", "peixe grelhado", "tilapia"], label: "Filé de tilápia grelhado", baseAmount: "100 g", values: { calories: 128, protein: 26, carbs: 0, fat: 2.7, fiber: 0 }, grams: 100 },
-  { terms: ["salmao grelhado", "salmao"], label: "Salmão grelhado", baseAmount: "100 g", values: { calories: 208, protein: 22, carbs: 0, fat: 13, fiber: 0 }, grams: 100 },
-  { terms: ["atum em lata", "atum"], label: "Atum em lata", baseAmount: "100 g", values: { calories: 116, protein: 26, carbs: 0, fat: 1, fiber: 0 }, grams: 100 },
-  { terms: ["camarao cozido", "camarao"], label: "Camarão cozido", baseAmount: "100 g", values: { calories: 99, protein: 24, carbs: 0.2, fat: 0.3, fiber: 0 }, grams: 100 },
-  { terms: ["lombo suino", "carne de porco", "lombo assado"], label: "Lombo suíno assado", baseAmount: "100 g", values: { calories: 211, protein: 27, carbs: 0, fat: 11, fiber: 0 }, grams: 100 },
-  { terms: ["linguica"], label: "Linguiça", baseAmount: "100 g", values: { calories: 300, protein: 13, carbs: 2, fat: 27, fiber: 0 }, grams: 100 },
-  { terms: ["bacon"], label: "Bacon", baseAmount: "30 g", values: { calories: 150, protein: 10, carbs: 0, fat: 12, fiber: 0 }, grams: 30 },
-  { terms: ["peito de peru", "presunto de peru"], label: "Peito de peru fatiado", baseAmount: "2 fatias (30 g)", values: { calories: 35, protein: 6, carbs: 1, fat: 1, fiber: 0 }, grams: 30 },
-  { terms: ["presunto"], label: "Presunto", baseAmount: "2 fatias (30 g)", values: { calories: 60, protein: 8, carbs: 1, fat: 3, fiber: 0 }, grams: 30 },
-  { terms: ["queijo minas"], label: "Queijo minas", baseAmount: "30 g", values: { calories: 72, protein: 5.6, carbs: 0.9, fat: 5.4, fiber: 0 }, grams: 30 },
-  { terms: ["queijo mussarela", "mussarela", "muçarela"], label: "Queijo mussarela", baseAmount: "30 g", values: { calories: 90, protein: 6.6, carbs: 0.6, fat: 6.9, fiber: 0 }, grams: 30 },
-  { terms: ["requeijao"], label: "Requeijão", baseAmount: "1 colher de sopa (20 g)", values: { calories: 55, protein: 1.5, carbs: 1, fat: 5, fiber: 0 }, grams: 20 },
-  { terms: ["leite integral", "leite"], label: "Leite integral", baseAmount: "1 copo (200 ml)", values: { calories: 122, protein: 6.4, carbs: 9.6, fat: 6.6, fiber: 0 }, ml: 200 },
-  { terms: ["leite desnatado"], label: "Leite desnatado", baseAmount: "1 copo (200 ml)", values: { calories: 70, protein: 6.8, carbs: 9.8, fat: 0.2, fiber: 0 }, ml: 200 },
-  { terms: ["iogurte natural", "iogurte"], label: "Iogurte natural", baseAmount: "1 pote (170 g)", values: { calories: 100, protein: 6, carbs: 8, fat: 5, fiber: 0 }, grams: 170 },
-  { terms: ["iogurte grego"], label: "Iogurte grego", baseAmount: "100 g", values: { calories: 97, protein: 9, carbs: 4, fat: 5, fiber: 0 }, grams: 100 },
-  { terms: ["whey protein", "whey"], label: "Whey protein", baseAmount: "1 dose (30 g)", values: { calories: 120, protein: 24, carbs: 3, fat: 1.5, fiber: 0 }, grams: 30 },
-  { terms: ["feijao", "feijao cozido"], label: "Feijão cozido", baseAmount: "100 g", values: { calories: 76, protein: 4.8, carbs: 13.6, fat: 0.5, fiber: 8.4 }, grams: 100 },
-  { terms: ["lentilha"], label: "Lentilha cozida", baseAmount: "100 g", values: { calories: 116, protein: 9, carbs: 20, fat: 0.4, fiber: 8 }, grams: 100 },
-  { terms: ["grao de bico"], label: "Grão de bico cozido", baseAmount: "100 g", values: { calories: 164, protein: 8.9, carbs: 27, fat: 2.6, fiber: 7.6 }, grams: 100 },
-  { terms: ["brocolis"], label: "Brócolis cozido", baseAmount: "100 g", values: { calories: 35, protein: 2.8, carbs: 7, fat: 0.4, fiber: 3.3 }, grams: 100 },
-  { terms: ["couve refogada", "couve"], label: "Couve refogada", baseAmount: "100 g", values: { calories: 35, protein: 2, carbs: 4, fat: 2, fiber: 3 }, grams: 100 },
-  { terms: ["tomate"], label: "Tomate", baseAmount: "1 unidade (100 g)", values: { calories: 18, protein: 0.9, carbs: 3.9, fat: 0.2, fiber: 1.2 }, grams: 100 },
-  { terms: ["cenoura"], label: "Cenoura crua", baseAmount: "100 g", values: { calories: 41, protein: 0.9, carbs: 10, fat: 0.2, fiber: 2.8 }, grams: 100 },
-  { terms: ["alface"], label: "Alface", baseAmount: "50 g", values: { calories: 7, protein: 0.7, carbs: 1.2, fat: 0.1, fiber: 0.7 }, grams: 50 },
-  { terms: ["salada mista", "salada"], label: "Salada mista", baseAmount: "100 g", values: { calories: 25, protein: 1.2, carbs: 4, fat: 0.5, fiber: 1.8 }, grams: 100 },
-  { terms: ["banana"], label: "Banana", baseAmount: "1 unidade", values: { calories: 90, protein: 1.1, carbs: 23, fat: 0.3, fiber: 2.6 }, count: 1 },
-  { terms: ["maca"], label: "Maçã", baseAmount: "1 unidade (130 g)", values: { calories: 68, protein: 0.3, carbs: 18, fat: 0.2, fiber: 3 }, count: 1 },
-  { terms: ["mamao"], label: "Mamão", baseAmount: "100 g", values: { calories: 40, protein: 0.6, carbs: 10, fat: 0.1, fiber: 1.8 }, grams: 100 },
-  { terms: ["morango"], label: "Morango", baseAmount: "100 g", values: { calories: 32, protein: 0.7, carbs: 7.7, fat: 0.3, fiber: 2 }, grams: 100 },
-  { terms: ["abacaxi"], label: "Abacaxi", baseAmount: "100 g", values: { calories: 50, protein: 0.5, carbs: 13, fat: 0.1, fiber: 1.4 }, grams: 100 },
-  { terms: ["manga"], label: "Manga", baseAmount: "1 unidade (200 g)", values: { calories: 120, protein: 1.6, carbs: 30, fat: 0.6, fiber: 3.4 }, count: 1 },
-  { terms: ["melancia"], label: "Melancia", baseAmount: "1 fatia (150 g)", values: { calories: 46, protein: 0.9, carbs: 11, fat: 0.2, fiber: 0.6 }, grams: 150 },
-  { terms: ["uva"], label: "Uva", baseAmount: "100 g", values: { calories: 69, protein: 0.7, carbs: 18, fat: 0.2, fiber: 0.9 }, grams: 100 },
-  { terms: ["abacate"], label: "Abacate", baseAmount: "100 g", values: { calories: 160, protein: 2, carbs: 8.5, fat: 14.7, fiber: 6.7 }, grams: 100 },
-  { terms: ["suco de laranja", "suco laranja"], label: "Suco de laranja", baseAmount: "300 ml", values: { calories: 135, protein: 2, carbs: 31, fat: 0.3, fiber: 0.5 }, ml: 300 },
-  { terms: ["cafe com leite"], label: "Café com leite", baseAmount: "1 xícara (200 ml)", values: { calories: 60, protein: 3, carbs: 6, fat: 2.5, fiber: 0 }, ml: 200 },
-  { terms: ["refrigerante", "coca cola", "coca"], label: "Refrigerante", baseAmount: "1 lata (350 ml)", values: { calories: 140, protein: 0, carbs: 37, fat: 0, fiber: 0 }, ml: 350 },
-  { terms: ["cerveja"], label: "Cerveja", baseAmount: "1 lata (350 ml)", values: { calories: 150, protein: 1.6, carbs: 12, fat: 0, fiber: 0 }, ml: 350 },
-  { terms: ["agua de coco"], label: "Água de coco", baseAmount: "1 copo (200 ml)", values: { calories: 40, protein: 0.6, carbs: 9, fat: 0.1, fiber: 0 }, ml: 200 },
-  { terms: ["chocolate ao leite", "chocolate"], label: "Chocolate ao leite", baseAmount: "1 barra pequena (25 g)", values: { calories: 130, protein: 1.9, carbs: 15, fat: 7.3, fiber: 0.8 }, grams: 25 },
-  { terms: ["barra de cereal"], label: "Barra de cereal", baseAmount: "1 unidade (25 g)", values: { calories: 95, protein: 1.3, carbs: 18, fat: 2, fiber: 1.2 }, grams: 25 },
-  { terms: ["castanha do para", "castanha"], label: "Castanha-do-pará", baseAmount: "5 unidades (15 g)", values: { calories: 92, protein: 2, carbs: 1.7, fat: 9.3, fiber: 1 }, grams: 15 },
-  { terms: ["amendoim"], label: "Amendoim", baseAmount: "30 g", values: { calories: 170, protein: 7.3, carbs: 6, fat: 14.5, fiber: 2.5 }, grams: 30 },
-  { terms: ["pipoca"], label: "Pipoca", baseAmount: "30 g", values: { calories: 110, protein: 2.3, carbs: 22, fat: 1.5, fiber: 4 }, grams: 30 },
+  { terms: ["pao frances", "pao de sal", "pao frances comum"], label: "Pão francês", baseAmount: "1 unidade (50 g)", values: { calories: 135, protein: 4.5, carbs: 28, fat: 1.5, fiber: 1.2, vitA: 0, vitC: 0, vitD: 0, calcio: 10, ferro: 1.2, magnesio: 8, potassio: 50, zinco: 0.4 }, grams: 50 },
+  { terms: ["pao de forma tradicional", "pao de forma"], label: "Pão de forma", baseAmount: "2 fatias (50 g)", values: { calories: 130, protein: 4, carbs: 24, fat: 1.6, fiber: 1.4, vitA: 0, vitC: 0, vitD: 0, calcio: 40, ferro: 1, magnesio: 10, potassio: 60, zinco: 0.3 }, grams: 50 },
+  { terms: ["pao de forma integral", "pao integral"], label: "Pão de forma integral", baseAmount: "2 fatias (50 g)", values: { calories: 120, protein: 5, carbs: 22, fat: 1.6, fiber: 3.2, vitA: 0, vitC: 0, vitD: 0, calcio: 30, ferro: 1.3, magnesio: 25, potassio: 80, zinco: 0.6 }, grams: 50 },
+  { terms: ["pao de queijo"], label: "Pão de queijo", baseAmount: "1 unidade (30 g)", values: { calories: 100, protein: 2.3, carbs: 9, fat: 6, fiber: 0.2, vitA: 10, vitC: 0, vitD: 0.1, calcio: 40, ferro: 0.3, magnesio: 5, potassio: 20, zinco: 0.3 }, grams: 30 },
+  { terms: ["tapioca"], label: "Tapioca", baseAmount: "1 unidade (60 g)", values: { calories: 130, protein: 0.2, carbs: 32, fat: 0.1, fiber: 0.3, vitA: 0, vitC: 0, vitD: 0, calcio: 15, ferro: 0.3, magnesio: 5, potassio: 10, zinco: 0.1 }, grams: 60 },
+  { terms: ["macarrao cozido", "macarrao", "massa"], label: "Macarrão cozido", baseAmount: "100 g", values: { calories: 158, protein: 5.8, carbs: 31, fat: 0.9, fiber: 1.8, vitA: 0, vitC: 0, vitD: 0, calcio: 7, ferro: 0.5, magnesio: 18, potassio: 45, zinco: 0.5 }, grams: 100 },
+  { terms: ["batata inglesa", "batata cozida", "batata"], label: "Batata inglesa cozida", baseAmount: "100 g", values: { calories: 87, protein: 1.9, carbs: 20, fat: 0.1, fiber: 1.8, vitA: 0, vitC: 13, vitD: 0, calcio: 8, ferro: 0.3, magnesio: 20, potassio: 380, zinco: 0.3 }, grams: 100 },
+  { terms: ["batata doce"], label: "Batata doce cozida", baseAmount: "100 g", values: { calories: 86, protein: 1.6, carbs: 20, fat: 0.1, fiber: 3, vitA: 700, vitC: 2.4, vitD: 0, calcio: 30, ferro: 0.6, magnesio: 25, potassio: 340, zinco: 0.3 }, grams: 100 },
+  { terms: ["mandioca", "aipim", "macaxeira"], label: "Mandioca cozida", baseAmount: "100 g", values: { calories: 125, protein: 0.6, carbs: 30, fat: 0.3, fiber: 1.6, vitA: 1, vitC: 20, vitD: 0, calcio: 16, ferro: 0.3, magnesio: 21, potassio: 270, zinco: 0.3 }, grams: 100 },
+  { terms: ["arroz integral"], label: "Arroz integral cozido", baseAmount: "100 g", values: { calories: 124, protein: 2.6, carbs: 25.8, fat: 1, fiber: 2.7, vitA: 0, vitC: 0, vitD: 0, calcio: 10, ferro: 0.4, magnesio: 44, potassio: 79, zinco: 0.6 }, grams: 100 },
+  { terms: ["arroz branco", "arroz cozido", "arroz"], label: "Arroz branco cozido", baseAmount: "100 g", values: { calories: 130, protein: 2.5, carbs: 28, fat: 0.3, fiber: 0.4, vitA: 0, vitC: 0, vitD: 0, calcio: 10, ferro: 0.2, magnesio: 12, potassio: 35, zinco: 0.4 }, grams: 100 },
+  { terms: ["aveia em flocos", "aveia"], label: "Aveia em flocos", baseAmount: "2 colheres de sopa (30 g)", values: { calories: 117, protein: 4, carbs: 20, fat: 2.4, fiber: 3, vitA: 0, vitC: 0, vitD: 0, calcio: 15, ferro: 1.4, magnesio: 40, potassio: 100, zinco: 1 }, grams: 30 },
+  { terms: ["granola"], label: "Granola", baseAmount: "30 g", values: { calories: 120, protein: 3, carbs: 19, fat: 4, fiber: 2.5, vitA: 0, vitC: 0, vitD: 0, calcio: 20, ferro: 1, magnesio: 30, potassio: 90, zinco: 0.6 }, grams: 30 },
+  { terms: ["cuscuz"], label: "Cuscuz", baseAmount: "100 g", values: { calories: 112, protein: 2.5, carbs: 23, fat: 0.6, fiber: 1.4, vitA: 5, vitC: 0, vitD: 0, calcio: 8, ferro: 0.4, magnesio: 10, potassio: 40, zinco: 0.3 }, grams: 100 },
+  { terms: ["ovo frito", "ovo de galinha frito", "ovo"], label: "Ovo frito", baseAmount: "1 unidade", values: { calories: 90, protein: 6.3, carbs: 0.4, fat: 7, fiber: 0, vitA: 90, vitC: 0, vitD: 1, calcio: 25, ferro: 0.9, magnesio: 5, potassio: 65, zinco: 0.6 }, count: 1 },
+  { terms: ["ovo cozido"], label: "Ovo cozido", baseAmount: "1 unidade", values: { calories: 78, protein: 6.3, carbs: 0.6, fat: 5.3, fiber: 0, vitA: 80, vitC: 0, vitD: 1, calcio: 25, ferro: 0.9, magnesio: 5, potassio: 65, zinco: 0.6 }, count: 1 },
+  { terms: ["omelete"], label: "Omelete", baseAmount: "2 ovos", values: { calories: 190, protein: 13, carbs: 1.5, fat: 15, fiber: 0, vitA: 160, vitC: 0, vitD: 2, calcio: 50, ferro: 1.8, magnesio: 10, potassio: 130, zinco: 1.2 }, count: 2 },
+  { terms: ["peito de frango", "frango grelhado", "frango"], label: "Peito de frango", baseAmount: "100 g", values: { calories: 165, protein: 31, carbs: 0, fat: 3.6, fiber: 0, vitA: 5, vitC: 0, vitD: 0.1, calcio: 6, ferro: 0.4, magnesio: 25, potassio: 220, zinco: 0.7 }, grams: 100 },
+  { terms: ["picanha", "picanha bovina"], label: "Picanha", baseAmount: "100 g", values: { calories: 289, protein: 26, carbs: 0, fat: 20, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 10, ferro: 2.1, magnesio: 20, potassio: 260, zinco: 4.5 }, grams: 100 },
+  { terms: ["carne moida refogada", "carne moida"], label: "Carne moída refogada", baseAmount: "100 g", values: { calories: 212, protein: 26, carbs: 0, fat: 11, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 12, ferro: 2.3, magnesio: 18, potassio: 250, zinco: 4 }, grams: 100 },
+  { terms: ["bife de patinho", "carne bovina magra", "patinho"], label: "Bife de patinho grelhado", baseAmount: "100 g", values: { calories: 205, protein: 32, carbs: 0, fat: 8, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 8, ferro: 2.5, magnesio: 22, potassio: 300, zinco: 4.2 }, grams: 100 },
+  { terms: ["file de tilapia", "peixe grelhado", "tilapia"], label: "Filé de tilápia grelhado", baseAmount: "100 g", values: { calories: 128, protein: 26, carbs: 0, fat: 2.7, fiber: 0, vitA: 5, vitC: 0, vitD: 1, calcio: 10, ferro: 0.5, magnesio: 27, potassio: 300, zinco: 0.4 }, grams: 100 },
+  { terms: ["salmao grelhado", "salmao"], label: "Salmão grelhado", baseAmount: "100 g", values: { calories: 208, protein: 22, carbs: 0, fat: 13, fiber: 0, vitA: 40, vitC: 0, vitD: 10, calcio: 12, ferro: 0.5, magnesio: 30, potassio: 380, zinco: 0.5 }, grams: 100 },
+  { terms: ["atum em lata", "atum"], label: "Atum em lata", baseAmount: "100 g", values: { calories: 116, protein: 26, carbs: 0, fat: 1, fiber: 0, vitA: 15, vitC: 0, vitD: 2, calcio: 10, ferro: 1.3, magnesio: 30, potassio: 250, zinco: 0.6 }, grams: 100 },
+  { terms: ["camarao cozido", "camarao"], label: "Camarão cozido", baseAmount: "100 g", values: { calories: 99, protein: 24, carbs: 0.2, fat: 0.3, fiber: 0, vitA: 20, vitC: 2, vitD: 0.1, calcio: 60, ferro: 0.4, magnesio: 40, potassio: 260, zinco: 1.6 }, grams: 100 },
+  { terms: ["lombo suino", "carne de porco", "lombo assado"], label: "Lombo suíno assado", baseAmount: "100 g", values: { calories: 211, protein: 27, carbs: 0, fat: 11, fiber: 0, vitA: 2, vitC: 0, vitD: 0.5, calcio: 8, ferro: 0.9, magnesio: 22, potassio: 320, zinco: 1.9 }, grams: 100 },
+  { terms: ["linguica"], label: "Linguiça", baseAmount: "100 g", values: { calories: 300, protein: 13, carbs: 2, fat: 27, fiber: 0, vitA: 0, vitC: 0, vitD: 0.2, calcio: 10, ferro: 1, magnesio: 15, potassio: 200, zinco: 2 }, grams: 100 },
+  { terms: ["bacon"], label: "Bacon", baseAmount: "30 g", values: { calories: 150, protein: 10, carbs: 0, fat: 12, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 2, ferro: 0.3, magnesio: 5, potassio: 90, zinco: 0.6 }, grams: 30 },
+  { terms: ["peito de peru", "presunto de peru"], label: "Peito de peru fatiado", baseAmount: "2 fatias (30 g)", values: { calories: 35, protein: 6, carbs: 1, fat: 1, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 5, ferro: 0.2, magnesio: 6, potassio: 90, zinco: 0.4 }, grams: 30 },
+  { terms: ["presunto"], label: "Presunto", baseAmount: "2 fatias (30 g)", values: { calories: 60, protein: 8, carbs: 1, fat: 3, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 3, ferro: 0.2, magnesio: 5, potassio: 80, zinco: 0.4 }, grams: 30 },
+  { terms: ["queijo minas"], label: "Queijo minas", baseAmount: "30 g", values: { calories: 72, protein: 5.6, carbs: 0.9, fat: 5.4, fiber: 0, vitA: 30, vitC: 0, vitD: 0, calcio: 180, ferro: 0.1, magnesio: 6, potassio: 30, zinco: 0.6 }, grams: 30 },
+  { terms: ["queijo mussarela", "mussarela", "muçarela"], label: "Queijo mussarela", baseAmount: "30 g", values: { calories: 90, protein: 6.6, carbs: 0.6, fat: 6.9, fiber: 0, vitA: 25, vitC: 0, vitD: 0, calcio: 200, ferro: 0.1, magnesio: 6, potassio: 20, zinco: 0.7 }, grams: 30 },
+  { terms: ["requeijao"], label: "Requeijão", baseAmount: "1 colher de sopa (20 g)", values: { calories: 55, protein: 1.5, carbs: 1, fat: 5, fiber: 0, vitA: 15, vitC: 0, vitD: 0, calcio: 60, ferro: 0, magnesio: 3, potassio: 15, zinco: 0.2 }, grams: 20 },
+  { terms: ["leite integral", "leite"], label: "Leite integral", baseAmount: "1 copo (200 ml)", values: { calories: 122, protein: 6.4, carbs: 9.6, fat: 6.6, fiber: 0, vitA: 60, vitC: 2, vitD: 1, calcio: 240, ferro: 0.1, magnesio: 24, potassio: 300, zinco: 0.8 }, ml: 200 },
+  { terms: ["leite desnatado"], label: "Leite desnatado", baseAmount: "1 copo (200 ml)", values: { calories: 70, protein: 6.8, carbs: 9.8, fat: 0.2, fiber: 0, vitA: 30, vitC: 2, vitD: 1, calcio: 250, ferro: 0.1, magnesio: 24, potassio: 320, zinco: 0.8 }, ml: 200 },
+  { terms: ["iogurte natural", "iogurte"], label: "Iogurte natural", baseAmount: "1 pote (170 g)", values: { calories: 100, protein: 6, carbs: 8, fat: 5, fiber: 0, vitA: 20, vitC: 1, vitD: 0, calcio: 200, ferro: 0.1, magnesio: 20, potassio: 250, zinco: 1 }, grams: 170 },
+  { terms: ["iogurte grego"], label: "Iogurte grego", baseAmount: "100 g", values: { calories: 97, protein: 9, carbs: 4, fat: 5, fiber: 0, vitA: 15, vitC: 0, vitD: 0, calcio: 110, ferro: 0.1, magnesio: 11, potassio: 140, zinco: 0.6 }, grams: 100 },
+  { terms: ["whey protein", "whey"], label: "Whey protein", baseAmount: "1 dose (30 g)", values: { calories: 120, protein: 24, carbs: 3, fat: 1.5, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 100, ferro: 0.2, magnesio: 20, potassio: 150, zinco: 1 }, grams: 30 },
+  { terms: ["feijao", "feijao cozido"], label: "Feijão cozido", baseAmount: "100 g", values: { calories: 76, protein: 4.8, carbs: 13.6, fat: 0.5, fiber: 8.4, vitA: 0, vitC: 1, vitD: 0, calcio: 27, ferro: 1.5, magnesio: 42, potassio: 260, zinco: 1 }, grams: 100 },
+  { terms: ["lentilha"], label: "Lentilha cozida", baseAmount: "100 g", values: { calories: 116, protein: 9, carbs: 20, fat: 0.4, fiber: 8, vitA: 1, vitC: 1.5, vitD: 0, calcio: 19, ferro: 3.3, magnesio: 36, potassio: 370, zinco: 1.3 }, grams: 100 },
+  { terms: ["grao de bico"], label: "Grão de bico cozido", baseAmount: "100 g", values: { calories: 164, protein: 8.9, carbs: 27, fat: 2.6, fiber: 7.6, vitA: 1, vitC: 1.3, vitD: 0, calcio: 49, ferro: 2.9, magnesio: 48, potassio: 290, zinco: 1.5 }, grams: 100 },
+  { terms: ["brocolis"], label: "Brócolis cozido", baseAmount: "100 g", values: { calories: 35, protein: 2.8, carbs: 7, fat: 0.4, fiber: 3.3, vitA: 30, vitC: 65, vitD: 0, calcio: 40, ferro: 0.7, magnesio: 20, potassio: 290, zinco: 0.4 }, grams: 100 },
+  { terms: ["couve refogada", "couve"], label: "Couve refogada", baseAmount: "100 g", values: { calories: 35, protein: 2, carbs: 4, fat: 2, fiber: 3, vitA: 350, vitC: 55, vitD: 0, calcio: 130, ferro: 1, magnesio: 25, potassio: 220, zinco: 0.3 }, grams: 100 },
+  { terms: ["tomate"], label: "Tomate", baseAmount: "1 unidade (100 g)", values: { calories: 18, protein: 0.9, carbs: 3.9, fat: 0.2, fiber: 1.2, vitA: 40, vitC: 14, vitD: 0, calcio: 10, ferro: 0.3, magnesio: 11, potassio: 240, zinco: 0.2 }, grams: 100 },
+  { terms: ["cenoura"], label: "Cenoura crua", baseAmount: "100 g", values: { calories: 41, protein: 0.9, carbs: 10, fat: 0.2, fiber: 2.8, vitA: 830, vitC: 6, vitD: 0, calcio: 33, ferro: 0.3, magnesio: 12, potassio: 320, zinco: 0.2 }, grams: 100 },
+  { terms: ["alface"], label: "Alface", baseAmount: "50 g", values: { calories: 7, protein: 0.7, carbs: 1.2, fat: 0.1, fiber: 0.7, vitA: 75, vitC: 5, vitD: 0, calcio: 18, ferro: 0.4, magnesio: 7, potassio: 100, zinco: 0.1 }, grams: 50 },
+  { terms: ["salada mista", "salada"], label: "Salada mista", baseAmount: "100 g", values: { calories: 25, protein: 1.2, carbs: 4, fat: 0.5, fiber: 1.8, vitA: 150, vitC: 15, vitD: 0, calcio: 25, ferro: 0.5, magnesio: 12, potassio: 200, zinco: 0.2 }, grams: 100 },
+  { terms: ["banana"], label: "Banana", baseAmount: "1 unidade", values: { calories: 90, protein: 1.1, carbs: 23, fat: 0.3, fiber: 2.6, vitA: 3, vitC: 9, vitD: 0, calcio: 6, ferro: 0.3, magnesio: 30, potassio: 380, zinco: 0.2 }, count: 1 },
+  { terms: ["maca"], label: "Maçã", baseAmount: "1 unidade (130 g)", values: { calories: 68, protein: 0.3, carbs: 18, fat: 0.2, fiber: 3, vitA: 4, vitC: 6, vitD: 0, calcio: 8, ferro: 0.2, magnesio: 6, potassio: 150, zinco: 0.1 }, count: 1 },
+  { terms: ["mamao"], label: "Mamão", baseAmount: "100 g", values: { calories: 40, protein: 0.6, carbs: 10, fat: 0.1, fiber: 1.8, vitA: 55, vitC: 60, vitD: 0, calcio: 20, ferro: 0.3, magnesio: 10, potassio: 180, zinco: 0.1 }, grams: 100 },
+  { terms: ["morango"], label: "Morango", baseAmount: "100 g", values: { calories: 32, protein: 0.7, carbs: 7.7, fat: 0.3, fiber: 2, vitA: 1, vitC: 60, vitD: 0, calcio: 16, ferro: 0.4, magnesio: 13, potassio: 150, zinco: 0.1 }, grams: 100 },
+  { terms: ["abacaxi"], label: "Abacaxi", baseAmount: "100 g", values: { calories: 50, protein: 0.5, carbs: 13, fat: 0.1, fiber: 1.4, vitA: 3, vitC: 48, vitD: 0, calcio: 13, ferro: 0.3, magnesio: 12, potassio: 110, zinco: 0.1 }, grams: 100 },
+  { terms: ["manga"], label: "Manga", baseAmount: "1 unidade (200 g)", values: { calories: 120, protein: 1.6, carbs: 30, fat: 0.6, fiber: 3.4, vitA: 110, vitC: 65, vitD: 0, calcio: 22, ferro: 0.3, magnesio: 20, potassio: 340, zinco: 0.2 }, count: 1 },
+  { terms: ["melancia"], label: "Melancia", baseAmount: "1 fatia (150 g)", values: { calories: 46, protein: 0.9, carbs: 11, fat: 0.2, fiber: 0.6, vitA: 70, vitC: 12, vitD: 0, calcio: 11, ferro: 0.4, magnesio: 15, potassio: 170, zinco: 0.15 }, grams: 150 },
+  { terms: ["uva"], label: "Uva", baseAmount: "100 g", values: { calories: 69, protein: 0.7, carbs: 18, fat: 0.2, fiber: 0.9, vitA: 3, vitC: 4, vitD: 0, calcio: 12, ferro: 0.4, magnesio: 7, potassio: 190, zinco: 0.1 }, grams: 100 },
+  { terms: ["abacate"], label: "Abacate", baseAmount: "100 g", values: { calories: 160, protein: 2, carbs: 8.5, fat: 14.7, fiber: 6.7, vitA: 7, vitC: 10, vitD: 0, calcio: 12, ferro: 0.6, magnesio: 29, potassio: 480, zinco: 0.6 }, grams: 100 },
+  { terms: ["suco de laranja", "suco laranja"], label: "Suco de laranja", baseAmount: "300 ml", values: { calories: 135, protein: 2, carbs: 31, fat: 0.3, fiber: 0.5, vitA: 15, vitC: 90, vitD: 0, calcio: 30, ferro: 0.5, magnesio: 30, potassio: 500, zinco: 0.2 }, ml: 300 },
+  { terms: ["suco de limao", "suco limao", "limonada"], label: "Suco de limão (limonada)", baseAmount: "300 ml", values: { calories: 90, protein: 0.3, carbs: 23, fat: 0, fiber: 0.3, vitA: 0, vitC: 35, vitD: 0, calcio: 15, ferro: 0.2, magnesio: 10, potassio: 130, zinco: 0.1 }, ml: 300 },
+  { terms: ["suco de uva", "suco uva"], label: "Suco de uva", baseAmount: "300 ml", values: { calories: 150, protein: 0.6, carbs: 37, fat: 0, fiber: 0.3, vitA: 0, vitC: 3, vitD: 0, calcio: 25, ferro: 0.9, magnesio: 25, potassio: 300, zinco: 0.2 }, ml: 300 },
+  { terms: ["suco de abacaxi", "suco abacaxi"], label: "Suco de abacaxi", baseAmount: "300 ml", values: { calories: 120, protein: 0.6, carbs: 30, fat: 0.2, fiber: 0.5, vitA: 3, vitC: 40, vitD: 0, calcio: 20, ferro: 0.5, magnesio: 20, potassio: 200, zinco: 0.2 }, ml: 300 },
+  { terms: ["suco de maracuja", "suco maracuja"], label: "Suco de maracujá", baseAmount: "300 ml", values: { calories: 140, protein: 0.7, carbs: 35, fat: 0.1, fiber: 0.6, vitA: 30, vitC: 45, vitD: 0, calcio: 15, ferro: 0.5, magnesio: 15, potassio: 300, zinco: 0.2 }, ml: 300 },
+  { terms: ["suco de manga", "suco manga"], label: "Suco de manga", baseAmount: "300 ml", values: { calories: 165, protein: 0.8, carbs: 41, fat: 0.3, fiber: 0.6, vitA: 80, vitC: 50, vitD: 0, calcio: 20, ferro: 0.4, magnesio: 15, potassio: 250, zinco: 0.2 }, ml: 300 },
+  { terms: ["suco de morango", "suco morango"], label: "Suco de morango", baseAmount: "300 ml", values: { calories: 110, protein: 0.8, carbs: 27, fat: 0.3, fiber: 0.6, vitA: 3, vitC: 50, vitD: 0, calcio: 25, ferro: 0.6, magnesio: 20, potassio: 220, zinco: 0.2 }, ml: 300 },
+  { terms: ["suco de melancia", "suco melancia"], label: "Suco de melancia", baseAmount: "300 ml", values: { calories: 90, protein: 0.7, carbs: 22, fat: 0.2, fiber: 0.3, vitA: 60, vitC: 20, vitD: 0, calcio: 15, ferro: 0.5, magnesio: 20, potassio: 220, zinco: 0.2 }, ml: 300 },
+  { terms: ["suco de caju", "suco caju"], label: "Suco de caju", baseAmount: "300 ml", values: { calories: 135, protein: 0.5, carbs: 33, fat: 0.2, fiber: 0.3, vitA: 5, vitC: 130, vitD: 0, calcio: 10, ferro: 0.4, magnesio: 15, potassio: 180, zinco: 0.15 }, ml: 300 },
+  { terms: ["suco de acerola", "suco acerola"], label: "Suco de acerola", baseAmount: "300 ml", values: { calories: 90, protein: 0.6, carbs: 21, fat: 0.2, fiber: 0.5, vitA: 20, vitC: 900, vitD: 0, calcio: 15, ferro: 0.5, magnesio: 15, potassio: 200, zinco: 0.15 }, ml: 300 },
+  { terms: ["suco de goiaba", "suco goiaba"], label: "Suco de goiaba", baseAmount: "300 ml", values: { calories: 135, protein: 0.9, carbs: 33, fat: 0.3, fiber: 1.5, vitA: 45, vitC: 150, vitD: 0, calcio: 20, ferro: 0.5, magnesio: 15, potassio: 280, zinco: 0.2 }, ml: 300 },
+  { terms: ["suco de maca", "suco maca"], label: "Suco de maçã", baseAmount: "300 ml", values: { calories: 130, protein: 0.3, carbs: 32, fat: 0.2, fiber: 0.5, vitA: 0, vitC: 3, vitD: 0, calcio: 15, ferro: 0.4, magnesio: 8, potassio: 200, zinco: 0.1 }, ml: 300 },
+  { terms: ["suco de cenoura", "suco cenoura"], label: "Suco de cenoura", baseAmount: "300 ml", values: { calories: 110, protein: 1.5, carbs: 26, fat: 0.3, fiber: 1.5, vitA: 1600, vitC: 20, vitD: 0, calcio: 60, ferro: 0.9, magnesio: 30, potassio: 700, zinco: 0.5 }, ml: 300 },
+  { terms: ["suco verde"], label: "Suco verde (detox)", baseAmount: "300 ml", values: { calories: 100, protein: 1.5, carbs: 23, fat: 0.3, fiber: 2.5, vitA: 250, vitC: 40, vitD: 0, calcio: 60, ferro: 1.2, magnesio: 40, potassio: 400, zinco: 0.4 }, ml: 300 },
+  { terms: ["vitamina de banana"], label: "Vitamina de banana", baseAmount: "300 ml", values: { calories: 220, protein: 7, carbs: 35, fat: 6, fiber: 1.5, vitA: 40, vitC: 10, vitD: 0.5, calcio: 200, ferro: 0.3, magnesio: 35, potassio: 450, zinco: 0.6 }, ml: 300 },
+  { terms: ["vitamina de abacate", "vitamina de abacate com leite"], label: "Vitamina de abacate", baseAmount: "300 ml", values: { calories: 260, protein: 6, carbs: 26, fat: 15, fiber: 3.5, vitA: 30, vitC: 8, vitD: 0.5, calcio: 190, ferro: 0.5, magnesio: 40, potassio: 550, zinco: 0.7 }, ml: 300 },
+  { terms: ["suco industrializado", "suco de caixinha"], label: "Suco industrializado (caixinha)", baseAmount: "200 ml", values: { calories: 90, protein: 0, carbs: 22, fat: 0, fiber: 0, vitA: 5, vitC: 20, vitD: 0, calcio: 10, ferro: 0.2, magnesio: 5, potassio: 60, zinco: 0.1 }, ml: 200 },
+  { terms: ["cafe com leite"], label: "Café com leite", baseAmount: "1 xícara (200 ml)", values: { calories: 60, protein: 3, carbs: 6, fat: 2.5, fiber: 0, vitA: 25, vitC: 0, vitD: 0.3, calcio: 100, ferro: 0.1, magnesio: 12, potassio: 150, zinco: 0.4 }, ml: 200 },
+  { terms: ["cafe preto", "cafezinho", "cafe"], label: "Café preto", baseAmount: "1 xícara (50 ml)", values: { calories: 2, protein: 0.3, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 2, ferro: 0, magnesio: 3, potassio: 30, zinco: 0 }, ml: 50 },
+  { terms: ["cha de camomila", "cha verde", "cha mate", "cha preto", "cha"], label: "Chá (sem açúcar)", baseAmount: "1 xícara (200 ml)", values: { calories: 2, protein: 0, carbs: 0.5, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 2, ferro: 0, magnesio: 2, potassio: 20, zinco: 0 }, ml: 200 },
+  { terms: ["refrigerante", "coca cola", "coca"], label: "Refrigerante", baseAmount: "1 lata (350 ml)", values: { calories: 140, protein: 0, carbs: 37, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 5, ferro: 0, magnesio: 0, potassio: 5, zinco: 0 }, ml: 350 },
+  { terms: ["cerveja"], label: "Cerveja", baseAmount: "1 lata (350 ml)", values: { calories: 150, protein: 1.6, carbs: 12, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 10, ferro: 0.1, magnesio: 20, potassio: 90, zinco: 0.1 }, ml: 350 },
+  { terms: ["agua de coco"], label: "Água de coco", baseAmount: "1 copo (200 ml)", values: { calories: 40, protein: 0.6, carbs: 9, fat: 0.1, fiber: 0, vitA: 0, vitC: 5, vitD: 0, calcio: 30, ferro: 0.5, magnesio: 45, potassio: 470, zinco: 0.2 }, ml: 200 },
+  { terms: ["chocolate ao leite", "chocolate"], label: "Chocolate ao leite", baseAmount: "1 barra pequena (25 g)", values: { calories: 130, protein: 1.9, carbs: 15, fat: 7.3, fiber: 0.8, vitA: 5, vitC: 0, vitD: 0, calcio: 55, ferro: 0.6, magnesio: 15, potassio: 90, zinco: 0.4 }, grams: 25 },
+  { terms: ["barra de cereal"], label: "Barra de cereal", baseAmount: "1 unidade (25 g)", values: { calories: 95, protein: 1.3, carbs: 18, fat: 2, fiber: 1.2, vitA: 0, vitC: 0, vitD: 0, calcio: 15, ferro: 0.8, magnesio: 15, potassio: 60, zinco: 0.3 }, grams: 25 },
+  { terms: ["castanha do para", "castanha"], label: "Castanha-do-pará", baseAmount: "5 unidades (15 g)", values: { calories: 92, protein: 2, carbs: 1.7, fat: 9.3, fiber: 1, vitA: 0, vitC: 0, vitD: 0, calcio: 25, ferro: 0.4, magnesio: 55, potassio: 100, zinco: 0.7 }, grams: 15 },
+  { terms: ["amendoim"], label: "Amendoim", baseAmount: "30 g", values: { calories: 170, protein: 7.3, carbs: 6, fat: 14.5, fiber: 2.5, vitA: 0, vitC: 0, vitD: 0, calcio: 20, ferro: 0.6, magnesio: 48, potassio: 200, zinco: 0.9 }, grams: 30 },
+  { terms: ["pipoca"], label: "Pipoca", baseAmount: "30 g", values: { calories: 110, protein: 2.3, carbs: 22, fat: 1.5, fiber: 4, vitA: 1, vitC: 0, vitD: 0, calcio: 2, ferro: 0.3, magnesio: 30, potassio: 70, zinco: 0.3 }, grams: 30 },
+  { terms: ["manteiga"], label: "Manteiga", baseAmount: "1 colher de chá (5 g)", values: { calories: 36, protein: 0, carbs: 0, fat: 4, fiber: 0, vitA: 35, vitC: 0, vitD: 0.1, calcio: 1, ferro: 0, magnesio: 0, potassio: 1, zinco: 0 }, grams: 5 },
+  { terms: ["margarina"], label: "Margarina", baseAmount: "1 colher de chá (5 g)", values: { calories: 30, protein: 0, carbs: 0, fat: 3.3, fiber: 0, vitA: 40, vitC: 0, vitD: 0.2, calcio: 1, ferro: 0, magnesio: 0, potassio: 1, zinco: 0 }, grams: 5 },
+  { terms: ["geleia de frutas", "geleia"], label: "Geleia de frutas", baseAmount: "1 colher de sopa (20 g)", values: { calories: 50, protein: 0.1, carbs: 13, fat: 0, fiber: 0.2, vitA: 1, vitC: 2, vitD: 0, calcio: 2, ferro: 0.1, magnesio: 1, potassio: 15, zinco: 0 }, grams: 20 },
+  { terms: ["mel"], label: "Mel", baseAmount: "1 colher de sopa (20 g)", values: { calories: 60, protein: 0.1, carbs: 16, fat: 0, fiber: 0, vitA: 0, vitC: 0.5, vitD: 0, calcio: 1, ferro: 0.1, magnesio: 0.4, potassio: 10, zinco: 0 }, grams: 20 },
+  { terms: ["achocolatado"], label: "Achocolatado", baseAmount: "1 copo (200 ml)", values: { calories: 150, protein: 6, carbs: 20, fat: 5, fiber: 1, vitA: 50, vitC: 1, vitD: 1, calcio: 200, ferro: 0.5, magnesio: 30, potassio: 280, zinco: 0.8 }, ml: 200 },
+  { terms: ["pizza"], label: "Pizza (fatia)", baseAmount: "1 fatia (100 g)", values: { calories: 266, protein: 11, carbs: 33, fat: 10, fiber: 2.3, vitA: 30, vitC: 2, vitD: 0.1, calcio: 130, ferro: 1.3, magnesio: 20, potassio: 180, zinco: 1.2 }, grams: 100 },
+  { terms: ["hamburguer"], label: "Hambúrguer (lanche)", baseAmount: "1 unidade (150 g)", values: { calories: 400, protein: 20, carbs: 33, fat: 21, fiber: 1.5, vitA: 20, vitC: 1, vitD: 0.2, calcio: 80, ferro: 2.5, magnesio: 25, potassio: 300, zinco: 3 }, count: 1 },
+  { terms: ["sanduiche natural"], label: "Sanduíche natural", baseAmount: "1 unidade", values: { calories: 220, protein: 9, carbs: 28, fat: 8, fiber: 2, vitA: 40, vitC: 5, vitD: 0, calcio: 60, ferro: 1, magnesio: 20, potassio: 200, zinco: 0.6 }, count: 1 },
+  { terms: ["lasanha"], label: "Lasanha", baseAmount: "100 g", values: { calories: 150, protein: 8, carbs: 15, fat: 6.5, fiber: 1, vitA: 40, vitC: 2, vitD: 0, calcio: 110, ferro: 0.8, magnesio: 15, potassio: 150, zinco: 0.9 }, grams: 100 },
+  { terms: ["feijoada"], label: "Feijoada", baseAmount: "100 g", values: { calories: 175, protein: 12, carbs: 12, fat: 9, fiber: 4, vitA: 5, vitC: 1, vitD: 0, calcio: 20, ferro: 1.6, magnesio: 25, potassio: 250, zinco: 1.5 }, grams: 100 },
+  { terms: ["estrogonofe de frango", "estrogonofe"], label: "Estrogonofe de frango", baseAmount: "100 g", values: { calories: 165, protein: 13, carbs: 6, fat: 10, fiber: 0.5, vitA: 15, vitC: 1, vitD: 0.1, calcio: 30, ferro: 0.5, magnesio: 15, potassio: 220, zinco: 0.7 }, grams: 100 },
+  { terms: ["frango a parmegiana", "frango empanado"], label: "Frango à parmegiana", baseAmount: "1 unidade (150 g)", values: { calories: 380, protein: 28, carbs: 20, fat: 20, fiber: 1.5, vitA: 40, vitC: 2, vitD: 0.2, calcio: 120, ferro: 1.2, magnesio: 25, potassio: 300, zinco: 1.5 }, grams: 150 },
+  { terms: ["pure de batata"], label: "Purê de batata", baseAmount: "100 g", values: { calories: 105, protein: 2, carbs: 16, fat: 4, fiber: 1.3, vitA: 15, vitC: 8, vitD: 0, calcio: 25, ferro: 0.3, magnesio: 15, potassio: 250, zinco: 0.3 }, grams: 100 },
+  { terms: ["polenta"], label: "Polenta", baseAmount: "100 g", values: { calories: 85, protein: 2, carbs: 18, fat: 0.5, fiber: 1, vitA: 2, vitC: 0, vitD: 0, calcio: 5, ferro: 0.3, magnesio: 10, potassio: 40, zinco: 0.3 }, grams: 100 },
+  { terms: ["quinoa cozida", "quinoa"], label: "Quinoa cozida", baseAmount: "100 g", values: { calories: 120, protein: 4.4, carbs: 21, fat: 1.9, fiber: 2.8, vitA: 0, vitC: 0, vitD: 0, calcio: 17, ferro: 1.5, magnesio: 64, potassio: 170, zinco: 1.1 }, grams: 100 },
+  { terms: ["pepino"], label: "Pepino", baseAmount: "100 g", values: { calories: 15, protein: 0.7, carbs: 3.6, fat: 0.1, fiber: 0.5, vitA: 3, vitC: 3, vitD: 0, calcio: 15, ferro: 0.3, magnesio: 12, potassio: 150, zinco: 0.2 }, grams: 100 },
+  { terms: ["pera"], label: "Pera", baseAmount: "1 unidade (130 g)", values: { calories: 75, protein: 0.5, carbs: 20, fat: 0.2, fiber: 3.5, vitA: 2, vitC: 5, vitD: 0, calcio: 10, ferro: 0.2, magnesio: 8, potassio: 150, zinco: 0.1 }, count: 1 },
+  { terms: ["kiwi"], label: "Kiwi", baseAmount: "1 unidade (75 g)", values: { calories: 46, protein: 0.9, carbs: 11, fat: 0.4, fiber: 2.3, vitA: 4, vitC: 70, vitD: 0, calcio: 25, ferro: 0.2, magnesio: 12, potassio: 210, zinco: 0.1 }, count: 1 },
+  { terms: ["laranja"], label: "Laranja", baseAmount: "1 unidade (150 g)", values: { calories: 70, protein: 1.4, carbs: 17, fat: 0.2, fiber: 3, vitA: 20, vitC: 70, vitD: 0, calcio: 55, ferro: 0.2, magnesio: 15, potassio: 250, zinco: 0.1 }, count: 1 },
+  { terms: ["limao"], label: "Limão", baseAmount: "1 unidade (70 g)", values: { calories: 20, protein: 0.5, carbs: 6.5, fat: 0.2, fiber: 1.9, vitA: 1, vitC: 35, vitD: 0, calcio: 18, ferro: 0.4, magnesio: 6, potassio: 90, zinco: 0.1 }, count: 1 },
 ];
+
+const MEAL_TIPOS = ["Caf\u00e9 da manh\u00e3", "Lanche da manh\u00e3", "Almo\u00e7o", "Lanche da tarde", "Jantar", "Ceia", "Outro"];
+
+// Em ordem alfab\u00e9tica.
+const ESPORTE_TIPOS = ["Boxe", "Caminhada", "Ciclismo", "Corrida", "Futebol", "Jiu-jitsu", "Muay Thai", "Muscula\u00e7\u00e3o", "Nata\u00e7\u00e3o", "T\u00eanis"];
+
+// Emoji exibido ao lado do esporte em cada registro de treino (lista de hoje e hist\u00f3rico).
+const ESPORTE_EMOJI = {
+  "Boxe": "\ud83e\udd4a", "Caminhada": "\ud83d\udeb6", "Ciclismo": "\ud83d\udeb4", "Corrida": "\ud83c\udfc3", "Futebol": "\u26bd",
+  "Jiu-jitsu": "\ud83e\udd4b", "Muay Thai": "\ud83e\uddb5", "Muscula\u00e7\u00e3o": "\ud83c\udfcb\ufe0f", "Nata\u00e7\u00e3o": "\ud83c\udfca", "T\u00eanis": "\ud83c\udfbe",
+};
+function emojiEsporte(esporte) { return ESPORTE_EMOJI[esporte] || "\ud83c\udfc5"; }
 
 function normalizeText(value) { return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
 
@@ -618,24 +769,45 @@ function amountForFood(text, position, food) {
   if (food.grams && grams) { const value = number(grams); return { multiplier: value / food.grams, amount: formatNumber(value, 0) + " g" }; }
   if (food.ml && ml) { const value = number(ml); return { multiplier: value / food.ml, amount: formatNumber(value, 0) + " ml" }; }
   if (units) { const value = number(units); return { multiplier: value / (food.count || 1), amount: formatNumber(value, 0) + " unidade" + (value > 1 ? "s" : "") }; }
-  if (numberOnly && (food.grams || food.ml)) { const value = number(numberOnly); return { multiplier: value / (food.grams || food.ml || 1), amount: formatNumber(value, 0) + " " + (food.grams ? "g" : "ml") }; }
+  // Um número solto do lado do alimento, sem "g"/"ml"/"unidades" (ex.: "1 pão francês", "2 bananas",
+  // "3 ovos") quase sempre significa "N porções" na fala natural — não "N gramas". Antes isso era
+  // dividido por food.grams/food.ml, então "1 pão francês" virava "1 grama de pão" (135 kcal → 3 kcal,
+  // visível de forma bem clara no detalhamento por alimento). Trata como múltiplo da porção padrão,
+  // igual ao caminho de "unidades" explícitas — quem quiser um valor preciso em gramas/ml usa "g"/"ml".
+  if (numberOnly) { const value = number(numberOnly); return { multiplier: value / (food.count || 1), amount: formatNumber(value, 0) + " unidade" + (value > 1 ? "s" : "") }; }
   if (numberWord || /\bum\b|\buma\b/.test(before)) return { multiplier: 1, amount: food.baseAmount };
   return { multiplier: 1, amount: food.baseAmount };
 }
 
 function detectFoods(description) {
   const text = normalizeText(description);
-  const found = [];
-  const occupied = [];
+  // Junta todos os termos de todos os alimentos que aparecem no texto, em vez de resolver um alimento
+  // de cada vez na ordem em que aparecem na biblioteca. Isso importa porque vários termos mais
+  // específicos contêm um termo mais curto de OUTRO alimento (ex.: "suco de uva" contém "uva", que
+  // também é o termo da fruta "Uva" sozinha) — resolver na ordem da biblioteca dependeria de qual dos
+  // dois vem primeiro no array, o que é frágil. Ordenando todos os candidatos pelo tamanho do termo
+  // (do mais longo pro mais curto) e aceitando de forma gulosa sem sobreposição de intervalos, o termo
+  // mais específico (mais longo) sempre vence — não importa a ordem em que foi declarado.
+  const candidates = [];
   for (const food of foodLibrary) {
-    const term = food.terms.slice().sort((a, b) => b.length - a.length).find((candidate) => text.includes(normalizeText(candidate)));
-    if (!term) continue;
-    const normalizedTerm = normalizeText(term);
-    const position = text.indexOf(normalizedTerm);
-    if (occupied.some((range) => position >= range.start && position < range.end)) continue;
-    const r = amountForFood(text, position, food);
-    found.push({ label: food.label, amount: r.amount, values: scale(food.values, r.multiplier) });
-    occupied.push({ start: position, end: position + normalizedTerm.length });
+    for (const term of food.terms) {
+      const normalizedTerm = normalizeText(term);
+      const position = text.indexOf(normalizedTerm);
+      if (position !== -1) candidates.push({ food, position, length: normalizedTerm.length });
+    }
+  }
+  candidates.sort((a, b) => b.length - a.length || a.position - b.position);
+  const found = [];
+  const usedFoods = new Set();
+  const occupied = [];
+  for (const c of candidates) {
+    if (usedFoods.has(c.food)) continue; // já identificamos esse alimento por um termo mais específico
+    const overlaps = occupied.some((range) => c.position < range.end && c.position + c.length > range.start);
+    if (overlaps) continue;
+    const r = amountForFood(text, c.position, c.food);
+    found.push({ label: c.food.label, amount: r.amount, values: scale(c.food.values, r.multiplier) });
+    usedFoods.add(c.food);
+    occupied.push({ start: c.position, end: c.position + c.length });
   }
   return found;
 }
@@ -650,6 +822,8 @@ const CHAVE_MEDIDAS = "nutri-track-medidas";
 const CHAVE_FILA = "nutri-track-fila-pendente";
 const CHAVE_BIOIMPEDANCIA = "nutri-track-bioimpedancia";
 const CHAVE_CALORIMETRIA = "nutri-track-calorimetria";
+const CHAVE_TREINOS = "nutri-track-treinos";
+const CHAVE_TREINO_ATIVO = "nutri-track-treino-ativo";
 
 /* ===================== medidas e aferições ===================== */
 const medidaTipos = {
@@ -672,17 +846,22 @@ const state = {
   goals: readStorage(CHAVE_GOALS, defaultGoals),
   meals: readStorage(CHAVE_MEALS, []),
   preview: [],
-  mealName: "",
+  mealTipo: "",
+  mealNomeCustom: "",
   mealDescription: "",
   showGoals: false,
   showHistory: false,
+  historyData: null, // data selecionada no histórico de refeições (null = mostra hoje)
+  nutrientAba: "macro", // "macro" | "micro"
+  mealDetalheId: null, // id da refeição aberta no modal de detalhamento, ou null
   showEditarPerfil: false,
   showNovaSenha: false,
   sidebarOpen: false,
-  activeTab: "nutricao", // "nutricao" | "medidas"
+  activeTab: "nutricao", // "nutricao" | "medidas" | "treinos"
   altura: readStorage(CHAVE_ALTURA, null), // cm
   medidas: readStorage(CHAVE_MEDIDAS, []),
   medidaTipo: "",
+  showHistoricoMedidas: false,
   bioimpedancia: readStorage(CHAVE_BIOIMPEDANCIA, []),
   calorimetria: readStorage(CHAVE_CALORIMETRIA, []),
   showFormBioimpedancia: false,
@@ -692,6 +871,21 @@ const state = {
   historicoAbaAtiva: "bioimpedancia", // "bioimpedancia" | "calorimetria"
   bioFormValores: {},
   caloFormValores: {},
+  bioimpedanciaEditandoId: null, // id do registro de bioimpedância em edição, ou null (form em modo "novo registro")
+  calorimetriaEditandoId: null, // idem, para calorimetria
+  treinos: readStorage(CHAVE_TREINOS, []),
+  treinoEsporte: "",
+  treinoHoraInicio: "",
+  treinoHoraFim: "",
+  treinoNota: "", // observação livre sobre o treino (ex.: "treino pesado", "alto astral") — opcional
+  showHistoryTreinos: false,
+  historyDataTreinos: null, // data selecionada no histórico de treinos (null = mostra hoje)
+  treinoModo: "cronometro", // "cronometro" | "manual" — só é relevante quando não há treino em andamento
+  // Treino em andamento (cronômetro), ou null. Formato: { esporte, date, horaInicioClock,
+  // segmentoAtualInicio (timestamp ms de quando o trecho atual começou a rodar, ou null se pausado),
+  // acumuladoMs (soma dos trechos já concluídos), pausado }. Persistido para sobreviver a fechar o
+  // app/aba no meio do treino.
+  treinoAtivo: readStorage(CHAVE_TREINO_ATIVO, null),
 };
 function persistUsuario() { writeStorage(CHAVE_USUARIO, state.usuario); }
 function persistGoals() { writeStorage(CHAVE_GOALS, state.goals); }
@@ -700,6 +894,8 @@ function persistAltura() { writeStorage(CHAVE_ALTURA, state.altura); }
 function persistMedidas() { writeStorage(CHAVE_MEDIDAS, state.medidas); }
 function persistBioimpedancia() { writeStorage(CHAVE_BIOIMPEDANCIA, state.bioimpedancia); }
 function persistCalorimetria() { writeStorage(CHAVE_CALORIMETRIA, state.calorimetria); }
+function persistTreinos() { writeStorage(CHAVE_TREINOS, state.treinos); }
+function persistTreinoAtivo() { writeStorage(CHAVE_TREINO_ATIVO, state.treinoAtivo); }
 
 /* ===================== helpers de derivação ===================== */
 function today() { return todayKey(); }
@@ -709,6 +905,37 @@ function remainingToday() { const consumed = consumedToday(); const out = {}; fo
 function mealTotal() { return state.preview.reduce((sum, f) => addNutrients(sum, f.values), emptyNutrients); }
 function historyDays() { return Array.from(new Set(state.meals.map((m) => m.date))).sort().reverse(); }
 function dateLabel(date) { return new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long" }).format(new Date(date + "T12:00:00")); }
+function todayTreinos() { const t = today(); return state.treinos.filter((tr) => tr.date === t); }
+function historyDaysTreinos() { return Array.from(new Set(state.treinos.map((tr) => tr.date))).sort().reverse(); }
+// Duração em minutos entre dois horários "HH:MM" do mesmo dia (não trata treino que passa da meia-noite).
+function duracaoMinutos(inicio, fim) {
+  const [hi, mi] = inicio.split(":").map(Number);
+  const [hf, mf] = fim.split(":").map(Number);
+  return (hf * 60 + mf) - (hi * 60 + mi);
+}
+function formatarDuracao(min) {
+  if (min == null || isNaN(min) || min < 0) return "";
+  if (min === 0) return "< 1 min";
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  if (h > 0) return h + "h" + (m > 0 ? String(m).padStart(2, "0") + "min" : "");
+  return m + " min";
+}
+// Tempo ativo (em ms) do treino em andamento — soma dos trechos já concluídos com o trecho atual (se
+// não estiver pausado). Usado tanto pro cronômetro na tela quanto pra duração final salva.
+function treinoAtivoElapsedMs() {
+  if (!state.treinoAtivo) return 0;
+  const extra = state.treinoAtivo.pausado ? 0 : (Date.now() - state.treinoAtivo.segmentoAtualInicio);
+  return state.treinoAtivo.acumuladoMs + extra;
+}
+function formatarCronometro(ms) {
+  const totalSeg = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(totalSeg / 3600);
+  const m = Math.floor((totalSeg % 3600) / 60);
+  const s = totalSeg % 60;
+  const pad = (n) => String(n).padStart(2, "0");
+  return h > 0 ? h + ":" + pad(m) + ":" + pad(s) : pad(m) + ":" + pad(s);
+}
 // Calcula a idade exata (anos, meses e dias) a partir da data de nascimento (string "YYYY-MM-DD").
 function calcularIdadeExata(dataNascimento) {
   if (!dataNascimento) return null;
@@ -901,10 +1128,12 @@ function acaoSalvarMedida() {
   const meta = medidaTipos[tipo];
   const valor = meta.texto ? valorBruto : valorBruto.replace(",", ".");
   if (!meta.texto && isNaN(Number(valor))) { toastError("Informe um valor numérico válido."); return; }
+  const notaInput = document.getElementById("medida-nota");
+  const nota = notaInput ? notaInput.value.trim() : "";
   const now = new Date();
   const novaMedida = {
     id: Date.now(), date: today(), time: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-    tipo, valor,
+    tipo, valor, nota,
   };
   state.medidas = state.medidas.concat([novaMedida]);
   persistMedidas();
@@ -1115,6 +1344,7 @@ async function sincronizarDoServidor() {
     state.medidas = mesclarComPendentes(resposta.medidas || [], "salvarMedidaGoogle"); persistMedidas();
     state.bioimpedancia = mesclarComPendentes(resposta.bioimpedancia || [], "salvarBioimpedanciaGoogle"); persistBioimpedancia();
     state.calorimetria = mesclarComPendentes(resposta.calorimetria || [], "salvarCalorimetriaGoogle"); persistCalorimetria();
+    state.treinos = mesclarComPendentes(resposta.treinos || [], "salvarTreinoGoogle"); persistTreinos();
     render();
   } catch { /* falha de rede — mantém os dados locais e tenta de novo na próxima abertura */ }
 }
@@ -1127,10 +1357,12 @@ function publicarRegistrosLocaisPendentes(remoto) {
   const idsMedidas = new Set((remoto.medidas || []).map((m) => m.id));
   const idsBioimpedancia = new Set((remoto.bioimpedancia || []).map((b) => b.id));
   const idsCalorimetria = new Set((remoto.calorimetria || []).map((c) => c.id));
+  const idsTreinos = new Set((remoto.treinos || []).map((t) => t.id));
   state.meals.filter((m) => !idsRefeicoes.has(m.id)).forEach((m) => enviarComFila("salvarRefeicaoGoogle", [state.usuario.email, m]));
   state.medidas.filter((m) => !idsMedidas.has(m.id)).forEach((m) => enviarComFila("salvarMedidaGoogle", [state.usuario.email, m]));
   state.bioimpedancia.filter((b) => !idsBioimpedancia.has(b.id)).forEach((b) => enviarComFila("salvarBioimpedanciaGoogle", [state.usuario.email, b]));
   state.calorimetria.filter((c) => !idsCalorimetria.has(c.id)).forEach((c) => enviarComFila("salvarCalorimetriaGoogle", [state.usuario.email, c]));
+  state.treinos.filter((t) => !idsTreinos.has(t.id)).forEach((t) => enviarComFila("salvarTreinoGoogle", [state.usuario.email, t]));
   if (!remoto.goals) enviarComFila("atualizarMetasGoogle", [state.usuario.email, state.goals, state.altura]);
 }
 // Única função que efetivamente abre algo do Google — e só roda quando a pessoa clica no botão
@@ -1152,6 +1384,7 @@ async function acaoConectarGoogle() {
     state.medidas = mergeMedidas(state.medidas, resposta.medidas || []); persistMedidas();
     state.bioimpedancia = mergeMedidas(state.bioimpedancia, resposta.bioimpedancia || []); persistBioimpedancia();
     state.calorimetria = mergeMedidas(state.calorimetria, resposta.calorimetria || []); persistCalorimetria();
+    state.treinos = mergeMedidas(state.treinos, resposta.treinos || []); persistTreinos();
     toastSuccess("Conectado como " + state.account.email + ". Seus dados agora sincronizam entre aparelhos — sem precisar conectar de novo.");
   } catch (err) { toastError((err && err.message) || "Falha ao conectar com o Google. Tente novamente."); }
   finally { state.syncing = false; render(); }
@@ -1173,26 +1406,39 @@ function acaoAnalisar() {
   else toastSuccess(found.length + " alimento" + (found.length > 1 ? "s" : "") + " identificado" + (found.length > 1 ? "s" : "") + ".");
   render();
 }
+function acaoSelecionarTipoRefeicao(tipo) {
+  state.mealTipo = tipo;
+  if (tipo !== "Outro") state.mealNomeCustom = "";
+  render();
+}
 function acaoSalvarRefeicao() {
-  const nameInput = document.getElementById("meal-name");
   const descInput = document.getElementById("meal-description");
-  const mealName = nameInput.value;
-  if (!mealName.trim()) { toastError("Informe o nome da refeição."); return; }
+  const customInput = document.getElementById("meal-nome-custom");
+  const mealName = state.mealTipo === "Outro" ? (customInput ? customInput.value.trim() : "") : state.mealTipo;
+  if (!state.mealTipo) { toastError("Selecione a refeição."); return; }
+  if (!mealName) { toastError("Informe o nome da refeição."); return; }
   if (!state.preview.length) { toastError("Analise a descrição antes de salvar a refeição."); return; }
   const now = new Date();
   const total = mealTotal();
   const novaRefeicao = Object.assign({}, total, {
-    id: Date.now(), date: today(), name: mealName.trim(), description: descInput.value.trim(),
+    id: Date.now(), date: today(), name: mealName, description: descInput.value.trim(),
     detected: state.preview.map((f) => f.label), time: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+    // Guarda o detalhamento por alimento (nome, quantidade e todos os nutrientes daquele alimento
+    // específico) — é o que permite abrir uma refeição no histórico e ver o que cada alimento
+    // individualmente contribuiu, e não só o total da refeição.
+    alimentos: state.preview.map((f) => ({ label: f.label, amount: f.amount, values: f.values })),
   });
   state.meals = state.meals.concat([novaRefeicao]);
   persistMeals();
   state.preview = [];
-  nameInput.value = ""; descInput.value = "";
+  state.mealTipo = ""; state.mealNomeCustom = ""; descInput.value = "";
   toastSuccess("Refeição registrada no histórico.");
   if (state.account) enviarComFila("salvarRefeicaoGoogle", [state.usuario.email, novaRefeicao]);
   render();
 }
+function acaoTrocarAbaNutrientes(aba) { state.nutrientAba = aba; render(); }
+function acaoAbrirDetalheRefeicao(id) { state.mealDetalheId = id; render(); }
+function acaoFecharDetalheRefeicao() { state.mealDetalheId = null; render(); }
 function acaoRemoverRefeicao(id) {
   state.meals = state.meals.filter((m) => m.id !== id);
   persistMeals();
@@ -1408,6 +1654,29 @@ function nutrientCardsTemplate() {
   }).join("");
 }
 
+function micronutrientCardsTemplate() {
+  const consumed = consumedToday();
+  return Object.keys(micronutrientMeta).map((key) => {
+    const meta = micronutrientMeta[key];
+    const goal = MICRO_GOALS[key];
+    const valor = consumed[key] || 0;
+    const over = valor > goal;
+    const digits = meta.unit === "mg" && goal >= 100 ? 0 : 1;
+    return '' +
+      '<div class="nutrient-card"><div class="nutrient-card-head">' +
+        '<div class="nutrient-card-left"><div class="nutrient-icon" style="background:' + meta.soft + ";color:" + meta.color + '">' + icon(meta.icon) + "</div>" +
+        '<span class="nutrient-name">' + meta.label + "</span></div>" +
+        '<span class="nutrient-unit">' + meta.unit + "</span>" +
+      "</div>" +
+      '<div class="nutrient-stats"><div><div class="stat-label">Consumido</div><div class="stat-value-row"><span class="stat-value">' + formatNumber(valor, digits) + '</span><span class="stat-unit">' + meta.unit + "</span></div></div>" +
+      '<div class="stat-goal"><div class="stat-label">Referência diária</div><div class="stat-goal-value">' + formatNumber(goal, digits) + " " + meta.unit + "</div></div></div>" +
+      '<div class="progress-track"><div class="progress-fill" style="width:' + pct(valor, goal) + "%;background:" + (over ? "#d76c54" : meta.color) + '"></div></div>' +
+      '<div class="nutrient-delta" style="color:' + (over ? "#c35e4b" : "#789087") + '">' + icon(over ? "arrowup" : "arrowdown") + " " +
+      (over ? formatNumber(valor - goal, digits) + " " + meta.unit + " acima da referência" : formatNumber(Math.max(0, goal - valor), digits) + " " + meta.unit + " restantes") +
+      "</div></div>";
+  }).join("");
+}
+
 function goalsPanelTemplate() {
   if (!state.showGoals) return "";
   return '' +
@@ -1437,16 +1706,248 @@ function mealPreviewTemplate() {
     "</div>";
 }
 
+// O histórico mostra sempre UM dia por vez (o de hoje, por padrão) — para ver dias anteriores, a
+// pessoa escolhe a data no calendário suspenso (input type="date") em vez de rolar uma lista com
+// todo o histórico acumulado.
 function historyPanelTemplate() {
   if (!state.showHistory) return "";
-  const days = historyDays();
-  if (!days.length) return '<div class="history-panel"><div class="history-panel-label">Histórico salvo</div><p class="history-panel-empty">Suas refeições aparecerão aqui depois do primeiro registro.</p></div>';
-  return '<div class="history-panel"><div class="history-panel-label">Histórico salvo</div>' + days.map((date) => {
-    const dayMeals = state.meals.filter((m) => m.date === date);
-    const dayTotal = dayMeals.reduce((sum, m) => sum + m.calories, 0);
-    return '<div class="history-day"><div class="history-day-head"><span class="date">' + dateLabel(date) + '</span><span class="total">' + formatNumber(dayTotal) + " kcal · " + dayMeals.length + " refeição" + (dayMeals.length > 1 ? "ões" : "") + "</span></div>" +
-      '<div class="history-day-meals">' + dayMeals.map((m) => '<div class="history-day-meal"><span>' + esc(m.name) + "</span><span>" + formatNumber(m.calories) + " kcal</span></div>").join("") + "</div></div>";
-  }).join("") + "</div>";
+  const selectedDate = state.historyData || today();
+  const dayMeals = state.meals.filter((m) => m.date === selectedDate);
+  const dayTotal = dayMeals.reduce((sum, m) => sum + m.calories, 0);
+  const ehHoje = selectedDate === today();
+  return '' +
+    '<div class="history-panel">' +
+      '<div class="history-panel-label">Histórico salvo</div>' +
+      '<div class="history-panel-date-row">' +
+        '<label class="history-panel-date-label">' + icon("calendar") +
+          '<input type="date" class="history-panel-date-input" value="' + esc(selectedDate) + '" max="' + esc(today()) + '" onchange="acaoSelecionarDataHistorico(this.value)"/>' +
+        "</label>" +
+        (ehHoje ? "" : '<button class="history-panel-hoje-btn" onclick="acaoSelecionarDataHistorico(\'' + today() + '\')">Voltar para hoje</button>') +
+      "</div>" +
+      (dayMeals.length
+        ? '<div class="history-day"><div class="history-day-head"><span class="date">' + dateLabel(selectedDate) + '</span><span class="total">' + formatNumber(dayTotal) + " kcal · " + dayMeals.length + " refeição" + (dayMeals.length > 1 ? "ões" : "") + "</span></div>" +
+          '<div class="history-day-meals">' + dayMeals.map((m) => '<div class="history-day-meal" onclick="acaoAbrirDetalheRefeicao(' + m.id + ')"><span>' + esc(m.name) + "</span><span>" + formatNumber(m.calories) + " kcal</span></div>").join("") + "</div></div>"
+        : '<p class="history-panel-empty">' + (ehHoje ? "Suas refeições aparecerão aqui depois do primeiro registro." : "Nenhuma refeição registrada em " + dateLabel(selectedDate) + ".") + "</p>"
+      ) +
+    "</div>";
+}
+function acaoSelecionarDataHistorico(value) {
+  state.historyData = value || today();
+  render();
+}
+// Cada vez que o histórico é aberto, volta a mostrar hoje por padrão (evita reabrir numa data antiga
+// que a pessoa tinha navegado antes e esquecido).
+function acaoAlternarHistorico() {
+  state.showHistory = !state.showHistory;
+  if (state.showHistory) state.historyData = null;
+  render();
+}
+
+/* ===================== treinos/esportes ===================== */
+function acaoSelecionarEsporte(valor) { state.treinoEsporte = valor; render(); }
+// Troca de modo também descarta uma foto já selecionada — evita uma foto escolhida num modo "vazar"
+// silenciosamente pro outro.
+function acaoAlternarModoTreino(modo) { state.treinoModo = modo; limparFotoTreinoSelecionada(); render(); }
+
+// Intervalo que atualiza o cronômetro na tela a cada segundo enquanto um treino está rodando (não
+// fica no state porque é só uma questão de UI — não precisa ser persistido nem disparar sincronização).
+let treinoTickIntervalId = null;
+function iniciarTickTreinoSeNecessario() {
+  pararTickTreino();
+  if (state.treinoAtivo && !state.treinoAtivo.pausado) {
+    treinoTickIntervalId = setInterval(render, 1000);
+  }
+}
+function pararTickTreino() {
+  if (treinoTickIntervalId) { clearInterval(treinoTickIntervalId); treinoTickIntervalId = null; }
+}
+
+function acaoIniciarTreino() {
+  const esporte = state.treinoEsporte;
+  if (!esporte) { toastError("Selecione o esporte."); return; }
+  const now = new Date();
+  state.treinoAtivo = {
+    esporte, date: today(),
+    horaInicioClock: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+    segmentoAtualInicio: Date.now(),
+    acumuladoMs: 0,
+    pausado: false,
+  };
+  persistTreinoAtivo();
+  iniciarTickTreinoSeNecessario();
+  render();
+}
+
+function acaoPausarTreino() {
+  if (!state.treinoAtivo || state.treinoAtivo.pausado) return;
+  state.treinoAtivo.acumuladoMs += Date.now() - state.treinoAtivo.segmentoAtualInicio;
+  state.treinoAtivo.segmentoAtualInicio = null;
+  state.treinoAtivo.pausado = true;
+  persistTreinoAtivo();
+  pararTickTreino();
+  render();
+}
+
+function acaoRetomarTreino() {
+  if (!state.treinoAtivo || !state.treinoAtivo.pausado) return;
+  state.treinoAtivo.segmentoAtualInicio = Date.now();
+  state.treinoAtivo.pausado = false;
+  persistTreinoAtivo();
+  iniciarTickTreinoSeNecessario();
+  render();
+}
+
+function acaoEncerrarTreino() {
+  if (!state.treinoAtivo) return;
+  if (treinoFotoSelecionada && !state.account) { toastError("Conecte sua conta do Google para anexar fotos."); return; }
+  const duracaoMin = Math.round(treinoAtivoElapsedMs() / 60000);
+  const now = new Date();
+  const notaEl = document.getElementById("treino-nota");
+  const nota = notaEl ? notaEl.value : "";
+  const novoTreino = {
+    id: Date.now(), date: state.treinoAtivo.date, esporte: state.treinoAtivo.esporte,
+    horaInicio: state.treinoAtivo.horaInicioClock, horaFim: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+    duracaoMin, fotoUrl: "", nota,
+  };
+  // Mesmo padrão "salva primeiro, anexo depois" já usado nos exames de bioimpedância/calorimetria
+  // (ver processarAnexoBioimpedanciaEmSegundoPlano): o treino nunca fica refém do envio da foto.
+  const arquivoFoto = treinoFotoSelecionada;
+  state.treinos = state.treinos.concat([novoTreino]);
+  persistTreinos();
+  state.treinoAtivo = null;
+  persistTreinoAtivo();
+  pararTickTreino();
+  state.treinoEsporte = "";
+  state.treinoNota = "";
+  if (notaEl) notaEl.value = ""; // ver comentário em acaoSalvarTreino sobre limpar o DOM diretamente
+  limparFotoTreinoSelecionada();
+  toastSuccess(arquivoFoto ? "Treino registrado. Enviando a foto em segundo plano..." : "Treino registrado.");
+  const promessaRegistroBase = state.account ? enviarComFila("salvarTreinoGoogle", [state.usuario.email, novoTreino]) : Promise.resolve();
+  render();
+  if (arquivoFoto) processarFotoTreinoEmSegundoPlano(novoTreino.id, arquivoFoto, promessaRegistroBase);
+}
+
+// Ver comentário equivalente em processarAnexoBioimpedanciaEmSegundoPlano: espera o envio do registro
+// em si terminar antes de mandar a atualização da foto, pra essas duas escritas nunca se cruzarem.
+async function processarFotoTreinoEmSegundoPlano(idTreino, file, promessaRegistroBase) {
+  const [resultado] = await Promise.all([enviarAnexoExame(file), promessaRegistroBase]);
+  if (!resultado.ok) {
+    toastError((resultado.erro || "Não foi possível enviar a foto") + " — o treino foi salvo, só sem a foto.");
+    return;
+  }
+  const registro = state.treinos.find((t) => t.id === idTreino);
+  if (!registro) return; // treino foi removido enquanto a foto ainda enviava
+  registro.fotoUrl = resultado.url;
+  persistTreinos();
+  toastSuccess("Foto anexada ao treino.");
+  if (state.account) enviarComFila("atualizarFotoTreinoGoogle", [state.usuario.email, idTreino, resultado.url]);
+  render();
+}
+
+// Descarta o treino em andamento sem salvar (ex.: a pessoa iniciou por engano).
+function acaoCancelarTreinoAtivo() {
+  state.treinoAtivo = null;
+  persistTreinoAtivo();
+  pararTickTreino();
+  limparFotoTreinoSelecionada();
+  render();
+}
+
+function acaoSalvarTreino() {
+  const esporte = state.treinoEsporte;
+  if (!esporte) { toastError("Selecione o esporte."); return; }
+  const inicioEl = document.getElementById("treino-hora-inicio");
+  const fimEl = document.getElementById("treino-hora-fim");
+  const horaInicio = inicioEl ? inicioEl.value : "";
+  const horaFim = fimEl ? fimEl.value : "";
+  if (!horaInicio || !horaFim) { toastError("Informe os horários de início e término."); return; }
+  const duracaoMin = duracaoMinutos(horaInicio, horaFim);
+  if (duracaoMin <= 0) { toastError("O horário de término deve ser depois do horário de início."); return; }
+  if (treinoFotoSelecionada && !state.account) { toastError("Conecte sua conta do Google para anexar fotos."); return; }
+  const notaEl = document.getElementById("treino-nota");
+  const nota = notaEl ? notaEl.value : "";
+
+  const novoTreino = { id: Date.now(), date: today(), esporte, horaInicio, horaFim, duracaoMin, fotoUrl: "", nota };
+  const arquivoFoto = treinoFotoSelecionada;
+  state.treinos = state.treinos.concat([novoTreino]);
+  persistTreinos();
+  state.treinoEsporte = "";
+  state.treinoNota = "";
+  // Limpa os campos no DOM diretamente (não só no state) — como os inputs continuam montados na
+  // tela após salvar, o captureFormState() chamado no início do próximo render() ia recapturar o
+  // valor antigo ainda presente nos inputs e desfazer a limpeza do state.
+  inicioEl.value = "";
+  fimEl.value = "";
+  if (notaEl) notaEl.value = "";
+  limparFotoTreinoSelecionada();
+  toastSuccess(arquivoFoto ? "Treino registrado. Enviando a foto em segundo plano..." : "Treino registrado.");
+  const promessaRegistroBase = state.account ? enviarComFila("salvarTreinoGoogle", [state.usuario.email, novoTreino]) : Promise.resolve();
+  render();
+  if (arquivoFoto) processarFotoTreinoEmSegundoPlano(novoTreino.id, arquivoFoto, promessaRegistroBase);
+}
+
+function acaoRemoverTreino(id) {
+  state.treinos = state.treinos.filter((t) => t.id !== id);
+  persistTreinos();
+  if (state.account) enviarComFila("removerTreinoGoogle", [state.usuario.email, id]);
+  render();
+}
+
+function treinoListTemplate() {
+  const treinos = todayTreinos();
+  if (!treinos.length) {
+    return '<div class="meal-empty"><div class="meal-empty-icon">' + icon("activity") + "</div><p>Nenhum treino registrado hoje</p><p>Escolha o esporte ao lado e comece a registrar.</p></div>";
+  }
+  return treinos.map((t) =>
+    '<div class="meal-row meal-row-static"><div class="meal-row-left">' +
+    (t.fotoUrl
+      ? '<a class="meal-row-icon meal-row-icon-foto" href="' + esc(t.fotoUrl) + '" target="_blank" rel="noopener"><img src="' + esc(t.fotoUrl) + '" alt="Foto do treino"/></a>'
+      : '<div class="meal-row-icon">' + icon("activity") + "</div>"
+    ) +
+    '<div class="meal-row-text"><div class="meal-row-name">' + emojiEsporte(t.esporte) + " " + esc(t.esporte) + '</div><div class="meal-row-meta">' + icon("clock") + " " + esc(t.horaInicio) + " – " + esc(t.horaFim) + "</div>" +
+    (t.nota ? '<div class="meal-row-nota">' + icon("help") + " " + esc(t.nota) + "</div>" : "") +
+    "</div></div>" +
+    '<div class="meal-row-right"><div class="meal-row-stat"><div class="meal-row-kcal">' + esc(formatarDuracao(t.duracaoMin)) + "</div></div>" +
+    '<button class="meal-row-delete" aria-label="Remover treino" onclick="acaoRemoverTreino(' + t.id + ')">' + icon("trash") + "</button></div></div>"
+  ).join("");
+}
+
+// Mesma lógica do histórico de refeições (ver historyPanelTemplate): mostra um dia por vez, hoje por
+// padrão, com um calendário suspenso para navegar até dias anteriores.
+function treinoHistoryPanelTemplate() {
+  if (!state.showHistoryTreinos) return "";
+  const selectedDate = state.historyDataTreinos || today();
+  const dayTreinos = state.treinos.filter((t) => t.date === selectedDate);
+  const ehHoje = selectedDate === today();
+  return '' +
+    '<div class="history-panel">' +
+      '<div class="history-panel-label">Histórico salvo</div>' +
+      '<div class="history-panel-date-row">' +
+        '<label class="history-panel-date-label">' + icon("calendar") +
+          '<input type="date" class="history-panel-date-input" value="' + esc(selectedDate) + '" max="' + esc(today()) + '" onchange="acaoSelecionarDataHistoricoTreinos(this.value)"/>' +
+        "</label>" +
+        (ehHoje ? "" : '<button class="history-panel-hoje-btn" onclick="acaoSelecionarDataHistoricoTreinos(\'' + today() + '\')">Voltar para hoje</button>') +
+      "</div>" +
+      (dayTreinos.length
+        ? '<div class="history-day"><div class="history-day-head"><span class="date">' + dateLabel(selectedDate) + '</span><span class="total">' + dayTreinos.length + " treino" + (dayTreinos.length > 1 ? "s" : "") + "</span></div>" +
+          '<div class="history-day-meals">' + dayTreinos.map((t) =>
+            '<div class="history-day-meal history-day-meal-static' + (t.nota ? " history-day-meal-com-nota" : "") + '">' +
+              '<div class="history-day-meal-linha"><span>' + emojiEsporte(t.esporte) + " " + esc(t.esporte) + " · " + esc(t.horaInicio) + "–" + esc(t.horaFim) + "</span><span>" + esc(formatarDuracao(t.duracaoMin)) + (t.fotoUrl ? ' <a class="history-day-meal-foto-link" href="' + esc(t.fotoUrl) + '" target="_blank" rel="noopener" aria-label="Ver foto do treino">' + icon("camera") + "</a>" : "") + "</span></div>" +
+              (t.nota ? '<p class="history-day-meal-nota">' + esc(t.nota) + "</p>" : "") +
+            "</div>"
+          ).join("") + "</div></div>"
+        : '<p class="history-panel-empty">' + (ehHoje ? "Seus treinos aparecerão aqui depois do primeiro registro." : "Nenhum treino registrado em " + dateLabel(selectedDate) + ".") + "</p>"
+      ) +
+    "</div>";
+}
+function acaoSelecionarDataHistoricoTreinos(value) {
+  state.historyDataTreinos = value || today();
+  render();
+}
+function acaoAlternarHistoricoTreinos() {
+  state.showHistoryTreinos = !state.showHistoryTreinos;
+  if (state.showHistoryTreinos) state.historyDataTreinos = null;
+  render();
 }
 
 function mealListTemplate() {
@@ -1455,15 +1956,50 @@ function mealListTemplate() {
     return '<div class="meal-empty"><div class="meal-empty-icon">' + icon("plus") + "</div><p>Nenhuma refeição registrada hoje</p><p>Descreva a primeira refeição no formulário ao lado.</p></div>";
   }
   return meals.map((m) =>
-    '<div class="meal-row"><div class="meal-row-left"><div class="meal-row-icon">' + icon("utensils") + '</div><div class="meal-row-text"><div class="meal-row-name">' + esc(m.name) + '</div><div class="meal-row-meta">' + icon("clock") + " " + esc(m.time) + " · " + esc(m.detected.join(", ")) + "</div></div></div>" +
+    '<div class="meal-row" onclick="acaoAbrirDetalheRefeicao(' + m.id + ')"><div class="meal-row-left"><div class="meal-row-icon">' + icon("utensils") + '</div><div class="meal-row-text"><div class="meal-row-name">' + esc(m.name) + '</div><div class="meal-row-meta">' + icon("clock") + " " + esc(m.time) + " · " + esc(m.detected.join(", ")) + "</div></div></div>" +
     '<div class="meal-row-right"><div class="meal-row-stat"><div class="meal-row-kcal">' + formatNumber(m.calories) + ' kcal</div><div class="meal-row-macro">P ' + formatNumber(m.protein, 1) + " · C " + formatNumber(m.carbs, 1) + " · G " + formatNumber(m.fat, 1) + "</div></div>" +
-    '<button class="meal-row-delete" aria-label="Remover refeição" onclick="acaoRemoverRefeicao(' + m.id + ')">' + icon("trash") + "</button></div></div>"
+    '<button class="meal-row-delete" aria-label="Remover refeição" onclick="event.stopPropagation(); acaoRemoverRefeicao(' + m.id + ')">' + icon("trash") + "</button></div></div>"
   ).join("");
+}
+
+function alimentoDetalheTemplate(a) {
+  const v = a.values || {};
+  return '' +
+    '<div class="meal-detalhe-alimento">' +
+      '<div class="meal-detalhe-alimento-head"><span class="meal-detalhe-alimento-nome">' + esc(a.label) + '</span><span class="meal-detalhe-alimento-qtd">' + esc(a.amount || "") + "</span></div>" +
+      '<div class="meal-detalhe-macros">' +
+        Object.keys(nutrientMeta).map((key) => '<span class="meal-detalhe-chip">' + nutrientMeta[key].label + ": " + formatNumber(v[key] || 0, key === "calories" ? 0 : 1) + " " + nutrientMeta[key].unit + "</span>").join("") +
+      "</div>" +
+      '<div class="meal-detalhe-micros">' +
+        Object.keys(micronutrientMeta).map((key) => '<div class="meal-detalhe-micro">' + micronutrientMeta[key].label + ": <span>" + formatNumber(v[key] || 0, 1) + " " + micronutrientMeta[key].unit + "</span></div>").join("") +
+      "</div>" +
+    "</div>";
+}
+
+// Busca em TODOS os registros (não só os de hoje), porque o modal também é aberto a partir do painel
+// de histórico, que mostra refeições de qualquer dia já salvo.
+function mealDetalheModalTemplate() {
+  if (state.mealDetalheId == null) return "";
+  const m = state.meals.find((meal) => meal.id === state.mealDetalheId);
+  if (!m) return "";
+  const alimentos = m.alimentos || [];
+  return '' +
+    '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharDetalheRefeicao();}">' +
+    '<div class="modal-card modal-card-wide">' +
+      '<div class="meal-detalhe-head"><div><h2>' + esc(m.name) + '</h2><p class="sub">' + icon("clock") + " " + esc(m.time) + " · " + dateLabel(m.date) + "</p></div>" +
+      '<button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharDetalheRefeicao()">' + icon("x") + "</button></div>" +
+      '<div class="meal-detalhe-total"><div class="meal-detalhe-total-row"><span>Total da refeição</span><span>' + formatNumber(m.calories) + " kcal</span></div>" +
+      '<div class="meal-detalhe-total-macros">P ' + formatNumber(m.protein, 1) + " · C " + formatNumber(m.carbs, 1) + " · G " + formatNumber(m.fat, 1) + " · F " + formatNumber(m.fiber, 1) + "</div></div>" +
+      (alimentos.length ? alimentos.map((a) => alimentoDetalheTemplate(a)).join("") :
+        '<p class="meal-detalhe-sem-dados">' + esc((m.detected || []).join(", ") || "Sem alimentos identificados.") + " — o detalhamento por alimento não está disponível para este registro (salvo antes dessa função existir).</p>"
+      ) +
+    "</div></div>";
 }
 
 function homeTabsTemplate() {
   return '<div class="home-tabs">' +
     '<button class="home-tab' + (state.activeTab === "nutricao" ? " active" : "") + '" onclick="acaoTrocarAba(\'nutricao\')">' + icon("utensils") + " Nutrição</button>" +
+    '<button class="home-tab' + (state.activeTab === "treinos" ? " active" : "") + '" onclick="acaoTrocarAba(\'treinos\')">' + icon("flame") + " Treinos/Esportes</button>" +
     '<button class="home-tab' + (state.activeTab === "medidas" ? " active" : "") + '" onclick="acaoTrocarAba(\'medidas\')">' + icon("activity") + " Medidas e Aferições</button>" +
     "</div>";
 }
@@ -1491,6 +2027,24 @@ function imcCardTemplate() {
 // se a pessoa recarregar a página no meio do cadastro, é razoável que precise escolher o arquivo de novo.
 let anexoSelecionadoBio = null;
 let anexoSelecionadoCalo = null;
+// Mesma lógica acima, para a foto do treino. treinoFotoPreviewUrl é a URL local (blob:) gerada pra
+// mostrar a miniatura antes de enviar — precisa ser revogada explicitamente quando trocada/removida,
+// senão o navegador mantém o blob na memória para sempre.
+let treinoFotoSelecionada = null;
+let treinoFotoPreviewUrl = null;
+function limparFotoTreinoSelecionada() {
+  if (treinoFotoPreviewUrl) URL.revokeObjectURL(treinoFotoPreviewUrl);
+  treinoFotoSelecionada = null;
+  treinoFotoPreviewUrl = null;
+}
+function onFotoTreinoSelecionada(event) {
+  const file = (event.target.files && event.target.files[0]) || null;
+  limparFotoTreinoSelecionada();
+  treinoFotoSelecionada = file;
+  treinoFotoPreviewUrl = file ? URL.createObjectURL(file) : null;
+  render();
+}
+function acaoRemoverFotoTreino() { limparFotoTreinoSelecionada(); render(); }
 
 function acaoAbrirFormBioimpedancia(aba) {
   state.showFormBioimpedancia = true;
@@ -1499,6 +2053,8 @@ function acaoAbrirFormBioimpedancia(aba) {
   anexoSelecionadoCalo = null;
   state.bioFormValores = {};
   state.caloFormValores = {};
+  state.bioimpedanciaEditandoId = null;
+  state.calorimetriaEditandoId = null;
   render();
 }
 function acaoTrocarAbaFormBioimpedancia(aba) { state.bioAbaFormulario = aba; render(); }
@@ -1508,6 +2064,44 @@ function acaoFecharFormBioimpedancia() {
   anexoSelecionadoCalo = null;
   state.bioFormValores = {};
   state.caloFormValores = {};
+  state.bioimpedanciaEditandoId = null;
+  state.calorimetriaEditandoId = null;
+  render();
+}
+
+// Abre o formulário já preenchido com os dados de um registro existente (clicado no histórico),
+// para o usuário editar em vez de cadastrar um novo. Reaproveita os mesmos campos de
+// state.bioFormValores/caloFormValores que o formulário já lê para se popular.
+function acaoEditarBioimpedancia(id) {
+  const registro = state.bioimpedancia.find((r) => r.id === id);
+  if (!registro) return;
+  state.showHistoricoBioimpedancia = false;
+  state.showFormBioimpedancia = true;
+  state.bioAbaFormulario = "bioimpedancia";
+  anexoSelecionadoBio = null;
+  anexoSelecionadoCalo = null;
+  const valores = { data: registro.date };
+  BIOIMPEDANCIA_CAMPOS.forEach((c) => { valores[c] = registro[c] != null ? String(registro[c]) : ""; });
+  state.bioFormValores = valores;
+  state.caloFormValores = {};
+  state.bioimpedanciaEditandoId = id;
+  state.calorimetriaEditandoId = null;
+  render();
+}
+function acaoEditarCalorimetria(id) {
+  const registro = state.calorimetria.find((r) => r.id === id);
+  if (!registro) return;
+  state.showHistoricoBioimpedancia = false;
+  state.showFormBioimpedancia = true;
+  state.bioAbaFormulario = "calorimetria";
+  anexoSelecionadoBio = null;
+  anexoSelecionadoCalo = null;
+  const valores = { data: registro.date };
+  CALORIMETRIA_CAMPOS.forEach((c) => { valores[c] = registro[c] != null ? String(registro[c]) : ""; });
+  state.caloFormValores = valores;
+  state.bioFormValores = {};
+  state.calorimetriaEditandoId = id;
+  state.bioimpedanciaEditandoId = null;
   render();
 }
 function onAnexoBioSelecionado(event) {
@@ -1544,6 +2138,30 @@ function acaoSalvarBioimpedancia() {
   if (!valores.altura || isNaN(Number(valores.altura))) { toastError("Informe a altura."); return; }
   if (anexoSelecionadoBio && !state.account) { toastError("Conecte sua conta do Google para anexar arquivos."); return; }
 
+  const arquivoAnexo = anexoSelecionadoBio;
+  const editandoId = state.bioimpedanciaEditandoId;
+
+  // Modo edição (usuário clicou no ícone de editar de um registro já existente no histórico):
+  // atualiza o registro em vez de criar um novo, preservando id e mantendo o anexo já existente a
+  // menos que um novo arquivo tenha sido escolhido.
+  if (editandoId != null) {
+    const registro = state.bioimpedancia.find((r) => r.id === editandoId);
+    if (!registro) { toastError("Registro não encontrado."); return; }
+    registro.date = data;
+    BIOIMPEDANCIA_CAMPOS.forEach((c) => { registro[c] = valores[c] ? Number(valores[c]) : null; });
+    if (arquivoAnexo) registro.anexoUrl = ""; // preenchido de novo quando o anexo terminar de enviar
+    persistBioimpedancia();
+    state.showFormBioimpedancia = false;
+    anexoSelecionadoBio = null;
+    state.bioFormValores = {};
+    state.bioimpedanciaEditandoId = null;
+    toastSuccess(arquivoAnexo ? "Registro atualizado. Enviando o anexo em segundo plano..." : "Registro de bioimpedância atualizado.");
+    const promessaEdicao = state.account ? enviarComFila("atualizarBioimpedanciaGoogle", [state.usuario.email, registro]) : Promise.resolve();
+    render();
+    if (arquivoAnexo) processarAnexoBioimpedanciaEmSegundoPlano(registro.id, arquivoAnexo, promessaEdicao);
+    return;
+  }
+
   // O registro é salvo AGORA MESMO (dado nunca depende do anexo terminar de enviar — evita perder a
   // medição inteira se o envio do arquivo for interrompido, ex.: celular bloqueia a tela no meio de
   // uma rede mais lenta). O anexo, quando selecionado, é enviado depois, em segundo plano, e só
@@ -1553,7 +2171,6 @@ function acaoSalvarBioimpedancia() {
     { id: Date.now(), date: data, time: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }), anexoUrl: "" },
     BIOIMPEDANCIA_CAMPOS.reduce((acc, c) => { acc[c] = valores[c] ? Number(valores[c]) : null; return acc; }, {})
   );
-  const arquivoAnexo = anexoSelecionadoBio;
   state.bioimpedancia = state.bioimpedancia.concat([novoRegistro]);
   persistBioimpedancia();
   state.showFormBioimpedancia = false;
@@ -1605,6 +2222,29 @@ function acaoSalvarCalorimetria() {
   if (!valores.get || isNaN(Number(valores.get))) { toastError("Informe o Gasto Energético Total (GET)."); return; }
   if (anexoSelecionadoCalo && !state.account) { toastError("Conecte sua conta do Google para anexar arquivos."); return; }
 
+  const arquivoAnexo = anexoSelecionadoCalo;
+  const editandoId = state.calorimetriaEditandoId;
+
+  // Modo edição — mesma lógica usada em acaoSalvarBioimpedancia (ver comentário lá).
+  if (editandoId != null) {
+    const registro = state.calorimetria.find((r) => r.id === editandoId);
+    if (!registro) { toastError("Registro não encontrado."); return; }
+    registro.date = data;
+    registro.tmb = Number(valores.tmb);
+    registro.get = Number(valores.get);
+    if (arquivoAnexo) registro.anexoUrl = "";
+    persistCalorimetria();
+    state.showFormBioimpedancia = false;
+    anexoSelecionadoCalo = null;
+    state.caloFormValores = {};
+    state.calorimetriaEditandoId = null;
+    toastSuccess(arquivoAnexo ? "Registro atualizado. Enviando o anexo em segundo plano..." : "Registro de calorimetria atualizado.");
+    const promessaEdicao = state.account ? enviarComFila("atualizarCalorimetriaGoogle", [state.usuario.email, registro]) : Promise.resolve();
+    render();
+    if (arquivoAnexo) processarAnexoCalorimetriaEmSegundoPlano(registro.id, arquivoAnexo, promessaEdicao);
+    return;
+  }
+
   // Mesma lógica da bioimpedância (ver comentário lá): o registro é salvo já, o anexo vai depois em
   // segundo plano e só é "colado" ao registro quando (e se) terminar de enviar.
   const now = new Date();
@@ -1612,7 +2252,6 @@ function acaoSalvarCalorimetria() {
     id: Date.now(), date: data, time: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
     tmb: Number(valores.tmb), get: Number(valores.get), anexoUrl: "",
   };
-  const arquivoAnexo = anexoSelecionadoCalo;
   state.calorimetria = state.calorimetria.concat([novoRegistro]);
   persistCalorimetria();
   state.showFormBioimpedancia = false;
@@ -1678,7 +2317,7 @@ function bioimpedanciaFormCamposTemplate() {
     anexoCampoTemplate("bio-anexo-input", anexoSelecionadoBio, "onAnexoBioSelecionado", "acaoRemoverAnexoSelecionadoBio") +
     '<div class="bioimpedancia-form-acoes">' +
       '<button class="bioimpedancia-btn-secundario" onclick="acaoFecharFormBioimpedancia()">Cancelar</button>' +
-      '<button class="btn-primary" onclick="acaoSalvarBioimpedancia()">' + icon("check") + " Salvar</button>" +
+      '<button class="btn-primary" onclick="acaoSalvarBioimpedancia()">' + icon("check") + (state.bioimpedanciaEditandoId != null ? " Salvar alterações" : " Salvar") + "</button>" +
     "</div>";
 }
 function calorimetriaFormCamposTemplate() {
@@ -1695,18 +2334,20 @@ function calorimetriaFormCamposTemplate() {
     anexoCampoTemplate("calo-anexo-input", anexoSelecionadoCalo, "onAnexoCaloSelecionado", "acaoRemoverAnexoSelecionadoCalo") +
     '<div class="bioimpedancia-form-acoes">' +
       '<button class="bioimpedancia-btn-secundario" onclick="acaoFecharFormBioimpedancia()">Cancelar</button>' +
-      '<button class="btn-primary" onclick="acaoSalvarCalorimetria()">' + icon("check") + " Salvar</button>" +
+      '<button class="btn-primary" onclick="acaoSalvarCalorimetria()">' + icon("check") + (state.calorimetriaEditandoId != null ? " Salvar alterações" : " Salvar") + "</button>" +
     "</div>";
 }
 function bioimpedanciaFormTemplate() {
   const aba = state.bioAbaFormulario;
+  const editando = state.bioimpedanciaEditandoId != null || state.calorimetriaEditandoId != null;
   return '' +
     '<section class="medidas-section">' +
-      '<h2 class="medidas-section-title">' + icon("ruler") + " Bioimpedância e Calorimetria</h2>" +
+      '<h2 class="medidas-section-title">' + icon(editando ? "edit" : "ruler") + (editando ? " Editar registro" : " Bioimpedância e Calorimetria") + "</h2>" +
+      (editando ? "" :
       '<div class="bioimpedancia-form-tabs">' +
         '<button class="bioimpedancia-form-tab' + (aba === "bioimpedancia" ? " active" : "") + '" onclick="acaoTrocarAbaFormBioimpedancia(\'bioimpedancia\')">Bioimpedância</button>' +
         '<button class="bioimpedancia-form-tab' + (aba === "calorimetria" ? " active" : "") + '" onclick="acaoTrocarAbaFormBioimpedancia(\'calorimetria\')">Calorimetria</button>' +
-      "</div>" +
+      "</div>") +
       (aba === "calorimetria" ? calorimetriaFormCamposTemplate() : bioimpedanciaFormCamposTemplate()) +
     "</section>";
 }
@@ -1719,7 +2360,7 @@ function dataCurta(dateStr) {
   return partes[2] + "/" + partes[1] + "/" + partes[0];
 }
 
-function historicoListaTemplate(registros, tipoLabel, acaoRemover) {
+function historicoListaTemplate(registros, tipoLabel, acaoRemover, acaoEditar) {
   if (!registros.length) return '<p class="imc-empty" style="margin-top:14px">Nenhum registro de ' + tipoLabel.toLowerCase() + " ainda.</p>";
   return '<div class="medidas-history-list" style="margin-top:14px">' + registros.map((r) =>
     '<div class="medida-history-row"><div class="medida-history-left"><span class="medida-history-tipo">' + tipoLabel + " registrada em " + dataCurta(r.date) + "</span>" +
@@ -1727,7 +2368,10 @@ function historicoListaTemplate(registros, tipoLabel, acaoRemover) {
       ? '<a class="bioimpedancia-anexo-link" href="' + esc(r.anexoUrl) + '" target="_blank" rel="noopener">' + icon("file") + " Ver exame</a>"
       : '<span class="medida-history-meta">Sem exame anexado</span>') +
     "</div>" +
-    '<button class="meal-row-delete" aria-label="Remover registro" onclick="' + acaoRemover + "(" + r.id + ')">' + icon("trash") + "</button></div>"
+    '<div class="medida-history-right">' +
+      '<button class="meal-row-delete" aria-label="Editar registro" onclick="' + acaoEditar + "(" + r.id + ')">' + icon("edit") + "</button>" +
+      '<button class="meal-row-delete" aria-label="Remover registro" onclick="' + acaoRemover + "(" + r.id + ')">' + icon("trash") + "</button>" +
+    "</div></div>"
   ).join("") + "</div>";
 }
 
@@ -1743,8 +2387,8 @@ function historicoBioimpedanciaTemplate() {
         '<button class="bioimpedancia-form-tab' + (aba === "calorimetria" ? " active" : "") + '" onclick="acaoTrocarAbaHistoricoBioimpedancia(\'calorimetria\')">Calorimetria</button>' +
       "</div>" +
       (aba === "calorimetria"
-        ? historicoListaTemplate(registrosCalo, "Calorimetria", "acaoRemoverCalorimetria")
-        : historicoListaTemplate(registrosBio, "Bioimpedância", "acaoRemoverBioimpedancia")) +
+        ? historicoListaTemplate(registrosCalo, "Calorimetria", "acaoRemoverCalorimetria", "acaoEditarCalorimetria")
+        : historicoListaTemplate(registrosBio, "Bioimpedância", "acaoRemoverBioimpedancia", "acaoEditarBioimpedancia")) +
       '<div class="bioimpedancia-form-acoes"><button class="bioimpedancia-btn-secundario" onclick="acaoFecharHistoricoBioimpedancia()">Voltar</button></div>' +
     "</section>";
 }
@@ -1783,12 +2427,18 @@ function bioimpedanciaSectionTemplate() {
     "</section>";
 }
 
+function acaoAbrirHistoricoMedidas() { state.showHistoricoMedidas = true; render(); }
+function acaoFecharHistoricoMedidas() { state.showHistoricoMedidas = false; render(); }
+
 function medidasFormTemplate() {
   const tipo = state.medidaTipo;
   const meta = tipo ? medidaTipos[tipo] : null;
   return '' +
     '<section class="medidas-section">' +
-      '<h2 class="medidas-section-title">' + icon("plus") + " Medidas e Aferições</h2>" +
+      '<div class="medidas-section-title-row"><h2 class="medidas-section-title">' + icon("plus") + " Medidas e Aferições</h2>" +
+      '<div class="medidas-section-title-actions">' +
+        '<button class="bioimpedancia-btn-secundario" onclick="acaoAbrirHistoricoMedidas()">' + icon("history") + " Histórico de registros</button>" +
+      "</div></div>" +
       '<div class="medida-form">' +
         '<div><label class="field-label">Tipo de medição</label>' +
         '<select class="field-input" onchange="acaoSelecionarTipoMedida(this.value)">' +
@@ -1799,6 +2449,8 @@ function medidasFormTemplate() {
           '<div class="medida-input-row"><div><label class="field-label">' + meta.label + " (" + meta.unidade + ")</label>" +
           '<input id="medida-valor" class="field-input" placeholder="' + meta.placeholder + '" onkeydown="if(event.key===\'Enter\') acaoSalvarMedida();"/>' +
           '<p class="imc-empty" style="margin-top:6px">' + meta.exemplo + "</p></div>" +
+          '<div><label class="field-label">Observação (opcional)</label>' +
+          '<textarea id="medida-nota" class="field-input medida-nota-textarea" rows="2" placeholder="Ex.: em jejum, após o treino, antes de dormir..."></textarea></div>' +
           '<button class="btn-primary" onclick="acaoSalvarMedida()">' + icon("check") + " Salvar registro</button></div>"
           : ""
         ) +
@@ -1815,22 +2467,128 @@ function medidasHistoricoTemplate() {
         '<div class="medidas-history-list">' + registros.map((r) => {
           const meta = medidaTipos[r.tipo] || { label: r.tipo, unidade: "" };
           return '<div class="medida-history-row"><div class="medida-history-left"><span class="medida-history-tipo">' + esc(meta.label) + "</span>" +
-            '<span class="medida-history-meta">' + icon("clock") + " " + dateLabel(r.date) + " · " + esc(r.time) + "</span></div>" +
+            '<span class="medida-history-meta">' + icon("clock") + " " + dateLabel(r.date) + " · " + esc(r.time) + "</span>" +
+            (r.nota ? '<span class="medida-history-nota">' + icon("help") + " " + esc(r.nota) + "</span>" : "") +
+            "</div>" +
             '<div class="medida-history-right"><span class="medida-history-valor">' + esc(String(r.valor)) + " " + esc(meta.unidade) + "</span>" +
             '<button class="meal-row-delete" aria-label="Remover registro" onclick="acaoRemoverMedida(' + r.id + ')">' + icon("trash") + "</button></div></div>";
         }).join("") + "</div>"
         :
         '<p class="history-panel-empty" style="margin-top:16px">Seus registros de medidas e aferições aparecerão aqui depois do primeiro registro.</p>'
       ) +
+      '<div class="bioimpedancia-form-acoes"><button class="bioimpedancia-btn-secundario" onclick="acaoFecharHistoricoMedidas()">Voltar</button></div>' +
     "</section>";
 }
 
 function medidasTabTemplate() {
-  return '<main>' + imcCardTemplate() + bioimpedanciaSectionTemplate() + medidasFormTemplate() + medidasHistoricoTemplate() + "</main>";
+  return '<main>' + imcCardTemplate() + bioimpedanciaSectionTemplate() + (state.showHistoricoMedidas ? medidasHistoricoTemplate() : medidasFormTemplate()) + "</main>";
+}
+
+// Mesmo layout de duas colunas da aba Nutrição (formulário + histórico do dia), aplicado a treinos.
+// Seletor de esporte reaproveitado tanto no modo cronômetro quanto no modo manual.
+function treinoSeletorEsporteTemplate() {
+  return '<select id="treino-esporte-select" class="meal-select" onchange="acaoSelecionarEsporte(this.value)">' +
+    '<option value="">Selecione o esporte...</option>' +
+    ESPORTE_TIPOS.map((e) => '<option value="' + esc(e) + '"' + (state.treinoEsporte === e ? " selected" : "") + ">" + esc(e) + "</option>").join("") +
+  "</select>";
+}
+
+// Observação livre sobre o treino (ex.: "treino pesado", "alto astral") — opcional, mesma lógica de
+// captureFormState/limpeza das demais campos do formulário de treino.
+function treinoNotaCampoTemplate() {
+  return '<div class="treino-nota-campo"><label class="meal-form-label" for="treino-nota">Conte-nos sobre o treino</label>' +
+    '<textarea id="treino-nota" class="meal-textarea" rows="2" placeholder="Ex.: treino pesado, alto astral, senti dor no joelho...">' + esc(state.treinoNota) + "</textarea></div>";
+}
+
+// Foto do treino: só pode ser adicionada no momento do registro (encerrar o cronômetro ou salvar
+// manualmente) — não dá pra anexar depois num treino já salvo. Exatamente 1 foto por treino.
+// treinoFotoSelecionada/treinoFotoPreviewUrl ficam fora do state (File não é serializável).
+function treinoFotoCampoTemplate() {
+  return '<div class="treino-foto-campo">' +
+    (treinoFotoSelecionada
+      ? '<div class="treino-foto-preview"><img src="' + esc(treinoFotoPreviewUrl) + '" alt="Foto do treino"/>' +
+          '<button type="button" class="treino-foto-remover" aria-label="Remover foto selecionada" onclick="acaoRemoverFotoTreino()">' + icon("x") + "</button></div>"
+      : '<label class="treino-foto-btn" for="treino-foto-input">' + icon("camera") + " Tirar foto do treino" +
+          '<input id="treino-foto-input" type="file" accept="image/*" capture="environment" style="display:none" onchange="onFotoTreinoSelecionada(event)"/></label>'
+    ) +
+  "</div>";
+}
+
+// Treino rodando (ou pausado): mostra o cronômetro ao vivo e os controles de pausar/retomar/encerrar,
+// no lugar do formulário normal.
+function treinoCronometroAtivoTemplate() {
+  const a = state.treinoAtivo;
+  const ms = treinoAtivoElapsedMs();
+  return '' +
+    '<p class="meal-card-desc">' + emojiEsporte(a.esporte) + " " + esc(a.esporte) + " · iniciado às " + esc(a.horaInicioClock) + (a.pausado ? " · pausado" : "") + "</p>" +
+    '<div class="treino-cronometro">' + formatarCronometro(ms) + "</div>" +
+    treinoNotaCampoTemplate() +
+    treinoFotoCampoTemplate() +
+    '<div class="treino-cronometro-acoes">' +
+      (a.pausado
+        ? '<button class="btn-ghost-light" onclick="acaoRetomarTreino()">' + icon("play") + " Retomar</button>"
+        : '<button class="btn-ghost-light" onclick="acaoPausarTreino()">' + icon("pause") + " Pausar</button>"
+      ) +
+      '<button class="btn-accent" onclick="acaoEncerrarTreino()">' + icon("check") + " Encerrar treino</button>" +
+    "</div>" +
+    '<button class="treino-cancelar-btn" onclick="acaoCancelarTreinoAtivo()">Cancelar treino</button>';
+}
+
+function treinoFormCronometroTemplate() {
+  return '<div class="meal-form">' +
+    treinoSeletorEsporteTemplate() +
+    '<button class="btn-ghost-light" onclick="acaoIniciarTreino()">' + icon("play") + " Iniciar treino</button>" +
+  "</div>";
+}
+
+function treinoFormManualTemplate() {
+  return '<div class="meal-form">' +
+    treinoSeletorEsporteTemplate() +
+    '<div class="meal-form-row">' +
+      '<div><label class="meal-form-label">Início</label><input id="treino-hora-inicio" type="time" class="meal-input" value="' + esc(state.treinoHoraInicio) + '"/></div>' +
+      '<div><label class="meal-form-label">Término</label><input id="treino-hora-fim" type="time" class="meal-input" value="' + esc(state.treinoHoraFim) + '"/></div>' +
+    "</div>" +
+    treinoNotaCampoTemplate() +
+    treinoFotoCampoTemplate() +
+    '<button class="btn-ghost-light" onclick="acaoSalvarTreino()">' + icon("check") + " Salvar treino</button>" +
+  "</div>";
+}
+
+// Por padrão o registro é por cronômetro (iniciar/pausar/encerrar); "Registrar manualmente" continua
+// disponível pra quem quer lançar um treino que já terminou, sem cronometrar ao vivo.
+function treinoFormularioTemplate() {
+  if (state.treinoAtivo) return treinoCronometroAtivoTemplate();
+  return '' +
+    '<p class="meal-card-desc">Selecione a modalidade e ' + (state.treinoModo === "manual" ? "informe os horários de início e término." : "toque em iniciar quando começar.") + "</p>" +
+    '<div class="treino-modo-tabs">' +
+      '<button class="treino-modo-tab' + (state.treinoModo !== "manual" ? " active" : "") + '" onclick="acaoAlternarModoTreino(\'cronometro\')">' + icon("clock") + " Cronômetro</button>" +
+      '<button class="treino-modo-tab' + (state.treinoModo === "manual" ? " active" : "") + '" onclick="acaoAlternarModoTreino(\'manual\')">' + icon("edit") + " Registrar manualmente</button>" +
+    "</div>" +
+    (state.treinoModo === "manual" ? treinoFormManualTemplate() : treinoFormCronometroTemplate());
+}
+
+function treinosTabTemplate() {
+  return '<main>' +
+    '<section class="dashboard-grid">' +
+      '<aside class="meal-card"><div class="meal-card-eyebrow">' + icon("flame") + " Novo treino</div>" +
+      "<h2>Qual esporte você praticou?</h2>" +
+      treinoFormularioTemplate() +
+      "</aside>" +
+      '<div class="history-card"><div class="history-card-head">' +
+        '<div><div class="history-eyebrow">' + icon("flame") + " Treinos de hoje</div><h2>Sua atividade física</h2></div>" +
+        '<button class="history-toggle" onclick="acaoAlternarHistoricoTreinos()">' + icon("history") + " Histórico (" + historyDaysTreinos().length + ")</button>" +
+      "</div>" +
+      '<div class="meal-list">' + treinoListTemplate() + "</div>" +
+      treinoHistoryPanelTemplate() +
+      "</div>" +
+    "</section>" +
+    "</main>";
 }
 
 function fullHomeTemplate() {
-  return homeTabsTemplate() + (state.activeTab === "medidas" ? medidasTabTemplate() : nutricaoTabTemplate());
+  if (state.activeTab === "medidas") return homeTabsTemplate() + medidasTabTemplate();
+  if (state.activeTab === "treinos") return homeTabsTemplate() + treinosTabTemplate();
+  return homeTabsTemplate() + nutricaoTabTemplate();
 }
 
 function nutricaoTabTemplate() {
@@ -1847,7 +2605,9 @@ function nutricaoTabTemplate() {
       '<div><div class="hero-date">' + icon("calendar") + " " + dateLabel(today()) + "</div>" +
       '<h1 class="hero-title">Alimente o que <em>importa.</em></h1>' +
       '<p class="hero-sub">Descreva sua refeição do jeito que você fala. Nós estimamos os nutrientes, registramos e mostramos quanto ainda cabe no seu dia.</p></div>' +
-      '<div class="summary-card"><div class="summary-ring"></div><div class="summary-inner">' +
+      '<div class="summary-card"><div class="summary-ring"></div>' +
+        '<button class="summary-edit-btn" aria-label="Editar metas diárias" onclick="state.showGoals=!state.showGoals;render()">' + icon("edit") + "</button>" +
+        '<div class="summary-inner">' +
         '<div class="summary-label">' + icon("sparkles") + " Seu resumo de hoje</div>" +
         '<div class="summary-stats"><div><div class="summary-remaining-value">' + formatNumber(Math.max(0, remaining.calories)) + '</div><div class="summary-remaining-label">kcal restantes</div></div>' +
         '<div class="summary-consumed"><div class="summary-consumed-value">' + formatNumber(consumed.calories) + '</div><div class="summary-consumed-label">de ' + formatNumber(state.goals.calories) + " kcal</div></div></div>" +
@@ -1855,13 +2615,25 @@ function nutricaoTabTemplate() {
       "</div></div>" +
     "</section>" +
     goalsPanelTemplate() +
-    '<section class="nutrient-grid">' + nutrientCardsTemplate() + "</section>" +
+    '<div class="nutrient-tabs">' +
+      '<button class="nutrient-tab' + (state.nutrientAba !== "micro" ? " active" : "") + '" onclick="acaoTrocarAbaNutrientes(\'macro\')">Macronutrientes</button>' +
+      '<button class="nutrient-tab' + (state.nutrientAba === "micro" ? " active" : "") + '" onclick="acaoTrocarAbaNutrientes(\'micro\')">Micronutrientes</button>' +
+    "</div>" +
+    (state.nutrientAba === "micro" ?
+      '<section class="nutrient-grid nutrient-grid-micro">' + micronutrientCardsTemplate() + "</section>"
+      :
+      '<section class="nutrient-grid">' + nutrientCardsTemplate() + "</section>"
+    ) +
     '<section class="dashboard-grid">' +
       '<aside class="meal-card"><div class="meal-card-eyebrow">' + icon("sparkles") + " Nova refeição</div>" +
       "<h2>O que você vai comer?</h2>" +
       '<p class="meal-card-desc">Escreva naturalmente. Ex.: “1 pão francês, 1 ovo frito e 300 ml de suco de laranja”.</p>' +
       '<div class="meal-form">' +
-        '<input id="meal-name" class="meal-input" placeholder="Nome: café da manhã" value="' + esc(state.mealName) + '"/>' +
+        '<select id="meal-tipo-select" class="meal-select" onchange="acaoSelecionarTipoRefeicao(this.value)">' +
+          '<option value="">Selecione a refeição...</option>' +
+          MEAL_TIPOS.map((t) => '<option value="' + esc(t) + '"' + (state.mealTipo === t ? " selected" : "") + ">" + esc(t) + "</option>").join("") +
+        "</select>" +
+        (state.mealTipo === "Outro" ? '<input id="meal-nome-custom" class="meal-input" placeholder="Nome da refeição" value="' + esc(state.mealNomeCustom) + '"/>' : "") +
         '<textarea id="meal-description" class="meal-textarea" placeholder="Descreva os alimentos e quantidades..." rows="4">' + esc(state.mealDescription) + "</textarea>" +
         '<button class="btn-ghost-light" onclick="acaoAnalisar()">' + icon("sparkles") + " Calcular refeição</button>" +
       "</div>" +
@@ -1869,7 +2641,7 @@ function nutricaoTabTemplate() {
       "</aside>" +
       '<div class="history-card"><div class="history-card-head">' +
         '<div><div class="history-eyebrow">' + icon("utensils") + " Refeições de hoje</div><h2>O que você comeu</h2></div>" +
-        '<button class="history-toggle" onclick="state.showHistory=!state.showHistory;render()">' + icon("history") + " Histórico (" + historyDays().length + ")</button>" +
+        '<button class="history-toggle" onclick="acaoAlternarHistorico()">' + icon("history") + " Histórico (" + historyDays().length + ")</button>" +
       "</div>" +
       '<div class="meal-list">' + mealListTemplate() + "</div>" +
       historyPanelTemplate() +
@@ -1883,7 +2655,7 @@ function homeTemplate() {
   return '' +
     '<div class="app-shell">' +
     '<button class="hamburger-btn" onclick="acaoAbrirSidebar()" aria-label="Abrir menu"><span></span></button>' +
-    sidebarTemplate() + editarPerfilTemplate() +
+    sidebarTemplate() + editarPerfilTemplate() + mealDetalheModalTemplate() +
     '<div class="home-content"><div class="home-inner">' +
     (state.account ? fullHomeTemplate() : lockedTemplate()) +
     "</div></div></div>";
@@ -1891,9 +2663,9 @@ function homeTemplate() {
 
 /* ===================== render ===================== */
 function captureFormState() {
-  const nameEl = document.getElementById("meal-name");
+  const customEl = document.getElementById("meal-nome-custom");
   const descEl = document.getElementById("meal-description");
-  if (nameEl) state.mealName = nameEl.value;
+  if (customEl) state.mealNomeCustom = customEl.value;
   if (descEl) state.mealDescription = descEl.value;
 
   // O formulário de bioimpedância/calorimetria também precisa sobreviver a um render() no meio do
@@ -1917,6 +2689,13 @@ function captureFormState() {
     });
     state.caloFormValores = valores;
   }
+
+  const treinoInicioEl = document.getElementById("treino-hora-inicio");
+  if (treinoInicioEl) state.treinoHoraInicio = treinoInicioEl.value;
+  const treinoFimEl = document.getElementById("treino-hora-fim");
+  if (treinoFimEl) state.treinoHoraFim = treinoFimEl.value;
+  const treinoNotaEl = document.getElementById("treino-nota");
+  if (treinoNotaEl) state.treinoNota = treinoNotaEl.value;
 }
 function render() {
   captureFormState();
@@ -1952,6 +2731,9 @@ async function doInstall() {
 render();
 initInstallPrompt();
 if (state.usuario) sincronizarDoServidor();
+// Se havia um treino em andamento quando o app foi fechado/recarregado, retoma o cronômetro na tela
+// (o tempo decorrido é sempre recalculado a partir do timestamp salvo, então não se perde nada).
+iniciarTickTreinoSeNecessario();
 
 // Em celular, abrir um seletor nativo (ex.: o calendário do campo de data) costuma disparar um
 // "visibilitychange" no navegador (a página é considerada momentaneamente escondida enquanto o
