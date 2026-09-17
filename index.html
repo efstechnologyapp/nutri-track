@@ -270,6 +270,21 @@ svg{ display: block; }
 .treino-foto-preview img{ display:block; width:100%; max-height:220px; object-fit:cover; }
 .treino-foto-remover{ position:absolute; top:8px; right:8px; display:flex; height:30px; width:30px; align-items:center; justify-content:center; border-radius:999px; background:rgba(20,40,32,.72); color:#fff; backdrop-filter:blur(2px); }
 .treino-foto-remover:hover{ background:rgba(20,40,32,.9); }
+.treino-grupos-campo{ margin-top:16px; }
+.treino-grupos-nota{ margin:6px 0 0; font-size:12px; color:#9fb5aa; }
+.treino-grupo-bloco{ margin-top:10px; border-radius:12px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); padding:12px 14px; }
+.treino-grupo-bloco-head{ display:flex; align-items:center; justify-content:space-between; font-size:13px; color:#fff; }
+.treino-grupo-remover{ display:flex; height:24px; width:24px; align-items:center; justify-content:center; border-radius:999px; color:#9fb5aa; }
+.treino-grupo-remover:hover{ background:rgba(255,255,255,.1); color:#fff; }
+.treino-grupo-remover .icon{ width:14px; height:14px; }
+.treino-grupo-exercicios{ margin-top:6px; display:flex; flex-direction:column; }
+.treino-exercicio-linha{ padding:8px 0; border-top:1px solid rgba(255,255,255,.06); }
+.treino-exercicio-linha:first-child{ border-top:none; }
+.treino-exercicio-checkbox{ display:flex; align-items:center; gap:6px; font-size:12.5px; color:#cfe4c8; cursor:pointer; }
+.treino-exercicio-checkbox input{ accent-color:#7fb069; }
+.treino-exercicio-campos{ margin:8px 0 0 22px; display:flex; flex-wrap:wrap; gap:8px; }
+.treino-exercicio-input{ width:92px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.07); padding:8px 10px; font-size:12.5px; color:#fff; outline:none; }
+.treino-exercicio-input::placeholder{ color:#9fb5aa; }
 .btn-ghost-light{ display:flex; width:100%; align-items:center; justify-content:center; gap:8px; border-radius:12px; border:1px solid rgba(184,214,156,.3); background:rgba(255,255,255,.08); padding:12px 16px; font-size:14px; font-weight:600; color:#e3f2d3; transition:background .15s; }
 .btn-ghost-light:hover{ background:rgba(255,255,255,.14); }
 .meal-preview{ margin-top:20px; border-radius:16px; background:rgba(255,255,255,.09); padding:16px; }
@@ -311,6 +326,8 @@ svg{ display: block; }
 .meal-row-nota{ margin-top:4px; display:flex; align-items:flex-start; gap:4px; font-size:12px; color:#7c8c84; font-style:italic; }
 .meal-row-distancia{ margin-top:4px; display:flex; align-items:flex-start; gap:4px; font-size:12px; font-weight:600; color:#4b7048; }
 .meal-row-distancia .icon{ width:14px; height:14px; flex-shrink:0; margin-top:1px; }
+.meal-row-grupos-musculares{ margin-top:4px; display:flex; align-items:flex-start; gap:4px; font-size:12px; font-weight:600; color:#4b7048; }
+.meal-row-grupos-musculares .icon{ width:14px; height:14px; flex-shrink:0; margin-top:1px; }
 .meal-row-nota .icon{ width:14px; height:14px; flex-shrink:0; margin-top:1px; }
 .meal-row-right{ display:flex; flex-shrink:0; align-items:center; gap:12px; }
 .meal-row-stat{ text-align:right; }
@@ -339,6 +356,7 @@ svg{ display: block; }
 .history-day-meal-linha{ display:flex; align-items:center; justify-content:space-between; }
 .history-day-meal-nota{ margin:2px 0 0; font-size:11px; font-style:italic; color:#9aa9a1; }
 .history-day-meal-distancia{ margin:2px 0 0; font-size:11px; font-weight:600; color:#4b7048; }
+.history-day-meal-grupos-musculares{ margin:2px 0 0; font-size:11px; font-weight:600; color:#4b7048; }
 .history-day-meal-static{ cursor:default; }
 .history-day-meal-static:hover{ background:transparent; }
 .history-day-meal span:last-child{ display:inline-flex; align-items:center; gap:4px; }
@@ -465,6 +483,7 @@ svg{ display: block; }
 @keyframes toastIn{ from{ opacity:0; transform:translateY(8px);} to{ opacity:1; transform:translateY(0);} }
 .toast-success{ background:#eaf4ee; color:#2a6b4b; border-color:#cfe7d9; }
 .toast-error{ background:#fcedec; color:#a23b32; border-color:#f6d6d2; }
+.toast-aviso{ background:#fdf3e2; color:#8a5a12; border-color:#f3ddab; }
 
 /* ---------- instalar app ---------- */
 .install-banner{ position:fixed; bottom:16px; left:16px; right:16px; z-index:50; margin:0 auto; display:flex; max-width:420px; align-items:center; gap:12px; border-radius:16px; border:1px solid #cfe1c7; background:#f6faef; padding:14px; box-shadow:0 16px 36px rgba(28,77,62,0.16); }
@@ -560,13 +579,14 @@ function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => (
 function toast(message, type) {
   const container = document.getElementById("toast-container");
   const el = document.createElement("div");
-  el.className = "toast " + (type === "error" ? "toast-error" : "toast-success");
+  el.className = "toast " + (type === "error" ? "toast-error" : type === "aviso" ? "toast-aviso" : "toast-success");
   el.textContent = message;
   container.appendChild(el);
   setTimeout(() => { el.style.opacity = "0"; el.style.transition = "opacity .25s"; setTimeout(() => el.remove(), 250); }, 3800);
 }
 const toastSuccess = (m) => toast(m, "success");
 const toastError = (m) => toast(m, "error");
+const toastAviso = (m) => toast(m, "aviso");
 
 /* ===================== backend Apps Script (login/cadastro/confirmação/dados) ===================== */
 // URL do "App da Web" publicado no Apps Script. Trocar aqui sempre que reimplantar com uma NOVA
@@ -822,6 +842,8 @@ const foodLibrary = [
   { terms: ["melancia"], label: "Melancia", baseAmount: "1 fatia (150 g)", values: { calories: 46, protein: 0.9, carbs: 11, fat: 0.2, fiber: 0.6, vitA: 70, vitC: 12, vitD: 0, calcio: 11, ferro: 0.4, magnesio: 15, potassio: 170, zinco: 0.15 }, grams: 150 },
   { terms: ["uva"], label: "Uva", baseAmount: "100 g", values: { calories: 69, protein: 0.7, carbs: 18, fat: 0.2, fiber: 0.9, vitA: 3, vitC: 4, vitD: 0, calcio: 12, ferro: 0.4, magnesio: 7, potassio: 190, zinco: 0.1 }, grams: 100 },
   { terms: ["abacate"], label: "Abacate", baseAmount: "100 g", values: { calories: 160, protein: 2, carbs: 8.5, fat: 14.7, fiber: 6.7, vitA: 7, vitC: 10, vitD: 0, calcio: 12, ferro: 0.6, magnesio: 29, potassio: 480, zinco: 0.6 }, grams: 100 },
+  { terms: ["melao"], label: "Melão", baseAmount: "100 g", values: { calories: 30, protein: 0.8, carbs: 7.5, fat: 0.1, fiber: 0.5, vitA: 5, vitC: 10, vitD: 0, calcio: 9, ferro: 0.2, magnesio: 10, potassio: 300, zinco: 0.1 }, grams: 100 },
+  { terms: ["mirtilo", "blueberry", "blueberries"], label: "Mirtilo (blueberry)", baseAmount: "100 g", values: { calories: 57, protein: 0.7, carbs: 14.5, fat: 0.3, fiber: 2.4, vitA: 3, vitC: 9.7, vitD: 0, calcio: 6, ferro: 0.3, magnesio: 6, potassio: 77, zinco: 0.2 }, grams: 100 },
   { terms: ["suco de laranja", "suco laranja"], label: "Suco de laranja", baseAmount: "300 ml", values: { calories: 135, protein: 2, carbs: 31, fat: 0.3, fiber: 0.5, vitA: 15, vitC: 90, vitD: 0, calcio: 30, ferro: 0.5, magnesio: 30, potassio: 500, zinco: 0.2 }, ml: 300 },
   { terms: ["suco de limao", "suco limao", "limonada"], label: "Suco de limão (limonada)", baseAmount: "300 ml", values: { calories: 90, protein: 0.3, carbs: 23, fat: 0, fiber: 0.3, vitA: 0, vitC: 35, vitD: 0, calcio: 15, ferro: 0.2, magnesio: 10, potassio: 130, zinco: 0.1 }, ml: 300 },
   { terms: ["suco de uva", "suco uva"], label: "Suco de uva", baseAmount: "300 ml", values: { calories: 150, protein: 0.6, carbs: 37, fat: 0, fiber: 0.3, vitA: 0, vitC: 3, vitD: 0, calcio: 25, ferro: 0.9, magnesio: 25, potassio: 300, zinco: 0.2 }, ml: 300 },
@@ -879,6 +901,91 @@ const ESPORTE_TIPOS = ["Boxe", "Caminhada", "Ciclismo", "Corrida", "Futebol", "J
 
 // Esportes em que faz sentido registrar dist\u00e2ncia percorrida (pra calcular velocidade m\u00e9dia/pace).
 const ESPORTES_COM_DISTANCIA = ["Corrida", "Caminhada", "Ciclismo"];
+
+// Grupos musculares e os exerc\u00edcios comuns de cada um -- usados no formul\u00e1rio de treino quando o
+// esporte \u00e9 Muscula\u00e7\u00e3o (ver treinoGruposMuscularesCampoTemplate()). A pessoa pode adicionar mais de um
+// grupo no mesmo registro de treino; em cada grupo, marca quais exerc\u00edcios fez e informa s\u00e9ries,
+// repeti\u00e7\u00f5es e peso de cada um (ver treinoGrupoBlocoTemplate()/acaoAlternarExercicio()).
+const GRUPOS_MUSCULARES = [
+  { id: "peito", label: "Peito", exercicios: [
+    { id: "supino_reto", label: "Supino reto" },
+    { id: "supino_inclinado", label: "Supino inclinado" },
+    { id: "supino_declinado", label: "Supino declinado" },
+    { id: "crucifixo", label: "Crucifixo (voador)" },
+    { id: "crossover", label: "Crossover" },
+    { id: "flexao_braco", label: "Flex\u00e3o de bra\u00e7o" },
+  ] },
+  { id: "costas", label: "Costas", exercicios: [
+    { id: "puxada_frente", label: "Puxada frente (pulley)" },
+    { id: "barra_fixa", label: "Barra fixa (pull-up)" },
+    { id: "remada_baixa", label: "Remada baixa" },
+    { id: "remada_curvada", label: "Remada curvada" },
+    { id: "levantamento_terra", label: "Levantamento terra" },
+    { id: "pulldown", label: "Pull-down" },
+  ] },
+  { id: "ombros", label: "Ombros", exercicios: [
+    { id: "desenvolvimento", label: "Desenvolvimento (halteres/barra)" },
+    { id: "elevacao_lateral", label: "Eleva\u00e7\u00e3o lateral" },
+    { id: "elevacao_frontal", label: "Eleva\u00e7\u00e3o frontal" },
+    { id: "remada_alta", label: "Remada alta" },
+    { id: "encolhimento", label: "Encolhimento" },
+  ] },
+  { id: "biceps", label: "B\u00edceps", exercicios: [
+    { id: "rosca_direta", label: "Rosca direta" },
+    { id: "rosca_alternada", label: "Rosca alternada" },
+    { id: "rosca_martelo", label: "Rosca martelo" },
+    { id: "rosca_scott", label: "Rosca Scott" },
+    { id: "rosca_concentrada", label: "Rosca concentrada" },
+  ] },
+  { id: "triceps", label: "Tr\u00edceps", exercicios: [
+    { id: "triceps_testa", label: "Tr\u00edceps testa" },
+    { id: "triceps_pulley", label: "Tr\u00edceps pulley (corda)" },
+    { id: "triceps_frances", label: "Tr\u00edceps franc\u00eas" },
+    { id: "mergulho", label: "Mergulho (dips)" },
+    { id: "supino_fechado", label: "Supino fechado" },
+  ] },
+  { id: "antebraco", label: "Antebra\u00e7o", exercicios: [
+    { id: "rosca_punho", label: "Rosca de punho" },
+    { id: "rosca_inversa", label: "Rosca inversa" },
+    { id: "flexao_punho", label: "Flex\u00e3o de punho" },
+  ] },
+  { id: "abdomen", label: "Abd\u00f4men", exercicios: [
+    { id: "abdominal_supra", label: "Abdominal supra" },
+    { id: "abdominal_infra", label: "Abdominal infra" },
+    { id: "prancha", label: "Prancha" },
+    { id: "abdominal_obliquo", label: "Abdominal obl\u00edquo" },
+    { id: "elevacao_pernas", label: "Eleva\u00e7\u00e3o de pernas" },
+  ] },
+  { id: "quadriceps", label: "Quadr\u00edceps", exercicios: [
+    { id: "agachamento_livre", label: "Agachamento livre" },
+    { id: "leg_press", label: "Leg press" },
+    { id: "cadeira_extensora", label: "Cadeira extensora" },
+    { id: "afundo", label: "Afundo (avan\u00e7o)" },
+    { id: "agachamento_bulgaro", label: "Agachamento b\u00falgaro" },
+  ] },
+  { id: "posterior_coxa", label: "Posterior de coxa", exercicios: [
+    { id: "mesa_flexora", label: "Mesa flexora" },
+    { id: "stiff", label: "Stiff" },
+    { id: "cadeira_flexora", label: "Cadeira flexora" },
+    { id: "terra_romeno", label: "Levantamento terra romeno" },
+  ] },
+  { id: "gluteos", label: "Gl\u00fateos", exercicios: [
+    { id: "elevacao_pelvica", label: "Eleva\u00e7\u00e3o p\u00e9lvica (hip thrust)" },
+    { id: "agachamento_sumo", label: "Agachamento sum\u00f4" },
+    { id: "cadeira_abdutora", label: "Cadeira abdutora" },
+    { id: "coice", label: "Gl\u00fateo em 4 apoios (coice)" },
+  ] },
+  { id: "panturrilha", label: "Panturrilha", exercicios: [
+    { id: "panturrilha_em_pe", label: "Panturrilha em p\u00e9" },
+    { id: "panturrilha_sentado", label: "Panturrilha sentado" },
+    { id: "panturrilha_leg_press", label: "Panturrilha no leg press" },
+  ] },
+  { id: "adutores", label: "Adutores", exercicios: [
+    { id: "cadeira_adutora", label: "Cadeira adutora" },
+    { id: "adutor_elastico", label: "Adutor no el\u00e1stico" },
+  ] },
+];
+function grupoMuscularPorId(id) { return GRUPOS_MUSCULARES.find((g) => g.id === id) || null; }
 
 // Emoji exibido ao lado do esporte em cada registro de treino (lista de hoje e hist\u00f3rico).
 const ESPORTE_EMOJI = {
@@ -1010,6 +1117,12 @@ const state = {
   treinoHoraFim: "",
   treinoNota: "", // observação livre sobre o treino (ex.: "treino pesado", "alto astral") — opcional
   treinoDistanciaKm: "", // distância percorrida (km), só pra esportes em ESPORTES_COM_DISTANCIA — opcional
+  // Grupos musculares trabalhados, só pra Musculação -- ver GRUPOS_MUSCULARES/treinoGruposMuscularesCampoTemplate().
+  // treinoGruposSelecionados: array de ids de grupo adicionados ao registro atual, na ordem em que foram
+  // adicionados. treinoExerciciosMarcados: mapa "grupoId::exercicioId" -> { series, repeticoes, peso },
+  // só pros exercícios marcados (ver acaoAlternarExercicio()).
+  treinoGruposSelecionados: [],
+  treinoExerciciosMarcados: {},
   showHistoryTreinos: false,
   historyDataTreinos: null, // data selecionada no histórico de treinos (null = mostra hoje)
   treinoModo: "cronometro", // "cronometro" | "manual" — só é relevante quando não há treino em andamento
@@ -1130,6 +1243,12 @@ function estimarIdadeMetabolica(tmb, pesoKg, alturaCm, sexo) {
   const idade = (10 * pesoKg + 6.25 * alturaCm + constanteSexo - tmb) / 5;
   return Math.max(0, Math.round(idade));
 }
+// A fórmula acima tem o coeficiente da idade em apenas 5 kcal/ano -- ou seja, toda diferença de 100
+// kcal entre a TMB registrada e a TMB "média" prevista só por peso/altura/sexo desloca a idade
+// estimada em 20 anos. Como a fórmula não enxerga composição corporal (massa muscular, % de gordura),
+// uma TMB medida que fuja bastante dessa média (comum em quem tem mais ou menos músculo que a média)
+// pode gerar uma idade pouco plausível mesmo com a conta certa. Quando isso acontece, avisamos.
+const LIMIAR_DIFERENCA_IDADE_METABOLICA_ANOS = 15;
 function ultimoRegistroMedida(tipo) {
   const registros = state.medidas.filter((m) => m.tipo === tipo).sort((a, b) => b.id - a.id);
   return registros.length ? registros[0] : null;
@@ -2031,6 +2150,65 @@ function acaoAlternarHistorico() {
 
 /* ===================== treinos/esportes ===================== */
 function acaoSelecionarEsporte(valor) { state.treinoEsporte = valor; render(); }
+
+// Adiciona um grupo muscular ao registro de treino atual (dropdown de treinoGruposMuscularesCampoTemplate()).
+// Pode adicionar quantos grupos quiser -- cada um vira um bloco separado com checkboxes dos exercícios
+// daquele grupo (ver treinoGrupoBlocoTemplate()).
+function acaoAdicionarGrupoMuscular(grupoId) {
+  if (!grupoId || !grupoMuscularPorId(grupoId)) return;
+  if (!state.treinoGruposSelecionados.includes(grupoId)) {
+    state.treinoGruposSelecionados = state.treinoGruposSelecionados.concat([grupoId]);
+  }
+  render();
+}
+// Remove um grupo do registro atual e descarta os exercícios que tinham sido marcados nele.
+function acaoRemoverGrupoMuscular(grupoId) {
+  state.treinoGruposSelecionados = state.treinoGruposSelecionados.filter((g) => g !== grupoId);
+  const prefixo = grupoId + "::";
+  const novosMarcados = {};
+  Object.keys(state.treinoExerciciosMarcados).forEach((chave) => { if (chave.indexOf(prefixo) !== 0) novosMarcados[chave] = state.treinoExerciciosMarcados[chave]; });
+  state.treinoExerciciosMarcados = novosMarcados;
+  render();
+}
+// Marca/desmarca um exercício específico dentro de um grupo já adicionado. chave é "grupoId::exercicioId".
+// Ao marcar, abre os campos de séries/repetições/peso (ver treinoGrupoBlocoTemplate()); ao desmarcar,
+// descarta os valores já digitados nesses campos.
+function acaoAlternarExercicio(chave) {
+  const novosMarcados = Object.assign({}, state.treinoExerciciosMarcados);
+  if (novosMarcados[chave]) delete novosMarcados[chave];
+  else novosMarcados[chave] = { series: "", repeticoes: "", peso: "" };
+  state.treinoExerciciosMarcados = novosMarcados;
+  render();
+}
+// Monta a lista final de grupos/exercícios marcados pra salvar junto do registro do treino -- ver
+// acaoEncerrarTreino()/acaoSalvarTreino(). Cada item: { grupo: "Peito", exercicios: [{ exercicio, series,
+// repeticoes, peso }, ...] } (exercicios pode vir vazio, se a pessoa só adicionou o grupo sem marcar
+// nenhum exercício; series/repeticoes/peso ficam null se não informados -- são opcionais).
+// Lê os campos de séries/repetições/peso DIRETO DO DOM (não do state) -- mesmo motivo de
+// calcularCamposDistanciaTreino() ler #treino-distancia direto: acaoSalvarTreino()/acaoEncerrarTreino()
+// não passam por um render() antes de montar o registro, então um valor digitado agora mesmo (sem
+// nenhum render() no meio) ainda não teria sido recapturado em state.treinoExerciciosMarcados.
+function obterGruposMuscularesParaSalvar() {
+  const paraNumero = (v) => (v !== undefined && v !== null && String(v).trim() !== "" ? Number(String(v).trim().replace(",", ".")) || null : null);
+  return state.treinoGruposSelecionados.map((grupoId) => {
+    const grupo = grupoMuscularPorId(grupoId);
+    if (!grupo) return null;
+    const exercicios = grupo.exercicios
+      .filter((ex) => state.treinoExerciciosMarcados[grupoId + "::" + ex.id])
+      .map((ex) => {
+        const domPrefixo = treinoExercicioDomPrefixo(grupoId, ex.id);
+        const seriesEl = document.getElementById(domPrefixo + "-series");
+        const repeticoesEl = document.getElementById(domPrefixo + "-repeticoes");
+        const pesoEl = document.getElementById(domPrefixo + "-peso");
+        const dados = state.treinoExerciciosMarcados[grupoId + "::" + ex.id] || {};
+        const series = seriesEl ? seriesEl.value : dados.series;
+        const repeticoes = repeticoesEl ? repeticoesEl.value : dados.repeticoes;
+        const peso = pesoEl ? pesoEl.value : dados.peso;
+        return { exercicio: ex.label, series: paraNumero(series), repeticoes: paraNumero(repeticoes), peso: paraNumero(peso) };
+      });
+    return { grupo: grupo.label, exercicios: exercicios };
+  }).filter(Boolean);
+}
 // Troca de modo também descarta uma foto já selecionada — evita uma foto escolhida num modo "vazar"
 // silenciosamente pro outro.
 function acaoAlternarModoTreino(modo) { state.treinoModo = modo; limparFotoTreinoSelecionada(); render(); }
@@ -2108,10 +2286,11 @@ function acaoEncerrarTreino() {
   const nota = notaEl ? notaEl.value : "";
   const distanciaEl = document.getElementById("treino-distancia");
   const camposDistancia = calcularCamposDistanciaTreino(state.treinoAtivo.esporte, duracaoMin);
+  const gruposMusculares = obterGruposMuscularesParaSalvar();
   const novoTreino = Object.assign({
     id: Date.now(), date: state.treinoAtivo.date, esporte: state.treinoAtivo.esporte,
     horaInicio: state.treinoAtivo.horaInicioClock, horaFim: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-    duracaoMin, fotoUrl: "", nota,
+    duracaoMin, fotoUrl: "", nota, gruposMusculares,
   }, camposDistancia);
   // Mesmo padrão "salva primeiro, anexo depois" já usado nos exames de bioimpedância/calorimetria
   // (ver processarAnexoBioimpedanciaEmSegundoPlano): o treino nunca fica refém do envio da foto.
@@ -2124,6 +2303,8 @@ function acaoEncerrarTreino() {
   state.treinoEsporte = "";
   state.treinoNota = "";
   state.treinoDistanciaKm = "";
+  state.treinoGruposSelecionados = [];
+  state.treinoExerciciosMarcados = {};
   if (notaEl) notaEl.value = ""; // ver comentário em acaoSalvarTreino sobre limpar o DOM diretamente
   if (distanciaEl) distanciaEl.value = "";
   limparFotoTreinoSelecionada();
@@ -2174,14 +2355,17 @@ function acaoSalvarTreino() {
   const nota = notaEl ? notaEl.value : "";
   const distanciaEl = document.getElementById("treino-distancia");
   const camposDistancia = calcularCamposDistanciaTreino(esporte, duracaoMin);
+  const gruposMusculares = obterGruposMuscularesParaSalvar();
 
-  const novoTreino = Object.assign({ id: Date.now(), date: today(), esporte, horaInicio, horaFim, duracaoMin, fotoUrl: "", nota }, camposDistancia);
+  const novoTreino = Object.assign({ id: Date.now(), date: today(), esporte, horaInicio, horaFim, duracaoMin, fotoUrl: "", nota, gruposMusculares }, camposDistancia);
   const arquivoFoto = treinoFotoSelecionada;
   state.treinos = state.treinos.concat([novoTreino]);
   persistTreinos();
   state.treinoEsporte = "";
   state.treinoNota = "";
   state.treinoDistanciaKm = "";
+  state.treinoGruposSelecionados = [];
+  state.treinoExerciciosMarcados = {};
   // Limpa os campos no DOM diretamente (não só no state) — como os inputs continuam montados na
   // tela após salvar, o captureFormState() chamado no início do próximo render() ia recapturar o
   // valor antigo ainda presente nos inputs e desfazer a limpeza do state.
@@ -2212,6 +2396,23 @@ function treinoDistanciaResumoTexto(t) {
   if (t.paceMinPorKm) texto += " · " + formatarPace(t.paceMinPorKm);
   return texto;
 }
+// "Peito: Supino reto (4x10, 42kg), Crucifixo (3x12) · Bíceps: Rosca direta (3x12, 15kg)" -- ou "" se o
+// treino não tem grupos musculares registrados (só é preenchido pra Musculação -- ver
+// treinoGruposMuscularesCampoTemplate()).
+function treinoExercicioResumoTexto(ex) {
+  const detalhes = [];
+  if (ex.series && ex.repeticoes) detalhes.push(ex.series + "x" + ex.repeticoes);
+  else if (ex.series) detalhes.push(ex.series + " séries");
+  else if (ex.repeticoes) detalhes.push(ex.repeticoes + " repetições");
+  if (ex.peso) detalhes.push(formatNumber(ex.peso, 1) + "kg");
+  return ex.exercicio + (detalhes.length ? " (" + detalhes.join(", ") + ")" : "");
+}
+function treinoGruposMuscularesResumoTexto(t) {
+  if (!t.gruposMusculares || !t.gruposMusculares.length) return "";
+  return t.gruposMusculares.map((g) =>
+    g.exercicios && g.exercicios.length ? g.grupo + ": " + g.exercicios.map(treinoExercicioResumoTexto).join(", ") : g.grupo
+  ).join(" · ");
+}
 function treinoListTemplate() {
   const treinos = todayTreinos();
   if (!treinos.length) {
@@ -2225,6 +2426,7 @@ function treinoListTemplate() {
     ) +
     '<div class="meal-row-text"><div class="meal-row-name">' + emojiEsporte(t.esporte) + " " + esc(t.esporte) + '</div><div class="meal-row-meta">' + icon("clock") + " " + esc(t.horaInicio) + " – " + esc(t.horaFim) + "</div>" +
     (t.distanciaKm ? '<div class="meal-row-distancia">' + icon("zap") + " " + esc(treinoDistanciaResumoTexto(t)) + "</div>" : "") +
+    (t.gruposMusculares && t.gruposMusculares.length ? '<div class="meal-row-grupos-musculares">' + icon("activity") + " " + esc(treinoGruposMuscularesResumoTexto(t)) + "</div>" : "") +
     (t.nota ? '<div class="meal-row-nota">' + icon("help") + " " + esc(t.nota) + "</div>" : "") +
     "</div></div>" +
     '<div class="meal-row-right"><div class="meal-row-stat"><div class="meal-row-kcal">' + esc(formatarDuracao(t.duracaoMin)) + "</div></div>" +
@@ -2251,9 +2453,10 @@ function treinoHistoryPanelTemplate() {
       (dayTreinos.length
         ? '<div class="history-day"><div class="history-day-head"><span class="date">' + dateLabel(selectedDate) + '</span><span class="total">' + dayTreinos.length + " treino" + (dayTreinos.length > 1 ? "s" : "") + "</span></div>" +
           '<div class="history-day-meals">' + dayTreinos.map((t) =>
-            '<div class="history-day-meal history-day-meal-static' + ((t.nota || t.distanciaKm) ? " history-day-meal-com-nota" : "") + '">' +
+            '<div class="history-day-meal history-day-meal-static' + ((t.nota || t.distanciaKm || (t.gruposMusculares && t.gruposMusculares.length)) ? " history-day-meal-com-nota" : "") + '">' +
               '<div class="history-day-meal-linha"><span>' + emojiEsporte(t.esporte) + " " + esc(t.esporte) + " · " + esc(t.horaInicio) + "–" + esc(t.horaFim) + "</span><span>" + esc(formatarDuracao(t.duracaoMin)) + (t.fotoUrl ? ' <a class="history-day-meal-foto-link" href="' + esc(t.fotoUrl) + '" target="_blank" rel="noopener" aria-label="Ver foto do treino">' + icon("camera") + "</a>" : "") + "</span></div>" +
               (t.distanciaKm ? '<p class="history-day-meal-distancia">' + esc(treinoDistanciaResumoTexto(t)) + "</p>" : "") +
+              (t.gruposMusculares && t.gruposMusculares.length ? '<p class="history-day-meal-grupos-musculares">' + esc(treinoGruposMuscularesResumoTexto(t)) + "</p>" : "") +
               (t.nota ? '<p class="history-day-meal-nota">' + esc(t.nota) + "</p>" : "") +
             "</div>"
           ).join("") + "</div></div>"
@@ -2466,7 +2669,32 @@ function acaoEstimarIdadeMetabolica() {
   if (estimativa == null) { toastError("Não foi possível calcular a estimativa com os dados informados."); return; }
   const inputIdade = document.getElementById("bio-idadeMetabolica");
   if (inputIdade) inputIdade.value = estimativa;
-  toastSuccess("Idade metabólica estimada em " + estimativa + " anos, com base na sua TMB registrada e no peso/altura/sexo informados. Não é o valor oficial do seu aparelho — veja como calculamos na legenda abaixo. Você ainda pode ajustar manualmente antes de salvar.");
+
+  // Se a pessoa tem data de nascimento cadastrada no perfil, comparamos a estimativa com a idade real:
+  // uma diferença grande é sinal de que a TMB registrada foge muito da média prevista só por
+  // peso/altura/sexo (ver comentário em estimarIdadeMetabolica), o que torna a estimativa pouco
+  // confiável nesse caso -- avisamos em vez de simplesmente devolver o número sem contexto.
+  const idadeRealInfo = state.usuario && state.usuario.dataNascimento ? calcularIdadeExata(state.usuario.dataNascimento) : null;
+  const diferencaGrande = idadeRealInfo && Math.abs(estimativa - idadeRealInfo.anos) >= LIMIAR_DIFERENCA_IDADE_METABOLICA_ANOS;
+
+  if (diferencaGrande) {
+    const inputMassaMuscular = document.getElementById("bio-massaMuscular");
+    const inputGordura = document.getElementById("bio-gordura");
+    const temComposicaoCorporal = (inputMassaMuscular && inputMassaMuscular.value.trim()) || (inputGordura && inputGordura.value.trim());
+    // Além da idade (instável: cada 5 kcal de diferença já muda 1 ano), mostramos também a eficiência
+    // metabólica relativa -- a razão entre a TMB registrada e a TMB média esperada pra idade/peso/altura
+    // reais -- que é um jeito mais estável e direto de comunicar a mesma informação, sem o efeito
+    // multiplicador do "kcal por ano" da fórmula de Mifflin-St Jeor.
+    const constanteSexoRef = sexo === "masculino" ? 5 : -161;
+    const tmbEsperadaIdadeReal = 10 * peso + 6.25 * altura + constanteSexoRef - 5 * idadeRealInfo.anos;
+    const eficienciaPercentual = tmbEsperadaIdadeReal > 0 ? Math.round((Number(ultimoCalo.tmb) / tmbEsperadaIdadeReal) * 100) : null;
+    toastAviso("Idade metabólica estimada em " + estimativa + " anos, mas essa estimativa ficou bem distante da sua idade real (" + idadeRealInfo.anos + " anos) — a fórmula não é confiável nesse caso." +
+      (eficienciaPercentual != null ? " Um jeito mais estável de ver o mesmo dado: sua TMB registrada está em " + eficienciaPercentual + "% da média esperada pra sua idade, peso e altura." : "") +
+      (temComposicaoCorporal ? " Isso costuma acontecer quando a massa muscular e o percentual de gordura fogem da média (a fórmula não considera esses dados)." : "") +
+      " Prefira o valor mostrado no seu aparelho de bioimpedância, se disponível. Você ainda pode ajustar manualmente antes de salvar.");
+  } else {
+    toastSuccess("Idade metabólica estimada em " + estimativa + " anos, com base na sua TMB registrada e no peso/altura/sexo informados. Não é o valor oficial do seu aparelho — veja como calculamos na legenda abaixo. Você ainda pode ajustar manualmente antes de salvar.");
+  }
 }
 
 function acaoSalvarBioimpedancia() {
@@ -2658,6 +2886,7 @@ function idadeMetabolicaCampoTemplate() {
       '<div class="idade-metabolica-detalhes-corpo">' +
         "<p>Se o resultado da sua balança ou exame de bioimpedância não trouxer a idade metabólica, o botão acima estima um valor de referência: usamos a fórmula de Mifflin-St Jeor \"ao contrário\" — em vez de calcular sua TMB a partir da sua idade real, calculamos qual idade, pra alguém do seu peso, altura e sexo, resultaria exatamente na TMB que você registrou na Calorimetria.</p>" +
         "<p class=\"idade-metabolica-aviso\"><strong>Não é um valor oficial.</strong> \"Idade metabólica\" não é uma métrica clínica padronizada — cada fabricante de balança de bioimpedância (Tanita, InBody, Omron etc.) usa sua própria base de referência populacional proprietária, que não é pública. Por isso esse número normalmente é diferente do que aparece no seu aparelho; é só uma aproximação de referência. Sempre prefira o valor do seu próprio exame quando ele estiver disponível.</p>" +
+        "<p class=\"idade-metabolica-aviso\">Essa fórmula considera só peso, altura e sexo — não leva em conta massa muscular nem percentual de gordura. Se sua TMB registrada fugir bastante da média prevista pra esses dados (comum em quem tem mais ou menos músculo que a média), a estimativa pode sair pouco plausível; nesse caso avisamos ao calcular.</p>" +
         "<p class=\"idade-metabolica-fonte\">Referência: <a href=\"https://ajcn.nutrition.org/article/S0002-9165(23)16698-6/fulltext\" target=\"_blank\" rel=\"noopener\">Mifflin MD, St Jeor ST, et al. — <em>A new predictive equation for resting energy expenditure in healthy individuals</em>, The American Journal of Clinical Nutrition (1990)</a>.</p>" +
       "</div>" +
     "</details>" +
@@ -2879,6 +3108,62 @@ function treinoDistanciaCampoTemplate() {
   "</div>";
 }
 
+// Campo de grupos musculares -- só aparece pra Musculação. A pessoa escolhe um grupo no dropdown (some
+// da lista depois de escolhido, pra não duplicar), o que abre um bloco com checkbox de cada exercício
+// comum daquele grupo. Pode repetir o processo pra adicionar mais de um grupo no mesmo treino.
+function treinoGruposMuscularesCampoTemplate() {
+  if (state.treinoEsporte !== "Musculação") return "";
+  const disponiveis = GRUPOS_MUSCULARES.filter((g) => !state.treinoGruposSelecionados.includes(g.id));
+  return '<div class="treino-grupos-campo">' +
+    '<label class="meal-form-label" for="treino-grupo-select">Grupos musculares trabalhados</label>' +
+    (disponiveis.length
+      ? '<select id="treino-grupo-select" class="meal-select" onchange="acaoAdicionarGrupoMuscular(this.value); this.value=\'\';">' +
+          '<option value="">Adicionar grupo muscular...</option>' +
+          disponiveis.map((g) => '<option value="' + esc(g.id) + '">' + esc(g.label) + "</option>").join("") +
+        "</select>"
+      : '<p class="treino-grupos-nota">Todos os grupos musculares já foram adicionados.</p>'
+    ) +
+    state.treinoGruposSelecionados.map(treinoGrupoBlocoTemplate).join("") +
+  "</div>";
+}
+// Bloco de um grupo muscular já adicionado: título + botão de remover + checkbox de cada exercício comum
+// do grupo. Ao marcar um exercício, abrem os campos de séries/repetições/peso pra aquele exercício (ver
+// treinoExercicioLinhaTemplate()). O estado marcado/desmarcado e os valores digitados vêm de
+// state.treinoExerciciosMarcados (ver acaoAlternarExercicio()/captureFormState()).
+function treinoGrupoBlocoTemplate(grupoId) {
+  const grupo = grupoMuscularPorId(grupoId);
+  if (!grupo) return "";
+  return '<div class="treino-grupo-bloco">' +
+    '<div class="treino-grupo-bloco-head"><strong>' + esc(grupo.label) + "</strong>" +
+      '<button type="button" class="treino-grupo-remover" aria-label="Remover ' + esc(grupo.label) + '" onclick="acaoRemoverGrupoMuscular(\'' + grupoId + '\')">' + icon("x") + "</button>" +
+    "</div>" +
+    '<div class="treino-grupo-exercicios">' +
+      grupo.exercicios.map((ex) => treinoExercicioLinhaTemplate(grupoId, ex)).join("") +
+    "</div>" +
+  "</div>";
+}
+// DOM ids dos campos de séries/repetições/peso de um exercício -- reaproveitado no template e em
+// captureFormState() (que precisa ler esses campos de volta antes de cada render(), senão um valor já
+// digitado se perderia ao marcar outro exercício, por exemplo).
+function treinoExercicioDomPrefixo(grupoId, exercicioId) { return "ex-" + grupoId + "-" + exercicioId; }
+function treinoExercicioLinhaTemplate(grupoId, ex) {
+  const chave = grupoId + "::" + ex.id;
+  const dados = state.treinoExerciciosMarcados[chave];
+  const marcado = !!dados;
+  const domPrefixo = treinoExercicioDomPrefixo(grupoId, ex.id);
+  return '<div class="treino-exercicio-linha">' +
+    '<label class="treino-exercicio-checkbox"><input type="checkbox" onchange="acaoAlternarExercicio(\'' + chave + '\')"' + (marcado ? " checked" : "") + "/> " + esc(ex.label) + "</label>" +
+    (marcado
+      ? '<div class="treino-exercicio-campos">' +
+          '<input id="' + domPrefixo + '-series" type="number" min="0" step="1" inputmode="numeric" class="treino-exercicio-input" placeholder="Séries" aria-label="Séries de ' + esc(ex.label) + '" value="' + esc(dados.series) + '"/>' +
+          '<input id="' + domPrefixo + '-repeticoes" type="number" min="0" step="1" inputmode="numeric" class="treino-exercicio-input" placeholder="Repetições" aria-label="Repetições de ' + esc(ex.label) + '" value="' + esc(dados.repeticoes) + '"/>' +
+          '<input id="' + domPrefixo + '-peso" type="number" min="0" step="0.5" inputmode="decimal" class="treino-exercicio-input" placeholder="Peso (kg)" aria-label="Peso de ' + esc(ex.label) + '" value="' + esc(dados.peso) + '"/>' +
+        "</div>"
+      : ""
+    ) +
+  "</div>";
+}
+
 // Foto do treino: só pode ser adicionada no momento do registro (encerrar o cronômetro ou salvar
 // manualmente) — não dá pra anexar depois num treino já salvo. Exatamente 1 foto por treino.
 // treinoFotoSelecionada/treinoFotoPreviewUrl ficam fora do state (File não é serializável).
@@ -2902,6 +3187,7 @@ function treinoCronometroAtivoTemplate() {
     '<p class="meal-card-desc">' + emojiEsporte(a.esporte) + " " + esc(a.esporte) + " · iniciado às " + esc(a.horaInicioClock) + (a.pausado ? " · pausado" : "") + "</p>" +
     '<div class="treino-cronometro">' + formatarCronometro(ms) + "</div>" +
     treinoDistanciaCampoTemplate() +
+    treinoGruposMuscularesCampoTemplate() +
     treinoNotaCampoTemplate() +
     treinoFotoCampoTemplate() +
     '<div class="treino-cronometro-acoes">' +
@@ -2929,6 +3215,7 @@ function treinoFormManualTemplate() {
       '<div><label class="meal-form-label">Término</label><input id="treino-hora-fim" type="time" class="meal-input" value="' + esc(state.treinoHoraFim) + '"/></div>' +
     "</div>" +
     treinoDistanciaCampoTemplate() +
+    treinoGruposMuscularesCampoTemplate() +
     treinoNotaCampoTemplate() +
     treinoFotoCampoTemplate() +
     '<button class="btn-ghost-light" onclick="acaoSalvarTreino()">' + icon("check") + " Salvar treino</button>" +
@@ -3079,6 +3366,24 @@ function captureFormState() {
   if (treinoNotaEl) state.treinoNota = treinoNotaEl.value;
   const treinoDistanciaEl = document.getElementById("treino-distancia");
   if (treinoDistanciaEl) state.treinoDistanciaKm = treinoDistanciaEl.value;
+
+  // Campos de séries/repetições/peso de cada exercício marcado (ver treinoExercicioLinhaTemplate()) --
+  // mesma lógica dos campos acima: precisa reler do DOM antes de cada render(), senão um valor já
+  // digitado se perderia ao marcar outro exercício ou adicionar outro grupo no meio do preenchimento.
+  Object.keys(state.treinoExerciciosMarcados).forEach((chave) => {
+    const partes = chave.split("::");
+    const domPrefixo = treinoExercicioDomPrefixo(partes[0], partes[1]);
+    const seriesEl = document.getElementById(domPrefixo + "-series");
+    const repeticoesEl = document.getElementById(domPrefixo + "-repeticoes");
+    const pesoEl = document.getElementById(domPrefixo + "-peso");
+    if (!seriesEl && !repeticoesEl && !pesoEl) return; // bloco desse grupo não está montado agora
+    const atual = state.treinoExerciciosMarcados[chave] || {};
+    state.treinoExerciciosMarcados[chave] = {
+      series: seriesEl ? seriesEl.value : atual.series || "",
+      repeticoes: repeticoesEl ? repeticoesEl.value : atual.repeticoes || "",
+      peso: pesoEl ? pesoEl.value : atual.peso || "",
+    };
+  });
 }
 function render() {
   captureFormState();
