@@ -1108,7 +1108,6 @@ const CHAVE_TREINOS = "nutri-track-treinos";
 const CHAVE_TREINO_ATIVO = "nutri-track-treino-ativo";
 const CHAVE_EXERCICIOS_CUSTOMIZADOS = "nutri-track-exercicios-customizados";
 const CHAVE_DIARIO_KCAL = "nutri-track-diario-kcal";
-const CHAVE_DIARIO_ZERADO_ATE = "nutri-track-diario-zerado-ate";
 
 /* ===================== medidas e aferições ===================== */
 const medidaTipos = {
@@ -1144,11 +1143,6 @@ const state = {
   // cada vez que a pessoa clica em "Encerrar dia" (ver acaoEncerrarDia()). Só existe UM registro por data
   // -- clicar de novo no mesmo dia substitui o anterior, pra sempre refletir o total mais atualizado.
   diarioKcal: readStorage(CHAVE_DIARIO_KCAL, []),
-  // Instante (Date.now()) do último "Encerrar dia" de cada data (mapa data -> timestamp) -- ver
-  // acaoEncerrarDia()/consumedToday(). Só afeta os cards de consumo (não apaga refeições); é uma
-  // conveniência local deste aparelho, não sincroniza com o Google (o registro do Diário em si, esse
-  // sim, sincroniza).
-  diarioZeradoAte: readStorage(CHAVE_DIARIO_ZERADO_ATE, {}),
   showEditarPerfil: false,
   showNovaSenha: false,
   sidebarOpen: false,
@@ -1212,15 +1206,18 @@ function persistTreinos() { writeStorage(CHAVE_TREINOS, state.treinos); }
 function persistTreinoAtivo() { writeStorage(CHAVE_TREINO_ATIVO, state.treinoAtivo); }
 function persistExerciciosCustomizados() { writeStorage(CHAVE_EXERCICIOS_CUSTOMIZADOS, state.exerciciosCustomizados); }
 function persistDiarioKcal() { writeStorage(CHAVE_DIARIO_KCAL, state.diarioKcal); }
-function persistDiarioZeradoAte() { writeStorage(CHAVE_DIARIO_ZERADO_ATE, state.diarioZeradoAte); }
 
 /* ===================== helpers de derivação ===================== */
 function today() { return todayKey(); }
 function todayMeals() { const t = today(); return state.meals.filter((m) => m.date === t); }
 // Ignora (só pra essa conta) as refeições registradas até o último "Encerrar dia" de hoje, se houver --
-// ver acaoEncerrarDia(). As refeições em si continuam intactas em todayMeals()/state.meals.
+// ver acaoEncerrarDia(). As refeições em si continuam intactas em todayMeals()/state.meals. O corte usa
+// o id do próprio registro do Diário de Kcal (que sincroniza com o Google) em vez de um marcador local,
+// pra funcionar igual em qualquer aparelho conectado à mesma conta -- não só no aparelho onde a pessoa
+// clicou em "Encerrar dia".
 function consumedToday() {
-  const corte = (state.diarioZeradoAte && state.diarioZeradoAte[today()]) || 0;
+  const registroHoje = state.diarioKcal.find((r) => r.date === today());
+  const corte = registroHoje ? registroHoje.id : 0;
   return todayMeals().filter((m) => m.id > corte).reduce((sum, m) => addNutrients(sum, m), emptyNutrients);
 }
 function remainingToday() { const consumed = consumedToday(); const out = {}; for (const k of Object.keys(state.goals)) out[k] = state.goals[k] - consumed[k]; return out; }
@@ -1885,11 +1882,10 @@ function acaoEncerrarDia() {
   persistDiarioKcal();
   // NÃO apaga as refeições -- elas continuam em "Refeições de hoje" e no Histórico normalmente. Só
   // zera os CARDS de consumo (kcal/macro/micronutrientes) e o resumo do topo: eles são calculados por
-  // consumedToday(), que passa a ignorar (só pra esses cards) as refeições registradas até agora,
-  // guardando o instante do "Encerrar dia" em diarioZeradoAte. Uma refeição registrada depois deste
-  // clique volta a contar normalmente -- é como zerar o contador do dia sem mexer no histórico.
-  state.diarioZeradoAte = Object.assign({}, state.diarioZeradoAte, { [t]: Date.now() });
-  persistDiarioZeradoAte();
+  // consumedToday(), que passa a ignorar (só pra esses cards) as refeições registradas até agora, usando
+  // o id deste próprio registro do Diário como corte -- e esse registro sincroniza com o Google, então o
+  // corte vale em qualquer aparelho conectado à mesma conta, não só neste. Uma refeição registrada depois
+  // deste clique volta a contar normalmente -- é como zerar o contador do dia sem mexer no histórico.
   toastSuccess("Dia encerrado — resumo de " + dateLabel(t) + " guardado no Diário de Kcal. Os cards de consumo foram zerados.");
   if (state.account) enviarComFila("salvarDiarioKcalGoogle", [state.usuario.email, registro]);
   render();
