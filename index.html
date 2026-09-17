@@ -1537,13 +1537,33 @@ function acaoAtualizarMeta(key, value) {
   render();
 }
 function acaoCalcularMacrosAutomaticos() {
-  const calorias = state.goals.calories;
+  // Lê o valor direto do campo de calorias no DOM, em vez de confiar só em state.goals.calories: o
+  // botão usa onmousedown com preventDefault (ver comentário no template) pra não perder o clique
+  // quando a pessoa acabou de digitar a meta de kcal e clica em "Calcular" sem clicar em outro lugar
+  // antes -- mas isso também significa que o campo de calorias pode ainda não ter disparado seu
+  // onchange (que só roda ao perder o foco), então o valor mais atual só existe no próprio input.
+  const inputCalorias = document.getElementById("goal-input-calories");
+  const calorias = inputCalorias && inputCalorias.value !== "" ? Number(inputCalorias.value) : state.goals.calories;
   if (!calorias) { toastError("Informe a meta de calorias antes de calcular os macronutrientes."); return; }
+  // Se o campo de calorias ainda estiver focado (a pessoa digitou e clicou direto em "Calcular", sem
+  // clicar em outro lugar antes), tiramos o foco dele aqui, de propósito, ANTES de qualquer render()
+  // nosso. Se não fizermos isso, é o próprio render() logo abaixo (via innerHTML) que acaba removendo
+  // esse input focado da tela -- e remover um elemento focado dispara um blur "por conta própria" bem
+  // no meio da reconstrução do innerHTML, o que dispara o onchange dele (acaoAtualizarMeta) e chama um
+  // SEGUNDO render() encaixado dentro do primeiro, ainda em andamento. Dois innerHTML acontecendo um
+  // dentro do outro deixa o navegador confuso sobre quais nós ainda existem, e ele lança o erro "The
+  // node to be removed is no longer a child of this node". Chamando blur() manualmente agora, o
+  // onchange roda (e o render() dele termina) antes da gente sequer começar a montar os macros --
+  // então o nosso próprio render(), lá embaixo, já não está mais aninhado dentro de nenhum outro.
+  if (inputCalorias) inputCalorias.blur();
   const ultimoBio = ultimaBioimpedancia();
   const pesoKg = ultimoBio && ultimoBio.peso ? Number(ultimoBio.peso) : null;
   const macros = calcularMacrosAutomaticos(calorias, pesoKg);
   if (!macros) return;
-  state.goals = Object.assign({}, state.goals, macros);
+  // Também grava a própria meta de calorias lida do input (não só os macros calculados a partir
+  // dela) -- senão, se a pessoa não tiver saído do campo antes de clicar, o valor digitado ficaria só
+  // visível no input, sem entrar de fato em state.goals.calories nem ser sincronizado.
+  state.goals = Object.assign({}, state.goals, { calories: calorias }, macros);
   persistGoals();
   if (state.account) enviarComFila("atualizarMetasGoogle", [state.usuario.email, state.goals, state.altura]);
   toastSuccess(pesoKg
@@ -1798,7 +1818,7 @@ function goalsPanelTemplate() {
     "</div>" +
     goalsCalorimetriaRefTemplate() +
     '<div class="goals-auto-calc">' +
-      '<button class="goals-auto-calc-btn" onclick="acaoCalcularMacrosAutomaticos()">' + icon("sparkles") + " Calcular macros automaticamente</button>" +
+      '<button class="goals-auto-calc-btn" onmousedown="event.preventDefault()" onclick="acaoCalcularMacrosAutomaticos()">' + icon("sparkles") + " Calcular macros automaticamente</button>" +
       '<p class="goals-auto-calc-note">Sugere proteína, carboidrato, gordura e fibra a partir da meta de calorias e do seu peso. Os valores continuam editáveis manualmente depois.</p>' +
       '<details class="goals-auto-calc-detalhes">' +
         "<summary>Como esse cálculo é feito e em que estudos se baseia</summary>" +
@@ -1821,7 +1841,7 @@ function goalsPanelTemplate() {
     '<div class="goals-grid">' + Object.keys(nutrientMeta).map((key) => {
       const meta = nutrientMeta[key];
       return '<label class="goal-field"><div class="goal-field-head"><span>' + meta.label + "</span><span>" + meta.unit + "</span></div>" +
-        '<input type="number" min="0" step="any" class="goal-field-input" value="' + state.goals[key] + '" onchange="acaoAtualizarMeta(\'' + key + "', this.value)\"/></label>";
+        '<input id="goal-input-' + key + '" type="number" min="0" step="any" class="goal-field-input" value="' + state.goals[key] + '" onchange="acaoAtualizarMeta(\'' + key + "', this.value)\"/></label>";
     }).join("") + "</div></section>";
 }
 
