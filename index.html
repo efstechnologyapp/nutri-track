@@ -182,6 +182,25 @@ svg{ display: block; }
 .goals-calorimetria-ref-vazio{ background:#f7f9f5; color:#5c6b62; }
 .goals-calorimetria-ref-vazio .icon{ color:#8a9c93; }
 .goals-calorimetria-ref-link{ font-weight:600; color:#4b7048; text-decoration:underline; text-underline-offset:2px; }
+.goals-auto-calc{ margin-bottom:16px; }
+.goals-auto-calc-btn{ display:flex; width:100%; align-items:center; justify-content:center; gap:8px; border-radius:12px; background:var(--primary); padding:12px 16px; font-size:14px; font-weight:600; color:#fff; transition:opacity .15s; }
+.goals-auto-calc-btn:hover{ opacity:.9; }
+.goals-auto-calc-note{ margin:8px 0 0; font-size:12px; line-height:1.6; color:#8a9c93; }
+.goals-auto-calc-detalhes{ margin-top:8px; }
+.goals-auto-calc-detalhes summary{ cursor:pointer; font-size:12px; font-weight:600; color:#4b7048; list-style:none; }
+.goals-auto-calc-detalhes summary::-webkit-details-marker{ display:none; }
+.goals-auto-calc-detalhes summary::before{ content:"▸ "; }
+.goals-auto-calc-detalhes[open] summary::before{ content:"▾ "; }
+.goals-auto-calc-detalhes-corpo{ margin-top:10px; border-radius:14px; background:#f7f9f5; padding:14px 16px; font-size:12px; line-height:1.7; color:#5c6b62; }
+.goals-auto-calc-detalhes-corpo p{ margin:0 0 8px; }
+.goals-auto-calc-detalhes-corpo p:last-child{ margin-bottom:0; }
+.goals-auto-calc-detalhes-corpo strong{ color:#31564a; }
+.goals-auto-calc-fontes-titulo{ margin-top:12px !important; font-weight:600; color:#31564a; }
+.goals-auto-calc-detalhes-corpo ul{ margin:0 0 8px; padding-left:18px; }
+.goals-auto-calc-detalhes-corpo li{ margin-bottom:8px; }
+.goals-auto-calc-detalhes-corpo li:last-child{ margin-bottom:0; }
+.goals-auto-calc-detalhes-corpo a{ color:#4b7048; text-decoration:underline; text-underline-offset:2px; }
+.goals-auto-calc-aviso{ font-style:italic; color:#8a9c93; }
 .goals-grid{ display:grid; gap:12px; grid-template-columns:1fr; }
 @media (min-width: 640px){ .goals-grid{ grid-template-columns:repeat(2,1fr); } }
 @media (min-width: 1024px){ .goals-grid{ grid-template-columns:repeat(5,1fr); } }
@@ -629,6 +648,45 @@ const nutrientMeta = {
   fiber: { label: "Fibras", unit: "g", color: "#71945c", soft: "#eef5e9", icon: "leaf" },
 };
 const defaultGoals = { calories: 1600, protein: 150, carbs: 130, fat: 53, fiber: 30 };
+
+// Calcula proteína/carboidrato/gordura/fibra a partir só da meta de calorias (e, se disponível, do
+// peso da última bioimpedância) usando os parâmetros de referência das Dietary Reference Intakes e
+// das Dietary Guidelines for Americans 2025-2030:
+// - Proteína: 1,4 g/kg (meio da faixa de 1,2-1,6 g/kg recomendada pelas DGA 2025-2030 pra controle de
+//   peso) quando o peso é conhecido; senão, 20% das calorias (dentro do AMDR de 10-35%).
+// - Carboidrato: pelo menos 130 g/dia (RDA baseada no uso mínimo de glicose pelo cérebro) ou 45% das
+//   calorias (piso do AMDR), o que for maior.
+// - Gordura: o restante das calorias, nunca abaixo de 20% (piso do AMDR, necessário pros ácidos graxos
+//   essenciais e pra absorção das vitaminas lipossolúveis) — se sobrar menos que isso, tira a diferença
+//   do carboidrato (nunca da proteína), respeitando o piso de 130 g.
+// - Fibra: 14 g a cada 1.000 kcal (Ingestão Adequada).
+// Esses são valores de referência gerais, não substituem orientação profissional individualizada.
+function calcularMacrosAutomaticos(calorias, pesoKg) {
+  calorias = Math.max(0, Number(calorias) || 0);
+  if (!calorias) return null;
+
+  let proteinKcal = pesoKg ? pesoKg * 1.4 * 4 : calorias * 0.20;
+  proteinKcal = Math.min(proteinKcal, calorias * 0.35); // nunca ultrapassa o teto do AMDR (35%)
+
+  const carbFloorKcal = 130 * 4;
+  let carbKcal = Math.max(calorias * 0.45, carbFloorKcal);
+
+  let fatKcal = calorias - proteinKcal - carbKcal;
+  const fatFloorKcal = calorias * 0.20;
+  if (fatKcal < fatFloorKcal) {
+    const falta = fatFloorKcal - fatKcal;
+    carbKcal = Math.max(carbFloorKcal, carbKcal - falta);
+    fatKcal = calorias - proteinKcal - carbKcal;
+  }
+  fatKcal = Math.max(0, fatKcal);
+
+  return {
+    protein: Math.round(proteinKcal / 4 * 10) / 10,
+    carbs: Math.round(carbKcal / 4 * 10) / 10,
+    fat: Math.round(fatKcal / 9 * 10) / 10,
+    fiber: Math.round(calorias / 1000 * 14),
+  };
+}
 // Micronutrientes: diferente das metas de macro (editáveis pela pessoa em "Metas do dia" e
 // sincronizadas com o Google), esses valores de referência são fixos — são a Ingestão Diária de
 // Referência (IDR) padrão para um adulto, não uma meta pessoal configurável.
@@ -1478,6 +1536,21 @@ function acaoAtualizarMeta(key, value) {
   if (state.account) enviarComFila("atualizarMetasGoogle", [state.usuario.email, state.goals, state.altura]);
   render();
 }
+function acaoCalcularMacrosAutomaticos() {
+  const calorias = state.goals.calories;
+  if (!calorias) { toastError("Informe a meta de calorias antes de calcular os macronutrientes."); return; }
+  const ultimoBio = ultimaBioimpedancia();
+  const pesoKg = ultimoBio && ultimoBio.peso ? Number(ultimoBio.peso) : null;
+  const macros = calcularMacrosAutomaticos(calorias, pesoKg);
+  if (!macros) return;
+  state.goals = Object.assign({}, state.goals, macros);
+  persistGoals();
+  if (state.account) enviarComFila("atualizarMetasGoogle", [state.usuario.email, state.goals, state.altura]);
+  toastSuccess(pesoKg
+    ? "Macros calculados com base na meta de " + formatNumber(calorias) + " kcal e no seu peso de " + formatNumber(pesoKg, 1) + " kg. Você ainda pode ajustar cada valor manualmente."
+    : "Macros calculados com base na meta de " + formatNumber(calorias) + " kcal (sem peso registrado na Bioimpedância, usamos 20% das calorias pra proteína). Você ainda pode ajustar cada valor manualmente.");
+  render();
+}
 
 /* ===================== submits (leem os campos direto do DOM) ===================== */
 function submitLogin() {
@@ -1724,6 +1797,27 @@ function goalsPanelTemplate() {
     '<button class="icon-btn-ghost" onclick="state.showGoals=false;render()">' + icon("x") + "</button>" +
     "</div>" +
     goalsCalorimetriaRefTemplate() +
+    '<div class="goals-auto-calc">' +
+      '<button class="goals-auto-calc-btn" onclick="acaoCalcularMacrosAutomaticos()">' + icon("sparkles") + " Calcular macros automaticamente</button>" +
+      '<p class="goals-auto-calc-note">Sugere proteína, carboidrato, gordura e fibra a partir da meta de calorias e do seu peso. Os valores continuam editáveis manualmente depois.</p>' +
+      '<details class="goals-auto-calc-detalhes">' +
+        "<summary>Como esse cálculo é feito e em que estudos se baseia</summary>" +
+        '<div class="goals-auto-calc-detalhes-corpo">' +
+          "<p><strong>Proteína:</strong> 1,4 g por kg de peso corporal — o meio da faixa de 1,2 a 1,6 g/kg/dia — quando há um peso cadastrado na Bioimpedância; sem peso cadastrado, usa 20% das calorias.</p>" +
+          "<p><strong>Carboidrato:</strong> o maior valor entre 130 g/dia (piso fixo) e 45% das calorias totais.</p>" +
+          "<p><strong>Gordura:</strong> o restante das calorias, nunca abaixo de 20% do total — se a conta não fechar, a diferença sai do carboidrato (nunca da proteína), sem passar do piso de 130 g.</p>" +
+          "<p><strong>Fibra:</strong> 14 g para cada 1.000 kcal da meta.</p>" +
+          "<p class=\"goals-auto-calc-fontes-titulo\">Estudos e publicações usados como referência:</p>" +
+          "<ul>" +
+            '<li><a href="https://www.ncbi.nlm.nih.gov/books/NBK610333/" target="_blank" rel="noopener">National Academies of Sciences, Engineering, and Medicine — <em>Dietary Reference Intakes for Energy, Carbohydrate, Fiber, Fat, Fatty Acids, Cholesterol, Protein, and Amino Acids</em></a> — faixas do AMDR (carboidrato 45–65%, proteína 10–35%, gordura 20–35% das calorias) e a RDA de 130 g/dia de carboidrato, baseada no uso mínimo de glicose pelo cérebro.</li>' +
+            '<li><a href="https://www.sciencedirect.com/science/article/pii/S0022316626004037" target="_blank" rel="noopener">The Journal of Nutrition (2026) — <em>Perspectives on the Protein Recommendations in the 2025–2030 Dietary Guidelines for Americans</em></a> — faixa de 1,2 a 1,6 g/kg/dia de proteína pra controle de peso, baseada em revisão sistemática de 30 ensaios clínicos randomizados.</li>' +
+            '<li><a href="https://www.ncbi.nlm.nih.gov/books/NBK559033/" target="_blank" rel="noopener">StatPearls / NCBI Bookshelf — <em>The Role of Dietary Fiber in Health Promotion and Disease Prevention</em></a> — Ingestão Adequada de fibra de 14 g a cada 1.000 kcal (25 g/dia pra mulheres, 38 g/dia pra homens).</li>' +
+            '<li><a href="https://www.mdpi.com/2072-6643/11/10/2365" target="_blank" rel="noopener">Nutrients, MDPI (2019) — <em>Alpha-Linolenic and Linoleic Fatty Acids in the Vegan Diet</em></a> — Ingestão Adequada dos ácidos graxos essenciais que fundamenta o piso de 20% de gordura nas calorias.</li>' +
+          "</ul>" +
+          "<p class=\"goals-auto-calc-aviso\">São valores de referência geral — não substituem orientação individualizada de nutricionista ou médico.</p>" +
+        "</div>" +
+      "</details>" +
+    "</div>" +
     '<div class="goals-grid">' + Object.keys(nutrientMeta).map((key) => {
       const meta = nutrientMeta[key];
       return '<label class="goal-field"><div class="goal-field-head"><span>' + meta.label + "</span><span>" + meta.unit + "</span></div>" +
