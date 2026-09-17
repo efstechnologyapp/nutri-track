@@ -207,6 +207,9 @@ svg{ display: block; }
 .goal-field{ border-radius:16px; background:#f7f9f5; padding:14px; }
 .goal-field-head{ margin-bottom:8px; display:flex; justify-content:space-between; font-size:12px; font-weight:600; color:#688077; }
 .goal-field-input{ width:100%; background:transparent; border:none; font-family:'Fraunces',serif; font-size:24px; font-weight:600; color:#214c3d; outline:none; }
+.goal-objetivo-field{ display:block; margin-bottom:16px; }
+.goal-objetivo-field select.goal-field-input{ font-family:inherit; font-size:15px; font-weight:600; cursor:pointer; }
+.goal-objetivo-nota{ margin:8px 0 0; font-size:12px; line-height:1.6; color:#8a9c93; }
 
 .nutrient-tabs{ margin-bottom:16px; display:flex; gap:8px; border-bottom:1px solid #e5e9e1; }
 .nutrient-tab{ padding:10px 4px; margin-bottom:-1px; border-bottom:2px solid transparent; font-size:14px; font-weight:600; color:#9aa9a1; }
@@ -382,6 +385,20 @@ svg{ display: block; }
 .bioimpedancia-form-subtitulo{ margin:0 0 12px; font-size:14px; font-weight:700; color:#4b7048; text-transform:uppercase; letter-spacing:0.06em; }
 .bioimpedancia-form-grid{ margin-top:18px; display:grid; grid-template-columns:1fr; gap:12px; }
 @media (min-width: 560px){ .bioimpedancia-form-grid{ grid-template-columns:1fr 1fr; } }
+.idade-metabolica-campo{ grid-column:1 / -1; }
+.idade-metabolica-calcular-btn{ margin-top:8px; display:inline-flex; align-items:center; gap:8px; border-radius:999px; border:none; background:var(--primary); padding:8px 16px; font-size:13px; font-weight:600; color:#fff; transition:opacity .15s; }
+.idade-metabolica-calcular-btn:hover{ opacity:.9; }
+.idade-metabolica-detalhes{ margin-top:10px; }
+.idade-metabolica-detalhes summary{ cursor:pointer; font-size:12px; font-weight:600; color:#4b7048; list-style:none; }
+.idade-metabolica-detalhes summary::-webkit-details-marker{ display:none; }
+.idade-metabolica-detalhes summary::before{ content:"▸ "; }
+.idade-metabolica-detalhes[open] summary::before{ content:"▾ "; }
+.idade-metabolica-detalhes-corpo{ margin-top:10px; border-radius:14px; background:#f7f9f5; padding:14px 16px; font-size:12px; line-height:1.7; color:#5c6b62; }
+.idade-metabolica-detalhes-corpo p{ margin:0 0 8px; }
+.idade-metabolica-detalhes-corpo p:last-child{ margin-bottom:0; }
+.idade-metabolica-detalhes-corpo a{ color:#4b7048; text-decoration:underline; text-underline-offset:2px; }
+.idade-metabolica-aviso{ color:#8a5a3a; }
+.idade-metabolica-fonte{ font-style:italic; color:#8a9c93; }
 .bioimpedancia-form-acoes{ margin-top:20px; display:flex; gap:12px; flex-wrap:wrap; }
 .bioimpedancia-form-acoes .btn-primary{ margin-top:0; flex:1; min-width:160px; }
 .bioimpedancia-form-acoes .bioimpedancia-btn-secundario{ flex:0 0 auto; }
@@ -647,13 +664,43 @@ const nutrientMeta = {
   fat: { label: "Gorduras", unit: "g", color: "#b27691", soft: "#f8edf2", icon: "droplet" },
   fiber: { label: "Fibras", unit: "g", color: "#71945c", soft: "#eef5e9", icon: "leaf" },
 };
-const defaultGoals = { calories: 1600, protein: 150, carbs: 130, fat: 53, fiber: 30 };
+const defaultGoals = { calories: 1600, protein: 150, carbs: 130, fat: 53, fiber: 30, objetivo: "" };
+
+// Objetivos disponíveis no seletor do formulário de metas. Cada um define dois parâmetros usados pra
+// sugerir a meta de calorias e a proteína automaticamente (ver sugerirCaloriasPorObjetivo() e
+// calcularMacrosAutomaticos() logo abaixo):
+// - ajusteCalorias(get): como ajustar o Gasto Energético Total (da Calorimetria) pra chegar na meta de
+//   calorias sugerida pro objetivo.
+// - proteinaPorKg: gramas de proteína por kg de peso corporal usados no cálculo automático de macros.
+// As referências de cada valor estão na legenda do formulário (goalsPanelTemplate()).
+const OBJETIVOS_META = {
+  emagrecimento: { label: "Emagrecimento", ajusteCalorias: (get) => get - 500, proteinaPorKg: 1.6 },
+  manutencao: { label: "Manutenção do peso", ajusteCalorias: (get) => get, proteinaPorKg: 1.4 },
+  ganho_massa: { label: "Ganho de peso / massa muscular", ajusteCalorias: (get) => get * 1.15, proteinaPorKg: 1.8 },
+  definicao: { label: "Definição muscular / recomposição corporal", ajusteCalorias: (get) => get * 0.90, proteinaPorKg: 1.8 },
+  performance: { label: "Performance esportiva / resistência", ajusteCalorias: (get) => get, proteinaPorKg: 1.6 },
+  saude: { label: "Saúde geral / bem-estar", ajusteCalorias: (get) => get, proteinaPorKg: 1.4 },
+};
+
+// Sugere a meta de calorias a partir do GET (Gasto Energético Total, da Calorimetria) e do objetivo
+// escolhido -- só é usada quando a pessoa tem os dois cadastrados (ver acaoCalcularMacrosAutomaticos()).
+// Nunca sugere um valor abaixo da TMB (Taxa Metabólica Basal): é o gasto mínimo do corpo em repouso, e
+// nenhum dos ajustes por objetivo deve levar a meta abaixo disso.
+function sugerirCaloriasPorObjetivo(get, objetivo, tmb) {
+  const cfg = OBJETIVOS_META[objetivo];
+  if (!cfg || !get) return null;
+  let calorias = Math.round(cfg.ajusteCalorias(Number(get)));
+  if (tmb) calorias = Math.max(calorias, Math.round(Number(tmb)));
+  return calorias;
+}
 
 // Calcula proteína/carboidrato/gordura/fibra a partir só da meta de calorias (e, se disponível, do
 // peso da última bioimpedância) usando os parâmetros de referência das Dietary Reference Intakes e
 // das Dietary Guidelines for Americans 2025-2030:
-// - Proteína: 1,4 g/kg (meio da faixa de 1,2-1,6 g/kg recomendada pelas DGA 2025-2030 pra controle de
-//   peso) quando o peso é conhecido; senão, 20% das calorias (dentro do AMDR de 10-35%).
+// - Proteína: por padrão, 1,4 g/kg (meio da faixa de 1,2-1,6 g/kg recomendada pelas DGA 2025-2030 pra
+//   controle de peso) quando o peso é conhecido; senão, 20% das calorias (dentro do AMDR de 10-35%).
+//   Quando a pessoa escolhe um objetivo (ver OBJETIVOS_META acima), a proteína por kg muda pra refletir
+//   esse objetivo -- ver a legenda do formulário pras referências de cada valor.
 // - Carboidrato: pelo menos 130 g/dia (RDA baseada no uso mínimo de glicose pelo cérebro) ou 45% das
 //   calorias (piso do AMDR), o que for maior.
 // - Gordura: o restante das calorias, nunca abaixo de 20% (piso do AMDR, necessário pros ácidos graxos
@@ -661,11 +708,12 @@ const defaultGoals = { calories: 1600, protein: 150, carbs: 130, fat: 53, fiber:
 //   do carboidrato (nunca da proteína), respeitando o piso de 130 g.
 // - Fibra: 14 g a cada 1.000 kcal (Ingestão Adequada).
 // Esses são valores de referência gerais, não substituem orientação profissional individualizada.
-function calcularMacrosAutomaticos(calorias, pesoKg) {
+function calcularMacrosAutomaticos(calorias, pesoKg, objetivo) {
   calorias = Math.max(0, Number(calorias) || 0);
   if (!calorias) return null;
 
-  let proteinKcal = pesoKg ? pesoKg * 1.4 * 4 : calorias * 0.20;
+  const proteinaPorKg = (objetivo && OBJETIVOS_META[objetivo]) ? OBJETIVOS_META[objetivo].proteinaPorKg : 1.4;
+  let proteinKcal = pesoKg ? pesoKg * proteinaPorKg * 4 : calorias * 0.20;
   proteinKcal = Math.min(proteinKcal, calorias * 0.35); // nunca ultrapassa o teto do AMDR (35%)
 
   const carbFloorKcal = 130 * 4;
@@ -1033,6 +1081,21 @@ function formatarIdadeExata(idade) {
   const meses = String(idade.meses).padStart(2, "0") + (idade.meses === 1 ? " mês" : " meses");
   const dias = String(idade.dias).padStart(2, "0") + (idade.dias === 1 ? " dia" : " dias");
   return anos + ", " + meses + " e " + dias;
+}
+// Estima a "idade metabólica" a partir da TMB registrada na Calorimetria e do peso/altura/sexo da
+// Bioimpedância -- usando a fórmula de Mifflin-St Jeor (Mifflin et al., 1990) "ao contrário": em vez
+// de calcular a TMB a partir da idade real, calcula qual idade, pra alguém do mesmo peso/altura/sexo,
+// resultaria exatamente na TMB registrada. IMPORTANTE: isso NÃO é o valor "oficial" de idade
+// metabólica que aparece em balanças de bioimpedância (Tanita, InBody, Omron etc.) -- cada fabricante
+// usa sua própria base de referência populacional proprietária, que não é pública. É só uma
+// aproximação de referência (ver legenda no formulário de Bioimpedância).
+function estimarIdadeMetabolica(tmb, pesoKg, alturaCm, sexo) {
+  tmb = Number(tmb); pesoKg = Number(pesoKg); alturaCm = Number(alturaCm);
+  if (!tmb || !pesoKg || !alturaCm) return null;
+  if (sexo !== "masculino" && sexo !== "feminino") return null;
+  const constanteSexo = sexo === "masculino" ? 5 : -161;
+  const idade = (10 * pesoKg + 6.25 * alturaCm + constanteSexo - tmb) / 5;
+  return Math.max(0, Math.round(idade));
 }
 function ultimoRegistroMedida(tipo) {
   const registros = state.medidas.filter((m) => m.tipo === tipo).sort((a, b) => b.id - a.id);
@@ -1536,6 +1599,14 @@ function acaoAtualizarMeta(key, value) {
   if (state.account) enviarComFila("atualizarMetasGoogle", [state.usuario.email, state.goals, state.altura]);
   render();
 }
+// Só guarda o objetivo escolhido -- quem realmente usa esse valor pra sugerir calorias e proteína é o
+// botão "Calcular macros automaticamente" (acaoCalcularMacrosAutomaticos()), não essa função.
+function acaoAtualizarObjetivo(value) {
+  state.goals = Object.assign({}, state.goals, { objetivo: value });
+  persistGoals();
+  if (state.account) enviarComFila("atualizarMetasGoogle", [state.usuario.email, state.goals, state.altura]);
+  render();
+}
 function acaoCalcularMacrosAutomaticos() {
   // Lê o valor direto do campo de calorias no DOM, em vez de confiar só em state.goals.calories: o
   // botão usa onmousedown com preventDefault (ver comentário no template) pra não perder o clique
@@ -1543,7 +1614,17 @@ function acaoCalcularMacrosAutomaticos() {
   // antes -- mas isso também significa que o campo de calorias pode ainda não ter disparado seu
   // onchange (que só roda ao perder o foco), então o valor mais atual só existe no próprio input.
   const inputCalorias = document.getElementById("goal-input-calories");
-  const calorias = inputCalorias && inputCalorias.value !== "" ? Number(inputCalorias.value) : state.goals.calories;
+  let calorias = inputCalorias && inputCalorias.value !== "" ? Number(inputCalorias.value) : state.goals.calories;
+  const objetivo = state.goals.objetivo || "";
+  const ultimoCalo = ultimaCalorimetria();
+  // Quando a pessoa tem um objetivo escolhido E uma calorimetria (TMB/GET) registrada, a meta de
+  // calorias sugerida vem do objetivo (ver OBJETIVOS_META), substituindo o valor do campo -- é assim
+  // que o objetivo "também influencia os cálculos" (não só a proteína). Sem objetivo ou sem
+  // calorimetria, mantemos o comportamento anterior: usa o valor que já está no campo de calorias.
+  const caloriasSugeridasPorObjetivo = (objetivo && ultimoCalo && ultimoCalo.get)
+    ? sugerirCaloriasPorObjetivo(ultimoCalo.get, objetivo, ultimoCalo.tmb)
+    : null;
+  if (caloriasSugeridasPorObjetivo) calorias = caloriasSugeridasPorObjetivo;
   if (!calorias) { toastError("Informe a meta de calorias antes de calcular os macronutrientes."); return; }
   // Se o campo de calorias ainda estiver focado (a pessoa digitou e clicou direto em "Calcular", sem
   // clicar em outro lugar antes), tiramos o foco dele aqui, de propósito, ANTES de qualquer render()
@@ -1558,17 +1639,22 @@ function acaoCalcularMacrosAutomaticos() {
   if (inputCalorias) inputCalorias.blur();
   const ultimoBio = ultimaBioimpedancia();
   const pesoKg = ultimoBio && ultimoBio.peso ? Number(ultimoBio.peso) : null;
-  const macros = calcularMacrosAutomaticos(calorias, pesoKg);
+  const macros = calcularMacrosAutomaticos(calorias, pesoKg, objetivo);
   if (!macros) return;
-  // Também grava a própria meta de calorias lida do input (não só os macros calculados a partir
-  // dela) -- senão, se a pessoa não tiver saído do campo antes de clicar, o valor digitado ficaria só
-  // visível no input, sem entrar de fato em state.goals.calories nem ser sincronizado.
+  // Também grava a própria meta de calorias (lida do input, ou sugerida a partir do objetivo) -- não
+  // só os macros calculados a partir dela -- senão, se a pessoa não tiver saído do campo antes de
+  // clicar, o valor digitado ficaria só visível no input, sem entrar de fato em state.goals.calories
+  // nem ser sincronizado.
   state.goals = Object.assign({}, state.goals, { calories: calorias }, macros);
   persistGoals();
   if (state.account) enviarComFila("atualizarMetasGoogle", [state.usuario.email, state.goals, state.altura]);
-  toastSuccess(pesoKg
-    ? "Macros calculados com base na meta de " + formatNumber(calorias) + " kcal e no seu peso de " + formatNumber(pesoKg, 1) + " kg. Você ainda pode ajustar cada valor manualmente."
-    : "Macros calculados com base na meta de " + formatNumber(calorias) + " kcal (sem peso registrado na Bioimpedância, usamos 20% das calorias pra proteína). Você ainda pode ajustar cada valor manualmente.");
+  const origemCalorias = caloriasSugeridasPorObjetivo
+    ? " A meta de " + formatNumber(calorias) + " kcal foi sugerida a partir do seu GET e do objetivo escolhido (" + OBJETIVOS_META[objetivo].label + ")."
+    : "";
+  toastSuccess((pesoKg
+    ? "Macros calculados com base na meta de " + formatNumber(calorias) + " kcal e no seu peso de " + formatNumber(pesoKg, 1) + " kg."
+    : "Macros calculados com base na meta de " + formatNumber(calorias) + " kcal (sem peso registrado na Bioimpedância, usamos 20% das calorias pra proteína).")
+    + origemCalorias + " Você ainda pode ajustar cada valor manualmente.");
   render();
 }
 
@@ -1817,13 +1903,23 @@ function goalsPanelTemplate() {
     '<button class="icon-btn-ghost" onclick="state.showGoals=false;render()">' + icon("x") + "</button>" +
     "</div>" +
     goalsCalorimetriaRefTemplate() +
+    '<label class="goal-field goal-objetivo-field"><div class="goal-field-head"><span>Objetivo</span></div>' +
+      '<select id="goal-objetivo-select" class="goal-field-input" onchange="acaoAtualizarObjetivo(this.value)">' +
+        '<option value=""' + (state.goals.objetivo ? "" : " selected") + ">Prefiro não informar</option>" +
+        Object.keys(OBJETIVOS_META).map((key) =>
+          '<option value="' + key + '"' + (state.goals.objetivo === key ? " selected" : "") + '>' + OBJETIVOS_META[key].label + "</option>"
+        ).join("") +
+      "</select>" +
+      '<p class="goal-objetivo-nota">Usado pelo botão "Calcular macros automaticamente" abaixo pra ajustar a proteína e, quando há uma calorimetria (TMB/GET) registrada, também sugerir a meta de calorias.</p>' +
+    "</label>" +
     '<div class="goals-auto-calc">' +
       '<button class="goals-auto-calc-btn" onmousedown="event.preventDefault()" onclick="acaoCalcularMacrosAutomaticos()">' + icon("sparkles") + " Calcular macros automaticamente</button>" +
-      '<p class="goals-auto-calc-note">Sugere proteína, carboidrato, gordura e fibra a partir da meta de calorias e do seu peso. Os valores continuam editáveis manualmente depois.</p>' +
+      '<p class="goals-auto-calc-note">Sugere proteína, carboidrato, gordura e fibra a partir da meta de calorias, do seu peso e do objetivo escolhido acima. Os valores continuam editáveis manualmente depois.</p>' +
       '<details class="goals-auto-calc-detalhes">' +
         "<summary>Como esse cálculo é feito e em que estudos se baseia</summary>" +
         '<div class="goals-auto-calc-detalhes-corpo">' +
-          "<p><strong>Proteína:</strong> 1,4 g por kg de peso corporal — o meio da faixa de 1,2 a 1,6 g/kg/dia — quando há um peso cadastrado na Bioimpedância; sem peso cadastrado, usa 20% das calorias.</p>" +
+          "<p><strong>Meta de calorias (quando há um objetivo e uma calorimetria registrados):</strong> emagrecimento usa o GET menos 500 kcal/dia; ganho de peso/massa muscular usa o GET mais 15%; definição/recomposição usa o GET menos 10%; manutenção, performance esportiva e saúde geral usam o próprio GET. Nunca sugere um valor abaixo da TMB (gasto mínimo em repouso).</p>" +
+          "<p><strong>Proteína:</strong> por padrão, 1,4 g por kg de peso corporal — o meio da faixa de 1,2 a 1,6 g/kg/dia — quando há um peso cadastrado na Bioimpedância; sem peso cadastrado, usa 20% das calorias. Objetivos focados em ganhar ou preservar massa muscular sob déficit/superávit (ganho de massa, definição/recomposição) usam 1,8 g/kg; emagrecimento e performance esportiva usam 1,6 g/kg.</p>" +
           "<p><strong>Carboidrato:</strong> o maior valor entre 130 g/dia (piso fixo) e 45% das calorias totais.</p>" +
           "<p><strong>Gordura:</strong> o restante das calorias, nunca abaixo de 20% do total — se a conta não fechar, a diferença sai do carboidrato (nunca da proteína), sem passar do piso de 130 g.</p>" +
           "<p><strong>Fibra:</strong> 14 g para cada 1.000 kcal da meta.</p>" +
@@ -1833,6 +1929,9 @@ function goalsPanelTemplate() {
             '<li><a href="https://www.sciencedirect.com/science/article/pii/S0022316626004037" target="_blank" rel="noopener">The Journal of Nutrition (2026) — <em>Perspectives on the Protein Recommendations in the 2025–2030 Dietary Guidelines for Americans</em></a> — faixa de 1,2 a 1,6 g/kg/dia de proteína pra controle de peso, baseada em revisão sistemática de 30 ensaios clínicos randomizados.</li>' +
             '<li><a href="https://www.ncbi.nlm.nih.gov/books/NBK559033/" target="_blank" rel="noopener">StatPearls / NCBI Bookshelf — <em>The Role of Dietary Fiber in Health Promotion and Disease Prevention</em></a> — Ingestão Adequada de fibra de 14 g a cada 1.000 kcal (25 g/dia pra mulheres, 38 g/dia pra homens).</li>' +
             '<li><a href="https://www.mdpi.com/2072-6643/11/10/2365" target="_blank" rel="noopener">Nutrients, MDPI (2019) — <em>Alpha-Linolenic and Linoleic Fatty Acids in the Vegan Diet</em></a> — Ingestão Adequada dos ácidos graxos essenciais que fundamenta o piso de 20% de gordura nas calorias.</li>' +
+            '<li><a href="https://www.jacc.org/doi/10.1016/j.jacc.2013.11.004" target="_blank" rel="noopener">2013 AHA/ACC/TOS Guideline for the Management of Overweight and Obesity in Adults</a> — déficit de 500 a 750 kcal/dia como prescrição padrão pra perda de peso, base do ajuste de calorias do objetivo "Emagrecimento".</li>' +
+            '<li><a href="https://www.mdpi.com/2075-4663/7/7/154" target="_blank" rel="noopener">Sports, MDPI (2019) — <em>Nutrition Recommendations for Bodybuilders in the Off-Season: A Narrative Review</em></a> — superávit de 10–20% das calorias e proteína de 1,6–2,2 g/kg/dia em fases de ganho de massa muscular, base dos objetivos "Ganho de peso/massa muscular" e "Definição/recomposição corporal".</li>' +
+            '<li><a href="https://ajcn.nutrition.org/article/S0002-9165(22)06559-5/fulltext" target="_blank" rel="noopener">The American Journal of Clinical Nutrition (2016) — <em>Higher compared with lower dietary protein during an energy deficit combined with intense exercise promotes greater lean mass gain and fat mass loss</em></a> — evidência de que proteína mais alta durante um déficit calórico ajuda a preservar e até ganhar massa magra, base da proteína elevada no objetivo "Definição/recomposição corporal".</li>' +
           "</ul>" +
           "<p class=\"goals-auto-calc-aviso\">São valores de referência geral — não substituem orientação individualizada de nutricionista ou médico.</p>" +
         "</div>" +
@@ -2280,6 +2379,28 @@ function acaoFecharHistoricoBioimpedancia() { state.showHistoricoBioimpedancia =
 const BIOIMPEDANCIA_CAMPOS = ["altura", "peso", "gordura", "massaMagra", "massaMuscular", "aguaCorporal", "gorduraVisceral", "idadeMetabolica"];
 const CALORIMETRIA_CAMPOS = ["tmb", "get"];
 
+// Lê peso/altura direto do DOM (o formulário de bioimpedância não sincroniza esses campos com o state
+// a cada tecla -- só na hora de salvar, ver acaoSalvarBioimpedancia), pra pegar o valor mais atual que
+// a pessoa está digitando agora, mesmo que ainda não tenha sido salvo. TMB vem do registro de
+// Calorimetria mais recente já salvo (é um formulário/aba separado). Preenche o campo "Idade
+// metabólica" direto (sem chamar render()) -- ver comentário em idadeMetabolicaCampoTemplate().
+function acaoEstimarIdadeMetabolica() {
+  const inputPeso = document.getElementById("bio-peso");
+  const inputAltura = document.getElementById("bio-altura");
+  const peso = inputPeso ? Number(inputPeso.value.trim().replace(",", ".")) : NaN;
+  const altura = inputAltura ? Number(inputAltura.value.trim().replace(",", ".")) : NaN;
+  if (!peso || !altura) { toastError("Informe peso e altura acima antes de calcular a estimativa."); return; }
+  const ultimoCalo = ultimaCalorimetria();
+  if (!ultimoCalo || !ultimoCalo.tmb) { toastError("Registre sua Calorimetria (TMB) em Medidas e Aferições antes de calcular a estimativa de idade metabólica."); return; }
+  const sexo = state.usuario && state.usuario.sexo;
+  if (sexo !== "masculino" && sexo !== "feminino") { toastError("Informe seu sexo no seu perfil antes de calcular a estimativa de idade metabólica."); return; }
+  const estimativa = estimarIdadeMetabolica(ultimoCalo.tmb, peso, altura, sexo);
+  if (estimativa == null) { toastError("Não foi possível calcular a estimativa com os dados informados."); return; }
+  const inputIdade = document.getElementById("bio-idadeMetabolica");
+  if (inputIdade) inputIdade.value = estimativa;
+  toastSuccess("Idade metabólica estimada em " + estimativa + " anos, com base na sua TMB registrada e no peso/altura/sexo informados. Não é o valor oficial do seu aparelho — veja como calculamos na legenda abaixo. Você ainda pode ajustar manualmente antes de salvar.");
+}
+
 function acaoSalvarBioimpedancia() {
   const dataEl = document.getElementById("bio-data");
   const data = dataEl ? dataEl.value : "";
@@ -2451,6 +2572,29 @@ function anexoCampoTemplate(idInput, arquivoSelecionado, onChangeFn, onRemoveFn)
     "</div>";
 }
 
+// O campo de idade metabólica fica em branco por padrão -- a pessoa digita o valor que já saiu na
+// balança/exame de bioimpedância, igual aos outros campos. O botão "Calcular estimativa" é só pra
+// quando o aparelho NÃO informa esse valor: aí o sistema preenche o campo com uma aproximação (ver
+// estimarIdadeMetabolica() e acaoEstimarIdadeMetabolica()), que a pessoa ainda pode editar antes de
+// salvar. Não chama render() -- só escreve direto no input -- pra não arriscar apagar outros campos
+// desse mesmo formulário que a pessoa já tenha digitado e ainda não foram capturados em
+// state.bioFormValores (esses campos não têm onchange, só são lidos do DOM na hora de salvar).
+function idadeMetabolicaCampoTemplate() {
+  const valores = state.bioFormValores || {};
+  return '<div class="idade-metabolica-campo">' +
+    '<label class="field-label">Idade metabólica (anos)</label>' +
+    '<input id="bio-idadeMetabolica" type="number" min="0" step="0.1" class="field-input" value="' + esc(valores.idadeMetabolica != null ? valores.idadeMetabolica : "") + '" placeholder="Ex.: 30 (ou deixe em branco e calcule abaixo)"/>' +
+    '<button type="button" class="idade-metabolica-calcular-btn" onclick="acaoEstimarIdadeMetabolica()">' + icon("sparkles") + " Calcular estimativa</button>" +
+    '<details class="idade-metabolica-detalhes">' +
+      "<summary>Como essa estimativa é calculada</summary>" +
+      '<div class="idade-metabolica-detalhes-corpo">' +
+        "<p>Se o resultado da sua balança ou exame de bioimpedância não trouxer a idade metabólica, o botão acima estima um valor de referência: usamos a fórmula de Mifflin-St Jeor \"ao contrário\" — em vez de calcular sua TMB a partir da sua idade real, calculamos qual idade, pra alguém do seu peso, altura e sexo, resultaria exatamente na TMB que você registrou na Calorimetria.</p>" +
+        "<p class=\"idade-metabolica-aviso\"><strong>Não é um valor oficial.</strong> \"Idade metabólica\" não é uma métrica clínica padronizada — cada fabricante de balança de bioimpedância (Tanita, InBody, Omron etc.) usa sua própria base de referência populacional proprietária, que não é pública. Por isso esse número normalmente é diferente do que aparece no seu aparelho; é só uma aproximação de referência. Sempre prefira o valor do seu próprio exame quando ele estiver disponível.</p>" +
+        "<p class=\"idade-metabolica-fonte\">Referência: <a href=\"https://ajcn.nutrition.org/article/S0002-9165(23)16698-6/fulltext\" target=\"_blank\" rel=\"noopener\">Mifflin MD, St Jeor ST, et al. — <em>A new predictive equation for resting energy expenditure in healthy individuals</em>, The American Journal of Clinical Nutrition (1990)</a>.</p>" +
+      "</div>" +
+    "</details>" +
+  "</div>";
+}
 function bioimpedanciaFormCamposTemplate() {
   const valores = state.bioFormValores || {};
   const campo = (id, label, unidade, placeholder) =>
@@ -2466,7 +2610,7 @@ function bioimpedanciaFormCamposTemplate() {
       campo("massaMuscular", "Massa muscular", "kg", "Ex.: 55,2") +
       campo("aguaCorporal", "Água corporal", "%", "Ex.: 55,0") +
       campo("gorduraVisceral", "Gordura visceral", "nível", "Ex.: 8") +
-      campo("idadeMetabolica", "Idade metabólica", "anos", "Ex.: 30") +
+      idadeMetabolicaCampoTemplate() +
     "</div>" +
     anexoCampoTemplate("bio-anexo-input", anexoSelecionadoBio, "onAnexoBioSelecionado", "acaoRemoverAnexoSelecionadoBio") +
     '<div class="bioimpedancia-form-acoes">' +
