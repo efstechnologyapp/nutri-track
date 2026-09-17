@@ -273,10 +273,18 @@ svg{ display: block; }
 .treino-grupos-campo{ margin-top:16px; }
 .treino-grupos-nota{ margin:6px 0 0; font-size:12px; color:#9fb5aa; }
 .treino-grupo-bloco{ margin-top:10px; border-radius:12px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); padding:12px 14px; }
-.treino-grupo-bloco-head{ display:flex; align-items:center; justify-content:space-between; font-size:13px; color:#fff; }
+.treino-grupo-bloco-head{ display:flex; align-items:center; justify-content:space-between; font-size:13px; color:#fff; gap:8px; }
+.treino-grupo-bloco-acoes{ display:flex; align-items:center; gap:6px; flex-shrink:0; }
 .treino-grupo-remover{ display:flex; height:24px; width:24px; align-items:center; justify-content:center; border-radius:999px; color:#9fb5aa; }
 .treino-grupo-remover:hover{ background:rgba(255,255,255,.1); color:#fff; }
 .treino-grupo-remover .icon{ width:14px; height:14px; }
+.treino-grupo-add-exercicio{ display:flex; align-items:center; gap:4px; border-radius:999px; border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.06); padding:5px 10px 5px 8px; font-size:11.5px; font-weight:600; color:#cfe4c8; white-space:nowrap; }
+.treino-grupo-add-exercicio:hover{ background:rgba(255,255,255,.12); }
+.treino-grupo-add-exercicio .icon{ width:13px; height:13px; }
+.treino-novo-exercicio-form{ margin-top:10px; padding:10px; border-radius:10px; background:rgba(255,255,255,.04); }
+.treino-novo-exercicio-acoes{ margin-top:8px; display:flex; gap:8px; align-items:center; }
+.treino-novo-exercicio-acoes .btn-ghost-light{ width:auto; flex:0 0 auto; margin-top:0; padding:8px 16px; font-size:12.5px; }
+.treino-novo-exercicio-cancelar{ font-size:12px; font-weight:600; color:#9fb5aa; text-decoration:underline; text-underline-offset:2px; }
 .treino-grupo-exercicios{ margin-top:6px; display:flex; flex-direction:column; }
 .treino-exercicio-linha{ padding:8px 0; border-top:1px solid rgba(255,255,255,.06); }
 .treino-exercicio-linha:first-child{ border-top:none; }
@@ -359,6 +367,25 @@ svg{ display: block; }
 .history-day-meal-grupos-musculares{ margin:2px 0 0; font-size:11px; font-weight:600; color:#4b7048; }
 .history-day-meal-static{ cursor:default; }
 .history-day-meal-static:hover{ background:transparent; }
+
+.nutricao-modo-tabs{ margin-top:16px; display:flex; gap:8px; }
+.nutricao-modo-tab{ display:flex; flex:1; align-items:center; justify-content:center; gap:6px; border-radius:10px; border:1px solid #dbe3d8; background:#f2f6ef; padding:9px 10px; font-size:12px; font-weight:600; color:#6e8d69; transition:background .15s, color .15s; }
+.nutricao-modo-tab.active{ background:var(--primary); border-color:var(--primary); color:#fff; }
+.diario-kcal-section{ margin-top:24px; }
+.diario-kcal-encerrar-btn{ margin-bottom:20px; }
+.diario-kcal-lista{ display:flex; flex-direction:column; gap:16px; }
+.diario-kcal-dia{ border-radius:16px; background:#f7f9f5; padding:16px 18px; }
+.diario-kcal-dia-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.diario-kcal-dia-data{ display:flex; align-items:center; gap:6px; font-size:14px; font-weight:600; color:#31564a; text-transform:capitalize; }
+.diario-kcal-dia-data .icon{ width:16px; height:16px; color:#8a9c93; flex-shrink:0; }
+.diario-kcal-dia-kcal{ font-size:15px; font-weight:700; color:#3d6355; }
+.diario-kcal-dia-macros{ margin-top:6px; font-size:12.5px; color:#6e8d69; }
+.diario-kcal-dia-micros{ margin-top:4px; font-size:11.5px; color:#9aa9a1; }
+.diario-kcal-refeicoes{ margin-top:12px; display:flex; flex-direction:column; gap:6px; border-top:1px solid #e8eee5; padding-top:10px; }
+.diario-kcal-refeicao{ display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:12px; color:#557268; flex-wrap:wrap; }
+.diario-kcal-refeicao-nome{ display:flex; align-items:center; gap:5px; font-weight:600; }
+.diario-kcal-refeicao-nome .icon{ width:13px; height:13px; color:#9aa9a1; flex-shrink:0; }
+.diario-kcal-refeicao-valores{ color:#8a9c93; }
 .history-day-meal span:last-child{ display:inline-flex; align-items:center; gap:4px; }
 .history-day-meal-foto-link{ display:inline-flex; color:#6c8d68; }
 .history-day-meal-foto-link:hover{ color:#3d6355; }
@@ -630,6 +657,8 @@ const authApi = {
   salvarTreinoGoogle: (email, treino) => chamarApi("salvarTreinoGoogle", { email, treino }),
   removerTreinoGoogle: (email, id) => chamarApi("removerTreinoGoogle", { email, id }),
   atualizarFotoTreinoGoogle: (email, id, fotoUrl) => chamarApi("atualizarFotoTreinoGoogle", { email, id, fotoUrl }),
+  salvarExercicioCustomizadoGoogle: (email, exercicio) => chamarApi("salvarExercicioCustomizadoGoogle", { email, exercicio }),
+  salvarDiarioKcalGoogle: (email, registro) => chamarApi("salvarDiarioKcalGoogle", { email, registro }),
 };
 
 /* ===================== conexão com Google (Google Identity Services) ===================== */
@@ -986,6 +1015,14 @@ const GRUPOS_MUSCULARES = [
   ] },
 ];
 function grupoMuscularPorId(id) { return GRUPOS_MUSCULARES.find((g) => g.id === id) || null; }
+// Lista de exercícios de um grupo -- a lista padrão (fixa) mais os exercícios que a própria pessoa já
+// cadastrou pra esse grupo (ver acaoConfirmarNovoExercicio()), que ficam salvos em
+// state.exerciciosCustomizados e reaparecem automaticamente em qualquer treino futuro desse grupo.
+function exerciciosDoGrupo(grupoId) {
+  const grupo = grupoMuscularPorId(grupoId);
+  if (!grupo) return [];
+  return grupo.exercicios.concat((state.exerciciosCustomizados && state.exerciciosCustomizados[grupoId]) || []);
+}
 
 // Emoji exibido ao lado do esporte em cada registro de treino (lista de hoje e hist\u00f3rico).
 const ESPORTE_EMOJI = {
@@ -1062,6 +1099,8 @@ const CHAVE_BIOIMPEDANCIA = "nutri-track-bioimpedancia";
 const CHAVE_CALORIMETRIA = "nutri-track-calorimetria";
 const CHAVE_TREINOS = "nutri-track-treinos";
 const CHAVE_TREINO_ATIVO = "nutri-track-treino-ativo";
+const CHAVE_EXERCICIOS_CUSTOMIZADOS = "nutri-track-exercicios-customizados";
+const CHAVE_DIARIO_KCAL = "nutri-track-diario-kcal";
 
 /* ===================== medidas e aferições ===================== */
 const medidaTipos = {
@@ -1092,6 +1131,11 @@ const state = {
   historyData: null, // data selecionada no histórico de refeições (null = mostra hoje)
   nutrientAba: "macro", // "macro" | "micro"
   mealDetalheId: null, // id da refeição aberta no modal de detalhamento, ou null
+  nutricaoAba: "registrar", // "registrar" | "diario" -- ver nutricaoTabTemplate()/diarioKcalTabTemplate()
+  // Diário de Kcal: um resumo (kcal, macro e micronutrientes do dia + refeições com horário) guardado a
+  // cada vez que a pessoa clica em "Encerrar dia" (ver acaoEncerrarDia()). Só existe UM registro por data
+  // -- clicar de novo no mesmo dia substitui o anterior, pra sempre refletir o total mais atualizado.
+  diarioKcal: readStorage(CHAVE_DIARIO_KCAL, []),
   showEditarPerfil: false,
   showNovaSenha: false,
   sidebarOpen: false,
@@ -1113,6 +1157,10 @@ const state = {
   calorimetriaEditandoId: null, // idem, para calorimetria
   treinos: readStorage(CHAVE_TREINOS, []),
   treinoEsporte: "",
+  // Data do treino no registro manual (calendário suspenso) -- ver treinoFormManualTemplate(). Vazio até o
+  // formulário ser montado, quando é preenchido com a data de hoje (ver treinoDataAtualOuHoje()); permite
+  // lançar um treino de um dia anterior, algo que o modo cronômetro (sempre "agora") não permite.
+  treinoData: "",
   treinoHoraInicio: "",
   treinoHoraFim: "",
   treinoNota: "", // observação livre sobre o treino (ex.: "treino pesado", "alto astral") — opcional
@@ -1123,6 +1171,14 @@ const state = {
   // só pros exercícios marcados (ver acaoAlternarExercicio()).
   treinoGruposSelecionados: [],
   treinoExerciciosMarcados: {},
+  // Formulário inline de "novo exercício" (ver acaoAbrirNovoExercicio()): grupoId cujo formulário está
+  // aberto, ou null quando fechado.
+  treinoNovoExercicioGrupoAberto: null,
+  treinoNovoExercicioNome: "",
+  // Exercícios que a própria pessoa cadastrou (fora da lista padrão), por grupo -- ver
+  // exerciciosDoGrupo()/acaoConfirmarNovoExercicio(). Persistido localmente e sincronizado com a conta
+  // Google, igual ao resto dos dados, pra reaparecer em qualquer aparelho.
+  exerciciosCustomizados: readStorage(CHAVE_EXERCICIOS_CUSTOMIZADOS, {}),
   showHistoryTreinos: false,
   historyDataTreinos: null, // data selecionada no histórico de treinos (null = mostra hoje)
   treinoModo: "cronometro", // "cronometro" | "manual" — só é relevante quando não há treino em andamento
@@ -1141,6 +1197,8 @@ function persistBioimpedancia() { writeStorage(CHAVE_BIOIMPEDANCIA, state.bioimp
 function persistCalorimetria() { writeStorage(CHAVE_CALORIMETRIA, state.calorimetria); }
 function persistTreinos() { writeStorage(CHAVE_TREINOS, state.treinos); }
 function persistTreinoAtivo() { writeStorage(CHAVE_TREINO_ATIVO, state.treinoAtivo); }
+function persistExerciciosCustomizados() { writeStorage(CHAVE_EXERCICIOS_CUSTOMIZADOS, state.exerciciosCustomizados); }
+function persistDiarioKcal() { writeStorage(CHAVE_DIARIO_KCAL, state.diarioKcal); }
 
 /* ===================== helpers de derivação ===================== */
 function today() { return todayKey(); }
@@ -1580,11 +1638,36 @@ async function processarFilaPendente() {
 // primeira vez, ver enviosEmAndamento acima) pode não aparecer na resposta autoritativa do servidor
 // ainda — sem isso ela sumiria da tela até terminar de sincronizar. Aqui a gente reinclui esses itens
 // pendentes na lista vinda do servidor, até que o envio seja confirmado.
+// Garante só um registro por data no Diário de Kcal (mantém o de id mais alto = mais recente) -- útil
+// depois de mesclar dados vindos de origens diferentes (ex.: ao conectar o Google pela primeira vez com
+// dias já encerrados neste aparelho E na planilha), onde poderia sobrar mais de um registro pra mesma
+// data com ids diferentes -- o que contraria a regra de "só um registro por data" (ver acaoEncerrarDia()).
+function dedupDiarioKcalPorData(lista) {
+  const porData = {};
+  lista.forEach((r) => { if (!porData[r.date] || r.id > porData[r.date].id) porData[r.date] = r; });
+  return Object.values(porData);
+}
 function mesclarComPendentes(listaServidor, tipoCriacao) {
   const pendentesFila = lerFila().concat(enviosEmAndamento);
   const idsServidor = new Set(listaServidor.map((item) => item.id));
   const pendentes = pendentesFila.filter((item) => item.tipo === tipoCriacao).map((item) => item.args[1]).filter((item) => !idsServidor.has(item.id));
   return listaServidor.concat(pendentes);
+}
+
+// Une os exercícios personalizados guardados neste aparelho (ver acaoConfirmarNovoExercicio()) com os
+// que vieram do servidor, grupo por grupo -- evita perder um exercício cadastrado localmente que ainda
+// não tenha sido confirmado pelo servidor (ex.: sem internet logo depois de cadastrar), e evita duplicar
+// quem já existe nos dois lados (comparando por id).
+function mesclarExerciciosCustomizados(local, remoto) {
+  const resultado = {};
+  const grupos = new Set(Object.keys(local || {}).concat(Object.keys(remoto || {})));
+  grupos.forEach((grupoId) => {
+    const listaRemoto = (remoto && remoto[grupoId]) || [];
+    const listaLocal = (local && local[grupoId]) || [];
+    const idsRemoto = new Set(listaRemoto.map((ex) => ex.id));
+    resultado[grupoId] = listaRemoto.concat(listaLocal.filter((ex) => !idsRemoto.has(ex.id)));
+  });
+  return resultado;
 }
 
 // Mantém nome/foto/data de nascimento/sexo atualizados em qualquer aparelho logado na mesma conta.
@@ -1635,6 +1718,11 @@ async function sincronizarDoServidor() {
     state.bioimpedancia = mesclarComPendentes(resposta.bioimpedancia || [], "salvarBioimpedanciaGoogle"); persistBioimpedancia();
     state.calorimetria = mesclarComPendentes(resposta.calorimetria || [], "salvarCalorimetriaGoogle"); persistCalorimetria();
     state.treinos = mesclarComPendentes(resposta.treinos || [], "salvarTreinoGoogle"); persistTreinos();
+    if (resposta.exerciciosCustomizados) {
+      state.exerciciosCustomizados = mesclarExerciciosCustomizados(state.exerciciosCustomizados, resposta.exerciciosCustomizados);
+      persistExerciciosCustomizados();
+    }
+    state.diarioKcal = dedupDiarioKcalPorData(mesclarComPendentes(resposta.diarioKcal || [], "salvarDiarioKcalGoogle")); persistDiarioKcal();
     render();
   } catch { /* falha de rede — mantém os dados locais e tenta de novo na próxima abertura */ }
 }
@@ -1653,6 +1741,14 @@ function publicarRegistrosLocaisPendentes(remoto) {
   state.bioimpedancia.filter((b) => !idsBioimpedancia.has(b.id)).forEach((b) => enviarComFila("salvarBioimpedanciaGoogle", [state.usuario.email, b]));
   state.calorimetria.filter((c) => !idsCalorimetria.has(c.id)).forEach((c) => enviarComFila("salvarCalorimetriaGoogle", [state.usuario.email, c]));
   state.treinos.filter((t) => !idsTreinos.has(t.id)).forEach((t) => enviarComFila("salvarTreinoGoogle", [state.usuario.email, t]));
+  const remotoExercicios = remoto.exerciciosCustomizados || {};
+  Object.keys(state.exerciciosCustomizados || {}).forEach((grupoId) => {
+    const idsRemotoGrupo = new Set((remotoExercicios[grupoId] || []).map((ex) => ex.id));
+    (state.exerciciosCustomizados[grupoId] || []).filter((ex) => !idsRemotoGrupo.has(ex.id))
+      .forEach((ex) => enviarComFila("salvarExercicioCustomizadoGoogle", [state.usuario.email, { grupoId: grupoId, id: ex.id, label: ex.label }]));
+  });
+  const idsDiarioKcal = new Set((remoto.diarioKcal || []).map((r) => r.id));
+  state.diarioKcal.filter((r) => !idsDiarioKcal.has(r.id)).forEach((r) => enviarComFila("salvarDiarioKcalGoogle", [state.usuario.email, r]));
   if (!remoto.goals) enviarComFila("atualizarMetasGoogle", [state.usuario.email, state.goals, state.altura]);
 }
 // Única função que efetivamente abre algo do Google — e só roda quando a pessoa clica no botão
@@ -1675,6 +1771,8 @@ async function acaoConectarGoogle() {
     state.bioimpedancia = mergeMedidas(state.bioimpedancia, resposta.bioimpedancia || []); persistBioimpedancia();
     state.calorimetria = mergeMedidas(state.calorimetria, resposta.calorimetria || []); persistCalorimetria();
     state.treinos = mergeMedidas(state.treinos, resposta.treinos || []); persistTreinos();
+    state.exerciciosCustomizados = mesclarExerciciosCustomizados(state.exerciciosCustomizados, resposta.exerciciosCustomizados || {}); persistExerciciosCustomizados();
+    state.diarioKcal = dedupDiarioKcalPorData(mergeMedidas(state.diarioKcal, resposta.diarioKcal || [])); persistDiarioKcal();
     toastSuccess("Conectado como " + state.account.email + ". Seus dados agora sincronizam entre aparelhos — sem precisar conectar de novo.");
   } catch (err) { toastError((err && err.message) || "Falha ao conectar com o Google. Tente novamente."); }
   finally { state.syncing = false; render(); }
@@ -1743,6 +1841,28 @@ function acaoZerarHoje() {
   persistMeals();
   toastSuccess("Os registros de hoje foram removidos; o histórico anterior foi preservado.");
   if (state.account) enviarComFila("zerarHojeGoogle", [state.usuario.email, t]);
+  render();
+}
+function acaoTrocarAbaNutricao(aba) { state.nutricaoAba = aba; render(); }
+// Guarda no Diário de Kcal um resumo do dia de hoje: total de calorias/macro/micronutrientes consumidos
+// e a lista das refeições (nome, horário e valores DA REFEIÇÃO -- não alimento por alimento, ver
+// diarioKcalRefeicaoTemplate()). Só existe um registro por data: clicar de novo no mesmo dia substitui o
+// registro anterior (ex.: a pessoa lembrou de registrar mais uma refeição e quer atualizar o resumo).
+function acaoEncerrarDia() {
+  const meals = todayMeals();
+  if (!meals.length) { toastError("Registre ao menos uma refeição hoje antes de encerrar o dia."); return; }
+  const t = today();
+  const totais = meals.reduce((sum, m) => addNutrients(sum, m), emptyNutrients);
+  const refeicoes = meals.map((m) => {
+    const r = { name: m.name, time: m.time };
+    NUTRIENT_KEYS.forEach((k) => { r[k] = m[k] || 0; });
+    return r;
+  });
+  const registro = Object.assign({ id: Date.now(), date: t, refeicoes: refeicoes }, totais);
+  state.diarioKcal = state.diarioKcal.filter((r) => r.date !== t).concat([registro]);
+  persistDiarioKcal();
+  toastSuccess("Dia encerrado — resumo de " + dateLabel(t) + " guardado no Diário de Kcal.");
+  if (state.account) enviarComFila("salvarDiarioKcalGoogle", [state.usuario.email, registro]);
   render();
 }
 function acaoAtualizarMeta(key, value) {
@@ -2164,6 +2284,7 @@ function acaoAdicionarGrupoMuscular(grupoId) {
 // Remove um grupo do registro atual e descarta os exercícios que tinham sido marcados nele.
 function acaoRemoverGrupoMuscular(grupoId) {
   state.treinoGruposSelecionados = state.treinoGruposSelecionados.filter((g) => g !== grupoId);
+  if (state.treinoNovoExercicioGrupoAberto === grupoId) state.treinoNovoExercicioGrupoAberto = null;
   const prefixo = grupoId + "::";
   const novosMarcados = {};
   Object.keys(state.treinoExerciciosMarcados).forEach((chave) => { if (chave.indexOf(prefixo) !== 0) novosMarcados[chave] = state.treinoExerciciosMarcados[chave]; });
@@ -2180,34 +2301,75 @@ function acaoAlternarExercicio(chave) {
   state.treinoExerciciosMarcados = novosMarcados;
   render();
 }
+// Abre/fecha/confirma o formulário inline de "novo exercício" (botão "+ Exercício" no bloco do grupo,
+// ver treinoNovoExercicioFormTemplate()). Ao confirmar, o exercício é adicionado à lista PADRÃO desse
+// grupo (persistido em state.exerciciosCustomizados e sincronizado com a conta Google, se conectada) --
+// então já aparece automaticamente em qualquer treino futuro desse mesmo grupo, sem precisar recadastrar.
+// Se a pessoa digitar o nome de um exercício que já existe (padrão ou já cadastrado antes), reaproveita
+// o existente em vez de criar um duplicado.
+function acaoAbrirNovoExercicio(grupoId) {
+  state.treinoNovoExercicioGrupoAberto = grupoId;
+  state.treinoNovoExercicioNome = "";
+  render();
+}
+function acaoCancelarNovoExercicio() {
+  state.treinoNovoExercicioGrupoAberto = null;
+  state.treinoNovoExercicioNome = "";
+  render();
+}
+function acaoConfirmarNovoExercicio(grupoId) {
+  const inputEl = document.getElementById("treino-novo-exercicio-nome");
+  const nome = inputEl ? inputEl.value.trim() : "";
+  if (!nome) { toastError("Informe o nome do exercício."); return; }
+  const existente = exerciciosDoGrupo(grupoId).find((ex) => ex.label.trim().toLowerCase() === nome.toLowerCase());
+  let exercicio = existente;
+  if (!exercicio) {
+    exercicio = { id: "custom_" + Date.now(), label: nome };
+    state.exerciciosCustomizados = Object.assign({}, state.exerciciosCustomizados);
+    state.exerciciosCustomizados[grupoId] = (state.exerciciosCustomizados[grupoId] || []).concat([exercicio]);
+    persistExerciciosCustomizados();
+    if (state.account) enviarComFila("salvarExercicioCustomizadoGoogle", [state.usuario.email, { grupoId: grupoId, id: exercicio.id, label: exercicio.label }]);
+    toastSuccess('Exercício "' + nome + '" adicionado — ele já vai aparecer nos próximos treinos desse grupo.');
+  } else {
+    toastSuccess('Esse exercício já estava na lista — marcamos ele pra você.');
+  }
+  const chave = grupoId + "::" + exercicio.id;
+  const novosMarcados = Object.assign({}, state.treinoExerciciosMarcados);
+  if (!novosMarcados[chave]) novosMarcados[chave] = { series: "", repeticoes: "", peso: "" };
+  state.treinoExerciciosMarcados = novosMarcados;
+  state.treinoNovoExercicioGrupoAberto = null;
+  state.treinoNovoExercicioNome = "";
+  render();
+}
 // Monta a lista final de grupos/exercícios marcados pra salvar junto do registro do treino -- ver
 // acaoEncerrarTreino()/acaoSalvarTreino(). Cada item: { grupo: "Peito", exercicios: [{ exercicio, series,
 // repeticoes, peso }, ...] } (exercicios pode vir vazio, se a pessoa só adicionou o grupo sem marcar
-// nenhum exercício; series/repeticoes/peso ficam null se não informados -- são opcionais).
-// Lê os campos de séries/repetições/peso DIRETO DO DOM (não do state) -- mesmo motivo de
-// calcularCamposDistanciaTreino() ler #treino-distancia direto: acaoSalvarTreino()/acaoEncerrarTreino()
-// não passam por um render() antes de montar o registro, então um valor digitado agora mesmo (sem
-// nenhum render() no meio) ainda não teria sido recapturado em state.treinoExerciciosMarcados.
-function obterGruposMuscularesParaSalvar() {
+// nenhum exercício; series/repeticoes/peso ficam null se não informados -- são opcionais). Lê os campos
+// de séries/repetições/peso DIRETO DO DOM (não do state) -- mesmo motivo de calcularCamposDistanciaTreino()
+// ler #treino-distancia direto: acaoSalvarTreino()/acaoEncerrarTreino() não passam por um render() antes
+// de montar o registro, então um valor digitado agora mesmo (sem nenhum render() no meio) ainda não
+// teria sido recapturado em state.treinoExerciciosMarcados.
+function montarGrupoMuscularParaSalvar(grupoId) {
+  const grupo = grupoMuscularPorId(grupoId);
+  if (!grupo) return null;
   const paraNumero = (v) => (v !== undefined && v !== null && String(v).trim() !== "" ? Number(String(v).trim().replace(",", ".")) || null : null);
-  return state.treinoGruposSelecionados.map((grupoId) => {
-    const grupo = grupoMuscularPorId(grupoId);
-    if (!grupo) return null;
-    const exercicios = grupo.exercicios
-      .filter((ex) => state.treinoExerciciosMarcados[grupoId + "::" + ex.id])
-      .map((ex) => {
-        const domPrefixo = treinoExercicioDomPrefixo(grupoId, ex.id);
-        const seriesEl = document.getElementById(domPrefixo + "-series");
-        const repeticoesEl = document.getElementById(domPrefixo + "-repeticoes");
-        const pesoEl = document.getElementById(domPrefixo + "-peso");
-        const dados = state.treinoExerciciosMarcados[grupoId + "::" + ex.id] || {};
-        const series = seriesEl ? seriesEl.value : dados.series;
-        const repeticoes = repeticoesEl ? repeticoesEl.value : dados.repeticoes;
-        const peso = pesoEl ? pesoEl.value : dados.peso;
-        return { exercicio: ex.label, series: paraNumero(series), repeticoes: paraNumero(repeticoes), peso: paraNumero(peso) };
-      });
-    return { grupo: grupo.label, exercicios: exercicios };
-  }).filter(Boolean);
+  const exercicios = exerciciosDoGrupo(grupoId)
+    .filter((ex) => state.treinoExerciciosMarcados[grupoId + "::" + ex.id])
+    .map((ex) => {
+      const domPrefixo = treinoExercicioDomPrefixo(grupoId, ex.id);
+      const seriesEl = document.getElementById(domPrefixo + "-series");
+      const repeticoesEl = document.getElementById(domPrefixo + "-repeticoes");
+      const pesoEl = document.getElementById(domPrefixo + "-peso");
+      const dados = state.treinoExerciciosMarcados[grupoId + "::" + ex.id] || {};
+      const series = seriesEl ? seriesEl.value : dados.series;
+      const repeticoes = repeticoesEl ? repeticoesEl.value : dados.repeticoes;
+      const peso = pesoEl ? pesoEl.value : dados.peso;
+      return { exercicio: ex.label, series: paraNumero(series), repeticoes: paraNumero(repeticoes), peso: paraNumero(peso) };
+    });
+  return { grupo: grupo.label, exercicios: exercicios };
+}
+function obterGruposMuscularesParaSalvar() {
+  return state.treinoGruposSelecionados.map(montarGrupoMuscularParaSalvar).filter(Boolean);
 }
 // Troca de modo também descarta uma foto já selecionada — evita uma foto escolhida num modo "vazar"
 // silenciosamente pro outro.
@@ -2305,6 +2467,7 @@ function acaoEncerrarTreino() {
   state.treinoDistanciaKm = "";
   state.treinoGruposSelecionados = [];
   state.treinoExerciciosMarcados = {};
+  state.treinoNovoExercicioGrupoAberto = null;
   if (notaEl) notaEl.value = ""; // ver comentário em acaoSalvarTreino sobre limpar o DOM diretamente
   if (distanciaEl) distanciaEl.value = "";
   limparFotoTreinoSelecionada();
@@ -2343,6 +2506,9 @@ function acaoCancelarTreinoAtivo() {
 function acaoSalvarTreino() {
   const esporte = state.treinoEsporte;
   if (!esporte) { toastError("Selecione o esporte."); return; }
+  const dataEl = document.getElementById("treino-data");
+  const dataTreino = dataEl && dataEl.value ? dataEl.value : today();
+  if (dataTreino > today()) { toastError("A data do treino não pode ser no futuro."); return; }
   const inicioEl = document.getElementById("treino-hora-inicio");
   const fimEl = document.getElementById("treino-hora-fim");
   const horaInicio = inicioEl ? inicioEl.value : "";
@@ -2357,18 +2523,21 @@ function acaoSalvarTreino() {
   const camposDistancia = calcularCamposDistanciaTreino(esporte, duracaoMin);
   const gruposMusculares = obterGruposMuscularesParaSalvar();
 
-  const novoTreino = Object.assign({ id: Date.now(), date: today(), esporte, horaInicio, horaFim, duracaoMin, fotoUrl: "", nota, gruposMusculares }, camposDistancia);
+  const novoTreino = Object.assign({ id: Date.now(), date: dataTreino, esporte, horaInicio, horaFim, duracaoMin, fotoUrl: "", nota, gruposMusculares }, camposDistancia);
   const arquivoFoto = treinoFotoSelecionada;
   state.treinos = state.treinos.concat([novoTreino]);
   persistTreinos();
   state.treinoEsporte = "";
+  state.treinoData = "";
   state.treinoNota = "";
   state.treinoDistanciaKm = "";
   state.treinoGruposSelecionados = [];
   state.treinoExerciciosMarcados = {};
+  state.treinoNovoExercicioGrupoAberto = null;
   // Limpa os campos no DOM diretamente (não só no state) — como os inputs continuam montados na
   // tela após salvar, o captureFormState() chamado no início do próximo render() ia recapturar o
   // valor antigo ainda presente nos inputs e desfazer a limpeza do state.
+  if (dataEl) dataEl.value = "";
   inicioEl.value = "";
   fimEl.value = "";
   if (notaEl) notaEl.value = "";
@@ -2407,11 +2576,12 @@ function treinoExercicioResumoTexto(ex) {
   if (ex.peso) detalhes.push(formatNumber(ex.peso, 1) + "kg");
   return ex.exercicio + (detalhes.length ? " (" + detalhes.join(", ") + ")" : "");
 }
+function treinoGrupoResumoTexto(g) {
+  return g.exercicios && g.exercicios.length ? g.grupo + ": " + g.exercicios.map(treinoExercicioResumoTexto).join(", ") : g.grupo;
+}
 function treinoGruposMuscularesResumoTexto(t) {
   if (!t.gruposMusculares || !t.gruposMusculares.length) return "";
-  return t.gruposMusculares.map((g) =>
-    g.exercicios && g.exercicios.length ? g.grupo + ": " + g.exercicios.map(treinoExercicioResumoTexto).join(", ") : g.grupo
-  ).join(" · ");
+  return t.gruposMusculares.map(treinoGrupoResumoTexto).join(" · ");
 }
 function treinoListTemplate() {
   const treinos = todayTreinos();
@@ -3126,19 +3296,33 @@ function treinoGruposMuscularesCampoTemplate() {
     state.treinoGruposSelecionados.map(treinoGrupoBlocoTemplate).join("") +
   "</div>";
 }
-// Bloco de um grupo muscular já adicionado: título + botão de remover + checkbox de cada exercício comum
-// do grupo. Ao marcar um exercício, abrem os campos de séries/repetições/peso pra aquele exercício (ver
-// treinoExercicioLinhaTemplate()). O estado marcado/desmarcado e os valores digitados vêm de
-// state.treinoExerciciosMarcados (ver acaoAlternarExercicio()/captureFormState()).
+// Bloco de um grupo muscular já adicionado: título + botão de adicionar exercício personalizado + botão
+// de remover + checkbox de cada exercício (padrão + os que a pessoa já cadastrou pra esse grupo, ver
+// exerciciosDoGrupo()). Ao marcar um exercício, abrem os campos de séries/repetições/peso pra aquele
+// exercício (ver treinoExercicioLinhaTemplate()).
 function treinoGrupoBlocoTemplate(grupoId) {
   const grupo = grupoMuscularPorId(grupoId);
   if (!grupo) return "";
   return '<div class="treino-grupo-bloco">' +
     '<div class="treino-grupo-bloco-head"><strong>' + esc(grupo.label) + "</strong>" +
-      '<button type="button" class="treino-grupo-remover" aria-label="Remover ' + esc(grupo.label) + '" onclick="acaoRemoverGrupoMuscular(\'' + grupoId + '\')">' + icon("x") + "</button>" +
+      '<div class="treino-grupo-bloco-acoes">' +
+        '<button type="button" class="treino-grupo-add-exercicio" onclick="acaoAbrirNovoExercicio(\'' + grupoId + '\')">' + icon("plus") + " Exercício</button>" +
+        '<button type="button" class="treino-grupo-remover" aria-label="Remover ' + esc(grupo.label) + '" onclick="acaoRemoverGrupoMuscular(\'' + grupoId + '\')">' + icon("x") + "</button>" +
+      "</div>" +
     "</div>" +
+    (state.treinoNovoExercicioGrupoAberto === grupoId ? treinoNovoExercicioFormTemplate(grupoId) : "") +
     '<div class="treino-grupo-exercicios">' +
-      grupo.exercicios.map((ex) => treinoExercicioLinhaTemplate(grupoId, ex)).join("") +
+      exerciciosDoGrupo(grupoId).map((ex) => treinoExercicioLinhaTemplate(grupoId, ex)).join("") +
+    "</div>" +
+  "</div>";
+}
+// Formulário inline de "novo exercício" -- ver acaoAbrirNovoExercicio()/acaoConfirmarNovoExercicio().
+function treinoNovoExercicioFormTemplate(grupoId) {
+  return '<div class="treino-novo-exercicio-form">' +
+    '<input id="treino-novo-exercicio-nome" type="text" class="meal-input" placeholder="Nome do exercício" aria-label="Nome do novo exercício" value="' + esc(state.treinoNovoExercicioNome) + '"/>' +
+    '<div class="treino-novo-exercicio-acoes">' +
+      '<button type="button" class="btn-ghost-light" onclick="acaoConfirmarNovoExercicio(\'' + grupoId + '\')">Adicionar</button>' +
+      '<button type="button" class="treino-novo-exercicio-cancelar" onclick="acaoCancelarNovoExercicio()">Cancelar</button>' +
     "</div>" +
   "</div>";
 }
@@ -3210,6 +3394,7 @@ function treinoFormCronometroTemplate() {
 function treinoFormManualTemplate() {
   return '<div class="meal-form">' +
     treinoSeletorEsporteTemplate() +
+    '<div><label class="meal-form-label">Data do treino</label><input id="treino-data" type="date" class="meal-input" max="' + esc(today()) + '" value="' + esc(state.treinoData || today()) + '"/></div>' +
     '<div class="meal-form-row">' +
       '<div><label class="meal-form-label">Início</label><input id="treino-hora-inicio" type="time" class="meal-input" value="' + esc(state.treinoHoraInicio) + '"/></div>' +
       '<div><label class="meal-form-label">Término</label><input id="treino-hora-fim" type="time" class="meal-input" value="' + esc(state.treinoHoraFim) + '"/></div>' +
@@ -3259,6 +3444,36 @@ function fullHomeTemplate() {
   return homeTabsTemplate() + nutricaoTabTemplate();
 }
 
+// Linha de uma refeição dentro de um registro do Diário de Kcal -- mostra o total DA REFEIÇÃO (já
+// calculado na hora do registro), não alimento por alimento.
+function diarioKcalRefeicaoTemplate(ref) {
+  return '<div class="diario-kcal-refeicao">' +
+    '<span class="diario-kcal-refeicao-nome">' + icon("clock") + " " + esc(ref.time) + " · " + esc(ref.name) + "</span>" +
+    '<span class="diario-kcal-refeicao-valores">' + formatNumber(ref.calories) + " kcal · P " + formatNumber(ref.protein, 1) + " · C " + formatNumber(ref.carbs, 1) + " · G " + formatNumber(ref.fat, 1) + "</span>" +
+  "</div>";
+}
+// Um dia encerrado no Diário de Kcal: total de calorias/macro/micronutrientes daquele dia (congelado no
+// momento do "Encerrar dia", ver acaoEncerrarDia()) + a lista das refeições daquele dia.
+function diarioKcalRegistroTemplate(r) {
+  return '<div class="diario-kcal-dia">' +
+    '<div class="diario-kcal-dia-head"><span class="diario-kcal-dia-data">' + icon("calendar") + " " + dateLabel(r.date) + "</span><span class=\"diario-kcal-dia-kcal\">" + formatNumber(r.calories) + " kcal</span></div>" +
+    '<div class="diario-kcal-dia-macros">Proteína ' + formatNumber(r.protein, 1) + "g · Carboidratos " + formatNumber(r.carbs, 1) + "g · Gorduras " + formatNumber(r.fat, 1) + "g · Fibras " + formatNumber(r.fiber, 1) + "g</div>" +
+    '<div class="diario-kcal-dia-micros">' + Object.keys(micronutrientMeta).map((k) => micronutrientMeta[k].label + ": " + formatNumber(r[k] || 0, 1) + " " + micronutrientMeta[k].unit).join(" · ") + "</div>" +
+    '<div class="diario-kcal-refeicoes">' + (r.refeicoes || []).map(diarioKcalRefeicaoTemplate).join("") + "</div>" +
+  "</div>";
+}
+// Aba "Diário de Kcal" da página de Nutrição -- ver acaoTrocarAbaNutricao(). O botão "Encerrar dia" fica
+// sempre no topo, imediatamente acima dos registros já guardados (mais recente primeiro).
+function diarioKcalTabTemplate() {
+  const registros = state.diarioKcal.slice().sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+  return '<section class="diario-kcal-section">' +
+    '<button class="btn-primary-pill-lg diario-kcal-encerrar-btn" onclick="acaoEncerrarDia()">' + icon("check") + ' <span class="label">Encerrar dia</span></button>' +
+    (registros.length
+      ? '<div class="diario-kcal-lista">' + registros.map(diarioKcalRegistroTemplate).join("") + "</div>"
+      : '<div class="meal-empty"><div class="meal-empty-icon">' + icon("calendar") + '</div><p>Nenhum dia encerrado ainda</p><p>Ao final do dia, clique em "Encerrar dia" para guardar aqui o resumo de calorias, macro e micronutrientes consumidos, com as refeições e horários.</p></div>'
+    ) +
+  "</section>";
+}
 function nutricaoTabTemplate() {
   const consumed = consumedToday();
   const remaining = remainingToday();
@@ -3282,40 +3497,46 @@ function nutricaoTabTemplate() {
         '<div class="progress-track-light"><div class="progress-fill-light" style="width:' + pct(consumed.calories, state.goals.calories) + '%"></div></div>' +
       "</div></div>" +
     "</section>" +
-    goalsPanelTemplate() +
-    '<div class="nutrient-tabs">' +
-      '<button class="nutrient-tab' + (state.nutrientAba !== "micro" ? " active" : "") + '" onclick="acaoTrocarAbaNutrientes(\'macro\')">Macronutrientes</button>' +
-      '<button class="nutrient-tab' + (state.nutrientAba === "micro" ? " active" : "") + '" onclick="acaoTrocarAbaNutrientes(\'micro\')">Micronutrientes</button>' +
+    '<div class="nutricao-modo-tabs">' +
+      '<button class="nutricao-modo-tab' + (state.nutricaoAba !== "diario" ? " active" : "") + '" onclick="acaoTrocarAbaNutricao(\'registrar\')">' + icon("utensils") + " Registrar refeição</button>" +
+      '<button class="nutricao-modo-tab' + (state.nutricaoAba === "diario" ? " active" : "") + '" onclick="acaoTrocarAbaNutricao(\'diario\')">' + icon("calendar") + " Diário de Kcal</button>" +
     "</div>" +
-    (state.nutrientAba === "micro" ?
-      '<section class="nutrient-grid nutrient-grid-micro">' + micronutrientCardsTemplate() + "</section>"
-      :
-      '<section class="nutrient-grid">' + nutrientCardsTemplate() + "</section>"
+    (state.nutricaoAba === "diario" ? diarioKcalTabTemplate() : '' +
+      goalsPanelTemplate() +
+      '<div class="nutrient-tabs">' +
+        '<button class="nutrient-tab' + (state.nutrientAba !== "micro" ? " active" : "") + '" onclick="acaoTrocarAbaNutrientes(\'macro\')">Macronutrientes</button>' +
+        '<button class="nutrient-tab' + (state.nutrientAba === "micro" ? " active" : "") + '" onclick="acaoTrocarAbaNutrientes(\'micro\')">Micronutrientes</button>' +
+      "</div>" +
+      (state.nutrientAba === "micro" ?
+        '<section class="nutrient-grid nutrient-grid-micro">' + micronutrientCardsTemplate() + "</section>"
+        :
+        '<section class="nutrient-grid">' + nutrientCardsTemplate() + "</section>"
+      ) +
+      '<section class="dashboard-grid">' +
+        '<aside class="meal-card"><div class="meal-card-eyebrow">' + icon("sparkles") + " Nova refeição</div>" +
+        "<h2>O que você vai comer?</h2>" +
+        '<p class="meal-card-desc">Escreva naturalmente. Ex.: “1 pão francês, 1 ovo frito e 300 ml de suco de laranja”.</p>' +
+        '<div class="meal-form">' +
+          '<select id="meal-tipo-select" class="meal-select" onchange="acaoSelecionarTipoRefeicao(this.value)">' +
+            '<option value="">Selecione a refeição...</option>' +
+            MEAL_TIPOS.map((t) => '<option value="' + esc(t) + '"' + (state.mealTipo === t ? " selected" : "") + ">" + esc(t) + "</option>").join("") +
+          "</select>" +
+          (state.mealTipo === "Outro" ? '<input id="meal-nome-custom" class="meal-input" placeholder="Nome da refeição" value="' + esc(state.mealNomeCustom) + '"/>' : "") +
+          '<textarea id="meal-description" class="meal-textarea" placeholder="Descreva os alimentos e quantidades..." rows="4">' + esc(state.mealDescription) + "</textarea>" +
+          '<button class="btn-ghost-light" onclick="acaoAnalisar()">' + icon("sparkles") + " Calcular refeição</button>" +
+        "</div>" +
+        mealPreviewTemplate() +
+        "</aside>" +
+        '<div class="history-card"><div class="history-card-head">' +
+          '<div><div class="history-eyebrow">' + icon("utensils") + " Refeições de hoje</div><h2>O que você comeu</h2></div>" +
+          '<button class="history-toggle" onclick="acaoAlternarHistorico()">' + icon("history") + " Histórico (" + historyDays().length + ")</button>" +
+        "</div>" +
+        '<div class="meal-list">' + mealListTemplate() + "</div>" +
+        historyPanelTemplate() +
+        "</div>" +
+      "</section>" +
+      '<div class="footnote">' + icon("help") + "<p>Os valores são estimativas. O reconhecimento automático funciona com alimentos conhecidos e pode ser refinado com uma base nutricional maior.</p></div>"
     ) +
-    '<section class="dashboard-grid">' +
-      '<aside class="meal-card"><div class="meal-card-eyebrow">' + icon("sparkles") + " Nova refeição</div>" +
-      "<h2>O que você vai comer?</h2>" +
-      '<p class="meal-card-desc">Escreva naturalmente. Ex.: “1 pão francês, 1 ovo frito e 300 ml de suco de laranja”.</p>' +
-      '<div class="meal-form">' +
-        '<select id="meal-tipo-select" class="meal-select" onchange="acaoSelecionarTipoRefeicao(this.value)">' +
-          '<option value="">Selecione a refeição...</option>' +
-          MEAL_TIPOS.map((t) => '<option value="' + esc(t) + '"' + (state.mealTipo === t ? " selected" : "") + ">" + esc(t) + "</option>").join("") +
-        "</select>" +
-        (state.mealTipo === "Outro" ? '<input id="meal-nome-custom" class="meal-input" placeholder="Nome da refeição" value="' + esc(state.mealNomeCustom) + '"/>' : "") +
-        '<textarea id="meal-description" class="meal-textarea" placeholder="Descreva os alimentos e quantidades..." rows="4">' + esc(state.mealDescription) + "</textarea>" +
-        '<button class="btn-ghost-light" onclick="acaoAnalisar()">' + icon("sparkles") + " Calcular refeição</button>" +
-      "</div>" +
-      mealPreviewTemplate() +
-      "</aside>" +
-      '<div class="history-card"><div class="history-card-head">' +
-        '<div><div class="history-eyebrow">' + icon("utensils") + " Refeições de hoje</div><h2>O que você comeu</h2></div>" +
-        '<button class="history-toggle" onclick="acaoAlternarHistorico()">' + icon("history") + " Histórico (" + historyDays().length + ")</button>" +
-      "</div>" +
-      '<div class="meal-list">' + mealListTemplate() + "</div>" +
-      historyPanelTemplate() +
-      "</div>" +
-    "</section>" +
-    '<div class="footnote">' + icon("help") + "<p>Os valores são estimativas. O reconhecimento automático funciona com alimentos conhecidos e pode ser refinado com uma base nutricional maior.</p></div>" +
     "</main>";
 }
 
@@ -3358,6 +3579,8 @@ function captureFormState() {
     state.caloFormValores = valores;
   }
 
+  const treinoDataEl = document.getElementById("treino-data");
+  if (treinoDataEl) state.treinoData = treinoDataEl.value;
   const treinoInicioEl = document.getElementById("treino-hora-inicio");
   if (treinoInicioEl) state.treinoHoraInicio = treinoInicioEl.value;
   const treinoFimEl = document.getElementById("treino-hora-fim");
@@ -3384,6 +3607,9 @@ function captureFormState() {
       peso: pesoEl ? pesoEl.value : atual.peso || "",
     };
   });
+
+  const novoExercicioEl = document.getElementById("treino-novo-exercicio-nome");
+  if (novoExercicioEl) state.treinoNovoExercicioNome = novoExercicioEl.value;
 }
 function render() {
   captureFormState();
