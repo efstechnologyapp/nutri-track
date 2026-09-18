@@ -363,9 +363,11 @@ svg{ display: block; }
 .history-day-meal-com-nota{ display:block; }
 .history-day-meal-linha{ display:flex; align-items:center; justify-content:space-between; }
 .history-day-meal-nota{ margin:2px 0 0; font-size:11px; font-style:italic; color:#9aa9a1; }
-.history-day-meal-distancia{ margin:2px 0 0; font-size:11px; font-weight:600; color:#4b7048; }
-.history-day-meal-grupos-musculares{ margin:2px 0 0; font-size:11px; font-weight:600; color:#4b7048; }
-.history-day-meal-calorias-queimadas{ margin:2px 0 0; font-size:11px; font-weight:600; color:#c9762f; }
+.history-day-meal-distancia{ margin:2px 0 0; font-size:11px; color:#4b7048; }
+.history-day-meal-grupos-lista{ margin:2px 0 0; padding-left:16px; font-size:11px; font-weight:400; color:#4b7048; }
+.history-day-meal-grupos-lista li{ margin:0; }
+.history-day-meal-grupos-lista strong{ font-weight:600; }
+.history-day-meal-calorias-queimadas{ margin:2px 0 0; font-size:11px; color:#c9762f; }
 .history-day-meal-static{ cursor:default; }
 .history-day-meal-static:hover{ background:transparent; }
 
@@ -2974,6 +2976,18 @@ function treinoGruposMuscularesResumoTexto(t) {
   if (!t.gruposMusculares || !t.gruposMusculares.length) return "";
   return t.gruposMusculares.map(treinoGrupoResumoTexto).join(" · ");
 }
+// Versão em lista numerada dos grupos musculares (um grupo por linha, "1. Costas: ...; 2. Peito: ...."),
+// usada só no histórico de treinos salvos (treinoHistoryDayCardTemplate()) -- lá o texto corrido
+// (treinoGruposMuscularesResumoTexto(), usada no card de "hoje") ficava difícil de ler com vários grupos.
+function treinoGruposMuscularesListaHtml(t) {
+  if (!t.gruposMusculares || !t.gruposMusculares.length) return "";
+  const grupos = t.gruposMusculares;
+  return '<ol class="history-day-meal-grupos-lista">' + grupos.map((g, i) => {
+    const exerciciosTexto = g.exercicios && g.exercicios.length ? g.exercicios.map(treinoExercicioResumoTexto).join(", ") : "";
+    const pontuacao = i === grupos.length - 1 ? "." : ";";
+    return "<li><strong>" + esc(g.grupo) + "</strong>" + (exerciciosTexto ? ": " + esc(exerciciosTexto) : "") + pontuacao + "</li>";
+  }).join("") + "</ol>";
+}
 // "~420 kcal" -- ou "" se não deu pra estimar (sem peso registrado em Medidas e Aferições, ou esporte
 // sem MET aplicável). Ver estimarCaloriasQueimadas().
 function treinoCaloriasResumoTexto(t) {
@@ -3034,7 +3048,7 @@ function treinoHistoryDayCardTemplate(date) {
             '<div class="history-day-meal history-day-meal-static' + ((t.nota || t.distanciaKm || t.caloriasQueimadas || (t.gruposMusculares && t.gruposMusculares.length)) ? " history-day-meal-com-nota" : "") + '">' +
               '<div class="history-day-meal-linha"><span>' + emojiEsporte(t.esporte) + " " + esc(t.esporte) + " · " + esc(t.horaInicio) + "–" + esc(t.horaFim) + "</span><span>" + esc(formatarDuracao(t.duracaoMin)) + (t.fotoUrl ? ' <a class="history-day-meal-foto-link" href="' + esc(t.fotoUrl) + '" target="_blank" rel="noopener" aria-label="Ver foto do treino">' + icon("camera") + "</a>" : "") + "</span></div>" +
               (t.distanciaKm ? '<p class="history-day-meal-distancia">' + esc(treinoDistanciaResumoTexto(t)) + "</p>" : "") +
-              (t.gruposMusculares && t.gruposMusculares.length ? '<p class="history-day-meal-grupos-musculares">' + esc(treinoGruposMuscularesResumoTexto(t)) + "</p>" : "") +
+              treinoGruposMuscularesListaHtml(t) +
               (t.caloriasQueimadas ? '<p class="history-day-meal-calorias-queimadas">' + esc(treinoCaloriasResumoTexto(t)) + " queimadas (estimativa)</p>" : "") +
               (t.nota ? '<p class="history-day-meal-nota">' + esc(t.nota) + "</p>" : "") +
             "</div>"
