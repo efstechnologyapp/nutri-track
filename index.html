@@ -388,9 +388,20 @@ svg{ display: block; }
 .diario-kcal-dia-meta{ margin-top:4px; font-size:13px; font-weight:600; color:#4a6b58; }
 .diario-kcal-dia-macros{ margin-top:6px; font-size:12.5px; color:#6e8d69; }
 .diario-kcal-dia-micros{ margin-top:4px; font-size:11.5px; color:#9aa9a1; }
-.diario-kcal-dia-queimadas{ margin-top:8px; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:600; color:#c9762f; }
-.diario-kcal-dia-queimadas .icon{ width:14px; height:14px; flex-shrink:0; }
+/* Comparação de cada macro/micronutriente com a meta do dia (ver diarioKcalCompararMetaClasse()):
+   abaixo da meta em vermelho, acima da meta num azul claro reluzente (com um leve brilho via text-shadow),
+   igual mantém a cor neutra herdada da linha (sem classe). */
+.diario-kcal-nutriente-abaixo{ color:#c35e4b; }
+.diario-kcal-nutriente-acima{ color:#29b6f6; text-shadow:0 0 6px rgba(41,182,246,0.45); }
+.diario-kcal-dia-subtitulo{ margin:0 0 6px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.03em; color:#8a9c93; }
 .diario-kcal-refeicoes{ margin-top:12px; display:flex; flex-direction:column; gap:6px; border-top:1px solid #e8eee5; padding-top:10px; }
+.diario-kcal-gastos{ margin-top:12px; display:flex; flex-direction:column; gap:5px; border-top:1px solid #e8eee5; padding-top:10px; font-size:12px; color:#c9762f; }
+.diario-kcal-gastos-linha{ display:flex; align-items:center; gap:5px; }
+.diario-kcal-gastos-linha .icon{ width:14px; height:14px; flex-shrink:0; }
+/* Trecho "meta (Objetivo) - atingida ✅ / não atingida ❌" na seção Análise do objetivo -- combinado com
+   o usuário: negrito azul quando atingida, negrito vermelho quando não atingida. */
+.diario-kcal-meta-atingida{ color:#1e88e5; font-weight:600; }
+.diario-kcal-meta-nao-atingida{ color:#c35e4b; font-weight:600; }
 .diario-kcal-refeicao{ display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:12px; color:#557268; flex-wrap:wrap; }
 .diario-kcal-refeicao-nome{ display:flex; align-items:center; gap:5px; font-weight:600; }
 .diario-kcal-refeicao-nome .icon{ width:13px; height:13px; color:#9aa9a1; flex-shrink:0; }
@@ -1229,15 +1240,20 @@ function today() { return todayKey(); }
 // "Encerrar dia" (que não apaga nem esconde refeição nenhuma, só reseta os CARDS -- ver mais abaixo).
 function todayMeals() { const t = today(); return state.meals.filter((m) => m.date === t); }
 // Corte usado pelos CARDS de consumo (kcal/macro/micronutrientes -- consumedToday()) e pelo resumo
-// salvo em "Encerrar dia": id do último registro salvo no Diário de Kcal, ou seja, da última vez que a
-// pessoa clicou em "Encerrar dia" (em qualquer aparelho da mesma conta, já que state.diarioKcal
-// sincroniza). Combinado com o usuário: os CARDS não reiniciam sozinhos na virada do dia (meia-noite)
-// -- só reiniciam quando a pessoa clica em "Encerrar dia" mesmo. Por isso o corte usa o maior id entre
-// TODOS os registros do Diário (não só um de hoje) e é aplicado sobre TODAS as refeições (não só as de
-// hoje): enquanto ninguém encerrar o dia, uma refeição registrada depois da meia-noite continua
-// contando nos cards normalmente, mesmo já sendo, no calendário, um dia diferente das anteriores.
+// salvo em "Encerrar dia": o maior id de refeição já incluído no último "Encerrar dia" (em qualquer
+// aparelho da mesma conta, já que state.diarioKcal sincroniza) -- ver r.corteId, calculado em
+// acaoEncerrarDia(). Combinado com o usuário: os CARDS não reiniciam sozinhos na virada do dia (meia-
+// noite) -- só reiniciam quando a pessoa clica em "Encerrar dia" mesmo. Por isso o corte usa o maior
+// corteId entre TODOS os registros do Diário (não só um de hoje) e é aplicado sobre TODAS as refeições
+// (não só as de hoje): enquanto ninguém encerrar o dia, uma refeição registrada depois da meia-noite
+// continua contando nos cards normalmente, mesmo já sendo, no calendário, um dia diferente das
+// anteriores. IMPORTANTE: usa r.corteId (o id das refeições realmente incluídas), NUNCA r.id (que é só
+// o timestamp do clique em "Encerrar dia", e pode ficar maior que ids de refeições futuras registradas
+// num aparelho com o relógio certo, se o aparelho que clicou tinha o relógio adiantado -- isso travava
+// os cards em zero mesmo com refeições de hoje na lista). r.corteId != null trata registros salvos antes
+// dessa coluna existir (caem pro próprio r.id, mesmo comportamento de antes, só pra não quebrar).
 function corteDiaAberto() {
-  return state.diarioKcal.reduce((maior, r) => Math.max(maior, r.id), 0);
+  return state.diarioKcal.reduce((maior, r) => Math.max(maior, r.corteId != null ? r.corteId : r.id), 0);
 }
 // Refeições ainda não incluídas em nenhum "Encerrar dia" -- é o que os CARDS somam e o que um novo
 // "Encerrar dia" vai salvar/resetar. Pode incluir refeições de mais de uma data (ex.: a pessoa não
@@ -1901,11 +1917,31 @@ function acaoEncerrarDia() {
   // Calorias queimadas nos treinos do dia (ver estimarCaloriasQueimadas()) -- entram como informação
   // separada no registro, ao lado das calorias consumidas; não afeta a meta/saldo de consumo.
   const caloriasQueimadas = todayTreinos().reduce((soma, tr) => soma + (tr.caloriasQueimadas || 0), 0);
-  // Congela a meta de calorias e o objetivo escolhidos AGORA, no momento do "Encerrar dia" -- ver
-  // diarioKcalMetaTexto(). Combinado com o usuário: um registro já salvo não pode mudar se a meta do dia
-  // for alterada depois, então salvamos o valor junto com o resto do resumo em vez de recalcular sempre
-  // a partir de state.goals (que reflete só o valor ATUAL).
-  const registro = Object.assign({ id: Date.now(), date: t, refeicoes: refeicoes, caloriasQueimadas: caloriasQueimadas, metaCalorias: state.goals.calories, objetivo: state.goals.objetivo || "" }, totais);
+  // corteId: o MAIOR id de refeição já incluído neste "Encerrar dia" -- é isso que corteDiaAberto() usa
+  // daqui pra frente como corte dos cards (não mais o id do PRÓPRIO registro, que é só um timestamp do
+  // instante do clique). Bug corrigido: usar o id do registro (Date.now() no momento do clique) como
+  // corte pressupõe que o relógio do aparelho que clicou "Encerrar dia" está sempre à frente dos ids de
+  // QUALQUER refeição registrada depois, em QUALQUER aparelho -- o que quebra se os relógios de dois
+  // aparelhos (ex.: PC e celular) estiverem dessincronizados: um clique feito num aparelho com o relógio
+  // adiantado gera um id maior que o de refeições registradas depois num aparelho com o relógio certo,
+  // fazendo os cards (consumedToday()) ficarem travados em zero/incompletos pra sempre (a lista de hoje,
+  // que é por DATA e não por id, continua mostrando as refeições certinho -- só os cards que somem
+  // errado, exatamente o sintoma relatado). Usando o maior id das refeições REALMENTE incluídas nesse
+  // fechamento (todas com id > corte anterior, por construção), o corte fica ancorado nos ids reais das
+  // refeições, nunca no relógio de quem clicou. corteId != null trata registros antigos (ver
+  // corteDiaAberto()).
+  const corteId = meals.reduce((maior, m) => Math.max(maior, m.id), 0);
+  // Congela a meta de calorias/macro e o objetivo escolhidos AGORA, no momento do "Encerrar dia" -- ver
+  // diarioKcalMetaTexto()/diarioKcalMacrosTemplate(). Combinado com o usuário: um registro já salvo não
+  // pode mudar se a meta do dia for alterada depois, então salvamos os valores junto com o resto do
+  // resumo em vez de recalcular sempre a partir de state.goals (que reflete só o valor ATUAL). Os
+  // micronutrientes não entram aqui porque a referência deles (MICRO_GOALS) é fixa, não uma meta
+  // pessoal editável -- não muda com o tempo, então não precisa congelar.
+  const registro = Object.assign({
+    id: Date.now(), date: t, refeicoes: refeicoes, caloriasQueimadas: caloriasQueimadas, corteId: corteId,
+    metaCalorias: state.goals.calories, metaProtein: state.goals.protein, metaCarbs: state.goals.carbs,
+    metaFat: state.goals.fat, metaFiber: state.goals.fiber, objetivo: state.goals.objetivo || "",
+  }, totais);
   state.diarioKcal = state.diarioKcal.filter((r) => r.date !== t).concat([registro]);
   persistDiarioKcal();
   // NÃO apaga as refeições -- elas continuam em "Refeições de hoje" (se forem de hoje) e no Histórico
@@ -2310,21 +2346,48 @@ function historyPanelTemplate() {
       ) +
     "</div>";
 }
+// Meta/objetivo "daquele dia registrado" -- usa o registro CONGELADO do Diário de Kcal pra essa mesma
+// data quando existe (a pessoa já clicou em "Encerrar dia" pra esse dia), senão cai pra meta/objetivo
+// ATUAIS (mesmo padrão de fallback usado em diarioKcalMetaTexto()).
+function historyDayMetaInfo(date) {
+  const registroDiario = state.diarioKcal.find((r) => r.date === date);
+  if (registroDiario && registroDiario.metaCalorias != null) {
+    return { meta: registroDiario.metaCalorias, objetivo: registroDiario.objetivo };
+  }
+  return { meta: state.goals.calories, objetivo: state.goals.objetivo };
+}
 function historyDayCardTemplate(date) {
   const dayMeals = state.meals.filter((m) => m.date === date);
   const dayTotal = dayMeals.reduce((sum, m) => sum + m.calories, 0);
   const expandido = state.historyDiaExpandido === date;
+  const metaInfo = historyDayMetaInfo(date);
+  const objetivoLabel = metaInfo.objetivo && OBJETIVOS_META[metaInfo.objetivo] ? OBJETIVOS_META[metaInfo.objetivo].label : "";
+  const percentualTexto = metaInfo.meta > 0 ? "/" + formatNumber((dayTotal / metaInfo.meta) * 100) + "%" : "";
   return '' +
     '<div class="history-day' + (expandido ? " history-day-expandido" : "") + '">' +
-      '<button type="button" class="history-day-head history-day-head-btn" onclick="acaoAlternarDiaHistorico(\'' + date + '\')">' +
-        '<span class="date">' + dateLabel(date) + "</span>" +
-        '<span class="history-day-head-direita"><span class="total">' + formatNumber(dayTotal) + " kcal · " + dayMeals.length + (dayMeals.length > 1 ? " refeições" : " refeição") + "</span>" + icon("chevron", "history-day-chevron") + "</span>" +
-      "</button>" +
+      '<div class="history-day-head history-day-head-btn" onclick="acaoAlternarDiaHistorico(\'' + date + '\')">' +
+        '<span class="date">' + dateLabel(date) + (objetivoLabel ? " (" + objetivoLabel + ")" : "") + "</span>" +
+        '<span class="history-day-head-direita"><span class="total">' + formatNumber(dayTotal) + " kcal" + percentualTexto + " - " + dayMeals.length + (dayMeals.length > 1 ? " refeições" : " refeição") + "</span>" +
+        '<button class="meal-row-delete" aria-label="Excluir refeições de ' + esc(dateLabel(date)) + '" onclick="event.stopPropagation(); acaoRemoverDiaHistorico(\'' + date + '\')">' + icon("trash") + "</button>" +
+        icon("chevron", "history-day-chevron") + "</span>" +
+      "</div>" +
       (expandido
         ? '<div class="history-day-meals">' + dayMeals.map((m) => '<div class="history-day-meal" onclick="acaoAbrirDetalheRefeicao(' + m.id + ')"><span>' + esc(m.name) + "</span><span>" + formatNumber(m.calories) + " kcal</span></div>").join("") + "</div>"
         : ""
       ) +
     "</div>";
+}
+// Exclui TODAS as refeições registradas naquele dia (o "registro do dia" no histórico é o agrupamento
+// de refeições por data, não um registro único) -- remove cada uma localmente e sincroniza cada remoção
+// com o backend, igual acaoRemoverRefeicao() faz pra uma refeição avulsa.
+function acaoRemoverDiaHistorico(date) {
+  const idsDoDia = state.meals.filter((m) => m.date === date).map((m) => m.id);
+  if (!idsDoDia.length) return;
+  state.meals = state.meals.filter((m) => m.date !== date);
+  persistMeals();
+  if (state.account) idsDoDia.forEach((id) => enviarComFila("removerRefeicaoGoogle", [state.usuario.email, id]));
+  if (state.historyDiaExpandido === date) state.historyDiaExpandido = null;
+  render();
 }
 // Abre/fecha um dia do histórico (accordion: só um dia expandido de cada vez -- clicar num dia diferente
 // troca qual está aberto, sem precisar fechar o anterior primeiro).
@@ -2808,11 +2871,17 @@ function mealListTemplate() {
   if (!meals.length) {
     return '<div class="meal-empty"><div class="meal-empty-icon">' + icon("plus") + "</div><p>Nenhuma refeição registrada hoje</p><p>Descreva a primeira refeição no formulário ao lado.</p></div>";
   }
-  return meals.map((m) =>
-    '<div class="meal-row" onclick="acaoAbrirDetalheRefeicao(' + m.id + ')"><div class="meal-row-left"><div class="meal-row-icon">' + icon("utensils") + '</div><div class="meal-row-text"><div class="meal-row-name">' + esc(m.name) + '</div><div class="meal-row-meta">' + icon("clock") + " " + esc(m.time) + " · " + esc(m.detected.join(", ")) + "</div></div></div>" +
-    '<div class="meal-row-right"><div class="meal-row-stat"><div class="meal-row-kcal">' + formatNumber(m.calories) + ' kcal</div><div class="meal-row-macro">P ' + formatNumber(m.protein, 1) + " · C " + formatNumber(m.carbs, 1) + " · G " + formatNumber(m.fat, 1) + "</div></div>" +
-    '<button class="meal-row-delete" aria-label="Remover refeição" onclick="event.stopPropagation(); acaoRemoverRefeicao(' + m.id + ')">' + icon("trash") + "</button></div></div>"
-  ).join("");
+  // Percentual que o kcal dessa refeição representa da meta de calorias do dia (meta ATUAL, em
+  // state.goals -- diferente do Diário de Kcal, essa lista é do dia ainda em aberto, então não há nada
+  // congelado ainda pra usar). Ex.: "752 kcal / 39,2%". Sem meta cadastrada (0 ou ausente), mostra só o
+  // kcal, sem o percentual.
+  const metaCalorias = state.goals.calories;
+  return meals.map((m) => {
+    const percentualTexto = metaCalorias > 0 ? " / " + formatNumber((m.calories / metaCalorias) * 100, 1) + "%" : "";
+    return '<div class="meal-row" onclick="acaoAbrirDetalheRefeicao(' + m.id + ')"><div class="meal-row-left"><div class="meal-row-icon">' + icon("utensils") + '</div><div class="meal-row-text"><div class="meal-row-name">' + esc(m.name) + '</div><div class="meal-row-meta">' + icon("clock") + " " + esc(m.time) + " · " + esc(m.detected.join(", ")) + "</div></div></div>" +
+    '<div class="meal-row-right"><div class="meal-row-stat"><div class="meal-row-kcal">' + formatNumber(m.calories) + " kcal" + percentualTexto + '</div><div class="meal-row-macro">P ' + formatNumber(m.protein, 1) + " · C " + formatNumber(m.carbs, 1) + " · G " + formatNumber(m.fat, 1) + "</div></div>" +
+    '<button class="meal-row-delete" aria-label="Remover refeição" onclick="event.stopPropagation(); acaoRemoverRefeicao(' + m.id + ')">' + icon("trash") + "</button></div></div>";
+  }).join("");
 }
 
 function alimentoDetalheTemplate(a) {
@@ -3629,16 +3698,126 @@ function diarioKcalMetaTexto(r) {
   const objetivo = objetivoChave && OBJETIVOS_META[objetivoChave] ? OBJETIVOS_META[objetivoChave].label : "";
   return "Consumido " + formatNumber(r.calories) + " kcal (" + formatNumber(percentual, 2) + "%) da meta de " + formatNumber(meta) + " kcal/dia" + (objetivo ? " (" + objetivo + ")" : "");
 }
+// Classe de cor comparando o consumido com a meta -- combinado com o usuário: abaixo da meta em
+// vermelho, igual mantém a cor neutra (sem classe extra), acima em verde. Sem meta cadastrada (0 ou
+// ausente), não dá pra comparar -- fica neutro também.
+function diarioKcalCompararMetaClasse(consumido, meta) {
+  if (!(meta > 0)) return "";
+  if (consumido < meta) return " diario-kcal-nutriente-abaixo";
+  if (consumido > meta) return " diario-kcal-nutriente-acima";
+  return "";
+}
+// Texto "Label consumidoUN/metaUN (percentual%)" de um nutriente, ex.: "Proteína 55,0g/149,9g (36,7%)".
+function diarioKcalNutrienteTexto(label, consumido, meta, unidade) {
+  const percentual = meta > 0 ? (consumido / meta) * 100 : 0;
+  return label + " " + formatNumber(consumido, 1) + unidade + "/" + formatNumber(meta, 1) + unidade + " (" + formatNumber(percentual, 1) + "%)";
+}
+// Macronutrientes (proteína/carboidrato/gordura/fibra) comparados com a meta CONGELADA no registro (ver
+// acaoEncerrarDia()) -- mesma lógica de fallback de diarioKcalMetaTexto() pra registros antigos sem meta
+// salva.
+function diarioKcalMacrosTemplate(r) {
+  const temMetaPropria = r.metaCalorias != null;
+  const metas = {
+    protein: temMetaPropria && r.metaProtein != null ? r.metaProtein : state.goals.protein,
+    carbs: temMetaPropria && r.metaCarbs != null ? r.metaCarbs : state.goals.carbs,
+    fat: temMetaPropria && r.metaFat != null ? r.metaFat : state.goals.fat,
+    fiber: temMetaPropria && r.metaFiber != null ? r.metaFiber : state.goals.fiber,
+  };
+  return ["protein", "carbs", "fat", "fiber"].map((k) => {
+    const meta = metas[k];
+    const classe = diarioKcalCompararMetaClasse(r[k] || 0, meta);
+    return '<span class="diario-kcal-nutriente' + classe + '">' + diarioKcalNutrienteTexto(nutrientMeta[k].label, r[k] || 0, meta, nutrientMeta[k].unit) + "</span>";
+  }).join(" · ");
+}
+// Micronutrientes comparados com a Ingestão Diária de Referência (MICRO_GOALS) -- essa referência é
+// fixa (não é uma meta pessoal editável), então não precisa congelar nada no registro.
+function diarioKcalMicrosTemplate(r) {
+  return Object.keys(micronutrientMeta).map((k) => {
+    const meta = MICRO_GOALS[k];
+    const classe = diarioKcalCompararMetaClasse(r[k] || 0, meta);
+    return '<span class="diario-kcal-nutriente' + classe + '">' + diarioKcalNutrienteTexto(micronutrientMeta[k].label, r[k] || 0, meta, micronutrientMeta[k].unit) + "</span>";
+  }).join(" · ");
+}
+// Seção "Kcal gastos no dia:" -- gasto em repouso (GET, da Calorimetria mais recente já registrada em
+// Medidas e Aferições) + gasto em atividades/treinos/esportes do dia (r.caloriasQueimadas -- já existia
+// antes, só mudou de lugar pra cá). O GET é um valor MEDIDO/fisiológico, não uma meta pessoal editável
+// (igual TMB e os micronutrientes) -- por isso não é congelado no registro: busca sempre a calorimetria
+// mais atual, mesmo em registros antigos do Diário. Quando há GET disponível, soma-se ao gasto em
+// atividades pra estimar o gasto total do dia e o saldo (consumido − gasto total): superávit (sobrou
+// energia) ou déficit (gastou mais do que consumiu), informações complementares pertinentes pro
+// acompanhamento nutricional.
+// GET (repouso, sempre buscado ao vivo da calorimetria mais recente -- ver diarioKcalGastosTemplate()) +
+// atividades/treinos do dia (r.caloriasQueimadas) + gasto total = GET + atividades. Função compartilhada
+// entre diarioKcalGastosTemplate() e diarioKcalAnaliseObjetivoTemplate() pra não calcular duas vezes.
+function diarioKcalGastoTotalInfo(r) {
+  const ultimoCalo = ultimaCalorimetria();
+  const get = ultimoCalo && ultimoCalo.get ? Number(ultimoCalo.get) : null;
+  const atividades = r.caloriasQueimadas || 0;
+  return { get: get, atividades: atividades, gastoTotal: get != null ? get + atividades : null };
+}
+function diarioKcalGastosTemplate(r) {
+  const info = diarioKcalGastoTotalInfo(r);
+  const linhas = [
+    '<div class="diario-kcal-gastos-linha">' + icon("flame") + " Em repouso (GET): " + (info.get != null ? formatNumber(info.get) + " kcal" : "sem calorimetria registrada") + "</div>",
+    '<div class="diario-kcal-gastos-linha">' + icon("flame") + " Atividades/treinos/esportes: " + formatNumber(info.atividades) + " kcal" + (info.atividades > 0 ? " (estimativa)" : "") + "</div>",
+  ];
+  // O saldo do dia (consumido − gasto total) não aparece mais aqui -- ficou só na seção "Análise do
+  // objetivo:" (diarioKcalAnaliseObjetivoTemplate()), que já mostra o mesmo saldo junto do status de
+  // meta atingida/não atingida, evitando repetir a informação duas vezes no card.
+  if (info.gastoTotal != null) {
+    linhas.push('<div class="diario-kcal-gastos-linha">' + icon("flame") + " Gasto total estimado: " + formatNumber(info.gastoTotal) + " kcal</div>");
+  }
+  return '<div class="diario-kcal-gastos"><p class="diario-kcal-dia-subtitulo">Kcal gastos no dia:</p>' + linhas.join("") + "</div>";
+}
+// Se o saldo de kcal do dia "bateu" com o que o objetivo escolhido pede: emagrecimento/definição buscam
+// déficit calórico (meta atingida quando saldo <= 0); ganho de peso/massa muscular busca superávit (meta
+// atingida quando saldo >= 0); manutenção/performance/saúde geral buscam equilíbrio (meta atingida
+// quando o saldo fica dentro de uma pequena faixa de tolerância em torno de zero). Sem objetivo definido
+// não dá pra avaliar (retorna null). Mesmo padrão de "objetivo congelado no registro" usado em
+// diarioKcalMetaTexto(): usa r.objetivo quando o registro já tem meta própria salva, senão o objetivo
+// atual (só acontece em registros de antes dessa coluna existir).
+function diarioKcalMetaAtingida(saldo, objetivoChave) {
+  if (!objetivoChave || !OBJETIVOS_META[objetivoChave]) return null;
+  const TOLERANCIA_EQUILIBRIO = 100; // kcal
+  if (objetivoChave === "emagrecimento" || objetivoChave === "definicao") return saldo <= 0;
+  if (objetivoChave === "ganho_massa") return saldo >= 0;
+  return Math.abs(saldo) <= TOLERANCIA_EQUILIBRIO;
+}
+// Seção "Análise do objetivo:" -- resume o dia em relação ao objetivo escolhido: kcal consumidos, kcal
+// gastos (mesmo gasto total de diarioKcalGastosTemplate()) e o saldo, dizendo se a meta do dia (déficit,
+// superávit ou equilíbrio, dependendo do objetivo -- ver diarioKcalMetaAtingida()) foi atingida ou não.
+// Texto combinado com o usuário: "meta (Objetivo) - atingida ✅" em negrito azul, ou "meta (Objetivo) -
+// não atingida ❌" em negrito vermelho -- só o trecho do status fica destacado, o resto da linha continua
+// na cor neutra.
+function diarioKcalAnaliseObjetivoTemplate(r) {
+  const info = diarioKcalGastoTotalInfo(r);
+  const objetivoChave = r.metaCalorias != null ? r.objetivo : state.goals.objetivo;
+  const linhas = ['<div class="diario-kcal-gastos-linha">' + icon("utensils") + " Kcal consumidos no dia: " + formatNumber(r.calories) + " kcal</div>"];
+  if (info.gastoTotal == null) {
+    linhas.push('<div class="diario-kcal-gastos-linha">' + icon("flame") + " Kcal gastos no dia: sem calorimetria registrada</div>");
+  } else {
+    const saldo = r.calories - info.gastoTotal;
+    const saldoTexto = (saldo > 0 ? "superávit de " : saldo < 0 ? "déficit de " : "") + formatNumber(Math.abs(saldo)) + " kcal";
+    const atingida = diarioKcalMetaAtingida(saldo, objetivoChave);
+    const objetivoLabel = objetivoChave && OBJETIVOS_META[objetivoChave] ? OBJETIVOS_META[objetivoChave].label : "";
+    const status = atingida == null ? "" :
+      ' — <strong class="' + (atingida ? "diario-kcal-meta-atingida" : "diario-kcal-meta-nao-atingida") + '">meta (' + esc(objetivoLabel) + ") - " + (atingida ? "atingida ✅" : "não atingida ❌") + "</strong>";
+    linhas.push('<div class="diario-kcal-gastos-linha">' + icon("flame") + " Kcal gastos no dia: " + formatNumber(info.gastoTotal) + " kcal</div>");
+    linhas.push('<div class="diario-kcal-gastos-linha">' + icon("flame") + " Saldo de kcal do dia: " + saldoTexto + status + "</div>");
+  }
+  return '<div class="diario-kcal-gastos"><p class="diario-kcal-dia-subtitulo">Análise do objetivo:</p>' + linhas.join("") + "</div>";
+}
 function diarioKcalRegistroTemplate(r) {
   return '<div class="diario-kcal-dia">' +
     '<div class="diario-kcal-dia-head"><span class="diario-kcal-dia-data">' + icon("calendar") + " " + dateLabel(r.date) + "</span>" +
       '<span class="diario-kcal-dia-head-direita"><span class="diario-kcal-dia-kcal">' + formatNumber(r.calories) + " kcal</span>" +
       '<button class="meal-row-delete" aria-label="Excluir registro de ' + esc(dateLabel(r.date)) + '" onclick="acaoRemoverDiarioKcal(' + r.id + ')">' + icon("trash") + "</button></span></div>" +
     '<div class="diario-kcal-dia-meta">' + diarioKcalMetaTexto(r) + "</div>" +
-    '<div class="diario-kcal-dia-macros">Proteína ' + formatNumber(r.protein, 1) + "g · Carboidratos " + formatNumber(r.carbs, 1) + "g · Gorduras " + formatNumber(r.fat, 1) + "g · Fibras " + formatNumber(r.fiber, 1) + "g</div>" +
-    '<div class="diario-kcal-dia-micros">' + Object.keys(micronutrientMeta).map((k) => micronutrientMeta[k].label + ": " + formatNumber(r[k] || 0, 1) + " " + micronutrientMeta[k].unit).join(" · ") + "</div>" +
-    (r.caloriasQueimadas ? '<div class="diario-kcal-dia-queimadas">' + icon("flame") + " ~" + formatNumber(r.caloriasQueimadas) + " kcal queimadas nos treinos do dia (estimativa)</div>" : "") +
-    '<div class="diario-kcal-refeicoes">' + (r.refeicoes || []).map(diarioKcalRefeicaoTemplate).join("") + "</div>" +
+    '<div class="diario-kcal-dia-macros">' + diarioKcalMacrosTemplate(r) + "</div>" +
+    '<div class="diario-kcal-dia-micros">' + diarioKcalMicrosTemplate(r) + "</div>" +
+    '<div class="diario-kcal-refeicoes"><p class="diario-kcal-dia-subtitulo">Refeições do dia:</p>' + (r.refeicoes || []).map(diarioKcalRefeicaoTemplate).join("") + "</div>" +
+    diarioKcalGastosTemplate(r) +
+    diarioKcalAnaliseObjetivoTemplate(r) +
   "</div>";
 }
 // Aba "Diário de Kcal" da página de Nutrição -- ver acaoTrocarAbaNutricao(). O botão "Encerrar dia" fica
