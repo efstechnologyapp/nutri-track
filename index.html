@@ -342,6 +342,8 @@ svg{ display: block; }
 .meal-row-macro{ margin-top:4px; font-size:11px; color:#9aa9a1; }
 .meal-row-delete{ display:flex; height:32px; width:32px; align-items:center; justify-content:center; border-radius:999px; color:#b4c0b8; transition:background .15s,color .15s; }
 .meal-row-delete:hover{ background:#fff0ed; color:#ca6a58; }
+.diario-kcal-recalcular-btn{ display:flex; height:32px; width:32px; align-items:center; justify-content:center; border-radius:999px; color:#b4c0b8; transition:background .15s,color .15s; }
+.diario-kcal-recalcular-btn:hover{ background:#eef6e4; color:#4b7048; }
 .history-panel{ margin-top:20px; border-radius:16px; background:#f7f9f5; padding:16px; }
 .history-panel-label{ margin-bottom:12px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.14em; color:#7b9187; }
 .history-panel-empty{ margin:0; font-size:14px; color:#94a49d; }
@@ -2063,6 +2065,34 @@ function acaoEncerrarDia() {
   // novo no próximo "Encerrar dia" -- a virada do relógio à meia-noite não reseta nada sozinha.
   toastSuccess("Dia encerrado — resumo guardado no Diário de Kcal em " + dateLabel(t) + ". Os cards de consumo foram zerados.");
   if (state.account) enviarComFila("salvarDiarioKcalGoogle", [state.usuario.email, registro]);
+  render();
+}
+// Corrige um registro já fechado no Diário de Kcal pra refletir só as refeições REALMENTE daquele dia
+// (comparando por DATA), em vez da janela "desde o último Encerrar dia" usada no momento do fechamento
+// (ver acaoEncerrarDia()/mealsDesdeUltimoEncerramento()). Esse corte é por id de propósito (pra nenhuma
+// refeição ficar de fora dos cards se a pessoa esquecer de encerrar o dia antes da meia-noite) -- mas
+// isso significa que, se a pessoa passar VÁRIOS dias sem clicar em "Encerrar dia", o resumo salvo no
+// próximo fechamento acaba incluindo refeições de dias anteriores também (relatado pelo usuário: um
+// fechamento em 17/09 trouxe junto refeições registradas em 11/09 e 13/09). Recalcula os totais, a lista
+// de refeições exibida e as calorias queimadas usando só state.meals/state.treinos daquela DATA
+// específica. NÃO mexe no corteId (os cards de consumo continuam sem recontar essas refeições antigas) —
+// só corrige o que fica exibido/guardado nesse registro.
+function acaoRecalcularDiarioKcal(id) {
+  const registro = state.diarioKcal.find((r) => r.id === id);
+  if (!registro) return;
+  const mealsDoDia = state.meals.filter((m) => m.date === registro.date);
+  const totais = mealsDoDia.reduce((sum, m) => addNutrients(sum, m), emptyNutrients);
+  const refeicoes = mealsDoDia.map((m) => {
+    const linha = { name: m.name, time: m.time, alimentos: m.detected || [] };
+    NUTRIENT_KEYS.forEach((k) => { linha[k] = m[k] || 0; });
+    return linha;
+  });
+  const caloriasQueimadas = state.treinos.filter((tr) => tr.date === registro.date).reduce((soma, tr) => soma + (tr.caloriasQueimadas || 0), 0);
+  const corrigido = Object.assign({}, registro, totais, { refeicoes, caloriasQueimadas });
+  state.diarioKcal = state.diarioKcal.map((r) => (r.id === id ? corrigido : r));
+  persistDiarioKcal();
+  if (state.account) enviarComFila("salvarDiarioKcalGoogle", [state.usuario.email, corrigido]);
+  toastSuccess("Registro de " + dateLabel(registro.date) + " recalculado com as refeições daquele dia.");
   render();
 }
 // Remove um registro (dia) já encerrado no Diário de Kcal -- ver diarioKcalRegistroTemplate().
@@ -3959,6 +3989,7 @@ function diarioKcalRegistroTemplate(r) {
   return '<div class="diario-kcal-dia">' +
     '<div class="diario-kcal-dia-head"><span class="diario-kcal-dia-data">' + icon("calendar") + " " + dateLabel(r.date) + "</span>" +
       '<span class="diario-kcal-dia-head-direita"><span class="diario-kcal-dia-kcal">' + formatNumber(r.calories) + " kcal</span>" +
+      '<button class="diario-kcal-recalcular-btn" aria-label="Recalcular registro de ' + esc(dateLabel(r.date)) + ' com as refeições daquele dia" title="Recalcular com as refeições daquele dia" onclick="acaoRecalcularDiarioKcal(' + r.id + ')">' + icon("rotate") + "</button>" +
       '<button class="meal-row-delete" aria-label="Excluir registro de ' + esc(dateLabel(r.date)) + '" onclick="acaoRemoverDiarioKcal(' + r.id + ')">' + icon("trash") + "</button></span></div>" +
     '<div class="diario-kcal-dia-meta">' + diarioKcalMetaTexto(r) + "</div>" +
     '<div class="diario-kcal-dia-macros">' + diarioKcalMacrosTemplate(r) + "</div>" +
