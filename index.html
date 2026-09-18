@@ -354,11 +354,16 @@ svg{ display: block; }
 .history-panel-date-input{ border:1px solid #dbe3d8; border-radius:10px; padding:6px 10px; font-size:13px; font-family:inherit; color:#31564a; background:#fff; }
 .history-panel-hoje-btn{ border:none; background:#eef3ea; color:#4a6b58; font-size:12px; font-weight:600; padding:6px 12px; border-radius:999px; cursor:pointer; }
 .history-panel-hoje-btn:hover{ background:#e3ecdf; }
+.history-days-list{ display:flex; flex-direction:column; }
 .history-day{ padding:12px 0; border-top:1px solid #e8eee5; }
 .history-day:first-child{ border-top:none; }
 .history-day-head{ display:flex; align-items:center; justify-content:space-between; }
 .history-day-head .date{ font-size:14px; font-weight:500; color:#557268; }
 .history-day-head .total{ font-size:12px; color:#8a9c93; }
+.history-day-head-btn{ width:100%; border:none; background:none; padding:0; margin:0; font:inherit; text-align:left; cursor:pointer; }
+.history-day-head-direita{ display:flex; align-items:center; gap:6px; }
+.history-day-chevron{ width:15px; height:15px; color:#9aa9a1; flex-shrink:0; transition:transform .15s; }
+.history-day-expandido .history-day-chevron{ transform:rotate(180deg); }
 .history-day-meals{ margin-top:8px; display:flex; flex-direction:column; gap:6px; }
 .history-day-meal{ display:flex; align-items:center; justify-content:space-between; font-size:12px; color:#7e9287; cursor:pointer; border-radius:8px; padding:4px 6px; margin:0 -6px; transition:background .15s; }
 .history-day-meal:hover{ background:#f2f5ef; }
@@ -579,6 +584,7 @@ const ICON_PATHS = {
   edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
   play: '<path d="M6 3.5v17l15-8.5Z"/>',
   pause: '<path d="M7 3h4v18H7Z"/><path d="M13 3h4v18h-4Z"/>',
+  chevron: '<path d="M6 9l6 6 6-6"/>',
 };
 function icon(name, cls) {
   const p = ICON_PATHS[name] || "";
@@ -1135,7 +1141,9 @@ const state = {
   mealDescription: "",
   showGoals: false,
   showHistory: false,
-  historyData: null, // data selecionada no histórico de refeições (null = mostra hoje)
+  // Data do dia expandido no histórico de refeições (accordion: um dia de cada vez, ou nenhum) -- ver
+  // historyPanelTemplate()/acaoAlternarDiaHistorico(). null = nenhum dia expandido (só a lista de dias).
+  historyDiaExpandido: null,
   nutrientAba: "macro", // "macro" | "micro"
   mealDetalheId: null, // id da refeição aberta no modal de detalhamento, ou null
   nutricaoAba: "registrar", // "registrar" | "diario" -- ver nutricaoTabTemplate()/diarioKcalTabTemplate()
@@ -2266,37 +2274,48 @@ function mealPreviewTemplate() {
 // O histórico mostra sempre UM dia por vez (o de hoje, por padrão) — para ver dias anteriores, a
 // pessoa escolhe a data no calendário suspenso (input type="date") em vez de rolar uma lista com
 // todo o histórico acumulado.
+// Lista todos os dias com refeições registradas (mais recente primeiro), cada um como um card que se
+// expande ao clicar, mostrando as refeições daquele dia -- ver historyDayCardTemplate(). Substituiu o
+// antigo calendário de "escolher uma data por vez", que obrigava adivinhar em qual dia havia registro.
 function historyPanelTemplate() {
   if (!state.showHistory) return "";
-  const selectedDate = state.historyData || today();
-  const dayMeals = state.meals.filter((m) => m.date === selectedDate);
-  const dayTotal = dayMeals.reduce((sum, m) => sum + m.calories, 0);
-  const ehHoje = selectedDate === today();
+  const days = historyDays();
   return '' +
     '<div class="history-panel">' +
       '<div class="history-panel-label">Histórico salvo</div>' +
-      '<div class="history-panel-date-row">' +
-        '<label class="history-panel-date-label">' + icon("calendar") +
-          '<input type="date" class="history-panel-date-input" value="' + esc(selectedDate) + '" max="' + esc(today()) + '" onchange="acaoSelecionarDataHistorico(this.value)"/>' +
-        "</label>" +
-        (ehHoje ? "" : '<button class="history-panel-hoje-btn" onclick="acaoSelecionarDataHistorico(\'' + today() + '\')">Voltar para hoje</button>') +
-      "</div>" +
-      (dayMeals.length
-        ? '<div class="history-day"><div class="history-day-head"><span class="date">' + dateLabel(selectedDate) + '</span><span class="total">' + formatNumber(dayTotal) + " kcal · " + dayMeals.length + " refeição" + (dayMeals.length > 1 ? "ões" : "") + "</span></div>" +
-          '<div class="history-day-meals">' + dayMeals.map((m) => '<div class="history-day-meal" onclick="acaoAbrirDetalheRefeicao(' + m.id + ')"><span>' + esc(m.name) + "</span><span>" + formatNumber(m.calories) + " kcal</span></div>").join("") + "</div></div>"
-        : '<p class="history-panel-empty">' + (ehHoje ? "Suas refeições aparecerão aqui depois do primeiro registro." : "Nenhuma refeição registrada em " + dateLabel(selectedDate) + ".") + "</p>"
+      (days.length
+        ? '<div class="history-days-list">' + days.map((date) => historyDayCardTemplate(date)).join("") + "</div>"
+        : '<p class="history-panel-empty">Suas refeições aparecerão aqui depois do primeiro registro.</p>'
       ) +
     "</div>";
 }
-function acaoSelecionarDataHistorico(value) {
-  state.historyData = value || today();
+function historyDayCardTemplate(date) {
+  const dayMeals = state.meals.filter((m) => m.date === date);
+  const dayTotal = dayMeals.reduce((sum, m) => sum + m.calories, 0);
+  const expandido = state.historyDiaExpandido === date;
+  return '' +
+    '<div class="history-day' + (expandido ? " history-day-expandido" : "") + '">' +
+      '<button type="button" class="history-day-head history-day-head-btn" onclick="acaoAlternarDiaHistorico(\'' + date + '\')">' +
+        '<span class="date">' + dateLabel(date) + "</span>" +
+        '<span class="history-day-head-direita"><span class="total">' + formatNumber(dayTotal) + " kcal · " + dayMeals.length + (dayMeals.length > 1 ? " refeições" : " refeição") + "</span>" + icon("chevron", "history-day-chevron") + "</span>" +
+      "</button>" +
+      (expandido
+        ? '<div class="history-day-meals">' + dayMeals.map((m) => '<div class="history-day-meal" onclick="acaoAbrirDetalheRefeicao(' + m.id + ')"><span>' + esc(m.name) + "</span><span>" + formatNumber(m.calories) + " kcal</span></div>").join("") + "</div>"
+        : ""
+      ) +
+    "</div>";
+}
+// Abre/fecha um dia do histórico (accordion: só um dia expandido de cada vez -- clicar num dia diferente
+// troca qual está aberto, sem precisar fechar o anterior primeiro).
+function acaoAlternarDiaHistorico(date) {
+  state.historyDiaExpandido = state.historyDiaExpandido === date ? null : date;
   render();
 }
-// Cada vez que o histórico é aberto, volta a mostrar hoje por padrão (evita reabrir numa data antiga
-// que a pessoa tinha navegado antes e esquecido).
+// Cada vez que o histórico é aberto, começa com todos os dias fechados (evita reabrir com um dia antigo
+// expandido que a pessoa tinha navegado antes e esquecido).
 function acaoAlternarHistorico() {
   state.showHistory = !state.showHistory;
-  if (state.showHistory) state.historyData = null;
+  if (state.showHistory) state.historyDiaExpandido = null;
   render();
 }
 
