@@ -345,12 +345,6 @@ svg{ display: block; }
 .history-panel{ margin-top:20px; border-radius:16px; background:#f7f9f5; padding:16px; }
 .history-panel-label{ margin-bottom:12px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.14em; color:#7b9187; }
 .history-panel-empty{ margin:0; font-size:14px; color:#94a49d; }
-.history-panel-date-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin:-4px 0 12px; }
-.history-panel-date-label{ display:flex; align-items:center; gap:6px; font-size:13px; color:#557268; }
-.history-panel-date-label .icon{ width:16px; height:16px; color:#8a9c93; flex-shrink:0; }
-.history-panel-date-input{ border:1px solid #dbe3d8; border-radius:10px; padding:6px 10px; font-size:13px; font-family:inherit; color:#31564a; background:#fff; }
-.history-panel-hoje-btn{ border:none; background:#eef3ea; color:#4a6b58; font-size:12px; font-weight:600; padding:6px 12px; border-radius:999px; cursor:pointer; }
-.history-panel-hoje-btn:hover{ background:#e3ecdf; }
 .history-days-list{ display:flex; flex-direction:column; }
 .history-day{ padding:12px 0; border-top:1px solid #e8eee5; }
 .history-day:first-child{ border-top:none; }
@@ -1290,7 +1284,9 @@ const state = {
   // Google, igual ao resto dos dados, pra reaparecer em qualquer aparelho.
   exerciciosCustomizados: readStorage(CHAVE_EXERCICIOS_CUSTOMIZADOS, {}),
   showHistoryTreinos: false,
-  historyDataTreinos: null, // data selecionada no histórico de treinos (null = mostra hoje)
+  // Data do dia expandido no histórico de treinos (accordion: um dia de cada vez, ou nenhum) -- mesma
+  // lógica do histórico de refeições, ver treinoHistoryPanelTemplate()/acaoAlternarDiaHistoricoTreinos().
+  historyDiaExpandidoTreinos: null,
   treinoModo: "cronometro", // "cronometro" | "manual" — só é relevante quando não há treino em andamento
   // Treino em andamento (cronômetro), ou null. Formato: { esporte, date, horaInicioClock,
   // segmentoAtualInicio (timestamp ms de quando o trecho atual começou a rodar, ou null se pausado),
@@ -2901,25 +2897,35 @@ function treinoListTemplate() {
   ).join("");
 }
 
-// Mesma lógica do histórico de refeições (ver historyPanelTemplate): mostra um dia por vez, hoje por
-// padrão, com um calendário suspenso para navegar até dias anteriores.
+// Mesma lógica do histórico de refeições (ver historyPanelTemplate()): lista TODOS os dias com treinos
+// registrados (mais recente primeiro), cada um como um card que se expande ao clicar, mostrando os
+// treinos daquele dia -- ver treinoHistoryDayCardTemplate(). Substituiu o antigo calendário de "escolher
+// uma data por vez", que obrigava adivinhar em qual dia havia registro.
 function treinoHistoryPanelTemplate() {
   if (!state.showHistoryTreinos) return "";
-  const selectedDate = state.historyDataTreinos || today();
-  const dayTreinos = state.treinos.filter((t) => t.date === selectedDate);
-  const ehHoje = selectedDate === today();
+  const days = historyDaysTreinos();
   return '' +
     '<div class="history-panel">' +
       '<div class="history-panel-label">Histórico salvo</div>' +
-      '<div class="history-panel-date-row">' +
-        '<label class="history-panel-date-label">' + icon("calendar") +
-          '<input type="date" class="history-panel-date-input" value="' + esc(selectedDate) + '" max="' + esc(today()) + '" onchange="acaoSelecionarDataHistoricoTreinos(this.value)"/>' +
-        "</label>" +
-        (ehHoje ? "" : '<button class="history-panel-hoje-btn" onclick="acaoSelecionarDataHistoricoTreinos(\'' + today() + '\')">Voltar para hoje</button>') +
+      (days.length
+        ? '<div class="history-days-list">' + days.map((date) => treinoHistoryDayCardTemplate(date)).join("") + "</div>"
+        : '<p class="history-panel-empty">Seus treinos aparecerão aqui depois do primeiro registro.</p>'
+      ) +
+    "</div>";
+}
+function treinoHistoryDayCardTemplate(date) {
+  const dayTreinos = state.treinos.filter((t) => t.date === date);
+  const expandido = state.historyDiaExpandidoTreinos === date;
+  return '' +
+    '<div class="history-day' + (expandido ? " history-day-expandido" : "") + '">' +
+      '<div class="history-day-head history-day-head-btn" onclick="acaoAlternarDiaHistoricoTreinos(\'' + date + '\')">' +
+        '<span class="date">' + dateLabel(date) + "</span>" +
+        '<span class="history-day-head-direita"><span class="total">' + dayTreinos.length + " treino" + (dayTreinos.length > 1 ? "s" : "") + "</span>" +
+        '<button class="meal-row-delete" aria-label="Excluir treinos de ' + esc(dateLabel(date)) + '" onclick="event.stopPropagation(); acaoRemoverDiaHistoricoTreinos(\'' + date + '\')">' + icon("trash") + "</button>" +
+        icon("chevron", "history-day-chevron") + "</span>" +
       "</div>" +
-      (dayTreinos.length
-        ? '<div class="history-day"><div class="history-day-head"><span class="date">' + dateLabel(selectedDate) + '</span><span class="total">' + dayTreinos.length + " treino" + (dayTreinos.length > 1 ? "s" : "") + "</span></div>" +
-          '<div class="history-day-meals">' + dayTreinos.map((t) =>
+      (expandido
+        ? '<div class="history-day-meals">' + dayTreinos.map((t) =>
             '<div class="history-day-meal history-day-meal-static' + ((t.nota || t.distanciaKm || t.caloriasQueimadas || (t.gruposMusculares && t.gruposMusculares.length)) ? " history-day-meal-com-nota" : "") + '">' +
               '<div class="history-day-meal-linha"><span>' + emojiEsporte(t.esporte) + " " + esc(t.esporte) + " · " + esc(t.horaInicio) + "–" + esc(t.horaFim) + "</span><span>" + esc(formatarDuracao(t.duracaoMin)) + (t.fotoUrl ? ' <a class="history-day-meal-foto-link" href="' + esc(t.fotoUrl) + '" target="_blank" rel="noopener" aria-label="Ver foto do treino">' + icon("camera") + "</a>" : "") + "</span></div>" +
               (t.distanciaKm ? '<p class="history-day-meal-distancia">' + esc(treinoDistanciaResumoTexto(t)) + "</p>" : "") +
@@ -2927,18 +2933,32 @@ function treinoHistoryPanelTemplate() {
               (t.caloriasQueimadas ? '<p class="history-day-meal-calorias-queimadas">' + esc(treinoCaloriasResumoTexto(t)) + " queimadas (estimativa)</p>" : "") +
               (t.nota ? '<p class="history-day-meal-nota">' + esc(t.nota) + "</p>" : "") +
             "</div>"
-          ).join("") + "</div></div>"
-        : '<p class="history-panel-empty">' + (ehHoje ? "Seus treinos aparecerão aqui depois do primeiro registro." : "Nenhum treino registrado em " + dateLabel(selectedDate) + ".") + "</p>"
+          ).join("") + "</div>"
+        : ""
       ) +
     "</div>";
 }
-function acaoSelecionarDataHistoricoTreinos(value) {
-  state.historyDataTreinos = value || today();
+// Abre/fecha um dia do histórico de treinos (accordion: só um dia expandido de cada vez).
+function acaoAlternarDiaHistoricoTreinos(date) {
+  state.historyDiaExpandidoTreinos = state.historyDiaExpandidoTreinos === date ? null : date;
   render();
 }
+// Exclui TODOS os treinos registrados naquele dia -- remove cada um localmente e sincroniza cada
+// remoção com o backend, igual acaoRemoverTreino() faz pra um treino avulso.
+function acaoRemoverDiaHistoricoTreinos(date) {
+  const idsDoDia = state.treinos.filter((t) => t.date === date).map((t) => t.id);
+  if (!idsDoDia.length) return;
+  state.treinos = state.treinos.filter((t) => t.date !== date);
+  persistTreinos();
+  if (state.account) idsDoDia.forEach((id) => enviarComFila("removerTreinoGoogle", [state.usuario.email, id]));
+  if (state.historyDiaExpandidoTreinos === date) state.historyDiaExpandidoTreinos = null;
+  render();
+}
+// Cada vez que o histórico é aberto, começa com todos os dias fechados (evita reabrir com um dia antigo
+// expandido que a pessoa tinha navegado antes e esquecido).
 function acaoAlternarHistoricoTreinos() {
   state.showHistoryTreinos = !state.showHistoryTreinos;
-  if (state.showHistoryTreinos) state.historyDataTreinos = null;
+  if (state.showHistoryTreinos) state.historyDiaExpandidoTreinos = null;
   render();
 }
 
