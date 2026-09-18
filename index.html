@@ -515,6 +515,15 @@ svg{ display: block; }
 .meal-detalhe-micro{ font-size:11px; color:#9aa9a1; }
 .meal-detalhe-micro span{ color:#5c7369; font-weight:600; }
 .meal-detalhe-sem-dados{ margin-top:16px; font-size:13px; color:#9aa9a1; }
+.meal-detalhe-data-editar-btn{ margin-top:10px; display:inline-flex; align-items:center; gap:6px; border:none; background:none; padding:0; font-size:12px; font-weight:600; color:#6c8d68; }
+.meal-detalhe-data-editar-btn:hover{ color:#3d6355; }
+.meal-detalhe-data-editar-btn .icon{ width:14px; height:14px; }
+.meal-detalhe-data-editar{ margin-top:12px; border-radius:14px; background:#f7f9f5; padding:12px 14px; }
+.meal-detalhe-data-editar-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.meal-detalhe-data-editar-row .field-input{ flex:1; min-width:150px; }
+.meal-detalhe-data-salvar-btn{ border:none; border-radius:999px; background:var(--primary); padding:10px 16px; font-size:12px; font-weight:600; color:#fff; }
+.meal-detalhe-data-cancelar-btn{ border:none; border-radius:999px; background:none; padding:10px 12px; font-size:12px; font-weight:600; color:#8a9c93; }
+.meal-detalhe-data-cancelar-btn:hover{ background:#eef1ec; }
 .criar-senha-btn{ display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:#3d6355; text-decoration:underline; text-underline-offset:2px; }
 .criar-senha-btn:hover{ color:var(--primary); }
 
@@ -1235,6 +1244,9 @@ const state = {
   historyDiaExpandido: null,
   nutrientAba: "macro", // "macro" | "micro"
   mealDetalheId: null, // id da refeição aberta no modal de detalhamento, ou null
+  // Controla se o campo de corrigir a data está visível dentro do modal de detalhamento -- ver
+  // mealDetalheModalTemplate()/acaoAbrirEdicaoDataRefeicao(). Reseta toda vez que o modal abre/fecha.
+  mealDetalheEditandoData: false,
   nutricaoAba: "registrar", // "registrar" | "diario" -- ver nutricaoTabTemplate()/diarioKcalTabTemplate()
   // Diário de Kcal: um resumo (kcal, macro e micronutrientes do dia + refeições com horário) guardado a
   // cada vez que a pessoa clica em "Encerrar dia" (ver acaoEncerrarDia()). Só existe UM registro por data
@@ -1959,8 +1971,34 @@ function acaoSalvarRefeicao() {
   render();
 }
 function acaoTrocarAbaNutrientes(aba) { state.nutrientAba = aba; render(); }
-function acaoAbrirDetalheRefeicao(id) { state.mealDetalheId = id; render(); }
-function acaoFecharDetalheRefeicao() { state.mealDetalheId = null; render(); }
+function acaoAbrirDetalheRefeicao(id) { state.mealDetalheId = id; state.mealDetalheEditandoData = false; render(); }
+function acaoFecharDetalheRefeicao() { state.mealDetalheId = null; state.mealDetalheEditandoData = false; render(); }
+function acaoAbrirEdicaoDataRefeicao() { state.mealDetalheEditandoData = true; render(); }
+function acaoCancelarEdicaoDataRefeicao() { state.mealDetalheEditandoData = false; render(); }
+// Corrige a data de uma refeição já salva -- pensado pro caso em que a refeição foi registrada com a
+// data errada (ex.: o aparelho estava com o relógio no dia errado no momento de salvar) e por isso
+// aparece em "Refeições de hoje"/no histórico do dia errado. Não existe endpoint de "atualizar" no
+// backend (só salvar/remover -- ver salvarRefeicaoGoogle()/removerRefeicaoGoogle() no Code.gs), então a
+// correção é feita como remover o registro antigo e recriar um novo, idêntico, só que com a data certa
+// e um id novo -- reaproveita os dois endpoints que já existem, sem precisar mexer na planilha/backend.
+function acaoEditarDataRefeicao(id, novaData) {
+  if (!novaData) { toastError("Selecione uma data."); return; }
+  if (novaData > today()) { toastError("A data não pode ser no futuro."); return; }
+  const m = state.meals.find((meal) => meal.id === id);
+  if (!m) return;
+  if (m.date === novaData) { state.mealDetalheEditandoData = false; render(); return; }
+  const corrigida = Object.assign({}, m, { id: Date.now(), date: novaData });
+  state.meals = state.meals.filter((meal) => meal.id !== id).concat([corrigida]);
+  persistMeals();
+  if (state.account) {
+    enviarComFila("removerRefeicaoGoogle", [state.usuario.email, id]);
+    enviarComFila("salvarRefeicaoGoogle", [state.usuario.email, corrigida]);
+  }
+  state.mealDetalheId = corrigida.id;
+  state.mealDetalheEditandoData = false;
+  toastSuccess("Data da refeição corrigida para " + dateLabel(novaData) + ".");
+  render();
+}
 function acaoRemoverRefeicao(id) {
   state.meals = state.meals.filter((m) => m.id !== id);
   persistMeals();
@@ -3006,6 +3044,20 @@ function mealDetalheModalTemplate() {
     '<div class="modal-card modal-card-wide">' +
       '<div class="meal-detalhe-head"><div><h2>' + esc(m.name) + '</h2><p class="sub">' + icon("clock") + " " + esc(m.time) + " · " + dateLabel(m.date) + "</p></div>" +
       '<button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharDetalheRefeicao()">' + icon("x") + "</button></div>" +
+      // Corrigir a data -- útil quando a refeição foi salva com a data errada (ex.: aparelho com o
+      // relógio no dia errado no momento de registrar) e por isso aparece no dia errado na lista/
+      // histórico. Fica escondido atrás de um botão "Corrigir data" pra não poluir o modal por padrão.
+      (state.mealDetalheEditandoData
+        ? '<div class="meal-detalhe-data-editar">' +
+            '<label class="field-label">Corrigir data da refeição</label>' +
+            '<div class="meal-detalhe-data-editar-row">' +
+              '<input type="date" id="meal-detalhe-data-input" class="field-input" value="' + esc(m.date) + '" max="' + esc(today()) + '"/>' +
+              '<button class="meal-detalhe-data-salvar-btn" onclick="acaoEditarDataRefeicao(' + m.id + ', document.getElementById(\'meal-detalhe-data-input\').value)">Salvar</button>' +
+              '<button class="meal-detalhe-data-cancelar-btn" onclick="acaoCancelarEdicaoDataRefeicao()">Cancelar</button>' +
+            "</div>" +
+          "</div>"
+        : '<button class="meal-detalhe-data-editar-btn" onclick="acaoAbrirEdicaoDataRefeicao()">' + icon("edit") + " Corrigir data</button>"
+      ) +
       '<div class="meal-detalhe-total"><div class="meal-detalhe-total-row"><span>Total da refeição</span><span>' + formatNumber(m.calories) + " kcal</span></div>" +
       '<div class="meal-detalhe-total-macros">P ' + formatNumber(m.protein, 1) + " · C " + formatNumber(m.carbs, 1) + " · G " + formatNumber(m.fat, 1) + " · F " + formatNumber(m.fiber, 1) + "</div></div>" +
       (alimentos.length ? alimentos.map((a) => alimentoDetalheTemplate(a)).join("") :
