@@ -1106,6 +1106,16 @@ function emojiEsporte(esporte) { return ESPORTE_EMOJI[esporte] || "\ud83c\udfc5"
 
 function normalizeText(value) { return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
 
+// Alguns alimentos contados por unidade (food.count, sem food.grams) têm o peso típico da unidade
+// descrito no próprio baseAmount, ex.: "1 unidade (200 g)" pra Manga. Quando a pessoa digita a
+// quantidade em gramas pra um desses (ex.: "25g de manga"), usamos esse peso típico pra converter os
+// gramas digitados em fração da unidade (25/200 = 0,125), em vez de ignorar o número e cair pro padrão
+// "1 unidade" -- que é o que estava acontecendo antes, porque o caminho de gramas exigia food.grams.
+function unitGramsFromBaseAmount(baseAmount) {
+  const m = /\((\d+(?:[.,]\d+)?)\s*g\)/i.exec(baseAmount || "");
+  return m ? Number(m[1].replace(",", ".")) : null;
+}
+
 function amountForFood(text, position, food) {
   const before = text.slice(Math.max(0, position - 38), position);
   const grams = before.match(/(\d+(?:[.,]\d+)?)\s*(?:g|gramas?|gramos?)\s*(?:de\s*)?$/i);
@@ -1115,6 +1125,10 @@ function amountForFood(text, position, food) {
   const numberWord = /(?:^|[\s,;])(um|uma)\s*$/.test(before);
   const number = (match) => (match ? Number(match[1].replace(",", ".")) : null);
   if (food.grams && grams) { const value = number(grams); return { multiplier: value / food.grams, amount: formatNumber(value, 0) + " g" }; }
+  if (!food.grams && food.count && grams) {
+    const perUnitGrams = unitGramsFromBaseAmount(food.baseAmount);
+    if (perUnitGrams) { const value = number(grams); return { multiplier: value / perUnitGrams, amount: formatNumber(value, 0) + " g" }; }
+  }
   if (food.ml && ml) { const value = number(ml); return { multiplier: value / food.ml, amount: formatNumber(value, 0) + " ml" }; }
   if (units) { const value = number(units); return { multiplier: value / (food.count || 1), amount: formatNumber(value, 0) + " unidade" + (value > 1 ? "s" : "") }; }
   // Um número solto do lado do alimento, sem "g"/"ml"/"unidades" (ex.: "1 pão francês", "2 bananas",
