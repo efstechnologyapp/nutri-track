@@ -132,9 +132,6 @@ svg{ display: block; }
 .home-inner{ margin:0 auto; max-width:1200px; padding:0 20px 56px; }
 @media (min-width: 640px){ .home-inner{ padding-left:32px; padding-right:32px; } }
 @media (min-width: 1024px){ .home-inner{ padding-left:48px; padding-right:48px; } }
-.home-header{ display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:24px 0; }
-@media (min-width: 640px){ .home-header{ gap:12px; } }
-@media (min-width: 1024px){ .home-header{ padding:32px 0; } }
 .btn-outline-pill{ display:none; align-items:center; gap:8px; border-radius:999px; border:1px solid #dce5db; background:rgba(255,255,255,.7); padding:10px 16px; font-size:14px; font-weight:500; color:#557268; transition:background .15s; }
 .btn-outline-pill:hover{ background:#fff; }
 @media (min-width: 640px){ .btn-outline-pill{ display:flex; } }
@@ -599,7 +596,17 @@ function readStorage(key, fallback) {
   } catch { return fallback; }
 }
 function writeStorage(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} }
-function todayKey() { return new Date().toISOString().slice(0, 10); }
+// Data de hoje NO FUSO HORÁRIO LOCAL do aparelho -- toISOString() converteria para UTC, o que faz a
+// data "virar" cedo demais pra quem mora a oeste de Greenwich (ex.: no horário de Brasília, 3h antes da
+// meia-noite local). Monta a string manualmente a partir dos componentes locais (getFullYear/Month/Date)
+// em vez de usar toISOString(), que sempre reflete UTC independentemente do fuso do aparelho.
+function todayKey() {
+  const d = new Date();
+  const ano = d.getFullYear();
+  const mes = String(d.getMonth() + 1).padStart(2, "0");
+  const dia = String(d.getDate()).padStart(2, "0");
+  return ano + "-" + mes + "-" + dia;
+}
 function formatNumber(value, digits) {
   digits = digits || 0;
   return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: digits, minimumFractionDigits: digits }).format(value);
@@ -1217,16 +1224,30 @@ function persistDiarioKcal() { writeStorage(CHAVE_DIARIO_KCAL, state.diarioKcal)
 
 /* ===================== helpers de derivação ===================== */
 function today() { return todayKey(); }
+// Lista "Refeições de hoje": simplesmente as refeições com a data de hoje -- não é afetada por
+// "Encerrar dia" (que não apaga nem esconde refeição nenhuma, só reseta os CARDS -- ver mais abaixo).
 function todayMeals() { const t = today(); return state.meals.filter((m) => m.date === t); }
-// Ignora (só pra essa conta) as refeições registradas até o último "Encerrar dia" de hoje, se houver --
-// ver acaoEncerrarDia(). As refeições em si continuam intactas em todayMeals()/state.meals. O corte usa
-// o id do próprio registro do Diário de Kcal (que sincroniza com o Google) em vez de um marcador local,
-// pra funcionar igual em qualquer aparelho conectado à mesma conta -- não só no aparelho onde a pessoa
-// clicou em "Encerrar dia".
+// Corte usado pelos CARDS de consumo (kcal/macro/micronutrientes -- consumedToday()) e pelo resumo
+// salvo em "Encerrar dia": id do último registro salvo no Diário de Kcal, ou seja, da última vez que a
+// pessoa clicou em "Encerrar dia" (em qualquer aparelho da mesma conta, já que state.diarioKcal
+// sincroniza). Combinado com o usuário: os CARDS não reiniciam sozinhos na virada do dia (meia-noite)
+// -- só reiniciam quando a pessoa clica em "Encerrar dia" mesmo. Por isso o corte usa o maior id entre
+// TODOS os registros do Diário (não só um de hoje) e é aplicado sobre TODAS as refeições (não só as de
+// hoje): enquanto ninguém encerrar o dia, uma refeição registrada depois da meia-noite continua
+// contando nos cards normalmente, mesmo já sendo, no calendário, um dia diferente das anteriores.
+function corteDiaAberto() {
+  return state.diarioKcal.reduce((maior, r) => Math.max(maior, r.id), 0);
+}
+// Refeições ainda não incluídas em nenhum "Encerrar dia" -- é o que os CARDS somam e o que um novo
+// "Encerrar dia" vai salvar/resetar. Pode incluir refeições de mais de uma data (ex.: a pessoa não
+// encerrou o dia antes da virada da meia-noite) -- de propósito, para o corte só depender do clique em
+// "Encerrar dia", nunca da data.
+function mealsDesdeUltimoEncerramento() {
+  const corte = corteDiaAberto();
+  return state.meals.filter((m) => m.id > corte);
+}
 function consumedToday() {
-  const registroHoje = state.diarioKcal.find((r) => r.date === today());
-  const corte = registroHoje ? registroHoje.id : 0;
-  return todayMeals().filter((m) => m.id > corte).reduce((sum, m) => addNutrients(sum, m), emptyNutrients);
+  return mealsDesdeUltimoEncerramento().reduce((sum, m) => addNutrients(sum, m), emptyNutrients);
 }
 function remainingToday() { const consumed = consumedToday(); const out = {}; for (const k of Object.keys(state.goals)) out[k] = state.goals[k] - consumed[k]; return out; }
 function mealTotal() { return state.preview.reduce((sum, f) => addNutrients(sum, f.values), emptyNutrients); }
@@ -1857,24 +1878,18 @@ function acaoRemoverRefeicao(id) {
   if (state.account) enviarComFila("removerRefeicaoGoogle", [state.usuario.email, id]);
   render();
 }
-function acaoZerarHoje() {
-  if (todayMeals().length === 0) return;
-  if (!window.confirm("Apagar todas as refeições registradas hoje? O histórico de dias anteriores será mantido.")) return;
-  const t = today();
-  state.meals = state.meals.filter((m) => m.date !== t);
-  persistMeals();
-  toastSuccess("Os registros de hoje foram removidos; o histórico anterior foi preservado.");
-  if (state.account) enviarComFila("zerarHojeGoogle", [state.usuario.email, t]);
-  render();
-}
 function acaoTrocarAbaNutricao(aba) { state.nutricaoAba = aba; render(); }
 // Guarda no Diário de Kcal um resumo do dia de hoje: total de calorias/macro/micronutrientes consumidos
 // e a lista das refeições (nome, horário e valores DA REFEIÇÃO -- não alimento por alimento, ver
 // diarioKcalRefeicaoTemplate()). Só existe um registro por data: clicar de novo no mesmo dia substitui o
 // registro anterior (ex.: a pessoa lembrou de registrar mais uma refeição e quer atualizar o resumo).
 function acaoEncerrarDia() {
-  const meals = todayMeals();
-  if (!meals.length) { toastError("Registre ao menos uma refeição hoje antes de encerrar o dia."); return; }
+  // Usa o MESMO conjunto que os cards (consumedToday()) somam -- ver mealsDesdeUltimoEncerramento() --
+  // não só as refeições de hoje: assim o resumo salvo aqui sempre bate exatamente com o que os cards
+  // mostravam no instante do clique, mesmo que a pessoa tenha deixado o dia em aberto passando da meia-
+  // noite (sem clicar em "Encerrar dia") antes disso.
+  const meals = mealsDesdeUltimoEncerramento();
+  if (!meals.length) { toastError("Registre ao menos uma refeição antes de encerrar o dia."); return; }
   const t = today();
   const totais = meals.reduce((sum, m) => addNutrients(sum, m), emptyNutrients);
   const refeicoes = meals.map((m) => {
@@ -1888,13 +1903,14 @@ function acaoEncerrarDia() {
   const registro = Object.assign({ id: Date.now(), date: t, refeicoes: refeicoes, caloriasQueimadas: caloriasQueimadas }, totais);
   state.diarioKcal = state.diarioKcal.filter((r) => r.date !== t).concat([registro]);
   persistDiarioKcal();
-  // NÃO apaga as refeições -- elas continuam em "Refeições de hoje" e no Histórico normalmente. Só
-  // zera os CARDS de consumo (kcal/macro/micronutrientes) e o resumo do topo: eles são calculados por
-  // consumedToday(), que passa a ignorar (só pra esses cards) as refeições registradas até agora, usando
-  // o id deste próprio registro do Diário como corte -- e esse registro sincroniza com o Google, então o
-  // corte vale em qualquer aparelho conectado à mesma conta, não só neste. Uma refeição registrada depois
-  // deste clique volta a contar normalmente -- é como zerar o contador do dia sem mexer no histórico.
-  toastSuccess("Dia encerrado — resumo de " + dateLabel(t) + " guardado no Diário de Kcal. Os cards de consumo foram zerados.");
+  // NÃO apaga as refeições -- elas continuam em "Refeições de hoje" (se forem de hoje) e no Histórico
+  // normalmente. Só zera os CARDS de consumo (kcal/macro/micronutrientes) e o resumo do topo: eles são
+  // calculados por consumedToday(), que passa a ignorar (só pra esses cards) as refeições registradas
+  // até agora, usando o id deste próprio registro do Diário como corte -- e esse registro sincroniza com
+  // o Google, então o corte vale em qualquer aparelho conectado à mesma conta, não só neste. Uma
+  // refeição registrada depois deste clique volta a contar normalmente nos cards, e o corte só muda de
+  // novo no próximo "Encerrar dia" -- a virada do relógio à meia-noite não reseta nada sozinha.
+  toastSuccess("Dia encerrado — resumo guardado no Diário de Kcal em " + dateLabel(t) + ". Os cards de consumo foram zerados.");
   if (state.account) enviarComFila("salvarDiarioKcalGoogle", [state.usuario.email, registro]);
   render();
 }
@@ -3622,11 +3638,6 @@ function nutricaoTabTemplate() {
   const consumed = consumedToday();
   const remaining = remainingToday();
   return '' +
-    '<header class="home-header">' +
-      '<button class="btn-outline-pill" onclick="state.showGoals=!state.showGoals;render()">' + icon("settings") + " Metas do dia</button>" +
-      '<button class="icon-btn-outline" onclick="state.showGoals=!state.showGoals;render()">' + icon("settings") + "</button>" +
-      '<button class="btn-primary-pill-lg" onclick="acaoZerarHoje()">' + icon("rotate") + ' <span class="label">Zerar hoje</span></button>' +
-    "</header>" +
     "<main>" +
     '<section class="hero">' +
       '<div><div class="hero-date">' + icon("calendar") + " " + dateLabel(today()) + "</div>" +
