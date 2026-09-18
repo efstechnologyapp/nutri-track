@@ -885,6 +885,47 @@ const foodLibrary = [
   { terms: ["iogurte natural", "iogurte"], label: "Iogurte natural", baseAmount: "1 pote (170 g)", values: { calories: 100, protein: 6, carbs: 8, fat: 5, fiber: 0, vitA: 20, vitC: 1, vitD: 0, calcio: 200, ferro: 0.1, magnesio: 20, potassio: 250, zinco: 1 }, grams: 170 },
   { terms: ["iogurte grego"], label: "Iogurte grego", baseAmount: "100 g", values: { calories: 97, protein: 9, carbs: 4, fat: 5, fiber: 0, vitA: 15, vitC: 0, vitD: 0, calcio: 110, ferro: 0.1, magnesio: 11, potassio: 140, zinco: 0.6 }, grams: 100 },
   { terms: ["whey protein", "whey"], label: "Whey protein", baseAmount: "1 dose (30 g)", values: { calories: 120, protein: 24, carbs: 3, fat: 1.5, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 100, ferro: 0.2, magnesio: 20, potassio: 150, zinco: 1 }, grams: 30 },
+  // Suplementos "puros" (proteína em pó/isolada e vitaminas/minerais em cápsula/gotas) -- diferente dos
+  // alimentos acima, aqui a pessoa não está descrevendo uma porção de comida, e sim uma DOSE direta do
+  // nutriente (ex.: "30g de proteína", "vitamina D 5000 UI"). Por isso usam "dose" em vez de
+  // "grams"/"ml"/"count": em "values", cada nutriente já representa a quantidade PARA 1 unidade da dose
+  // (1 g, 1 mg, 1 mcg ou 1 UI, conforme dose.unidades) -- o multiplicador é sempre o próprio número que a
+  // pessoa digitou (ver doseAmountForFood()). E, diferente dos alimentos comuns (onde a quantidade sempre
+  // vem ANTES do nome, ex.: "100g de arroz"), a dose de um suplemento costuma vir DEPOIS do nome (ex.:
+  // "vitamina D 5000 UI") -- doseAmountForFood() aceita os dois jeitos.
+  // Proteína: fator 4 kcal/g é o padrão nutricional (Atwater) pra proteína, então "30g de proteína" já
+  // sai certo em kcal também, sem precisar de uma tabela de calorias separada.
+  { terms: ["proteina em po", "suplemento de proteina", "proteina suplemento", "proteina"], label: "Proteína (suplemento)", baseAmount: "25 g de proteína",
+    values: { calories: 4, protein: 1, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 0, ferro: 0, magnesio: 0, potassio: 0, zinco: 0 },
+    dose: { unidades: ["g", "gramas", "grama"], rotulo: "g", padrao: 25 } },
+  { terms: ["vitamina a suplemento", "vitamina a"], label: "Vitamina A (suplemento)", baseAmount: "800 mcg",
+    values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 1, vitC: 0, vitD: 0, calcio: 0, ferro: 0, magnesio: 0, potassio: 0, zinco: 0 },
+    dose: { unidades: ["mcg", "microgramas"], rotulo: "mcg", padrao: 800 } },
+  { terms: ["vitamina c suplemento", "vitamina c"], label: "Vitamina C (suplemento)", baseAmount: "500 mg",
+    values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 1, vitD: 0, calcio: 0, ferro: 0, magnesio: 0, potassio: 0, zinco: 0 },
+    dose: { unidades: ["mg", "miligramas"], rotulo: "mg", padrao: 500 } },
+  // Vitamina D é a única aqui cuja dose normalmente vem em UI (Unidades Internacionais), não em
+  // mg/mcg -- ex.: "vitamina D 5000 UI", igual ao rótulo do próprio frasco do suplemento. Conversão
+  // padrão: 1 mcg de vitamina D = 40 UI, ou seja, 1 UI = 0,025 mcg (por isso o valor em "values" é 0.025
+  // mcg por UI).
+  { terms: ["vitamina d suplemento", "vitamina d"], label: "Vitamina D (suplemento)", baseAmount: "2.000 UI",
+    values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0.025, calcio: 0, ferro: 0, magnesio: 0, potassio: 0, zinco: 0 },
+    dose: { unidades: ["ui", "iu"], rotulo: "UI", padrao: 2000 } },
+  { terms: ["calcio suplemento", "carbonato de calcio", "citrato de calcio", "calcio"], label: "Cálcio (suplemento)", baseAmount: "500 mg",
+    values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 1, ferro: 0, magnesio: 0, potassio: 0, zinco: 0 },
+    dose: { unidades: ["mg", "miligramas"], rotulo: "mg", padrao: 500 } },
+  { terms: ["ferro suplemento", "sulfato ferroso", "ferro"], label: "Ferro (suplemento)", baseAmount: "40 mg",
+    values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 0, ferro: 1, magnesio: 0, potassio: 0, zinco: 0 },
+    dose: { unidades: ["mg", "miligramas"], rotulo: "mg", padrao: 40 } },
+  { terms: ["magnesio suplemento", "cloreto de magnesio", "citrato de magnesio", "magnesio"], label: "Magnésio (suplemento)", baseAmount: "300 mg",
+    values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 0, ferro: 0, magnesio: 1, potassio: 0, zinco: 0 },
+    dose: { unidades: ["mg", "miligramas"], rotulo: "mg", padrao: 300 } },
+  { terms: ["potassio suplemento", "cloreto de potassio", "potassio"], label: "Potássio (suplemento)", baseAmount: "300 mg",
+    values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 0, ferro: 0, magnesio: 0, potassio: 1, zinco: 0 },
+    dose: { unidades: ["mg", "miligramas"], rotulo: "mg", padrao: 300 } },
+  { terms: ["zinco suplemento", "picolinato de zinco", "sulfato de zinco", "zinco"], label: "Zinco (suplemento)", baseAmount: "25 mg",
+    values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 0, ferro: 0, magnesio: 0, potassio: 0, zinco: 1 },
+    dose: { unidades: ["mg", "miligramas"], rotulo: "mg", padrao: 25 } },
   { terms: ["feijao", "feijao cozido"], label: "Feijão cozido", baseAmount: "100 g", values: { calories: 76, protein: 4.8, carbs: 13.6, fat: 0.5, fiber: 8.4, vitA: 0, vitC: 1, vitD: 0, calcio: 27, ferro: 1.5, magnesio: 42, potassio: 260, zinco: 1 }, grams: 100 },
   { terms: ["lentilha"], label: "Lentilha cozida", baseAmount: "100 g", values: { calories: 116, protein: 9, carbs: 20, fat: 0.4, fiber: 8, vitA: 1, vitC: 1.5, vitD: 0, calcio: 19, ferro: 3.3, magnesio: 36, potassio: 370, zinco: 1.3 }, grams: 100 },
   { terms: ["grao de bico"], label: "Grão de bico cozido", baseAmount: "100 g", values: { calories: 164, protein: 8.9, carbs: 27, fat: 2.6, fiber: 7.6, vitA: 1, vitC: 1.3, vitD: 0, calcio: 49, ferro: 2.9, magnesio: 48, potassio: 290, zinco: 1.5 }, grams: 100 },
@@ -955,7 +996,7 @@ const foodLibrary = [
   { terms: ["limao"], label: "Limão", baseAmount: "1 unidade (70 g)", values: { calories: 20, protein: 0.5, carbs: 6.5, fat: 0.2, fiber: 1.9, vitA: 1, vitC: 35, vitD: 0, calcio: 18, ferro: 0.4, magnesio: 6, potassio: 90, zinco: 0.1 }, count: 1 },
 ];
 
-const MEAL_TIPOS = ["Caf\u00e9 da manh\u00e3", "Lanche da manh\u00e3", "Almo\u00e7o", "Lanche da tarde", "Jantar", "Ceia", "Outro"];
+const MEAL_TIPOS = ["Caf\u00e9 da manh\u00e3", "Lanche da manh\u00e3", "Almo\u00e7o", "Lanche da tarde", "Jantar", "Ceia", "Suplementa\u00e7\u00e3o", "Outro"];
 
 // Em ordem alfab\u00e9tica.
 const ESPORTE_TIPOS = ["Boxe", "Caminhada", "Ciclismo", "Corrida", "Futebol", "Jiu-jitsu", "Muay Thai", "Muscula\u00e7\u00e3o", "Nata\u00e7\u00e3o", "T\u00eanis"];
@@ -1086,6 +1127,27 @@ function amountForFood(text, position, food) {
   return { multiplier: 1, amount: food.baseAmount };
 }
 
+// Quantidade pra suplementos "puros" (food.dose -- ver foodLibrary) -- diferente de amountForFood(),
+// aceita a dose ANTES ("5000 UI de vitamina D") OU DEPOIS ("vitamina D 5000 UI") do nome, porque é assim
+// que rótulo de suplemento costuma ser lido/falado, e reconhece as unidades específicas da dose
+// (mg/mcg/UI/g, conforme food.dose.unidades) em vez de só g/ml/unidades. Como os valores em food.values
+// já são "por 1 unidade da dose" (ver comentário acima da lista de suplementos), o multiplicador é
+// sempre o próprio número digitado, sem dividir por nada.
+function doseAmountForFood(text, position, length, food) {
+  const dose = food.dose;
+  const unitPattern = dose.unidades.join("|");
+  const before = text.slice(Math.max(0, position - 38), position);
+  const after = text.slice(position + length, position + length + 38);
+  const beforeMatch = before.match(new RegExp("(\\d+(?:[.,]\\d+)?)\\s*(?:" + unitPattern + ")\\s*(?:de\\s*)?$", "i"));
+  const afterMatch = after.match(new RegExp("^\\s*(?:de\\s*)?(\\d+(?:[.,]\\d+)?)\\s*(?:" + unitPattern + ")\\b", "i"));
+  const match = beforeMatch || afterMatch;
+  if (match) {
+    const valor = Number(match[1].replace(",", "."));
+    return { multiplier: valor, amount: formatNumber(valor, valor % 1 === 0 ? 0 : 1) + " " + dose.rotulo };
+  }
+  return { multiplier: dose.padrao, amount: food.baseAmount };
+}
+
 function detectFoods(description) {
   const text = normalizeText(description);
   // Junta todos os termos de todos os alimentos que aparecem no texto, em vez de resolver um alimento
@@ -1111,7 +1173,7 @@ function detectFoods(description) {
     if (usedFoods.has(c.food)) continue; // já identificamos esse alimento por um termo mais específico
     const overlaps = occupied.some((range) => c.position < range.end && c.position + c.length > range.start);
     if (overlaps) continue;
-    const r = amountForFood(text, c.position, c.food);
+    const r = c.food.dose ? doseAmountForFood(text, c.position, c.length, c.food) : amountForFood(text, c.position, c.food);
     found.push({ label: c.food.label, amount: r.amount, values: scale(c.food.values, r.multiplier) });
     usedFoods.add(c.food);
     occupied.push({ start: c.position, end: c.position + c.length });
