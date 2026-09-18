@@ -408,6 +408,8 @@ svg{ display: block; }
 .history-day-meal-foto-link .icon{ width:14px; height:14px; }
 .footnote{ margin-top:28px; display:flex; align-items:flex-start; gap:8px; font-size:12px; line-height:1.4; color:#92a099; }
 .footnote .icon{ margin-top:2px; color:#9db69a; flex-shrink:0; }
+.micro-fonte-nota{ margin:12px 0 16px; display:flex; align-items:flex-start; gap:8px; font-size:12px; line-height:1.4; color:#92a099; }
+.micro-fonte-nota .icon{ margin-top:2px; width:14px; height:14px; color:#9db69a; flex-shrink:0; }
 
 /* ---------- abas da home (Nutrição / Medidas e Aferições) ---------- */
 .home-tabs{ display:flex; gap:8px; padding:24px 0 0; overflow-x:auto; }
@@ -773,6 +775,18 @@ const OBJETIVOS_META = {
   saude: { label: "Saúde geral / bem-estar", ajusteCalorias: (get) => get, proteinaPorKg: 1.4 },
 };
 
+// Frase que descreve a fórmula de ajuste de calorias de cada objetivo, em texto -- usada na legenda
+// de fonte da aba Macronutrientes (macroFonteNotaTemplate()). Espelha os mesmos ajustes de
+// OBJETIVOS_META[chave].ajusteCalorias, só que descritos por extenso pro usuário.
+const OBJETIVO_CALORIA_TEXTO = {
+  emagrecimento: "seu GET menos 500 kcal/dia (déficit para perda de peso)",
+  manutencao: "o seu GET (gasto energético total), sem ajuste",
+  ganho_massa: "seu GET mais 15% (superávit para ganho de peso/massa muscular)",
+  definicao: "seu GET menos 10% (déficit moderado para definição/recomposição)",
+  performance: "o seu GET (gasto energético total), sem ajuste",
+  saude: "o seu GET (gasto energético total), sem ajuste",
+};
+
 // Sugere a meta de calorias a partir do GET (Gasto Energético Total, da Calorimetria) e do objetivo
 // escolhido -- só é usada quando a pessoa tem os dois cadastrados (ver acaoCalcularMacrosAutomaticos()).
 // Nunca sugere um valor abaixo da TMB (Taxa Metabólica Basal): é o gasto mínimo do corpo em repouso, e
@@ -839,7 +853,12 @@ const micronutrientMeta = {
   potassio: { label: "Potássio", unit: "mg", color: "#5b8ab2", soft: "#e9f1f7", icon: "droplet" },
   zinco: { label: "Zinco", unit: "mg", color: "#8d7ab0", soft: "#f1edf7", icon: "sparkles" },
 };
-const MICRO_GOALS = { vitA: 600, vitC: 45, vitD: 5, calcio: 1000, ferro: 14, magnesio: 260, potassio: 3500, zinco: 7 };
+// Valores Diários de Referência (VDR) oficiais da ANVISA pra rotulagem nutricional -- Instrução
+// Normativa IN nº 75/2020 (Anexo II), a norma EM VIGOR hoje (substituiu a antiga RDC nº 269/2005, cujos
+// valores mais baixos ainda estavam aqui: vitamina A 600mcg, vitamina C 45mg, vitamina D 5mcg, magnésio
+// 260mg e zinco 7mg -- desatualizados desde que a IN 75/2020 entrou em vigor). Cálcio, ferro e potássio
+// já batiam com os dois padrões (não mudaram entre as duas normas).
+const MICRO_GOALS = { vitA: 800, vitC: 100, vitD: 15, calcio: 1000, ferro: 14, magnesio: 420, potassio: 3500, zinco: 11 };
 const emptyNutrients = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 0, ferro: 0, magnesio: 0, potassio: 0, zinco: 0 };
 
 const foodLibrary = [
@@ -2380,6 +2399,24 @@ function micronutrientCardsTemplate() {
       (over ? formatNumber(valor - goal, digits) + " " + meta.unit + " acima da referência" : formatNumber(Math.max(0, goal - valor), digits) + " " + meta.unit + " restantes") +
       "</div></div>";
   }).join("");
+}
+
+// Legenda de fonte/fórmula da aba Macronutrientes -- mesma ideia da nota de fonte da aba
+// Micronutrientes (ver nutricaoTabTemplate()), só que aqui o texto muda de acordo com o objetivo
+// escolhido em Metas (state.goals.objetivo), já que a fórmula de calorias e o g/kg de proteína usados
+// por calcularMacrosAutomaticos() dependem dele. Sem objetivo escolhido, descreve a fórmula com os
+// valores padrão (os mesmos que calcularMacrosAutomaticos() usa quando não há objetivo definido).
+function macroFonteNotaTemplate() {
+  const objetivo = state.goals.objetivo || "";
+  const cfg = OBJETIVOS_META[objetivo];
+  const caloriaTexto = cfg ? OBJETIVO_CALORIA_TEXTO[objetivo] : "o seu GET (gasto energético total) ou o valor definido manualmente em Metas";
+  const proteinaPorKg = formatNumber(cfg ? cfg.proteinaPorKg : 1.4, 1);
+  return '<p class="micro-fonte-nota macro-fonte-nota">' + icon("help") +
+    " Meta de calorias: " + caloriaTexto + (cfg ? " — objetivo “" + esc(cfg.label) + "”, nunca abaixo da sua TMB." : ".") +
+    " Proteína: " + proteinaPorKg + " g por kg de peso corporal (ou 20% das calorias sem peso cadastrado), até no máximo 35% das calorias." +
+    " Carboidrato: o maior valor entre 45% das calorias e 130 g/dia. Gordura: o restante, nunca abaixo de 20% das calorias — a diferença sai do carboidrato, nunca da proteína." +
+    " Fibra: 14 g para cada 1.000 kcal da meta." +
+    " Fontes: Dietary Reference Intakes (National Academies) e Dietary Guidelines for Americans 2025-2030.</p>";
 }
 
 // Mostra a TMB/GET da última calorimetria registrada em Medidas e Aferições (ver ultimaCalorimetria())
@@ -4040,9 +4077,11 @@ function nutricaoTabTemplate() {
         '<button class="nutrient-tab' + (state.nutrientAba === "micro" ? " active" : "") + '" onclick="acaoTrocarAbaNutrientes(\'micro\')">Micronutrientes</button>' +
       "</div>" +
       (state.nutrientAba === "micro" ?
-        '<section class="nutrient-grid nutrient-grid-micro">' + micronutrientCardsTemplate() + "</section>"
+        '<section class="nutrient-grid nutrient-grid-micro">' + micronutrientCardsTemplate() + "</section>" +
+        '<p class="micro-fonte-nota">' + icon("help") + " Valores de referência (Ingestão Diária de Referência) para a população em geral, conforme a ANVISA — Instrução Normativa nº 75/2020 (Anexo II), a norma vigente para rotulagem nutricional de alimentos no Brasil.</p>"
         :
-        '<section class="nutrient-grid">' + nutrientCardsTemplate() + "</section>"
+        '<section class="nutrient-grid">' + nutrientCardsTemplate() + "</section>" +
+        macroFonteNotaTemplate()
       ) +
       '<section class="dashboard-grid">' +
         '<aside class="meal-card"><div class="meal-card-eyebrow">' + icon("sparkles") + " Nova refeição</div>" +
