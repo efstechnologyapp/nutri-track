@@ -385,6 +385,7 @@ svg{ display: block; }
 .diario-kcal-dia-data{ display:flex; align-items:center; gap:6px; font-size:14px; font-weight:600; color:#31564a; text-transform:capitalize; }
 .diario-kcal-dia-data .icon{ width:16px; height:16px; color:#8a9c93; flex-shrink:0; }
 .diario-kcal-dia-kcal{ font-size:15px; font-weight:700; color:#3d6355; }
+.diario-kcal-dia-meta{ margin-top:4px; font-size:13px; font-weight:600; color:#4a6b58; }
 .diario-kcal-dia-macros{ margin-top:6px; font-size:12.5px; color:#6e8d69; }
 .diario-kcal-dia-micros{ margin-top:4px; font-size:11.5px; color:#9aa9a1; }
 .diario-kcal-dia-queimadas{ margin-top:8px; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:600; color:#c9762f; }
@@ -1900,7 +1901,11 @@ function acaoEncerrarDia() {
   // Calorias queimadas nos treinos do dia (ver estimarCaloriasQueimadas()) -- entram como informação
   // separada no registro, ao lado das calorias consumidas; não afeta a meta/saldo de consumo.
   const caloriasQueimadas = todayTreinos().reduce((soma, tr) => soma + (tr.caloriasQueimadas || 0), 0);
-  const registro = Object.assign({ id: Date.now(), date: t, refeicoes: refeicoes, caloriasQueimadas: caloriasQueimadas }, totais);
+  // Congela a meta de calorias e o objetivo escolhidos AGORA, no momento do "Encerrar dia" -- ver
+  // diarioKcalMetaTexto(). Combinado com o usuário: um registro já salvo não pode mudar se a meta do dia
+  // for alterada depois, então salvamos o valor junto com o resto do resumo em vez de recalcular sempre
+  // a partir de state.goals (que reflete só o valor ATUAL).
+  const registro = Object.assign({ id: Date.now(), date: t, refeicoes: refeicoes, caloriasQueimadas: caloriasQueimadas, metaCalorias: state.goals.calories, objetivo: state.goals.objetivo || "" }, totais);
   state.diarioKcal = state.diarioKcal.filter((r) => r.date !== t).concat([registro]);
   persistDiarioKcal();
   // NÃO apaga as refeições -- elas continuam em "Refeições de hoje" (se forem de hoje) e no Histórico
@@ -3611,11 +3616,25 @@ function diarioKcalRefeicaoTemplate(ref) {
 // Um dia encerrado no Diário de Kcal: total de calorias/macro/micronutrientes daquele dia (congelado no
 // momento do "Encerrar dia", ver acaoEncerrarDia()) + a lista das refeições daquele dia + o ícone de
 // excluir esse registro (ver acaoRemoverDiarioKcal()).
+// Texto "Consumido X kcal (Y%) da meta de Z kcal/dia (objetivo)" mostrado logo abaixo do total de kcal
+// de cada registro do Diário -- ver diarioKcalRegistroTemplate(). Usa a meta/objetivo CONGELADOS no
+// registro (metaCalorias/objetivo, salvos por acaoEncerrarDia() no momento do "Encerrar dia"): um
+// registro já salvo não muda se a meta do dia for alterada depois. Só cai pra meta/objetivo ATUAIS
+// (state.goals) em registros de ANTES dessa coluna existir, que vêm com metaCalorias null -- não tem
+// como saber qual era a meta vigente naquela época, então a atual é a alternativa mais razoável.
+function diarioKcalMetaTexto(r) {
+  const meta = r.metaCalorias != null ? r.metaCalorias : state.goals.calories;
+  const objetivoChave = r.metaCalorias != null ? r.objetivo : state.goals.objetivo;
+  const percentual = meta > 0 ? (r.calories / meta) * 100 : 0;
+  const objetivo = objetivoChave && OBJETIVOS_META[objetivoChave] ? OBJETIVOS_META[objetivoChave].label : "";
+  return "Consumido " + formatNumber(r.calories) + " kcal (" + formatNumber(percentual, 2) + "%) da meta de " + formatNumber(meta) + " kcal/dia" + (objetivo ? " (" + objetivo + ")" : "");
+}
 function diarioKcalRegistroTemplate(r) {
   return '<div class="diario-kcal-dia">' +
     '<div class="diario-kcal-dia-head"><span class="diario-kcal-dia-data">' + icon("calendar") + " " + dateLabel(r.date) + "</span>" +
       '<span class="diario-kcal-dia-head-direita"><span class="diario-kcal-dia-kcal">' + formatNumber(r.calories) + " kcal</span>" +
       '<button class="meal-row-delete" aria-label="Excluir registro de ' + esc(dateLabel(r.date)) + '" onclick="acaoRemoverDiarioKcal(' + r.id + ')">' + icon("trash") + "</button></span></div>" +
+    '<div class="diario-kcal-dia-meta">' + diarioKcalMetaTexto(r) + "</div>" +
     '<div class="diario-kcal-dia-macros">Proteína ' + formatNumber(r.protein, 1) + "g · Carboidratos " + formatNumber(r.carbs, 1) + "g · Gorduras " + formatNumber(r.fat, 1) + "g · Fibras " + formatNumber(r.fiber, 1) + "g</div>" +
     '<div class="diario-kcal-dia-micros">' + Object.keys(micronutrientMeta).map((k) => micronutrientMeta[k].label + ": " + formatNumber(r[k] || 0, 1) + " " + micronutrientMeta[k].unit).join(" · ") + "</div>" +
     (r.caloriasQueimadas ? '<div class="diario-kcal-dia-queimadas">' + icon("flame") + " ~" + formatNumber(r.caloriasQueimadas) + " kcal queimadas nos treinos do dia (estimativa)</div>" : "") +
