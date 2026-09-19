@@ -457,10 +457,11 @@ svg{ display: block; }
 .bioimpedancia-resumo-valor{ font-family:'Fraunces',serif; font-size:22px; font-weight:600; color:#214c3d; }
 .bioimpedancia-resumo-label{ font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:#9aa9a1; }
 .bioimpedancia-resumo-item-multi{ justify-content:center; gap:6px; }
-.bioimpedancia-resumo-coluna-legenda{ font-family:'Fraunces',serif; font-style:italic; font-size:10px; font-weight:500; letter-spacing:0.03em; color:#b7c2ba; margin-bottom:2px; }
+.bioimpedancia-resumo-coluna-legenda{ font-family:'Fraunces',serif; font-style:italic; font-size:10px; font-weight:500; letter-spacing:0.03em; color:#b7c2ba; }
+.bioimpedancia-resumo-coluna-head{ align-self:flex-start; width:100%; display:flex; flex-direction:column; gap:2px; text-align:left; margin-bottom:8px; }
+.bioimpedancia-resumo-coluna-data{ font-size:10px; line-height:1.3; color:#9aa9a1; }
 .bioimpedancia-resumo-linha{ display:flex; align-items:baseline; justify-content:center; gap:6px; flex-wrap:wrap; }
 .bioimpedancia-resumo-valor-sm{ font-family:'Fraunces',serif; font-size:15px; font-weight:600; color:#214c3d; }
-.bioimpedancia-atualizado{ margin:12px 0 0; font-size:12px; color:#9aa9a1; }
 .bioimpedancia-form-tabs{ margin-top:16px; display:flex; gap:8px; border-bottom:1px solid #e5e9e1; }
 .bioimpedancia-form-tab{ padding:10px 4px; margin-bottom:-1px; border-bottom:2px solid transparent; font-size:14px; font-weight:600; color:#9aa9a1; }
 .bioimpedancia-form-tab.active{ color:#1b3f34; border-bottom-color:var(--primary); }
@@ -498,6 +499,7 @@ svg{ display: block; }
 .medidas-section-title{ margin:0; display:flex; align-items:center; gap:8px; font-family:'Fraunces',serif; font-size:20px; font-weight:600; color:#1b3f34; }
 .medida-form{ margin-top:16px; display:flex; flex-direction:column; gap:12px; max-width:360px; }
 .medida-input-row{ display:flex; flex-direction:column; gap:12px; margin-top:4px; }
+.medidas-hoje{ margin-top:24px; padding-top:20px; border-top:1px solid #edf0eb; }
 .medidas-history-list{ margin-top:16px; display:flex; flex-direction:column; }
 .medida-history-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 0; border-top:1px solid #edf0eb; }
 .medida-history-row:first-child{ border-top:none; padding-top:4px; }
@@ -1457,9 +1459,17 @@ function remainingToday() { const consumed = consumedToday(); const out = {}; fo
 function mealTotal() { return state.preview.reduce((sum, f) => addNutrients(sum, f.values), emptyNutrients); }
 function historyDays() { return Array.from(new Set(state.meals.map((m) => m.date))).sort().reverse(); }
 function dateLabel(date) { return new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long" }).format(new Date(date + "T12:00:00")); }
+// Igual dateLabel(), mas com o ano incluído -- usado onde a data aparece sozinha, sem outro registro
+// próximo que já dê o ano de contexto (ex.: "Exame realizado em ..." no card de Bioimpedância e
+// Calorimetria).
+function dateLabelComAno(date) { return new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date(date + "T12:00:00")); }
 function todayTreinos() { const t = today(); return state.treinos.filter((tr) => tr.date === t); }
 function historyDaysTreinos() { return Array.from(new Set(state.treinos.map((tr) => tr.date))).sort().reverse(); }
 function historyDaysMedidas() { return Array.from(new Set(state.medidas.map((m) => m.date))).sort().reverse(); }
+// Lista "Registros de hoje" do card de Medidas e Aferições -- mesmo padrão de todayMeals()/todayTreinos():
+// simplesmente as medidas com a data de hoje, sempre visível no card (ver medidaListTemplate()), sem
+// precisar abrir o Histórico de registros pra enxergar o que já foi medido hoje.
+function todayMedidas() { const t = today(); return state.medidas.filter((m) => m.date === t); }
 // Duração em minutos entre dois horários "HH:MM" do mesmo dia (não trata treino que passa da meia-noite).
 function duracaoMinutos(inicio, fim) {
   const [hi, mi] = inicio.split(":").map(Number);
@@ -4105,7 +4115,14 @@ function bioimpedanciaSectionTemplate() {
       "</section>";
   }
   const linha = (valor, label) => '<div class="bioimpedancia-resumo-linha"><span class="bioimpedancia-resumo-valor-sm">' + valor + '</span><span class="bioimpedancia-resumo-label">' + label + "</span></div>";
-  const legendaColuna = (texto) => '<span class="bioimpedancia-resumo-coluna-legenda">' + texto + "</span>";
+  // Cabeçalho de cada coluna (Bioimpedância/Calorimetria): legenda no canto superior esquerdo do
+  // campo, com a data do último exame logo abaixo -- a pedido do usuário, substitui a legenda única
+  // que ficava solta no rodapé do card (ver antigo .bioimpedancia-atualizado), já que agora cada
+  // coluna mostra sua própria data.
+  const cabecalhoColuna = (texto, ultimoRegistro) => '<div class="bioimpedancia-resumo-coluna-head">' +
+    '<span class="bioimpedancia-resumo-coluna-legenda">' + texto + "</span>" +
+    '<span class="bioimpedancia-resumo-coluna-data">' + (ultimoRegistro ? "Exame realizado em " + dateLabelComAno(ultimoRegistro.date) + "." : "Sem registro ainda.") + "</span>" +
+  "</div>";
   return '<section class="medidas-section">' +
     '<div class="medidas-section-title-row"><h2 class="medidas-section-title">' + icon("ruler") + " Bioimpedância e Calorimetria</h2>" +
     '<div class="medidas-section-title-actions">' +
@@ -4115,18 +4132,17 @@ function bioimpedanciaSectionTemplate() {
     '<div class="bioimpedancia-resumo">' +
       '<div class="bioimpedancia-resumo-item"><span class="bioimpedancia-resumo-valor">' + (ultimoBio && ultimoBio.altura ? formatNumber(ultimoBio.altura, 1) : "—") + '</span><span class="bioimpedancia-resumo-label">Altura (cm)</span></div>' +
       '<div class="bioimpedancia-resumo-item bioimpedancia-resumo-item-multi">' +
-        legendaColuna("Bioimpedância") +
+        cabecalhoColuna("Bioimpedância", ultimoBio) +
         linha(ultimoBio && ultimoBio.peso ? formatNumber(ultimoBio.peso, 1) : "—", "Peso (kg)") +
         linha(ultimoBio && ultimoBio.massaMuscular ? formatNumber(ultimoBio.massaMuscular, 1) : "—", "Massa musc. (kg)") +
         linha(ultimoBio && ultimoBio.gordura ? formatNumber(ultimoBio.gordura, 1) : "—", "Gordura (%)") +
       "</div>" +
       '<div class="bioimpedancia-resumo-item bioimpedancia-resumo-item-multi">' +
-        legendaColuna("Calorimetria") +
+        cabecalhoColuna("Calorimetria", ultimoCalo) +
         linha(ultimoCalo && ultimoCalo.tmb ? formatNumber(ultimoCalo.tmb) : "—", "TMB (kcal)") +
         linha(ultimoCalo && ultimoCalo.get ? formatNumber(ultimoCalo.get) : "—", "GET (kcal)") +
       "</div>" +
     "</div>" +
-    '<p class="bioimpedancia-atualizado">Bioimpedância: ' + (ultimoBio ? dateLabel(ultimoBio.date) : "sem registro") + " · Calorimetria: " + (ultimoCalo ? dateLabel(ultimoCalo.date) : "sem registro") + "</p>" +
     "</section>";
 }
 
@@ -4211,9 +4227,24 @@ function acaoAlternarDiaHistoricoMedidas(date) {
   render();
 }
 
+// Lista "Registros de hoje" do card de Medidas e Aferições, SEMPRE visível junto com o formulário --
+// mesmo espírito de mealListTemplate()/treinoListTemplate() (refeições e treinos já mostram os
+// registros do dia sem precisar abrir o Histórico; medidas ficava pra trás nisso). Reaproveita
+// medidaHistoryRowTemplate() pra cada linha: é a MESMA informação (tipo, horário, jejum/nota,
+// classificação e legenda) já mostrada dentro de um dia expandido no Histórico -- só muda o
+// agrupamento (aqui é só hoje, direto no card, sem precisar abrir o Histórico nem expandir um dia).
+function medidaListTemplate() {
+  const medidas = todayMedidas().slice().sort((a, b) => b.id - a.id);
+  if (!medidas.length) {
+    return '<div class="meal-empty"><div class="meal-empty-icon">' + icon("ruler") + "</div><p>Nenhuma medida registrada hoje</p><p>Escolha o tipo de medição abaixo e registre sua primeira aferição do dia.</p></div>";
+  }
+  return '<div class="medida-history-list">' + medidas.map(medidaHistoryRowTemplate).join("") + "</div>";
+}
+
 function medidasFormTemplate() {
   const tipo = state.medidaTipo;
   const meta = tipo ? medidaTipos[tipo] : null;
+  const hoje = todayMedidas();
   return '' +
     '<section class="medidas-section">' +
       '<div class="medidas-section-title-row"><h2 class="medidas-section-title">' + icon("plus") + " Medidas e Aferições</h2>" +
@@ -4245,6 +4276,9 @@ function medidasFormTemplate() {
           '<button class="btn-primary" onclick="acaoSalvarMedida()">' + icon("check") + " Salvar registro</button></div>"
           : ""
         ) +
+      "</div>" +
+      '<div class="medidas-hoje"><div class="history-eyebrow">' + icon("clock") + " Registros de hoje" + (hoje.length ? " (" + hoje.length + ")" : "") + "</div>" +
+        medidaListTemplate() +
       "</div>" +
     "</section>";
 }
