@@ -367,6 +367,9 @@ svg{ display: block; }
 .history-day-meal-grupos-lista{ margin:2px 0 0; padding-left:16px; font-size:11px; font-weight:400; color:#4b7048; }
 .history-day-meal-grupos-lista li{ margin:0; }
 .history-day-meal-grupos-lista strong{ font-weight:600; }
+.history-day-modalidades{ margin-top:6px; display:flex; flex-wrap:wrap; gap:6px 14px; }
+.history-day-modalidade-item{ display:flex; align-items:center; gap:4px; font-size:12px; color:#7e9287; }
+.history-day-modalidade-item .modalidade-kcal{ color:#c9762f; }
 .history-day-meal-calorias-queimadas{ margin:2px 0 0; font-size:11px; color:#c9762f; }
 .history-day-meal-static{ cursor:default; }
 .history-day-meal-static:hover{ background:transparent; }
@@ -493,7 +496,9 @@ svg{ display: block; }
 .medida-history-meta{ margin-top:4px; display:flex; align-items:center; gap:4px; font-size:12px; color:#9aa9a1; }
 .medida-history-nota{ margin-top:4px; display:flex; align-items:flex-start; gap:4px; font-size:12px; color:#7c8c84; font-style:italic; }
 .medida-history-right{ display:flex; flex-shrink:0; align-items:center; gap:12px; }
+.medida-history-valor-col{ display:flex; flex-direction:column; align-items:flex-end; gap:2px; }
 .medida-history-valor{ font-size:14px; font-weight:600; color:#3d6355; }
+.medida-history-imc{ font-size:11px; color:#789087; }
 
 /* ---------- modal (editar perfil) ---------- */
 .modal-overlay{ position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.4); padding:16px; }
@@ -1275,6 +1280,14 @@ const state = {
   // cada vez que a pessoa clica em "Encerrar dia" (ver acaoEncerrarDia()). Só existe UM registro por data
   // -- clicar de novo no mesmo dia substitui o anterior, pra sempre refletir o total mais atualizado.
   diarioKcal: readStorage(CHAVE_DIARIO_KCAL, []),
+  // Ids dos registros do Diário de Kcal expandidos, como mapa { [id]: true } -- ver
+  // diarioKcalRegistroTemplate()/acaoAlternarDiaDiarioKcal(). Cada dia expande/recolhe
+  // independentemente (não é um accordion de "só um por vez" como o histórico de refeições/treinos --
+  // aqui os cards já ficam todos listados de uma vez, então faz sentido poder comparar mais de um dia
+  // expandido ao mesmo tempo). Por padrão todo dia começa recolhido, mostrando só o resumo (kcal
+  // consumidos/meta e a Análise do objetivo); macro/micronutrientes, refeições e o detalhamento de kcal
+  // gastos só aparecem depois de expandir.
+  diarioKcalDiasExpandidos: {},
   showEditarPerfil: false,
   showNovaSenha: false,
   sidebarOpen: false,
@@ -1283,6 +1296,10 @@ const state = {
   medidas: readStorage(CHAVE_MEDIDAS, []),
   medidaTipo: "",
   showHistoricoMedidas: false,
+  // Data do dia expandido no histórico de Medidas e Aferições (mesmo accordion por dia do histórico de
+  // refeições/treinos) -- ver medidasHistoricoTemplate()/acaoAlternarDiaHistoricoMedidas(). null = nenhum
+  // dia expandido (só a lista de dias).
+  historyDiaExpandidoMedidas: null,
   bioimpedancia: readStorage(CHAVE_BIOIMPEDANCIA, []),
   calorimetria: readStorage(CHAVE_CALORIMETRIA, []),
   showFormBioimpedancia: false,
@@ -1379,6 +1396,7 @@ function historyDays() { return Array.from(new Set(state.meals.map((m) => m.date
 function dateLabel(date) { return new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long" }).format(new Date(date + "T12:00:00")); }
 function todayTreinos() { const t = today(); return state.treinos.filter((tr) => tr.date === t); }
 function historyDaysTreinos() { return Array.from(new Set(state.treinos.map((tr) => tr.date))).sort().reverse(); }
+function historyDaysMedidas() { return Array.from(new Set(state.medidas.map((m) => m.date))).sort().reverse(); }
 // Duração em minutos entre dois horários "HH:MM" do mesmo dia (não trata treino que passa da meia-noite).
 function duracaoMinutos(inicio, fim) {
   const [hi, mi] = inicio.split(":").map(Number);
@@ -1490,14 +1508,20 @@ function ultimaCalorimetria() {
   const registros = state.calorimetria.slice().sort((a, b) => b.id - a.id);
   return registros.length ? registros[0] : null;
 }
-function calcularImc() {
-  const registro = ultimoRegistroMedida("peso");
+// IMC a partir de um peso (kg) e da altura mais recente cadastrada em Bioimpedância e Calorimetria --
+// usada tanto pro card de IMC no topo da aba (calcularImc(), com o peso mais recente) quanto pra
+// congelar o IMC no próprio registro de peso no momento em que ele é salvo (ver acaoSalvarMedida()),
+// já que uma altura cadastrada depois não deve mudar o IMC de um peso registrado antes.
+function calcularImcDoPeso(pesoKg) {
   const bio = ultimaBioimpedancia();
   const alturaM = Number(bio && bio.altura) / 100;
-  if (!registro || !alturaM) return null;
-  const peso = Number(registro.valor);
-  if (!peso) return null;
-  return peso / (alturaM * alturaM);
+  if (!pesoKg || !alturaM) return null;
+  return pesoKg / (alturaM * alturaM);
+}
+function calcularImc() {
+  const registro = ultimoRegistroMedida("peso");
+  if (!registro) return null;
+  return calcularImcDoPeso(Number(registro.valor));
 }
 const IMC_FAIXAS = [
   { ate: 18.5, label: "Abaixo do peso", cor: "#6fb3d9", corSuave: "#e7f3fa" },
@@ -1652,10 +1676,17 @@ function acaoSalvarMedida() {
     id: Date.now(), date: today(), time: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
     tipo, valor, nota,
   };
+  // Ao registrar um peso, calcula e congela o IMC daquele peso na hora (com a altura cadastrada até
+  // então) -- fica salvo junto do registro em vez de recalculado sempre com a altura mais recente, pra
+  // não mudar o IMC de pesos antigos se a altura for atualizada depois. Sem altura cadastrada ainda,
+  // fica sem IMC (mesma mensagem do card do topo pedindo pra cadastrar a altura em Bioimpedância).
+  if (tipo === "peso") novaMedida.imc = calcularImcDoPeso(Number(valor));
   state.medidas = state.medidas.concat([novaMedida]);
   persistMedidas();
   state.medidaTipo = "";
-  toastSuccess("Registro salvo no histórico.");
+  toastSuccess(tipo === "peso" && novaMedida.imc
+    ? "Registro salvo no histórico (IMC " + formatNumber(novaMedida.imc, 1) + ")."
+    : "Registro salvo no histórico.");
   if (state.account) enviarComFila("salvarMedidaGoogle", [state.usuario.email, novaMedida]);
   render();
 }
@@ -2994,6 +3025,17 @@ function treinoCaloriasResumoTexto(t) {
   if (!t.caloriasQueimadas) return "";
   return "~" + formatNumber(t.caloriasQueimadas) + " kcal";
 }
+// Resumo de modalidade + kcal queimadas de CADA treino do dia (um item por treino, não agrupado por
+// esporte) -- usado na informação inicial (sem precisar expandir) do histórico de treinos salvos, ver
+// treinoHistoryDayCardTemplate(). Sem estimativa de kcal pro treino (sem peso cadastrado, ou esporte sem
+// MET aplicável -- ver treinoCaloriasResumoTexto()), mostra só a modalidade.
+function treinoResumoModalidadesHtml(dayTreinos) {
+  return '<div class="history-day-modalidades">' + dayTreinos.map((t) => {
+    const kcalTexto = treinoCaloriasResumoTexto(t);
+    return '<span class="history-day-modalidade-item">' + emojiEsporte(t.esporte) + " " + esc(t.esporte) +
+      (kcalTexto ? ' <span class="modalidade-kcal">· ' + esc(kcalTexto) + "</span>" : "") + "</span>";
+  }).join("") + "</div>";
+}
 function treinoListTemplate() {
   const treinos = todayTreinos();
   if (!treinos.length) {
@@ -3043,6 +3085,7 @@ function treinoHistoryDayCardTemplate(date) {
         '<button class="meal-row-delete" aria-label="Excluir treinos de ' + esc(dateLabel(date)) + '" onclick="event.stopPropagation(); acaoRemoverDiaHistoricoTreinos(\'' + date + '\')">' + icon("trash") + "</button>" +
         icon("chevron", "history-day-chevron") + "</span>" +
       "</div>" +
+      treinoResumoModalidadesHtml(dayTreinos) +
       (expandido
         ? '<div class="history-day-meals">' + dayTreinos.map((t) =>
             '<div class="history-day-meal history-day-meal-static' + ((t.nota || t.distanciaKm || t.caloriasQueimadas || (t.gruposMusculares && t.gruposMusculares.length)) ? " history-day-meal-com-nota" : "") + '">' +
@@ -3649,8 +3692,55 @@ function bioimpedanciaSectionTemplate() {
     "</section>";
 }
 
-function acaoAbrirHistoricoMedidas() { state.showHistoricoMedidas = true; render(); }
+// Cada vez que o histórico é aberto, começa com todos os dias fechados -- mesmo padrão de
+// acaoAlternarHistorico()/acaoAlternarHistoricoTreinos().
+function acaoAbrirHistoricoMedidas() { state.showHistoricoMedidas = true; state.historyDiaExpandidoMedidas = null; render(); }
 function acaoFecharHistoricoMedidas() { state.showHistoricoMedidas = false; render(); }
+// Card de um dia no histórico de Medidas e Aferições -- mesma lógica de dia expansível (accordion) do
+// histórico de refeições (historyDayCardTemplate()) e de treinos (treinoHistoryDayCardTemplate()).
+function medidasHistoryDayCardTemplate(date) {
+  const dayMedidas = state.medidas.filter((m) => m.date === date).sort((a, b) => b.id - a.id);
+  const expandido = state.historyDiaExpandidoMedidas === date;
+  return '' +
+    '<div class="history-day' + (expandido ? " history-day-expandido" : "") + '">' +
+      '<div class="history-day-head history-day-head-btn" onclick="acaoAlternarDiaHistoricoMedidas(\'' + date + '\')">' +
+        '<span class="date">' + dateLabel(date) + "</span>" +
+        '<span class="history-day-head-direita"><span class="total">' + dayMedidas.length + " registro" + (dayMedidas.length > 1 ? "s" : "") + "</span>" +
+        '<button class="meal-row-delete" aria-label="Excluir registros de ' + esc(dateLabel(date)) + '" onclick="event.stopPropagation(); acaoRemoverDiaHistoricoMedidas(\'' + date + '\')">' + icon("trash") + "</button>" +
+        icon("chevron", "history-day-chevron") + "</span>" +
+      "</div>" +
+      (expandido
+        ? '<div class="medidas-history-list">' + dayMedidas.map((r) => {
+            const meta = medidaTipos[r.tipo] || { label: r.tipo, unidade: "" };
+            return '<div class="medida-history-row"><div class="medida-history-left"><span class="medida-history-tipo">' + esc(meta.label) + "</span>" +
+              '<span class="medida-history-meta">' + icon("clock") + " " + esc(r.time) + "</span>" +
+              (r.nota ? '<span class="medida-history-nota">' + icon("help") + " " + esc(r.nota) + "</span>" : "") +
+              "</div>" +
+              '<div class="medida-history-right"><div class="medida-history-valor-col"><span class="medida-history-valor">' + esc(String(r.valor)) + " " + esc(meta.unidade) + "</span>" +
+              (r.tipo === "peso" && r.imc ? '<span class="medida-history-imc">IMC ' + formatNumber(r.imc, 1) + " · " + esc(classificarImc(r.imc)) + "</span>" : "") + "</div>" +
+              '<button class="meal-row-delete" aria-label="Remover registro" onclick="acaoRemoverMedida(' + r.id + ')">' + icon("trash") + "</button></div></div>";
+          }).join("") + "</div>"
+        : ""
+      ) +
+    "</div>";
+}
+// Exclui TODOS os registros de medida daquele dia -- o "registro do dia" no histórico é o agrupamento
+// por data, não um registro único -- mesma lógica de acaoRemoverDiaHistorico()/
+// acaoRemoverDiaHistoricoTreinos(): remove cada um localmente e sincroniza cada remoção com o backend.
+function acaoRemoverDiaHistoricoMedidas(date) {
+  const idsDoDia = state.medidas.filter((m) => m.date === date).map((m) => m.id);
+  if (!idsDoDia.length) return;
+  state.medidas = state.medidas.filter((m) => m.date !== date);
+  persistMedidas();
+  if (state.account) idsDoDia.forEach((id) => enviarComFila("removerMedidaGoogle", [state.usuario.email, id]));
+  if (state.historyDiaExpandidoMedidas === date) state.historyDiaExpandidoMedidas = null;
+  render();
+}
+// Abre/fecha um dia do histórico de medidas (accordion: só um dia expandido de cada vez).
+function acaoAlternarDiaHistoricoMedidas(date) {
+  state.historyDiaExpandidoMedidas = state.historyDiaExpandidoMedidas === date ? null : date;
+  render();
+}
 
 function medidasFormTemplate() {
   const tipo = state.medidaTipo;
@@ -3681,20 +3771,12 @@ function medidasFormTemplate() {
 }
 
 function medidasHistoricoTemplate() {
-  const registros = state.medidas.slice().sort((a, b) => b.id - a.id);
+  const days = historyDaysMedidas();
   return '' +
     '<section class="medidas-section">' +
       '<h2 class="medidas-section-title">' + icon("history") + " Histórico de Medidas e Aferições</h2>" +
-      (registros.length ?
-        '<div class="medidas-history-list">' + registros.map((r) => {
-          const meta = medidaTipos[r.tipo] || { label: r.tipo, unidade: "" };
-          return '<div class="medida-history-row"><div class="medida-history-left"><span class="medida-history-tipo">' + esc(meta.label) + "</span>" +
-            '<span class="medida-history-meta">' + icon("clock") + " " + dateLabel(r.date) + " · " + esc(r.time) + "</span>" +
-            (r.nota ? '<span class="medida-history-nota">' + icon("help") + " " + esc(r.nota) + "</span>" : "") +
-            "</div>" +
-            '<div class="medida-history-right"><span class="medida-history-valor">' + esc(String(r.valor)) + " " + esc(meta.unidade) + "</span>" +
-            '<button class="meal-row-delete" aria-label="Remover registro" onclick="acaoRemoverMedida(' + r.id + ')">' + icon("trash") + "</button></div></div>";
-        }).join("") + "</div>"
+      (days.length ?
+        '<div class="history-days-list" style="margin-top:14px">' + days.map((date) => medidasHistoryDayCardTemplate(date)).join("") + "</div>"
         :
         '<p class="history-panel-empty" style="margin-top:16px">Seus registros de medidas e aferições aparecerão aqui depois do primeiro registro.</p>'
       ) +
@@ -4036,17 +4118,35 @@ function diarioKcalAnaliseObjetivoTemplate(r) {
   }
   return '<div class="diario-kcal-gastos"><p class="diario-kcal-dia-subtitulo">Análise do objetivo:</p>' + linhas.join("") + "</div>";
 }
+// Abre/fecha o detalhamento de um registro do Diário de Kcal -- cada dia expande/recolhe
+// independentemente (não é accordion de "só um por vez", diferente do histórico de refeições/treinos/
+// medidas -- ver comentário do state.diarioKcalDiasExpandidos).
+function acaoAlternarDiaDiarioKcal(id) {
+  state.diarioKcalDiasExpandidos = Object.assign({}, state.diarioKcalDiasExpandidos, { [id]: !state.diarioKcalDiasExpandidos[id] });
+  render();
+}
+// Por padrão, cada dia do Diário de Kcal mostra só o resumo essencial (kcal consumidos/meta e a Análise
+// do objetivo) -- macro/micronutrientes, refeições do dia e o detalhamento de kcal gastos (repouso vs.
+// atividades) só aparecem ao clicar na data pra expandir, pra não sobrecarregar a lista com muita
+// informação de cada dia de uma vez. Quando expandido, a Análise do objetivo volta pra posição de
+// sempre (por último, depois de todo o resto) -- só quando recolhido ela "sobe" pra ficar logo depois
+// do resumo de kcal, já que nesse estado é a única informação extra visível.
 function diarioKcalRegistroTemplate(r) {
-  return '<div class="diario-kcal-dia">' +
-    '<div class="diario-kcal-dia-head"><span class="diario-kcal-dia-data">' + icon("calendar") + " " + dateLabel(r.date) + "</span>" +
+  const expandido = !!state.diarioKcalDiasExpandidos[r.id];
+  return '<div class="diario-kcal-dia' + (expandido ? " history-day-expandido" : "") + '">' +
+    '<div class="diario-kcal-dia-head history-day-head-btn" onclick="acaoAlternarDiaDiarioKcal(' + r.id + ')"><span class="diario-kcal-dia-data">' + icon("calendar") + " " + dateLabel(r.date) + "</span>" +
       '<span class="diario-kcal-dia-head-direita"><span class="diario-kcal-dia-kcal">' + formatNumber(r.calories) + " kcal</span>" +
-      '<button class="diario-kcal-recalcular-btn" aria-label="Recalcular registro de ' + esc(dateLabel(r.date)) + ' com as refeições daquele dia" title="Recalcular com as refeições daquele dia" onclick="acaoRecalcularDiarioKcal(' + r.id + ')">' + icon("rotate") + "</button>" +
-      '<button class="meal-row-delete" aria-label="Excluir registro de ' + esc(dateLabel(r.date)) + '" onclick="acaoRemoverDiarioKcal(' + r.id + ')">' + icon("trash") + "</button></span></div>" +
+      '<button class="diario-kcal-recalcular-btn" aria-label="Recalcular registro de ' + esc(dateLabel(r.date)) + ' com as refeições daquele dia" title="Recalcular com as refeições daquele dia" onclick="event.stopPropagation(); acaoRecalcularDiarioKcal(' + r.id + ')">' + icon("rotate") + "</button>" +
+      '<button class="meal-row-delete" aria-label="Excluir registro de ' + esc(dateLabel(r.date)) + '" onclick="event.stopPropagation(); acaoRemoverDiarioKcal(' + r.id + ')">' + icon("trash") + "</button>" +
+      icon("chevron", "history-day-chevron") + "</span></div>" +
     '<div class="diario-kcal-dia-meta">' + diarioKcalMetaTexto(r) + "</div>" +
-    '<div class="diario-kcal-dia-macros">' + diarioKcalMacrosTemplate(r) + "</div>" +
-    '<div class="diario-kcal-dia-micros">' + diarioKcalMicrosTemplate(r) + "</div>" +
-    '<div class="diario-kcal-refeicoes"><p class="diario-kcal-dia-subtitulo">Refeições do dia:</p>' + (r.refeicoes || []).map(diarioKcalRefeicaoTemplate).join("") + "</div>" +
-    diarioKcalGastosTemplate(r) +
+    (expandido ? '' +
+      '<div class="diario-kcal-dia-macros">' + diarioKcalMacrosTemplate(r) + "</div>" +
+      '<div class="diario-kcal-dia-micros">' + diarioKcalMicrosTemplate(r) + "</div>" +
+      '<div class="diario-kcal-refeicoes"><p class="diario-kcal-dia-subtitulo">Refeições do dia:</p>' + (r.refeicoes || []).map(diarioKcalRefeicaoTemplate).join("") + "</div>" +
+      diarioKcalGastosTemplate(r)
+      : ""
+    ) +
     diarioKcalAnaliseObjetivoTemplate(r) +
   "</div>";
 }
