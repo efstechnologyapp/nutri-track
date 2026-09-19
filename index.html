@@ -345,6 +345,8 @@ svg{ display: block; }
 .meal-row-delete:hover{ background:#fff0ed; color:#ca6a58; }
 .diario-kcal-recalcular-btn{ display:flex; height:32px; width:32px; align-items:center; justify-content:center; border-radius:999px; color:#b4c0b8; transition:background .15s,color .15s; }
 .diario-kcal-recalcular-btn:hover{ background:#eef6e4; color:#4b7048; }
+.meal-row-edit{ display:flex; height:32px; width:32px; align-items:center; justify-content:center; border-radius:999px; color:#b4c0b8; transition:background .15s,color .15s; }
+.meal-row-edit:hover{ background:#eef6e4; color:#4b7048; }
 .history-panel{ margin-top:20px; border-radius:16px; background:#f7f9f5; padding:16px; }
 .history-panel-label{ margin-bottom:12px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.14em; color:#7b9187; }
 .history-panel-empty{ margin:0; font-size:14px; color:#94a49d; }
@@ -413,6 +415,9 @@ svg{ display: block; }
 .history-day-meal-foto-link{ display:inline-flex; color:#6c8d68; }
 .history-day-meal-foto-link:hover{ color:#3d6355; }
 .history-day-meal-foto-link .icon{ width:14px; height:14px; }
+.history-day-meal-editar-link{ display:inline-flex; border:none; background:none; padding:0; color:#6c8d68; }
+.history-day-meal-editar-link:hover{ color:#3d6355; }
+.history-day-meal-editar-link .icon{ width:14px; height:14px; }
 .footnote{ margin-top:28px; display:flex; align-items:flex-start; gap:8px; font-size:12px; line-height:1.4; color:#92a099; }
 .footnote .icon{ margin-top:2px; color:#9db69a; flex-shrink:0; }
 .micro-fonte-nota{ margin:12px 0 16px; display:flex; align-items:flex-start; gap:8px; font-size:12px; line-height:1.4; color:#92a099; }
@@ -715,6 +720,7 @@ const authApi = {
   salvarTreinoGoogle: (email, treino) => chamarApi("salvarTreinoGoogle", { email, treino }),
   removerTreinoGoogle: (email, id) => chamarApi("removerTreinoGoogle", { email, id }),
   atualizarFotoTreinoGoogle: (email, id, fotoUrl) => chamarApi("atualizarFotoTreinoGoogle", { email, id, fotoUrl }),
+  atualizarTreinoGoogle: (email, treino) => chamarApi("atualizarTreinoGoogle", { email, treino }),
   salvarExercicioCustomizadoGoogle: (email, exercicio) => chamarApi("salvarExercicioCustomizadoGoogle", { email, exercicio }),
   salvarDiarioKcalGoogle: (email, registro) => chamarApi("salvarDiarioKcalGoogle", { email, registro }),
   removerDiarioKcalGoogle: (email, id) => chamarApi("removerDiarioKcalGoogle", { email, id }),
@@ -1375,6 +1381,11 @@ const state = {
   // Data do dia expandido no histórico de treinos (accordion: um dia de cada vez, ou nenhum) -- mesma
   // lógica do histórico de refeições, ver treinoHistoryPanelTemplate()/acaoAlternarDiaHistoricoTreinos().
   historyDiaExpandidoTreinos: null,
+  // Id do treino já salvo em edição no formulário manual (ver acaoEditarTreino()), ou null quando o
+  // formulário é pra registrar um treino novo. Enquanto em edição, os grupos musculares/exercícios do
+  // registro original são preservados como estão (o formulário de edição não reconstrói o seletor de
+  // grupos musculares -- só esporte, data, horários, distância e nota são editáveis).
+  treinoEditandoId: null,
   treinoModo: "cronometro", // "cronometro" | "manual" — só é relevante quando não há treino em andamento
   // Treino em andamento (cronômetro), ou null. Formato: { esporte, date, horaInicioClock,
   // segmentoAtualInicio (timestamp ms de quando o trecho atual começou a rodar, ou null se pausado),
@@ -2397,6 +2408,19 @@ function recalcularDiarioKcalRegistro(registro) {
   const caloriasQueimadas = state.treinos.filter((tr) => tr.date === registro.date).reduce((soma, tr) => soma + (tr.caloriasQueimadas || 0), 0);
   return Object.assign({}, registro, totais, { refeicoes, caloriasQueimadas });
 }
+// Se já existe um dia encerrado no Diário de Kcal para essa data, recalcula e ressincroniza esse
+// registro (ver recalcularDiarioKcalRegistro()) -- usado depois de editar um treino (ver
+// acaoSalvarTreino()), já que a edição pode mudar as calorias queimadas somadas num dia já fechado
+// (ex.: corrigir a duração ou o esporte de um treino cujo dia já foi encerrado). Sem registro fechado
+// pra essa data, não faz nada -- nada pra ressincronizar.
+function sincronizarDiarioKcalDoDia(date) {
+  const registro = state.diarioKcal.find((r) => r.date === date);
+  if (!registro) return;
+  const corrigido = recalcularDiarioKcalRegistro(registro);
+  state.diarioKcal = state.diarioKcal.map((r) => (r.id === registro.id ? corrigido : r));
+  persistDiarioKcal();
+  if (state.account) enviarComFila("salvarDiarioKcalGoogle", [state.usuario.email, corrigido]);
+}
 function acaoRecalcularDiarioKcal(id) {
   const registro = state.diarioKcal.find((r) => r.id === id);
   if (!registro) return;
@@ -3219,6 +3243,53 @@ function acaoCancelarTreinoAtivo() {
   render();
 }
 
+// Abre o formulário manual já preenchido com os dados de um treino salvo (clicado em "Treinos de
+// hoje" ou no histórico), para editar em vez de registrar um novo -- mesmo padrão de
+// acaoEditarBioimpedancia()/acaoEditarCalorimetria(). Os grupos musculares/exercícios do registro (se
+// for Musculação) NÃO são recarregados no seletor -- ficam preservados como estão e só voltam a mudar
+// se a pessoa remontá-los do zero; o formulário de edição cobre esporte, data, horários, distância e
+// nota, que são os campos que também afetam a estimativa de calorias queimadas.
+function acaoEditarTreino(id) {
+  const t = state.treinos.find((tr) => tr.id === id);
+  if (!t) return;
+  state.treinoModo = "manual";
+  state.treinoEsporte = t.esporte;
+  state.treinoData = t.date;
+  state.treinoHoraInicio = t.horaInicio;
+  state.treinoHoraFim = t.horaFim;
+  state.treinoNota = t.nota || "";
+  state.treinoDistanciaKm = t.distanciaKm ? String(t.distanciaKm) : "";
+  state.showHistoryTreinos = false;
+  state.historyDiaExpandidoTreinos = null;
+  limparFotoTreinoSelecionada();
+  state.treinoEditandoId = id;
+  render();
+  // O formulário manual pode já estar montado na tela (ex.: editar um treino logo depois de editar
+  // outro, sem trocar de aba) -- nesse caso captureFormState(), chamado no INÍCIO do render() acima,
+  // recaptura os valores ainda presentes no DOM (do preenchimento anterior) antes desse novo
+  // preenchimento ter chance de aparecer, sobrescrevendo os campos de state setados logo acima. Escreve
+  // direto nos inputs, depois do render(), pra garantir que o formulário sempre reflita o treino que
+  // está sendo editado -- mesmo padrão (e mesmo motivo) do ajuste em acaoSelecionarJejumGlicemia().
+  const dataEl = document.getElementById("treino-data");
+  const inicioEl = document.getElementById("treino-hora-inicio");
+  const fimEl = document.getElementById("treino-hora-fim");
+  const notaEl = document.getElementById("treino-nota");
+  const distanciaEl = document.getElementById("treino-distancia");
+  if (dataEl) dataEl.value = t.date;
+  if (inicioEl) inicioEl.value = t.horaInicio;
+  if (fimEl) fimEl.value = t.horaFim;
+  if (notaEl) notaEl.value = t.nota || "";
+  if (distanciaEl) distanciaEl.value = t.distanciaKm ? String(t.distanciaKm) : "";
+  toastSuccess("Treino carregado no formulário para edição.");
+}
+function acaoCancelarEdicaoTreino() {
+  state.treinoEditandoId = null;
+  state.treinoEsporte = "";
+  state.treinoData = "";
+  state.treinoNota = "";
+  state.treinoDistanciaKm = "";
+  render();
+}
 function acaoSalvarTreino() {
   const esporte = state.treinoEsporte;
   if (!esporte) { toastError("Selecione o esporte."); return; }
@@ -3237,8 +3308,52 @@ function acaoSalvarTreino() {
   const nota = notaEl ? notaEl.value : "";
   const distanciaEl = document.getElementById("treino-distancia");
   const camposDistancia = calcularCamposDistanciaTreino(esporte, duracaoMin);
-  const gruposMusculares = obterGruposMuscularesParaSalvar();
 
+  // Modo edição (ver acaoEditarTreino()): atualiza o registro já salvo em vez de criar um novo,
+  // preservando id e grupos musculares -- e, ao final, ressincroniza qualquer dia já encerrado no
+  // Diário de Kcal que dependa desse treino (o dia antigo, se a data mudou, e o dia novo), pra
+  // calorias queimadas de um dia já fechado não ficarem desatualizadas depois da edição. A foto segue o
+  // mesmo padrão de acaoSalvarBioimpedancia(): sem selecionar um novo arquivo, a foto já anexada
+  // continua a mesma; selecionando um novo, ela é enviada em segundo plano e substitui a anterior só
+  // quando terminar.
+  const editandoId = state.treinoEditandoId;
+  if (editandoId != null) {
+    const registro = state.treinos.find((tr) => tr.id === editandoId);
+    if (!registro) { toastError("Treino não encontrado."); return; }
+    const dataAntiga = registro.date;
+    registro.esporte = esporte;
+    registro.date = dataTreino;
+    registro.horaInicio = horaInicio;
+    registro.horaFim = horaFim;
+    registro.duracaoMin = duracaoMin;
+    registro.nota = nota;
+    Object.assign(registro, camposDistancia);
+    registro.caloriasQueimadas = estimarCaloriasQueimadas(registro);
+    const arquivoFoto = treinoFotoSelecionada;
+    if (arquivoFoto) registro.fotoUrl = ""; // preenchida de novo quando o novo anexo terminar de enviar
+    state.treinos = state.treinos.map((tr) => (tr.id === editandoId ? registro : tr));
+    persistTreinos();
+    state.treinoEditandoId = null;
+    state.treinoEsporte = "";
+    state.treinoData = "";
+    state.treinoNota = "";
+    state.treinoDistanciaKm = "";
+    if (dataEl) dataEl.value = "";
+    inicioEl.value = "";
+    fimEl.value = "";
+    if (notaEl) notaEl.value = "";
+    if (distanciaEl) distanciaEl.value = "";
+    limparFotoTreinoSelecionada();
+    sincronizarDiarioKcalDoDia(dataAntiga);
+    if (registro.date !== dataAntiga) sincronizarDiarioKcalDoDia(registro.date);
+    toastSuccess(arquivoFoto ? "Treino atualizado. Enviando a nova foto em segundo plano..." : "Treino atualizado.");
+    const promessaEdicao = state.account ? enviarComFila("atualizarTreinoGoogle", [state.usuario.email, registro]) : Promise.resolve();
+    render();
+    if (arquivoFoto) processarFotoTreinoEmSegundoPlano(registro.id, arquivoFoto, promessaEdicao);
+    return;
+  }
+
+  const gruposMusculares = obterGruposMuscularesParaSalvar();
   const novoTreino = Object.assign({ id: Date.now(), date: dataTreino, esporte, horaInicio, horaFim, duracaoMin, fotoUrl: "", nota, gruposMusculares }, camposDistancia);
   novoTreino.caloriasQueimadas = estimarCaloriasQueimadas(novoTreino);
   const arquivoFoto = treinoFotoSelecionada;
@@ -3267,9 +3382,14 @@ function acaoSalvarTreino() {
 }
 
 function acaoRemoverTreino(id) {
-  state.treinos = state.treinos.filter((t) => t.id !== id);
+  const t = state.treinos.find((tr) => tr.id === id);
+  state.treinos = state.treinos.filter((tr) => tr.id !== id);
   persistTreinos();
   if (state.account) enviarComFila("removerTreinoGoogle", [state.usuario.email, id]);
+  // Mesmo motivo do sincronizarDiarioKcalDoDia() em acaoSalvarTreino(): se o dia desse treino já tinha
+  // sido encerrado no Diário de Kcal, as calorias queimadas guardadas lá incluíam esse treino -- sem
+  // ressincronizar, o registro fechado ficaria com um valor a mais depois da remoção.
+  if (t) sincronizarDiarioKcalDoDia(t.date);
   render();
 }
 
@@ -3347,6 +3467,7 @@ function treinoListTemplate() {
     (t.nota ? '<div class="meal-row-nota">' + icon("help") + " " + esc(t.nota) + "</div>" : "") +
     "</div></div>" +
     '<div class="meal-row-right"><div class="meal-row-stat"><div class="meal-row-kcal">' + esc(formatarDuracao(t.duracaoMin)) + "</div></div>" +
+    '<button class="meal-row-edit" aria-label="Editar treino" onclick="acaoEditarTreino(' + t.id + ')">' + icon("edit") + "</button>" +
     '<button class="meal-row-delete" aria-label="Remover treino" onclick="acaoRemoverTreino(' + t.id + ')">' + icon("trash") + "</button></div></div>"
   ).join("");
 }
@@ -3382,7 +3503,7 @@ function treinoHistoryDayCardTemplate(date) {
       (expandido
         ? '<div class="history-day-meals">' + dayTreinos.map((t) =>
             '<div class="history-day-meal history-day-meal-static' + ((t.nota || t.distanciaKm || t.caloriasQueimadas || (t.gruposMusculares && t.gruposMusculares.length)) ? " history-day-meal-com-nota" : "") + '">' +
-              '<div class="history-day-meal-linha"><span>' + emojiEsporte(t.esporte) + " " + esc(t.esporte) + " · " + esc(t.horaInicio) + "–" + esc(t.horaFim) + "</span><span>" + esc(formatarDuracao(t.duracaoMin)) + (t.fotoUrl ? ' <a class="history-day-meal-foto-link" href="' + esc(t.fotoUrl) + '" target="_blank" rel="noopener" aria-label="Ver foto do treino">' + icon("camera") + "</a>" : "") + "</span></div>" +
+              '<div class="history-day-meal-linha"><span>' + emojiEsporte(t.esporte) + " " + esc(t.esporte) + " · " + esc(t.horaInicio) + "–" + esc(t.horaFim) + "</span><span>" + esc(formatarDuracao(t.duracaoMin)) + (t.fotoUrl ? ' <a class="history-day-meal-foto-link" href="' + esc(t.fotoUrl) + '" target="_blank" rel="noopener" aria-label="Ver foto do treino">' + icon("camera") + "</a>" : "") + ' <button class="history-day-meal-editar-link" aria-label="Editar treino" onclick="event.stopPropagation(); acaoEditarTreino(' + t.id + ')">' + icon("edit") + "</button></span></div>" +
               (t.distanciaKm ? '<p class="history-day-meal-distancia">' + esc(treinoDistanciaResumoTexto(t)) + "</p>" : "") +
               treinoGruposMuscularesListaHtml(t) +
               (t.caloriasQueimadas ? '<p class="history-day-meal-calorias-queimadas">' + esc(treinoCaloriasResumoTexto(t)) + " queimadas (estimativa)</p>" : "") +
@@ -3407,6 +3528,7 @@ function acaoRemoverDiaHistoricoTreinos(date) {
   persistTreinos();
   if (state.account) idsDoDia.forEach((id) => enviarComFila("removerTreinoGoogle", [state.usuario.email, id]));
   if (state.historyDiaExpandidoTreinos === date) state.historyDiaExpandidoTreinos = null;
+  sincronizarDiarioKcalDoDia(date);
   render();
 }
 // Cada vez que o histórico é aberto, começa com todos os dias fechados (evita reabrir com um dia antigo
@@ -4276,17 +4398,23 @@ function treinoFormManualTemplate() {
       '<div><label class="meal-form-label">Término</label><input id="treino-hora-fim" type="time" class="meal-input" value="' + esc(state.treinoHoraFim) + '"/></div>' +
     "</div>" +
     treinoDistanciaCampoTemplate() +
-    treinoGruposMuscularesCampoTemplate() +
+    (state.treinoEditandoId == null ? treinoGruposMuscularesCampoTemplate() : "") +
     treinoNotaCampoTemplate() +
     treinoFotoCampoTemplate() +
-    '<button class="btn-ghost-light" onclick="acaoSalvarTreino()">' + icon("check") + " Salvar treino</button>" +
+    '<button class="btn-ghost-light" onclick="acaoSalvarTreino()">' + icon("check") + (state.treinoEditandoId != null ? " Salvar alterações" : " Salvar treino") + "</button>" +
+    (state.treinoEditandoId != null ? '<button class="treino-cancelar-btn" onclick="acaoCancelarEdicaoTreino()">Cancelar edição</button>' : "") +
   "</div>";
 }
 
 // Por padrão o registro é por cronômetro (iniciar/pausar/encerrar); "Registrar manualmente" continua
-// disponível pra quem quer lançar um treino que já terminou, sem cronometrar ao vivo.
+// disponível pra quem quer lançar um treino que já terminou, sem cronometrar ao vivo. Em modo edição
+// (ver acaoEditarTreino()) pula direto pro formulário manual, sem as abas -- editar um treino já salvo
+// não faz sentido por cronômetro.
 function treinoFormularioTemplate() {
   if (state.treinoAtivo) return treinoCronometroAtivoTemplate();
+  if (state.treinoEditandoId != null) {
+    return '<p class="meal-card-desc">Ajuste os dados do treino e salve as alterações.</p>' + treinoFormManualTemplate();
+  }
   return '' +
     '<p class="meal-card-desc">Selecione a modalidade e ' + (state.treinoModo === "manual" ? "informe os horários de início e término." : "toque em iniciar quando começar.") + "</p>" +
     '<div class="treino-modo-tabs">' +
@@ -4297,10 +4425,11 @@ function treinoFormularioTemplate() {
 }
 
 function treinosTabTemplate() {
+  const editando = state.treinoEditandoId != null;
   return '<main>' +
     '<section class="dashboard-grid">' +
-      '<aside class="meal-card"><div class="meal-card-eyebrow">' + icon("flame") + " Novo treino</div>" +
-      "<h2>Qual esporte você praticou?</h2>" +
+      '<aside class="meal-card"><div class="meal-card-eyebrow">' + icon(editando ? "edit" : "flame") + (editando ? " Editar treino" : " Novo treino") + "</div>" +
+      "<h2>" + (editando ? "Corrigindo um treino já salvo" : "Qual esporte você praticou?") + "</h2>" +
       treinoFormularioTemplate() +
       "</aside>" +
       '<div class="history-card"><div class="history-card-head">' +
