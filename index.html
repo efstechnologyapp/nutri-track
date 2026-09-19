@@ -371,6 +371,7 @@ svg{ display: block; }
 .history-day-modalidades{ margin-top:6px; display:flex; flex-wrap:wrap; gap:6px 14px; }
 .history-day-modalidade-item{ display:flex; align-items:center; gap:4px; font-size:12px; color:#7e9287; }
 .history-day-modalidade-item .modalidade-kcal{ color:#c9762f; }
+.history-day-modalidade-item .medida-resumo-status{ font-weight:600; }
 .history-day-meal-calorias-queimadas{ margin:2px 0 0; font-size:11px; color:#c9762f; }
 .history-day-meal-static{ cursor:default; }
 .history-day-meal-static:hover{ background:transparent; }
@@ -449,6 +450,7 @@ svg{ display: block; }
 .bioimpedancia-resumo-valor{ font-family:'Fraunces',serif; font-size:22px; font-weight:600; color:#214c3d; }
 .bioimpedancia-resumo-label{ font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:#9aa9a1; }
 .bioimpedancia-resumo-item-multi{ justify-content:center; gap:6px; }
+.bioimpedancia-resumo-coluna-legenda{ font-family:'Fraunces',serif; font-style:italic; font-size:10px; font-weight:500; letter-spacing:0.03em; color:#b7c2ba; margin-bottom:2px; }
 .bioimpedancia-resumo-linha{ display:flex; align-items:baseline; justify-content:center; gap:6px; flex-wrap:wrap; }
 .bioimpedancia-resumo-valor-sm{ font-family:'Fraunces',serif; font-size:15px; font-weight:600; color:#214c3d; }
 .bioimpedancia-atualizado{ margin:12px 0 0; font-size:12px; color:#9aa9a1; }
@@ -1263,6 +1265,20 @@ const medidaTipos = {
   temperatura: { label: "Temperatura", unidade: "°C", placeholder: "Ex.: 36.5", exemplo: "Informe em graus Celsius, ex.: 36.5" },
   saturacao: { label: "Saturação (SpO₂)", unidade: "%", placeholder: "Ex.: 98", exemplo: "Informe em porcentagem, ex.: 98" },
 };
+// Emoji exibido ao lado de cada tipo de aferição no histórico de Medidas e Aferições (resumo do dia e
+// lista detalhada) -- mesma lógica de ESPORTE_EMOJI/emojiEsporte() do histórico de treinos, pra deixar
+// o tipo de cada registro mais fácil de reconhecer batendo o olho, sem precisar ler o texto todo.
+const MEDIDA_EMOJI = {
+  peso: "⚖️",
+  pescoco: "📏",
+  cintura: "📐",
+  pressao: "🩺",
+  batimentos: "❤️",
+  glicemia: "🩸",
+  temperatura: "🌡️",
+  saturacao: "🫁",
+};
+function emojiMedida(tipo) { return MEDIDA_EMOJI[tipo] || "📋"; }
 
 const state = {
   usuario: readStorage(CHAVE_USUARIO, null), // {nome, email} | null -> controla tela de login/cadastro
@@ -1539,6 +1555,17 @@ function calcularImc() {
   if (!registro) return null;
   return calcularImcDoPeso(Number(registro.valor));
 }
+// IMC "pra exibir" de um registro de peso -- normalmente é o IMC já congelado no próprio registro
+// (r.imc, calculado com a altura vigente no momento em que foi salvo -- ver acaoSalvarMedida()). Alguns
+// registros mais antigos (salvos antes da altura estar cadastrada, ou de antes desse campo existir)
+// ficam sem r.imc congelado; nesse caso, em vez de simplesmente não mostrar nada no histórico, calcula
+// um IMC "ao vivo" com a altura cadastrada hoje, como estimativa (mesma fórmula, só que sem congelar).
+function imcParaExibicao(r) {
+  const congelado = Number(r.imc);
+  if (r.imc != null && !isNaN(congelado)) return congelado;
+  const aoVivo = calcularImcDoPeso(Number(String(r.valor).replace(",", ".")));
+  return aoVivo == null || isNaN(aoVivo) ? null : aoVivo;
+}
 const IMC_FAIXAS = [
   { ate: 18.5, label: "Abaixo do peso", cor: "#6fb3d9", corSuave: "#e7f3fa" },
   { ate: 25, label: "Peso normal", cor: "#4b9350", corSuave: "#e9f5e9" },
@@ -1653,8 +1680,9 @@ function faixaCintura(cm, sexo) {
 function classificarMedida(r) {
   switch (r.tipo) {
     case "peso": {
-      if (r.imc == null) return null;
-      const f = faixaImc(r.imc);
+      const imc = imcParaExibicao(r);
+      if (imc == null) return null;
+      const f = faixaImc(imc);
       return f ? { label: f.label, cor: f.cor, corSuave: f.corSuave } : null;
     }
     case "pressao": {
@@ -3890,6 +3918,7 @@ function bioimpedanciaSectionTemplate() {
       "</section>";
   }
   const linha = (valor, label) => '<div class="bioimpedancia-resumo-linha"><span class="bioimpedancia-resumo-valor-sm">' + valor + '</span><span class="bioimpedancia-resumo-label">' + label + "</span></div>";
+  const legendaColuna = (texto) => '<span class="bioimpedancia-resumo-coluna-legenda">' + texto + "</span>";
   return '<section class="medidas-section">' +
     '<div class="medidas-section-title-row"><h2 class="medidas-section-title">' + icon("ruler") + " Bioimpedância e Calorimetria</h2>" +
     '<div class="medidas-section-title-actions">' +
@@ -3899,13 +3928,15 @@ function bioimpedanciaSectionTemplate() {
     '<div class="bioimpedancia-resumo">' +
       '<div class="bioimpedancia-resumo-item"><span class="bioimpedancia-resumo-valor">' + (ultimoBio && ultimoBio.altura ? formatNumber(ultimoBio.altura, 1) : "—") + '</span><span class="bioimpedancia-resumo-label">Altura (cm)</span></div>' +
       '<div class="bioimpedancia-resumo-item bioimpedancia-resumo-item-multi">' +
-        linha(ultimoCalo && ultimoCalo.tmb ? formatNumber(ultimoCalo.tmb) : "—", "TMB (kcal)") +
-        linha(ultimoCalo && ultimoCalo.get ? formatNumber(ultimoCalo.get) : "—", "GET (kcal)") +
-      "</div>" +
-      '<div class="bioimpedancia-resumo-item bioimpedancia-resumo-item-multi">' +
+        legendaColuna("Bioimpedância") +
         linha(ultimoBio && ultimoBio.peso ? formatNumber(ultimoBio.peso, 1) : "—", "Peso (kg)") +
         linha(ultimoBio && ultimoBio.massaMuscular ? formatNumber(ultimoBio.massaMuscular, 1) : "—", "Massa musc. (kg)") +
         linha(ultimoBio && ultimoBio.gordura ? formatNumber(ultimoBio.gordura, 1) : "—", "Gordura (%)") +
+      "</div>" +
+      '<div class="bioimpedancia-resumo-item bioimpedancia-resumo-item-multi">' +
+        legendaColuna("Calorimetria") +
+        linha(ultimoCalo && ultimoCalo.tmb ? formatNumber(ultimoCalo.tmb) : "—", "TMB (kcal)") +
+        linha(ultimoCalo && ultimoCalo.get ? formatNumber(ultimoCalo.get) : "—", "GET (kcal)") +
       "</div>" +
     "</div>" +
     '<p class="bioimpedancia-atualizado">Bioimpedância: ' + (ultimoBio ? dateLabel(ultimoBio.date) : "sem registro") + " · Calorimetria: " + (ultimoCalo ? dateLabel(ultimoCalo.date) : "sem registro") + "</p>" +
@@ -3929,11 +3960,30 @@ function medidasHistoryDayCardTemplate(date) {
         '<button class="meal-row-delete" aria-label="Excluir registros de ' + esc(dateLabel(date)) + '" onclick="event.stopPropagation(); acaoRemoverDiaHistoricoMedidas(\'' + date + '\')">' + icon("trash") + "</button>" +
         icon("chevron", "history-day-chevron") + "</span>" +
       "</div>" +
+      medidasResumoHtml(dayMedidas) +
       (expandido
         ? '<div class="medidas-history-list">' + dayMedidas.map(medidaHistoryRowTemplate).join("") + "</div>"
         : ""
       ) +
     "</div>";
+}
+// Texto da classificação de um registro, já incluindo o "IMC X,X · " na frente quando for peso (mesmo
+// prefixo usado no histórico detalhado) -- compartilhado entre medidaHistoryRowTemplate() e
+// medidasResumoHtml() pra não duplicar essa regra em dois lugares.
+function statusTextoMedida(r, classificacao) {
+  return (r.tipo === "peso" ? "IMC " + formatNumber(imcParaExibicao(r), 1) + " · " : "") + esc(classificacao.label);
+}
+// Resumo das aferições do dia (tipo, resultado e, quando aplicável, a classificação) -- mostrado
+// SEMPRE, sem precisar expandir o dia, mesmo espírito do resumo de modalidade+kcal do histórico de
+// treinos (ver treinoResumoModalidadesHtml()). Reaproveita as mesmas classes CSS (.history-day-
+// modalidades/.history-day-modalidade-item) pra manter a mesma linguagem visual entre os históricos.
+function medidasResumoHtml(dayMedidas) {
+  return '<div class="history-day-modalidades">' + dayMedidas.map((r) => {
+    const meta = medidaTipos[r.tipo] || { label: r.tipo, unidade: "" };
+    const classificacao = classificarMedida(r);
+    return '<span class="history-day-modalidade-item">' + emojiMedida(r.tipo) + " " + esc(meta.label) + ": " + esc(String(r.valor)) + " " + esc(meta.unidade) +
+      (classificacao ? ' <span class="medida-resumo-status" style="color:' + classificacao.cor + '">· ' + statusTextoMedida(r, classificacao) + "</span>" : "") + "</span>";
+  }).join("") + "</div>";
 }
 // Uma linha do histórico de Medidas e Aferições: tipo, horário, observação (e, só pra glicemia, se foi
 // em jejum), valor e -- quando aplicável -- uma classificação clínica logo abaixo do valor
@@ -3945,13 +3995,13 @@ function medidaHistoryRowTemplate(r) {
   const legenda = legendaMedida(r);
   return '' +
     '<div class="medida-history-item">' +
-      '<div class="medida-history-row"><div class="medida-history-left"><span class="medida-history-tipo">' + esc(meta.label) + "</span>" +
+      '<div class="medida-history-row"><div class="medida-history-left"><span class="medida-history-tipo">' + emojiMedida(r.tipo) + " " + esc(meta.label) + "</span>" +
       '<span class="medida-history-meta">' + icon("clock") + " " + esc(r.time) + "</span>" +
       (r.tipo === "glicemia" ? '<span class="medida-history-meta">' + (r.jejum ? "Em jejum" : "Fora do jejum") + "</span>" : "") +
       (r.nota ? '<span class="medida-history-nota">' + icon("help") + " " + esc(r.nota) + "</span>" : "") +
       "</div>" +
       '<div class="medida-history-right"><div class="medida-history-valor-col"><span class="medida-history-valor">' + esc(String(r.valor)) + " " + esc(meta.unidade) + "</span>" +
-      (classificacao ? '<span class="medida-history-status" style="color:' + classificacao.cor + '">' + (r.tipo === "peso" && r.imc ? "IMC " + formatNumber(r.imc, 1) + " · " : "") + esc(classificacao.label) + "</span>" : "") + "</div>" +
+      (classificacao ? '<span class="medida-history-status" style="color:' + classificacao.cor + '">' + statusTextoMedida(r, classificacao) + "</span>" : "") + "</div>" +
       '<button class="meal-row-delete" aria-label="Remover registro" onclick="acaoRemoverMedida(' + r.id + ')">' + icon("trash") + "</button></div></div>" +
       (legenda ? '<p class="medida-history-legenda">' + icon("help") + " " + esc(legenda) + "</p>" : "") +
     "</div>";
