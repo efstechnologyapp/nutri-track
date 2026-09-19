@@ -214,7 +214,7 @@ svg{ display: block; }
 .nutrient-tab.active{ color:#1b3f34; border-bottom-color:var(--primary); }
 .nutrient-grid{ margin-bottom:32px; display:grid; gap:16px; grid-template-columns:1fr; }
 @media (min-width: 640px){ .nutrient-grid{ grid-template-columns:repeat(2,1fr); } }
-@media (min-width: 1280px){ .nutrient-grid{ grid-template-columns:repeat(5,1fr); } }
+@media (min-width: 1280px){ .nutrient-grid{ grid-template-columns:repeat(4,1fr); } }
 .nutrient-grid-micro{ grid-template-columns:1fr; }
 @media (min-width: 640px){ .nutrient-grid-micro{ grid-template-columns:repeat(2,1fr); } }
 @media (min-width: 1280px){ .nutrient-grid-micro{ grid-template-columns:repeat(4,1fr); } }
@@ -224,6 +224,9 @@ svg{ display: block; }
 .nutrient-icon{ display:flex; height:36px; width:36px; align-items:center; justify-content:center; border-radius:12px; font-size:17px; }
 .nutrient-name{ font-size:14px; font-weight:600; color:#31564a; }
 .nutrient-unit{ font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.14em; color:#9aa9a1; }
+.nutrient-info-btn{ display:flex; height:20px; width:20px; flex-shrink:0; align-items:center; justify-content:center; border-radius:999px; color:#c3ccc3; margin-left:-4px; }
+.nutrient-info-btn:hover{ background:#f2f6ef; color:#6c8d68; }
+.nutrient-info-btn .icon{ width:15px; height:15px; }
 .nutrient-stats{ margin-top:16px; display:flex; align-items:flex-end; justify-content:space-between; gap:8px; }
 .stat-label{ font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.14em; color:#9aa9a1; }
 .stat-value-row{ margin-top:2px; display:flex; align-items:baseline; gap:4px; }
@@ -531,6 +534,20 @@ svg{ display: block; }
 .modal-footer{ margin-top:20px; }
 .modal-card-wide{ max-width:560px; max-height:85vh; overflow-y:auto; }
 .meal-detalhe-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+
+/* ---------- modal (informações do nutriente) ---------- */
+.nutrient-info-modal{ max-width:400px; max-height:85vh; overflow-y:auto; }
+.nutrient-info-modal-title{ display:flex; align-items:center; gap:10px; }
+.nutrient-info-modal-title h2{ font-size:18px; }
+.nutrient-info-secao{ margin-top:18px; }
+.nutrient-info-secao h3{ margin:0 0 8px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.09em; color:#9aa9a1; }
+.nutrient-info-lista{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:7px; }
+.nutrient-info-lista li{ position:relative; padding-left:15px; font-size:13.5px; line-height:1.5; color:#3d5a4f; }
+.nutrient-info-lista li::before{ content:""; position:absolute; left:0; top:7px; width:5px; height:5px; border-radius:999px; background:#a7c19b; }
+.nutrient-info-chips{ display:flex; flex-wrap:wrap; gap:6px; }
+.nutrient-info-chip{ border-radius:999px; padding:5px 11px; font-size:12px; font-weight:600; }
+.nutrient-info-fonte{ margin:18px 0 0; padding-top:14px; border-top:1px solid #edf0eb; display:flex; align-items:flex-start; gap:6px; font-size:11px; line-height:1.4; color:#9aa9a1; }
+.nutrient-info-fonte .icon{ margin-top:1px; width:13px; height:13px; color:#b7c2ba; flex-shrink:0; }
 .meal-detalhe-close{ display:flex; height:32px; width:32px; flex-shrink:0; align-items:center; justify-content:center; border-radius:999px; color:#9aa9a1; }
 .meal-detalhe-close:hover{ background:#f5f7f2; }
 .meal-detalhe-total{ margin-top:14px; border-radius:16px; background:#f5f7f2; padding:14px 16px; }
@@ -631,6 +648,7 @@ const ICON_PATHS = {
   pause: '<path d="M7 3h4v18H7Z"/><path d="M13 3h4v18h-4Z"/>',
   chevron: '<path d="M6 9l6 6 6-6"/>',
   salt: '<path d="M9 3h6l2 4v12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V7Z"/><path d="M9 7h6"/><circle cx="10.5" cy="11" r=".5"/><circle cx="13.5" cy="11" r=".5"/><circle cx="12" cy="14" r=".5"/><circle cx="10.5" cy="17" r=".5"/><circle cx="13.5" cy="17" r=".5"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
 };
 function icon(name, cls) {
   const p = ICON_PATHS[name] || "";
@@ -902,6 +920,160 @@ const micronutrientMeta = {
 // (2,4mcg) seguem o mesmo Anexo II.
 const MICRO_GOALS = { vitA: 800, vitC: 100, vitD: 15, vitB12: 2.4, calcio: 1000, ferro: 14, magnesio: 420, potassio: 3500, zinco: 11, sodio: 2000 };
 const emptyNutrients = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, vitB12: 0, calcio: 0, ferro: 0, magnesio: 0, potassio: 0, zinco: 0, sodio: 0 };
+
+// Conteúdo educativo (função no organismo + principais fontes alimentares) mostrado no modal de
+// informações de cada card de macro/micronutriente -- ver nutrientInfoModalTemplate()/
+// acaoAbrirInfoNutriente(), acionado pelo botão de informação (ícone "i") ao lado do título de cada
+// card. Conteúdo de referência geral (não uma recomendação individualizada) -- a fonte de cada entrada
+// aparece no rodapé do próprio modal, em letra pequena. "fontes" fica curto de propósito (alimentos
+// mais representativos, não uma lista exaustiva).
+const NUTRIENT_INFO = {
+  calories: {
+    funcoes: [
+      "Fornecer energia para todas as funções do corpo (respiração, batimentos cardíacos, digestão).",
+      "Sustentar a atividade física e o exercício.",
+      "Manter a temperatura corporal.",
+      "Possibilitar o crescimento e a reparação dos tecidos.",
+    ],
+    fontes: ["Carboidratos", "Proteínas", "Gorduras", "Álcool (calorias sem nutrientes essenciais)"],
+    fonte: "Dietary Guidelines for Americans 2025-2030 (USDA/HHS).",
+  },
+  protein: {
+    funcoes: [
+      "Construir e reparar músculos, pele, órgãos e outros tecidos.",
+      "Produzir enzimas, hormônios e anticorpos.",
+      "Transportar e armazenar nutrientes pelo corpo.",
+      "Servir como fonte de energia quando necessário.",
+    ],
+    fontes: ["Carnes, aves e peixes", "Ovos", "Leite, queijo e iogurte", "Feijão, lentilha e grão-de-bico", "Soja e tofu", "Castanhas e sementes"],
+    fonte: "Dietary Reference Intakes (National Academies) · Dietary Guidelines for Americans 2025-2030.",
+  },
+  carbs: {
+    funcoes: [
+      "Principal fonte de energia para o corpo e para o cérebro.",
+      "Poupar a proteína de ser usada como energia, preservando sua função estrutural.",
+      "Fornecer fibra (um tipo de carboidrato) para a digestão.",
+    ],
+    fontes: ["Arroz, pão e massas", "Batata e mandioca", "Frutas", "Leite e derivados", "Feijão e outras leguminosas"],
+    fonte: "Dietary Reference Intakes (National Academies) · Dietary Guidelines for Americans 2025-2030.",
+  },
+  fat: {
+    funcoes: [
+      "Fonte concentrada de energia.",
+      "Formar as membranas das células.",
+      "Ajudar a absorver as vitaminas lipossolúveis (A, D, E, K).",
+      "Participar da produção de hormônios e proteger/isolar órgãos.",
+    ],
+    fontes: ["Azeite e óleos vegetais", "Abacate", "Castanhas, amêndoas e sementes", "Peixes gordos (salmão, sardinha)", "Manteiga, queijo e carnes gordas (com moderação)"],
+    fonte: "Dietary Reference Intakes (National Academies) · Dietary Guidelines for Americans 2025-2030.",
+  },
+  fiber: {
+    funcoes: [
+      "Regular o funcionamento do intestino.",
+      "Dar saciedade e ajudar no controle do peso.",
+      "Ajudar a controlar o colesterol e a glicemia.",
+      "Alimentar as bactérias benéficas do intestino.",
+    ],
+    fontes: ["Frutas e verduras", "Grãos integrais (aveia, arroz integral)", "Feijão, lentilha e outras leguminosas", "Castanhas e sementes"],
+    fonte: "Dietary Reference Intakes (National Academies) · Dietary Guidelines for Americans 2025-2030.",
+  },
+  vitA: {
+    funcoes: [
+      "Manter a visão, principalmente a noturna.",
+      "Apoiar o sistema imunológico.",
+      "Manter a saúde da pele e das mucosas.",
+      "Auxiliar o crescimento e o desenvolvimento celular.",
+    ],
+    fontes: ["Fígado", "Gema de ovo", "Leite e derivados", "Cenoura, abóbora e manga", "Folhas verde-escuras (espinafre, couve)"],
+    fonte: "NIH Office of Dietary Supplements · ANVISA — Instrução Normativa nº 75/2020 (Anexo II).",
+  },
+  vitC: {
+    funcoes: [
+      "Agir como antioxidante, protegendo as células contra danos.",
+      "Ajudar na formação do colágeno (pele, vasos, ossos e tendões).",
+      "Melhorar a absorção do ferro de origem vegetal.",
+      "Apoiar o sistema imunológico.",
+    ],
+    fontes: ["Laranja, limão e acerola", "Goiaba e kiwi", "Caju e morango", "Pimentão e brócolis"],
+    fonte: "NIH Office of Dietary Supplements · ANVISA — Instrução Normativa nº 75/2020 (Anexo II).",
+  },
+  vitD: {
+    funcoes: [
+      "Ajudar na absorção de cálcio e fósforo.",
+      "Manter ossos e dentes saudáveis.",
+      "Apoiar a função muscular e o sistema imunológico.",
+    ],
+    fontes: ["Exposição da pele ao sol", "Peixes gordos (salmão, sardinha, atum)", "Gema de ovo", "Alimentos fortificados (leite, alguns cereais)"],
+    fonte: "NIH Office of Dietary Supplements · ANVISA — Instrução Normativa nº 75/2020 (Anexo II).",
+  },
+  vitB12: {
+    funcoes: [
+      "Formar glóbulos vermelhos.",
+      "Manter o sistema nervoso saudável.",
+      "Participar da produção de DNA.",
+      "Ajudar a converter os alimentos em energia.",
+    ],
+    fontes: ["Carnes e fígado", "Peixes e frutos do mar", "Ovos", "Leite e derivados (presente só em alimentos de origem animal)"],
+    fonte: "NIH Office of Dietary Supplements · ANVISA — Instrução Normativa nº 75/2020 (Anexo II).",
+  },
+  calcio: {
+    funcoes: [
+      "Formar e manter ossos e dentes.",
+      "Permitir a contração muscular.",
+      "Participar da coagulação sanguínea.",
+      "Auxiliar a transmissão de impulsos nervosos.",
+    ],
+    fontes: ["Leite, queijo e iogurte", "Vegetais verde-escuros (couve, brócolis)", "Tofu", "Sardinha (com espinha)", "Amêndoas"],
+    fonte: "NIH Office of Dietary Supplements · ANVISA — Instrução Normativa nº 75/2020 (Anexo II).",
+  },
+  ferro: {
+    funcoes: [
+      "Compor a hemoglobina, responsável pelo transporte de oxigênio no sangue.",
+      "Participar da produção de energia nas células.",
+      "Apoiar o sistema imunológico.",
+    ],
+    fontes: ["Carnes vermelhas e fígado", "Feijão e lentilha", "Folhas verde-escuras (espinafre)", "Castanhas", "Alimentos fortificados"],
+    fonte: "NIH Office of Dietary Supplements · ANVISA — Instrução Normativa nº 75/2020 (Anexo II).",
+  },
+  magnesio: {
+    funcoes: [
+      "Participar de centenas de reações químicas no corpo.",
+      "Apoiar a função muscular e nervosa.",
+      "Ajudar a regular a pressão arterial e os batimentos cardíacos.",
+      "Contribuir para a formação óssea.",
+    ],
+    fontes: ["Castanhas e sementes", "Folhas verde-escuras", "Grãos integrais", "Feijão", "Abacate"],
+    fonte: "NIH Office of Dietary Supplements · ANVISA — Instrução Normativa nº 75/2020 (Anexo II).",
+  },
+  potassio: {
+    funcoes: [
+      "Ajudar a regular o equilíbrio de líquidos do corpo.",
+      "Apoiar a função muscular e nervosa.",
+      "Ajudar a controlar a pressão arterial.",
+    ],
+    fontes: ["Banana, laranja e melão", "Batata e batata-doce", "Feijão e lentilha", "Folhas verde-escuras", "Tomate"],
+    fonte: "NIH Office of Dietary Supplements · ANVISA — Instrução Normativa nº 75/2020 (Anexo II).",
+  },
+  zinco: {
+    funcoes: [
+      "Apoiar o sistema imunológico.",
+      "Participar da cicatrização de feridas.",
+      "Auxiliar o paladar e o olfato.",
+      "Contribuir para o crescimento e desenvolvimento.",
+    ],
+    fontes: ["Carnes e frutos do mar (especialmente ostras)", "Feijão e grão-de-bico", "Castanhas e sementes", "Laticínios"],
+    fonte: "NIH Office of Dietary Supplements · ANVISA — Instrução Normativa nº 75/2020 (Anexo II).",
+  },
+  sodio: {
+    funcoes: [
+      "Ajudar a regular o equilíbrio de líquidos do corpo.",
+      "Participar da transmissão de impulsos nervosos e da contração muscular.",
+      "Em excesso, está associado a pressão alta e outros riscos cardiovasculares — por isso a referência deste app funciona como um teto, não uma meta a alcançar.",
+    ],
+    fontes: ["Sal de cozinha", "Alimentos industrializados/ultraprocessados", "Embutidos e enlatados", "Temperos prontos"],
+    fonte: "NIH Office of Dietary Supplements · ANVISA — Instrução Normativa nº 75/2020 (Anexo II).",
+  },
+};
 
 const foodLibrary = [
   { terms: ["pao frances", "pao de sal", "pao frances comum"], label: "Pão francês", baseAmount: "1 unidade (50 g)", values: { calories: 135, protein: 4.5, carbs: 28, fat: 1.5, fiber: 1.2, vitA: 0, vitC: 0, vitD: 0, calcio: 10, ferro: 1.2, magnesio: 8, potassio: 50, zinco: 0.4, sodio: 290, vitB12: 0 }, grams: 50 },
@@ -1275,6 +1447,7 @@ const CHAVE_TREINOS = "nutri-track-treinos";
 const CHAVE_TREINO_ATIVO = "nutri-track-treino-ativo";
 const CHAVE_EXERCICIOS_CUSTOMIZADOS = "nutri-track-exercicios-customizados";
 const CHAVE_DIARIO_KCAL = "nutri-track-diario-kcal";
+const CHAVE_ULTIMO_DIA_PROCESSADO = "nutri-track-ultimo-dia-processado";
 
 /* ===================== medidas e aferições ===================== */
 const medidaTipos = {
@@ -1320,6 +1493,9 @@ const state = {
   // historyPanelTemplate()/acaoAlternarDiaHistorico(). null = nenhum dia expandido (só a lista de dias).
   historyDiaExpandido: null,
   nutrientAba: "macro", // "macro" | "micro"
+  // Chave do nutriente (nutrientMeta/micronutrientMeta) com o modal de informações aberto, ou null --
+  // ver nutrientInfoModalTemplate()/acaoAbrirInfoNutriente().
+  infoNutrienteAberto: null,
   mealDetalheId: null, // id da refeição aberta no modal de detalhamento, ou null
   // Controla se o campo de corrigir a data está visível dentro do modal de detalhamento -- ver
   // mealDetalheModalTemplate()/acaoAbrirEdicaoDataRefeicao(). Reseta toda vez que o modal abre/fecha.
@@ -1329,6 +1505,12 @@ const state = {
   // cada vez que a pessoa clica em "Encerrar dia" (ver acaoEncerrarDia()). Só existe UM registro por data
   // -- clicar de novo no mesmo dia substitui o anterior, pra sempre refletir o total mais atualizado.
   diarioKcal: readStorage(CHAVE_DIARIO_KCAL, []),
+  // Data (AAAA-MM-DD) do último dia de calendário que a virada automática já processou -- ver
+  // processarViradaDeDia(). Sem valor salvo ainda (primeira vez que essa versão do app roda num
+  // aparelho), assume hoje, pra NÃO fechar retroativamente, do nada, dias antigos que já passaram
+  // antes dessa função existir (esses dias antigos continuam acessíveis normalmente no Histórico,
+  // só não geram um novo registro automático no Diário de Kcal).
+  ultimoDiaProcessado: readStorage(CHAVE_ULTIMO_DIA_PROCESSADO, today()),
   // Ids dos registros do Diário de Kcal expandidos, como mapa { [id]: true } -- ver
   // diarioKcalRegistroTemplate()/acaoAlternarDiaDiarioKcal(). Cada dia expande/recolhe
   // independentemente (não é um accordion de "só um por vez" como o histórico de refeições/treinos --
@@ -1457,15 +1639,21 @@ function consumedToday() {
 }
 function remainingToday() { const consumed = consumedToday(); const out = {}; for (const k of Object.keys(state.goals)) out[k] = state.goals[k] - consumed[k]; return out; }
 function mealTotal() { return state.preview.reduce((sum, f) => addNutrients(sum, f.values), emptyNutrients); }
-function historyDays() { return Array.from(new Set(state.meals.map((m) => m.date))).sort().reverse(); }
+// Dias que aparecem no Histórico de refeições -- de propósito, SEM o dia de hoje: enquanto o dia não
+// vira de verdade (meia-noite no relógio do aparelho, ver processarViradaDeDia()), os registros de
+// hoje aparecem só na lista "Refeições de hoje" (mealListTemplate()), nunca duplicados aqui no
+// Histórico. Mesmo padrão em historyDaysTreinos()/historyDaysMedidas().
+function historyDays() { const t = today(); return Array.from(new Set(state.meals.map((m) => m.date))).filter((d) => d !== t).sort().reverse(); }
 function dateLabel(date) { return new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long" }).format(new Date(date + "T12:00:00")); }
 // Igual dateLabel(), mas com o ano incluído -- usado onde a data aparece sozinha, sem outro registro
 // próximo que já dê o ano de contexto (ex.: "Exame realizado em ..." no card de Bioimpedância e
 // Calorimetria).
 function dateLabelComAno(date) { return new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date(date + "T12:00:00")); }
 function todayTreinos() { const t = today(); return state.treinos.filter((tr) => tr.date === t); }
-function historyDaysTreinos() { return Array.from(new Set(state.treinos.map((tr) => tr.date))).sort().reverse(); }
-function historyDaysMedidas() { return Array.from(new Set(state.medidas.map((m) => m.date))).sort().reverse(); }
+// Sem o dia de hoje -- ver comentário de historyDays().
+function historyDaysTreinos() { const t = today(); return Array.from(new Set(state.treinos.map((tr) => tr.date))).filter((d) => d !== t).sort().reverse(); }
+// Sem o dia de hoje -- ver comentário de historyDays().
+function historyDaysMedidas() { const t = today(); return Array.from(new Set(state.medidas.map((m) => m.date))).filter((d) => d !== t).sort().reverse(); }
 // Lista "Registros de hoje" do card de Medidas e Aferições -- mesmo padrão de todayMeals()/todayTreinos():
 // simplesmente as medidas com a data de hoje, sempre visível no card (ver medidaListTemplate()), sem
 // precisar abrir o Histórico de registros pra enxergar o que já foi medido hoje.
@@ -2318,6 +2506,10 @@ function acaoSalvarRefeicao() {
   render();
 }
 function acaoTrocarAbaNutrientes(aba) { state.nutrientAba = aba; render(); }
+// Abre/fecha o modal de informações (função no organismo + fontes alimentares) de um card de macro ou
+// micronutriente -- ver nutrientInfoModalTemplate()/NUTRIENT_INFO.
+function acaoAbrirInfoNutriente(chave) { state.infoNutrienteAberto = chave; render(); }
+function acaoFecharInfoNutriente() { state.infoNutrienteAberto = null; render(); }
 function acaoAbrirDetalheRefeicao(id) { state.mealDetalheId = id; state.mealDetalheEditandoData = false; render(); }
 function acaoFecharDetalheRefeicao() { state.mealDetalheId = null; state.mealDetalheEditandoData = false; render(); }
 function acaoAbrirEdicaoDataRefeicao() { state.mealDetalheEditandoData = true; render(); }
@@ -2407,10 +2599,90 @@ function acaoEncerrarDia() {
   // até agora, usando o id deste próprio registro do Diário como corte -- e esse registro sincroniza com
   // o Google, então o corte vale em qualquer aparelho conectado à mesma conta, não só neste. Uma
   // refeição registrada depois deste clique volta a contar normalmente nos cards, e o corte só muda de
-  // novo no próximo "Encerrar dia" -- a virada do relógio à meia-noite não reseta nada sozinha.
+  // novo no próximo "Encerrar dia" -- OU sozinho, na próxima virada de meia-noite (ver
+  // processarViradaDeDia()/fecharDiaAutomaticamente()), o que vier primeiro. Esse botão continua
+  // servindo pra quem quiser fechar o dia mais cedo (ex.: antes de dormir); quem não clicar tem o dia
+  // fechado automaticamente à meia-noite mesmo assim.
   toastSuccess("Dia encerrado — resumo guardado no Diário de Kcal em " + dateLabel(t) + ". Os cards de consumo foram zerados.");
   if (state.account) enviarComFila("salvarDiarioKcalGoogle", [state.usuario.email, registro]);
   render();
+}
+// Fecha (ou confirma, se a pessoa já tinha fechado esse dia manualmente antes da meia-noite) o
+// registro do Diário de Kcal de UM dia específico que já virou -- chamada por processarViradaDeDia()
+// pra cada dia de calendário que passou desde a última verificação. Ao contrário do corte por id do
+// "Encerrar dia" manual (mealsDesdeUltimoEncerramento(), que pode juntar vários dias atrasados no
+// mesmo resumo se a pessoa esquecer de clicar -- bug já relatado, ver comentário de
+// recalcularDiarioKcalRegistro() logo abaixo), aqui o corte é sempre por DATA: cada dia gera (ou
+// confirma) o SEU PRÓPRIO registro, nunca misturando refeições de dias diferentes, mesmo que o app
+// fique dias fechado. Sem nenhuma refeição/treino registrado nesse dia e sem registro já existente,
+// não cria nada (nada pra resumir). Congela a meta/objetivo vigente NO MOMENTO do fechamento
+// automático, exceto quando o dia já tinha sido fechado manualmente antes -- aí preserva a meta já
+// congelada naquele momento, só atualizando o corteId (pra cobrir qualquer refeição registrada depois
+// do clique manual mas ainda no mesmo dia).
+function fecharDiaAutomaticamente(date) {
+  const mealsDoDia = state.meals.filter((m) => m.date === date);
+  const treinosDoDia = state.treinos.filter((tr) => tr.date === date);
+  const existente = state.diarioKcal.find((r) => r.date === date);
+  if (!mealsDoDia.length && !existente) return; // nada registrado nesse dia -- nada a fechar
+  const totais = mealsDoDia.reduce((sum, m) => addNutrients(sum, m), emptyNutrients);
+  const refeicoes = mealsDoDia.map((m) => {
+    const r = { name: m.name, time: m.time, alimentos: m.detected || [] };
+    NUTRIENT_KEYS.forEach((k) => { r[k] = m[k] || 0; });
+    return r;
+  });
+  const caloriasQueimadas = treinosDoDia.reduce((soma, tr) => soma + (tr.caloriasQueimadas || 0), 0);
+  const corteId = mealsDoDia.reduce((maior, m) => Math.max(maior, m.id), existente && existente.corteId != null ? existente.corteId : 0);
+  const registro = Object.assign({
+    id: existente ? existente.id : Date.now(), date: date, refeicoes: refeicoes, caloriasQueimadas: caloriasQueimadas, corteId: corteId,
+    metaCalorias: existente ? existente.metaCalorias : state.goals.calories,
+    metaProtein: existente ? existente.metaProtein : state.goals.protein,
+    metaCarbs: existente ? existente.metaCarbs : state.goals.carbs,
+    metaFat: existente ? existente.metaFat : state.goals.fat,
+    metaFiber: existente ? existente.metaFiber : state.goals.fiber,
+    objetivo: existente ? existente.objetivo : (state.goals.objetivo || ""),
+  }, totais);
+  state.diarioKcal = state.diarioKcal.filter((r) => r.date !== date).concat([registro]);
+  persistDiarioKcal();
+  if (state.account) enviarComFila("salvarDiarioKcalGoogle", [state.usuario.email, registro]);
+}
+// Virada automática de dia: às 0h (no relógio do APARELHO -- não existe nada rodando no servidor com o
+// app fechado, então a virada só é detectada quando o app está aberto, ver os pontos que chamam essa
+// função mais abaixo), cada dia de calendário que passou desde a última verificação vira, sozinho, um
+// registro no Diário de Kcal (fecharDiaAutomaticamente()) -- e os cards de consumo do novo dia
+// começam do zero automaticamente, já que corteDiaAberto() passa a considerar esse novo corteId. As
+// listas "de hoje" de refeições/treinos/medidas também esvaziam sozinhas nesse momento, sem precisar
+// de nenhuma lógica extra: elas já filtram por state.X.date === today(), e today() reflete a data real
+// do aparelho -- uma vez que o dia vira, os registros de ontem simplesmente deixam de bater com
+// today() e passam a aparecer só no Histórico (ver historyDays()/historyDaysTreinos()/
+// historyDaysMedidas(), que agora excluem o dia de hoje de propósito). Se o app ficar fechado vários
+// dias, cada dia perdido no meio vira seu PRÓPRIO registro de histórico (nunca junta dois dias num
+// só). Devolve true se algum dia foi processado (pra quem chamou saber se precisa re-renderizar).
+function processarViradaDeDia() {
+  const hoje = today();
+  const ultimo = state.ultimoDiaProcessado || hoje;
+  if (ultimo >= hoje) { state.ultimoDiaProcessado = hoje; return false; }
+  let cursor = proximoDia(ultimo);
+  let processouAlgum = false;
+  // Guarda de segurança: nunca deveria rodar mais que uns poucos milhares de iterações (isso
+  // representaria anos de app fechado), mas evita loop infinito caso proximoDia() devolva null por
+  // algum motivo inesperado (data corrompida no storage, por exemplo).
+  let seguranca = 0;
+  while (cursor && cursor < hoje && seguranca < 3650) {
+    fecharDiaAutomaticamente(cursor);
+    processouAlgum = true;
+    cursor = proximoDia(cursor);
+    seguranca++;
+  }
+  state.ultimoDiaProcessado = hoje;
+  writeStorage(CHAVE_ULTIMO_DIA_PROCESSADO, hoje);
+  return processouAlgum;
+}
+// Chamada ao abrir o app, ao voltar pra aba/foco (visibilitychange/focus) e periodicamente enquanto o
+// app fica aberto (ver verificarViradaDeDiaPeriodicamente()) -- roda processarViradaDeDia() e só
+// re-renderiza se algo realmente mudou (evita re-render à toa a cada verificação, a maioria das quais
+// não encontra nenhum dia novo pra fechar).
+function verificarViradaDeDia() {
+  if (processarViradaDeDia()) render();
 }
 // Corrige um registro já fechado no Diário de Kcal pra refletir só as refeições REALMENTE daquele dia
 // (comparando por DATA), em vez da janela "desde o último Encerrar dia" usada no momento do fechamento
@@ -2737,16 +3009,28 @@ function lockedTemplate() {
     "</div>";
 }
 
+// Botão de informação (ícone "i") ao lado do título de um card de macro/micronutriente -- abre o
+// modal com função no organismo + principais fontes alimentares (ver nutrientInfoModalTemplate()).
+// stopPropagation() porque alguns cards (ex.: refeição) ficam dentro de elementos clicáveis -- aqui não
+// é o caso, mas mantém o padrão já usado nos outros botões dentro de linhas clicáveis do app.
+function nutrientInfoBtnTemplate(key, label) {
+  return '<button class="nutrient-info-btn" aria-label="Informações sobre ' + esc(label) + '" onclick="event.stopPropagation(); acaoAbrirInfoNutriente(\'' + key + '\')">' + icon("info") + "</button>";
+}
+// Cards da aba "Macronutrientes" -- calorias NÃO entra aqui: calorias é a unidade de energia, não um
+// macronutriente (proteína, carboidrato, gordura e fibra são os macronutrientes de fato). O consumo/
+// meta de calorias já aparece no card "Seu resumo de hoje", no topo da aba Nutrição -- a pedido do
+// usuário, não duplicado aqui. nutrientMeta.calories continua existindo (usado em outros lugares: Metas
+// do dia, chips de detalhamento da refeição), só não entra neste grid.
 function nutrientCardsTemplate() {
   const consumed = consumedToday();
-  return Object.keys(nutrientMeta).map((key) => {
+  return Object.keys(nutrientMeta).filter((key) => key !== "calories").map((key) => {
     const meta = nutrientMeta[key];
     const over = consumed[key] > state.goals[key];
-    const digits = key === "calories" ? 0 : 1;
+    const digits = 1;
     return '' +
       '<div class="nutrient-card"><div class="nutrient-card-head">' +
         '<div class="nutrient-card-left"><div class="nutrient-icon" style="background:' + meta.soft + ";color:" + meta.color + '">' + icon(meta.icon) + "</div>" +
-        '<span class="nutrient-name">' + meta.label + "</span></div>" +
+        '<span class="nutrient-name">' + meta.label + "</span>" + nutrientInfoBtnTemplate(key, meta.label) + "</div>" +
         '<span class="nutrient-unit">' + meta.unit + "</span>" +
       "</div>" +
       '<div class="nutrient-stats"><div><div class="stat-label">Consumido</div><div class="stat-value-row"><span class="stat-value">' + formatNumber(consumed[key], digits) + '</span><span class="stat-unit">' + meta.unit + "</span></div></div>" +
@@ -2769,7 +3053,7 @@ function micronutrientCardsTemplate() {
     return '' +
       '<div class="nutrient-card"><div class="nutrient-card-head">' +
         '<div class="nutrient-card-left"><div class="nutrient-icon" style="background:' + meta.soft + ";color:" + meta.color + '">' + icon(meta.icon) + "</div>" +
-        '<span class="nutrient-name">' + meta.label + "</span></div>" +
+        '<span class="nutrient-name">' + meta.label + "</span>" + nutrientInfoBtnTemplate(key, meta.label) + "</div>" +
         '<span class="nutrient-unit">' + meta.unit + "</span>" +
       "</div>" +
       '<div class="nutrient-stats"><div><div class="stat-label">Consumido</div><div class="stat-value-row"><span class="stat-value">' + formatNumber(valor, digits) + '</span><span class="stat-unit">' + meta.unit + "</span></div></div>" +
@@ -3599,6 +3883,34 @@ function alimentoDetalheTemplate(a) {
         Object.keys(micronutrientMeta).map((key) => '<div class="meal-detalhe-micro">' + micronutrientMeta[key].label + ": <span>" + formatNumber(v[key] || 0, 1) + " " + micronutrientMeta[key].unit + "</span></div>").join("") +
       "</div>" +
     "</div>";
+}
+
+// Modal de informações de um macro/micronutriente (função no organismo + principais fontes
+// alimentares), aberto pelo botão "i" ao lado do título do card -- ver acaoAbrirInfoNutriente()/
+// NUTRIENT_INFO. Busca a meta em nutrientMeta OU micronutrientMeta (a chave pode ser de qualquer um
+// dos dois grupos, dependendo de qual card foi clicado).
+function nutrientInfoModalTemplate() {
+  const chave = state.infoNutrienteAberto;
+  if (!chave) return "";
+  const meta = nutrientMeta[chave] || micronutrientMeta[chave];
+  const info = NUTRIENT_INFO[chave];
+  if (!meta || !info) return "";
+  return '' +
+    '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharInfoNutriente();}">' +
+    '<div class="modal-card nutrient-info-modal">' +
+      '<div class="meal-detalhe-head"><div class="nutrient-info-modal-title">' +
+        '<div class="nutrient-icon" style="background:' + meta.soft + ";color:" + meta.color + '">' + icon(meta.icon) + "</div>" +
+        "<h2>" + esc(meta.label) + "</h2>" +
+      "</div>" +
+      '<button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharInfoNutriente()">' + icon("x") + "</button></div>" +
+      '<div class="nutrient-info-secao"><h3>Principais funções no organismo</h3>' +
+        '<ul class="nutrient-info-lista">' + info.funcoes.map((f) => "<li>" + esc(f) + "</li>").join("") + "</ul>" +
+      "</div>" +
+      '<div class="nutrient-info-secao"><h3>Principais fontes alimentares</h3>' +
+        '<div class="nutrient-info-chips">' + info.fontes.map((f) => '<span class="nutrient-info-chip" style="background:' + meta.soft + ";color:" + meta.color + '">' + esc(f) + "</span>").join("") + "</div>" +
+      "</div>" +
+      '<p class="nutrient-info-fonte">' + icon("help") + " Fonte: " + esc(info.fonte) + "</p>" +
+    "</div></div>";
 }
 
 // Busca em TODOS os registros (não só os de hoje), porque o modal também é aberto a partir do painel
@@ -4814,7 +5126,7 @@ function homeTemplate() {
   return '' +
     '<div class="app-shell">' +
     '<button class="hamburger-btn" onclick="acaoAbrirSidebar()" aria-label="Abrir menu"><span></span></button>' +
-    sidebarTemplate() + editarPerfilTemplate() + mealDetalheModalTemplate() +
+    sidebarTemplate() + editarPerfilTemplate() + mealDetalheModalTemplate() + nutrientInfoModalTemplate() +
     '<div class="home-content"><div class="home-inner">' +
     (state.account ? fullHomeTemplate() : lockedTemplate()) +
     "</div></div></div>";
@@ -4912,12 +5224,23 @@ async function doInstall() {
 }
 
 /* ===================== inicialização ===================== */
+// Processa a virada de dia ANTES do primeiro render -- pega qualquer dia (ou vários, se o app ficou
+// fechado) que já tenha virado desde a última vez que o app foi aberto, pra abrir a tela já com os
+// cards/listas "de hoje" corretos (ver processarViradaDeDia()), sem precisar de um segundo render logo
+// em seguida.
+processarViradaDeDia();
 render();
 initInstallPrompt();
 if (state.usuario) sincronizarDoServidor();
 // Se havia um treino em andamento quando o app foi fechado/recarregado, retoma o cronômetro na tela
 // (o tempo decorrido é sempre recalculado a partir do timestamp salvo, então não se perde nada).
 iniciarTickTreinoSeNecessario();
+// Enquanto o app ficar aberto e em primeiro plano (ex.: esquecido aberto numa aba do PC durante a
+// noite), verifica a cada minuto se a meia-noite já passou -- sem isso, a virada só seria detectada na
+// próxima vez que o app fosse reaberto/recarregado (ver verificarViradaDeDia()). Um minuto é preciso o
+// suficiente (ninguém precisa que os cards zerem no segundo exato da meia-noite) e não pesa nada rodar
+// em segundo plano.
+setInterval(verificarViradaDeDia, 60000);
 
 // Em celular, abrir um seletor nativo (ex.: o calendário do campo de data) costuma disparar um
 // "visibilitychange" no navegador (a página é considerada momentaneamente escondida enquanto o
@@ -4934,9 +5257,9 @@ function formularioDeEdicaoAberto() {
 // enquanto este ficava parado em segundo plano. Sem isso, o app só atualizava na abertura (boot), e
 // ficava com dados desatualizados até ser fechado e reaberto de verdade.
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible" && !formularioDeEdicaoAberto()) sincronizarDoServidor();
+  if (document.visibilityState === "visible" && !formularioDeEdicaoAberto()) { verificarViradaDeDia(); sincronizarDoServidor(); }
 });
-window.addEventListener("focus", () => { if (!formularioDeEdicaoAberto()) sincronizarDoServidor(); });
+window.addEventListener("focus", () => { if (!formularioDeEdicaoAberto()) { verificarViradaDeDia(); sincronizarDoServidor(); } });
 </script>
 </body>
 </html>

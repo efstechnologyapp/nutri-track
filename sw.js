@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nutritrack-v88';
+const CACHE_NAME = 'nutritrack-v90';
 const APP_SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (event) => {
