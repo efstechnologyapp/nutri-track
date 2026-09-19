@@ -214,7 +214,7 @@ svg{ display: block; }
 .nutrient-tab.active{ color:#1b3f34; border-bottom-color:var(--primary); }
 .nutrient-grid{ margin-bottom:32px; display:grid; gap:16px; grid-template-columns:1fr; }
 @media (min-width: 640px){ .nutrient-grid{ grid-template-columns:repeat(2,1fr); } }
-@media (min-width: 1280px){ .nutrient-grid{ grid-template-columns:repeat(4,1fr); } }
+@media (min-width: 1280px){ .nutrient-grid{ grid-template-columns:repeat(5,1fr); } }
 .nutrient-grid-micro{ grid-template-columns:1fr; }
 @media (min-width: 640px){ .nutrient-grid-micro{ grid-template-columns:repeat(2,1fr); } }
 @media (min-width: 1280px){ .nutrient-grid-micro{ grid-template-columns:repeat(4,1fr); } }
@@ -224,9 +224,6 @@ svg{ display: block; }
 .nutrient-icon{ display:flex; height:36px; width:36px; align-items:center; justify-content:center; border-radius:12px; font-size:17px; }
 .nutrient-name{ font-size:14px; font-weight:600; color:#31564a; }
 .nutrient-unit{ font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.14em; color:#9aa9a1; }
-.nutrient-info-btn{ display:flex; height:20px; width:20px; flex-shrink:0; align-items:center; justify-content:center; border-radius:999px; color:#c3ccc3; margin-left:-4px; }
-.nutrient-info-btn:hover{ background:#f2f6ef; color:#6c8d68; }
-.nutrient-info-btn .icon{ width:15px; height:15px; }
 .nutrient-stats{ margin-top:16px; display:flex; align-items:flex-end; justify-content:space-between; gap:8px; }
 .stat-label{ font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.14em; color:#9aa9a1; }
 .stat-value-row{ margin-top:2px; display:flex; align-items:baseline; gap:4px; }
@@ -265,8 +262,7 @@ svg{ display: block; }
 .treino-distancia-campo{ margin-top:16px; }
 .treino-distancia-nota{ margin:6px 0 0; font-size:11px; line-height:1.5; color:#9fb5aa; }
 .treino-foto-campo{ margin-top:16px; }
-.treino-foto-botoes{ display:flex; gap:10px; }
-.treino-foto-btn{ display:flex; flex:1; width:100%; align-items:center; justify-content:center; gap:8px; border-radius:12px; border:1.5px dashed rgba(255,255,255,.28); background:rgba(255,255,255,.05); padding:12px 16px; font-size:13px; font-weight:600; color:#cfe4c8; cursor:pointer; transition:background .15s, border-color .15s; }
+.treino-foto-btn{ display:flex; width:100%; align-items:center; justify-content:center; gap:8px; border-radius:12px; border:1.5px dashed rgba(255,255,255,.28); background:rgba(255,255,255,.05); padding:12px 16px; font-size:13px; font-weight:600; color:#cfe4c8; cursor:pointer; transition:background .15s, border-color .15s; }
 .treino-foto-btn:hover{ background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.45); }
 .treino-foto-preview{ position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:14px; background:rgba(255,255,255,.06); }
 .treino-foto-preview img{ display:block; width:100%; max-height:220px; object-fit:cover; }
@@ -349,8 +345,6 @@ svg{ display: block; }
 .meal-row-delete:hover{ background:#fff0ed; color:#ca6a58; }
 .diario-kcal-recalcular-btn{ display:flex; height:32px; width:32px; align-items:center; justify-content:center; border-radius:999px; color:#b4c0b8; transition:background .15s,color .15s; }
 .diario-kcal-recalcular-btn:hover{ background:#eef6e4; color:#4b7048; }
-.meal-row-edit{ display:flex; height:32px; width:32px; align-items:center; justify-content:center; border-radius:999px; color:#b4c0b8; transition:background .15s,color .15s; }
-.meal-row-edit:hover{ background:#eef6e4; color:#4b7048; }
 .history-panel{ margin-top:20px; border-radius:16px; background:#f7f9f5; padding:16px; }
 .history-panel-label{ margin-bottom:12px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.14em; color:#7b9187; }
 .history-panel-empty{ margin:0; font-size:14px; color:#94a49d; }
@@ -407,8 +401,6 @@ svg{ display: block; }
 .diario-kcal-gastos{ margin-top:12px; display:flex; flex-direction:column; gap:5px; border-top:1px solid #e8eee5; padding-top:10px; font-size:12px; color:#c9762f; }
 .diario-kcal-gastos-linha{ display:flex; align-items:center; gap:5px; }
 .diario-kcal-gastos-linha .icon{ width:14px; height:14px; flex-shrink:0; }
-.diario-kcal-equivalencia-nota{ margin:8px 0 0; display:flex; align-items:flex-start; gap:6px; font-size:11px; line-height:1.4; color:#92a099; }
-.diario-kcal-equivalencia-nota .icon{ margin-top:1px; width:13px; height:13px; color:#9db69a; flex-shrink:0; }
 /* Trecho "meta (Objetivo) - atingida ✅ / não atingida ❌" na seção Análise do objetivo -- combinado com
    o usuário: negrito azul quando atingida, negrito vermelho quando não atingida. */
 .diario-kcal-meta-atingida{ color:#1e88e5; font-weight:600; }
@@ -421,9 +413,6 @@ svg{ display: block; }
 .history-day-meal-foto-link{ display:inline-flex; color:#6c8d68; }
 .history-day-meal-foto-link:hover{ color:#3d6355; }
 .history-day-meal-foto-link .icon{ width:14px; height:14px; }
-.history-day-meal-editar-link{ display:inline-flex; border:none; background:none; padding:0; color:#6c8d68; }
-.history-day-meal-editar-link:hover{ color:#3d6355; }
-.history-day-meal-editar-link .icon{ width:14px; height:14px; }
 .footnote{ margin-top:28px; display:flex; align-items:flex-start; gap:8px; font-size:12px; line-height:1.4; color:#92a099; }
 .footnote .icon{ margin-top:2px; color:#9db69a; flex-shrink:0; }
 .micro-fonte-nota{ margin:12px 0 16px; display:flex; align-items:flex-start; gap:8px; font-size:12px; line-height:1.4; color:#92a099; }
@@ -461,11 +450,10 @@ svg{ display: block; }
 .bioimpedancia-resumo-valor{ font-family:'Fraunces',serif; font-size:22px; font-weight:600; color:#214c3d; }
 .bioimpedancia-resumo-label{ font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:#9aa9a1; }
 .bioimpedancia-resumo-item-multi{ justify-content:center; gap:6px; }
-.bioimpedancia-resumo-coluna-legenda{ font-family:'Fraunces',serif; font-style:italic; font-size:10px; font-weight:500; letter-spacing:0.03em; color:#b7c2ba; }
-.bioimpedancia-resumo-coluna-head{ align-self:flex-start; width:100%; display:flex; flex-direction:column; gap:2px; text-align:left; margin-bottom:8px; }
-.bioimpedancia-resumo-coluna-data{ font-size:10px; line-height:1.3; color:#9aa9a1; }
+.bioimpedancia-resumo-coluna-legenda{ font-family:'Fraunces',serif; font-style:italic; font-size:10px; font-weight:500; letter-spacing:0.03em; color:#b7c2ba; margin-bottom:2px; }
 .bioimpedancia-resumo-linha{ display:flex; align-items:baseline; justify-content:center; gap:6px; flex-wrap:wrap; }
 .bioimpedancia-resumo-valor-sm{ font-family:'Fraunces',serif; font-size:15px; font-weight:600; color:#214c3d; }
+.bioimpedancia-atualizado{ margin:12px 0 0; font-size:12px; color:#9aa9a1; }
 .bioimpedancia-form-tabs{ margin-top:16px; display:flex; gap:8px; border-bottom:1px solid #e5e9e1; }
 .bioimpedancia-form-tab{ padding:10px 4px; margin-bottom:-1px; border-bottom:2px solid transparent; font-size:14px; font-weight:600; color:#9aa9a1; }
 .bioimpedancia-form-tab.active{ color:#1b3f34; border-bottom-color:var(--primary); }
@@ -503,7 +491,6 @@ svg{ display: block; }
 .medidas-section-title{ margin:0; display:flex; align-items:center; gap:8px; font-family:'Fraunces',serif; font-size:20px; font-weight:600; color:#1b3f34; }
 .medida-form{ margin-top:16px; display:flex; flex-direction:column; gap:12px; max-width:360px; }
 .medida-input-row{ display:flex; flex-direction:column; gap:12px; margin-top:4px; }
-.medidas-hoje{ margin-top:24px; padding-top:20px; border-top:1px solid #edf0eb; }
 .medidas-history-list{ margin-top:16px; display:flex; flex-direction:column; }
 .medida-history-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 0; border-top:1px solid #edf0eb; }
 .medida-history-row:first-child{ border-top:none; padding-top:4px; }
@@ -535,20 +522,6 @@ svg{ display: block; }
 .modal-footer{ margin-top:20px; }
 .modal-card-wide{ max-width:560px; max-height:85vh; overflow-y:auto; }
 .meal-detalhe-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
-
-/* ---------- modal (informações do nutriente) ---------- */
-.nutrient-info-modal{ max-width:400px; max-height:85vh; overflow-y:auto; }
-.nutrient-info-modal-title{ display:flex; align-items:center; gap:10px; }
-.nutrient-info-modal-title h2{ font-size:18px; }
-.nutrient-info-secao{ margin-top:18px; }
-.nutrient-info-secao h3{ margin:0 0 8px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.09em; color:#9aa9a1; }
-.nutrient-info-lista{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:7px; }
-.nutrient-info-lista li{ position:relative; padding-left:15px; font-size:13.5px; line-height:1.5; color:#3d5a4f; }
-.nutrient-info-lista li::before{ content:""; position:absolute; left:0; top:7px; width:5px; height:5px; border-radius:999px; background:#a7c19b; }
-.nutrient-info-chips{ display:flex; flex-wrap:wrap; gap:6px; }
-.nutrient-info-chip{ border-radius:999px; padding:5px 11px; font-size:12px; font-weight:600; }
-.nutrient-info-fonte{ margin:18px 0 0; padding-top:14px; border-top:1px solid #edf0eb; display:flex; align-items:flex-start; gap:6px; font-size:11px; line-height:1.4; color:#9aa9a1; }
-.nutrient-info-fonte .icon{ margin-top:1px; width:13px; height:13px; color:#b7c2ba; flex-shrink:0; }
 .meal-detalhe-close{ display:flex; height:32px; width:32px; flex-shrink:0; align-items:center; justify-content:center; border-radius:999px; color:#9aa9a1; }
 .meal-detalhe-close:hover{ background:#f5f7f2; }
 .meal-detalhe-total{ margin-top:14px; border-radius:16px; background:#f5f7f2; padding:14px 16px; }
@@ -648,9 +621,6 @@ const ICON_PATHS = {
   play: '<path d="M6 3.5v17l15-8.5Z"/>',
   pause: '<path d="M7 3h4v18H7Z"/><path d="M13 3h4v18h-4Z"/>',
   chevron: '<path d="M6 9l6 6 6-6"/>',
-  salt: '<path d="M9 3h6l2 4v12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V7Z"/><path d="M9 7h6"/><circle cx="10.5" cy="11" r=".5"/><circle cx="13.5" cy="11" r=".5"/><circle cx="12" cy="14" r=".5"/><circle cx="10.5" cy="17" r=".5"/><circle cx="13.5" cy="17" r=".5"/>',
-  info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
-  image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',
 };
 function icon(name, cls) {
   const p = ICON_PATHS[name] || "";
@@ -685,7 +655,7 @@ function pct(value, goal) { return goal ? Math.min(100, Math.max(0, (value / goa
 // derivada de Object.keys(nutrientMeta/micronutrientMeta)) de propósito: addNutrients soma tanto
 // `food.values` (só nutrientes) quanto registros de refeição inteiros (que têm outros campos, como
 // id/name/description) — somar só as chaves conhecidas evita tentar somar "id" ou concatenar "name".
-const NUTRIENT_KEYS = ["calories", "protein", "carbs", "fat", "fiber", "vitA", "vitC", "vitD", "vitB12", "calcio", "ferro", "magnesio", "potassio", "zinco", "sodio"];
+const NUTRIENT_KEYS = ["calories", "protein", "carbs", "fat", "fiber", "vitA", "vitC", "vitD", "calcio", "ferro", "magnesio", "potassio", "zinco"];
 function addNutrients(a, b) { const out = {}; NUTRIENT_KEYS.forEach((k) => { out[k] = (a[k] || 0) + (b[k] || 0); }); return out; }
 function scale(values, m) { const out = {}; for (const k of Object.keys(values)) out[k] = values[k] * m; return out; }
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
@@ -745,7 +715,6 @@ const authApi = {
   salvarTreinoGoogle: (email, treino) => chamarApi("salvarTreinoGoogle", { email, treino }),
   removerTreinoGoogle: (email, id) => chamarApi("removerTreinoGoogle", { email, id }),
   atualizarFotoTreinoGoogle: (email, id, fotoUrl) => chamarApi("atualizarFotoTreinoGoogle", { email, id, fotoUrl }),
-  atualizarTreinoGoogle: (email, treino) => chamarApi("atualizarTreinoGoogle", { email, treino }),
   salvarExercicioCustomizadoGoogle: (email, exercicio) => chamarApi("salvarExercicioCustomizadoGoogle", { email, exercicio }),
   salvarDiarioKcalGoogle: (email, registro) => chamarApi("salvarDiarioKcalGoogle", { email, registro }),
   removerDiarioKcalGoogle: (email, id) => chamarApi("removerDiarioKcalGoogle", { email, id }),
@@ -894,237 +863,72 @@ function calcularMacrosAutomaticos(calorias, pesoKg, objetivo) {
 // Micronutrientes: diferente das metas de macro (editáveis pela pessoa em "Metas do dia" e
 // sincronizadas com o Google), esses valores de referência são fixos — são a Ingestão Diária de
 // Referência (IDR) padrão para um adulto, não uma meta pessoal configurável.
-// Sódio entra como um micronutriente "às avessas" dos demais: pra vitA/vitC/vitD/calcio/ferro/
-// magnesio/potassio/zinco a referência diária (MICRO_GOALS) é um PISO (quanto mais perto ou acima,
-// melhor -- carência é o problema); pra sódio, a mesma referência (2.000mg, ANVISA) é um TETO
-// recomendado (excesso é o problema, não falta). O card de micronutrientes (micronutrientCardsTemplate())
-// já mostra em vermelho "X acima da referência" quando ultrapassa o valor -- pra sódio, esse aviso tem o
-// sentido médico correto (evitar passar do teto); pros demais, é só um destaque informativo de que já
-// bateu a meta. Ver conversa com o usuário sobre retenção de água/variação de peso em jejum -- sódio
-// entrou justamente pra ajudar a entender esses picos.
 const micronutrientMeta = {
   vitA: { label: "Vitamina A", unit: "mcg", color: "#c98a3f", soft: "#fbeed9", icon: "eye" },
   vitC: { label: "Vitamina C", unit: "mg", color: "#8fa84a", soft: "#eef3e0", icon: "leaf" },
   vitD: { label: "Vitamina D", unit: "mcg", color: "#d1a53b", soft: "#fbf3d9", icon: "sun" },
-  vitB12: { label: "Vitamina B12", unit: "mcg", color: "#a85a7a", soft: "#f6ebf0", icon: "heart" },
   calcio: { label: "Cálcio", unit: "mg", color: "#8a97a8", soft: "#eef1f5", icon: "shield" },
   ferro: { label: "Ferro", unit: "mg", color: "#b25b4a", soft: "#f8ece9", icon: "zap" },
   magnesio: { label: "Magnésio", unit: "mg", color: "#6b8f71", soft: "#eaf2ea", icon: "activity" },
   potassio: { label: "Potássio", unit: "mg", color: "#5b8ab2", soft: "#e9f1f7", icon: "droplet" },
   zinco: { label: "Zinco", unit: "mg", color: "#8d7ab0", soft: "#f1edf7", icon: "sparkles" },
-  sodio: { label: "Sódio", unit: "mg", color: "#7a95a6", soft: "#eaf1f3", icon: "salt" },
 };
 // Valores Diários de Referência (VDR) oficiais da ANVISA pra rotulagem nutricional -- Instrução
 // Normativa IN nº 75/2020 (Anexo II), a norma EM VIGOR hoje (substituiu a antiga RDC nº 269/2005, cujos
 // valores mais baixos ainda estavam aqui: vitamina A 600mcg, vitamina C 45mg, vitamina D 5mcg, magnésio
 // 260mg e zinco 7mg -- desatualizados desde que a IN 75/2020 entrou em vigor). Cálcio, ferro e potássio
-// já batiam com os dois padrões (não mudaram entre as duas normas). Sódio (2.000mg) e vitamina B12
-// (2,4mcg) seguem o mesmo Anexo II.
-const MICRO_GOALS = { vitA: 800, vitC: 100, vitD: 15, vitB12: 2.4, calcio: 1000, ferro: 14, magnesio: 420, potassio: 3500, zinco: 11, sodio: 2000 };
-const emptyNutrients = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, vitB12: 0, calcio: 0, ferro: 0, magnesio: 0, potassio: 0, zinco: 0, sodio: 0 };
-
-// Conteúdo educativo (função no organismo + principais fontes alimentares) mostrado no modal de
-// informações de cada card de macro/micronutriente -- ver nutrientInfoModalTemplate()/
-// acaoAbrirInfoNutriente(), acionado pelo botão de informação (ícone "i") ao lado do título de cada
-// card. Conteúdo de referência geral (não uma recomendação individualizada) -- a fonte de cada entrada
-// aparece no rodapé do próprio modal, em letra pequena. "fontes" fica curto de propósito (alimentos
-// mais representativos, não uma lista exaustiva).
-const NUTRIENT_INFO = {
-  calories: {
-    funcoes: [
-      "Fornecer energia para todas as funções do corpo (respiração, batimentos cardíacos, digestão).",
-      "Sustentar a atividade física e o exercício.",
-      "Manter a temperatura corporal.",
-      "Possibilitar o crescimento e a reparação dos tecidos.",
-    ],
-    fontes: ["Carboidratos", "Proteínas", "Gorduras", "Álcool (calorias sem nutrientes essenciais)"],
-    fonte: "Dietary Guidelines for Americans 2025-2030 (USDA/HHS).",
-  },
-  protein: {
-    funcoes: [
-      "Construir e reparar músculos, pele, órgãos e outros tecidos.",
-      "Produzir enzimas, hormônios e anticorpos.",
-      "Transportar e armazenar nutrientes pelo corpo.",
-      "Servir como fonte de energia quando necessário.",
-    ],
-    fontes: ["Carnes, aves e peixes", "Ovos", "Leite, queijo e iogurte", "Feijão, lentilha e grão-de-bico", "Soja e tofu", "Castanhas e sementes"],
-    fonte: "Dietary Reference Intakes (National Academies) · Dietary Guidelines for Americans 2025-2030.",
-  },
-  carbs: {
-    funcoes: [
-      "Principal fonte de energia para o corpo e para o cérebro.",
-      "Poupar a proteína de ser usada como energia, preservando sua função estrutural.",
-      "Fornecer fibra (um tipo de carboidrato) para a digestão.",
-    ],
-    fontes: ["Arroz, pão e massas", "Batata e mandioca", "Frutas", "Leite e derivados", "Feijão e outras leguminosas"],
-    fonte: "Dietary Reference Intakes (National Academies) · Dietary Guidelines for Americans 2025-2030.",
-  },
-  fat: {
-    funcoes: [
-      "Fonte concentrada de energia.",
-      "Formar as membranas das células.",
-      "Ajudar a absorver as vitaminas lipossolúveis (A, D, E, K).",
-      "Participar da produção de hormônios e proteger/isolar órgãos.",
-    ],
-    fontes: ["Azeite e óleos vegetais", "Abacate", "Castanhas, amêndoas e sementes", "Peixes gordos (salmão, sardinha)", "Manteiga, queijo e carnes gordas (com moderação)"],
-    fonte: "Dietary Reference Intakes (National Academies) · Dietary Guidelines for Americans 2025-2030.",
-  },
-  fiber: {
-    funcoes: [
-      "Regular o funcionamento do intestino.",
-      "Dar saciedade e ajudar no controle do peso.",
-      "Ajudar a controlar o colesterol e a glicemia.",
-      "Alimentar as bactérias benéficas do intestino.",
-    ],
-    fontes: ["Frutas e verduras", "Grãos integrais (aveia, arroz integral)", "Feijão, lentilha e outras leguminosas", "Castanhas e sementes"],
-    fonte: "Dietary Reference Intakes (National Academies) · Dietary Guidelines for Americans 2025-2030.",
-  },
-  vitA: {
-    funcoes: [
-      "Manter a visão, principalmente a noturna.",
-      "Apoiar o sistema imunológico.",
-      "Manter a saúde da pele e das mucosas.",
-      "Auxiliar o crescimento e o desenvolvimento celular.",
-    ],
-    fontes: ["Fígado", "Gema de ovo", "Leite e derivados", "Cenoura, abóbora e manga", "Folhas verde-escuras (espinafre, couve)"],
-    fonte: "NIH Office of Dietary Supplements · ANVISA — Instrução Normativa nº 75/2020 (Anexo II).",
-  },
-  vitC: {
-    funcoes: [
-      "Agir como antioxidante, protegendo as células contra danos.",
-      "Ajudar na formação do colágeno (pele, vasos, ossos e tendões).",
-      "Melhorar a absorção do ferro de origem vegetal.",
-      "Apoiar o sistema imunológico.",
-    ],
-    fontes: ["Laranja, limão e acerola", "Goiaba e kiwi", "Caju e morango", "Pimentão e brócolis"],
-    fonte: "NIH Office of Dietary Supplements · ANVISA — Instrução Normativa nº 75/2020 (Anexo II).",
-  },
-  vitD: {
-    funcoes: [
-      "Ajudar na absorção de cálcio e fósforo.",
-      "Manter ossos e dentes saudáveis.",
-      "Apoiar a função muscular e o sistema imunológico.",
-    ],
-    fontes: ["Exposição da pele ao sol", "Peixes gordos (salmão, sardinha, atum)", "Gema de ovo", "Alimentos fortificados (leite, alguns cereais)"],
-    fonte: "NIH Office of Dietary Supplements · ANVISA — Instrução Normativa nº 75/2020 (Anexo II).",
-  },
-  vitB12: {
-    funcoes: [
-      "Formar glóbulos vermelhos.",
-      "Manter o sistema nervoso saudável.",
-      "Participar da produção de DNA.",
-      "Ajudar a converter os alimentos em energia.",
-    ],
-    fontes: ["Carnes e fígado", "Peixes e frutos do mar", "Ovos", "Leite e derivados (presente só em alimentos de origem animal)"],
-    fonte: "NIH Office of Dietary Supplements · ANVISA — Instrução Normativa nº 75/2020 (Anexo II).",
-  },
-  calcio: {
-    funcoes: [
-      "Formar e manter ossos e dentes.",
-      "Permitir a contração muscular.",
-      "Participar da coagulação sanguínea.",
-      "Auxiliar a transmissão de impulsos nervosos.",
-    ],
-    fontes: ["Leite, queijo e iogurte", "Vegetais verde-escuros (couve, brócolis)", "Tofu", "Sardinha (com espinha)", "Amêndoas"],
-    fonte: "NIH Office of Dietary Supplements · ANVISA — Instrução Normativa nº 75/2020 (Anexo II).",
-  },
-  ferro: {
-    funcoes: [
-      "Compor a hemoglobina, responsável pelo transporte de oxigênio no sangue.",
-      "Participar da produção de energia nas células.",
-      "Apoiar o sistema imunológico.",
-    ],
-    fontes: ["Carnes vermelhas e fígado", "Feijão e lentilha", "Folhas verde-escuras (espinafre)", "Castanhas", "Alimentos fortificados"],
-    fonte: "NIH Office of Dietary Supplements · ANVISA — Instrução Normativa nº 75/2020 (Anexo II).",
-  },
-  magnesio: {
-    funcoes: [
-      "Participar de centenas de reações químicas no corpo.",
-      "Apoiar a função muscular e nervosa.",
-      "Ajudar a regular a pressão arterial e os batimentos cardíacos.",
-      "Contribuir para a formação óssea.",
-    ],
-    fontes: ["Castanhas e sementes", "Folhas verde-escuras", "Grãos integrais", "Feijão", "Abacate"],
-    fonte: "NIH Office of Dietary Supplements · ANVISA — Instrução Normativa nº 75/2020 (Anexo II).",
-  },
-  potassio: {
-    funcoes: [
-      "Ajudar a regular o equilíbrio de líquidos do corpo.",
-      "Apoiar a função muscular e nervosa.",
-      "Ajudar a controlar a pressão arterial.",
-    ],
-    fontes: ["Banana, laranja e melão", "Batata e batata-doce", "Feijão e lentilha", "Folhas verde-escuras", "Tomate"],
-    fonte: "NIH Office of Dietary Supplements · ANVISA — Instrução Normativa nº 75/2020 (Anexo II).",
-  },
-  zinco: {
-    funcoes: [
-      "Apoiar o sistema imunológico.",
-      "Participar da cicatrização de feridas.",
-      "Auxiliar o paladar e o olfato.",
-      "Contribuir para o crescimento e desenvolvimento.",
-    ],
-    fontes: ["Carnes e frutos do mar (especialmente ostras)", "Feijão e grão-de-bico", "Castanhas e sementes", "Laticínios"],
-    fonte: "NIH Office of Dietary Supplements · ANVISA — Instrução Normativa nº 75/2020 (Anexo II).",
-  },
-  sodio: {
-    funcoes: [
-      "Ajudar a regular o equilíbrio de líquidos do corpo.",
-      "Participar da transmissão de impulsos nervosos e da contração muscular.",
-      "Em excesso, está associado a pressão alta e outros riscos cardiovasculares — por isso a referência deste app funciona como um teto, não uma meta a alcançar.",
-    ],
-    fontes: ["Sal de cozinha", "Alimentos industrializados/ultraprocessados", "Embutidos e enlatados", "Temperos prontos"],
-    fonte: "NIH Office of Dietary Supplements · ANVISA — Instrução Normativa nº 75/2020 (Anexo II).",
-  },
-};
+// já batiam com os dois padrões (não mudaram entre as duas normas).
+const MICRO_GOALS = { vitA: 800, vitC: 100, vitD: 15, calcio: 1000, ferro: 14, magnesio: 420, potassio: 3500, zinco: 11 };
+const emptyNutrients = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 0, ferro: 0, magnesio: 0, potassio: 0, zinco: 0 };
 
 const foodLibrary = [
-  { terms: ["pao frances", "pao de sal", "pao frances comum"], label: "Pão francês", baseAmount: "1 unidade (50 g)", values: { calories: 135, protein: 4.5, carbs: 28, fat: 1.5, fiber: 1.2, vitA: 0, vitC: 0, vitD: 0, calcio: 10, ferro: 1.2, magnesio: 8, potassio: 50, zinco: 0.4, sodio: 290, vitB12: 0 }, grams: 50 },
-  { terms: ["pao de forma tradicional", "pao de forma"], label: "Pão de forma", baseAmount: "2 fatias (50 g)", values: { calories: 130, protein: 4, carbs: 24, fat: 1.6, fiber: 1.4, vitA: 0, vitC: 0, vitD: 0, calcio: 40, ferro: 1, magnesio: 10, potassio: 60, zinco: 0.3, sodio: 230, vitB12: 0 }, grams: 50 },
-  { terms: ["pao de forma integral", "pao integral"], label: "Pão de forma integral", baseAmount: "2 fatias (50 g)", values: { calories: 120, protein: 5, carbs: 22, fat: 1.6, fiber: 3.2, vitA: 0, vitC: 0, vitD: 0, calcio: 30, ferro: 1.3, magnesio: 25, potassio: 80, zinco: 0.6, sodio: 220, vitB12: 0 }, grams: 50 },
-  { terms: ["pao de queijo"], label: "Pão de queijo", baseAmount: "1 unidade (30 g)", values: { calories: 100, protein: 2.3, carbs: 9, fat: 6, fiber: 0.2, vitA: 10, vitC: 0, vitD: 0.1, calcio: 40, ferro: 0.3, magnesio: 5, potassio: 20, zinco: 0.3, sodio: 150, vitB12: 0.1 }, grams: 30 },
-  { terms: ["tapioca"], label: "Tapioca", baseAmount: "1 unidade (60 g)", values: { calories: 130, protein: 0.2, carbs: 32, fat: 0.1, fiber: 0.3, vitA: 0, vitC: 0, vitD: 0, calcio: 15, ferro: 0.3, magnesio: 5, potassio: 10, zinco: 0.1, sodio: 5, vitB12: 0 }, grams: 60 },
-  { terms: ["macarrao cozido", "macarrao", "massa"], label: "Macarrão cozido", baseAmount: "100 g", values: { calories: 158, protein: 5.8, carbs: 31, fat: 0.9, fiber: 1.8, vitA: 0, vitC: 0, vitD: 0, calcio: 7, ferro: 0.5, magnesio: 18, potassio: 45, zinco: 0.5, sodio: 180, vitB12: 0 }, grams: 100 },
-  { terms: ["batata inglesa", "batata cozida", "batata"], label: "Batata inglesa cozida", baseAmount: "100 g", values: { calories: 87, protein: 1.9, carbs: 20, fat: 0.1, fiber: 1.8, vitA: 0, vitC: 13, vitD: 0, calcio: 8, ferro: 0.3, magnesio: 20, potassio: 380, zinco: 0.3, sodio: 200, vitB12: 0 }, grams: 100 },
-  { terms: ["batata doce"], label: "Batata doce cozida", baseAmount: "100 g", values: { calories: 86, protein: 1.6, carbs: 20, fat: 0.1, fiber: 3, vitA: 700, vitC: 2.4, vitD: 0, calcio: 30, ferro: 0.6, magnesio: 25, potassio: 340, zinco: 0.3, sodio: 30, vitB12: 0 }, grams: 100 },
-  { terms: ["mandioca", "aipim", "macaxeira"], label: "Mandioca cozida", baseAmount: "100 g", values: { calories: 125, protein: 0.6, carbs: 30, fat: 0.3, fiber: 1.6, vitA: 1, vitC: 20, vitD: 0, calcio: 16, ferro: 0.3, magnesio: 21, potassio: 270, zinco: 0.3, sodio: 15, vitB12: 0 }, grams: 100 },
-  { terms: ["arroz integral"], label: "Arroz integral cozido", baseAmount: "100 g", values: { calories: 124, protein: 2.6, carbs: 25.8, fat: 1, fiber: 2.7, vitA: 0, vitC: 0, vitD: 0, calcio: 10, ferro: 0.4, magnesio: 44, potassio: 79, zinco: 0.6, sodio: 150, vitB12: 0 }, grams: 100 },
-  { terms: ["arroz branco", "arroz cozido", "arroz"], label: "Arroz branco cozido", baseAmount: "100 g", values: { calories: 130, protein: 2.5, carbs: 28, fat: 0.3, fiber: 0.4, vitA: 0, vitC: 0, vitD: 0, calcio: 10, ferro: 0.2, magnesio: 12, potassio: 35, zinco: 0.4, sodio: 150, vitB12: 0 }, grams: 100 },
-  { terms: ["aveia em flocos", "aveia"], label: "Aveia em flocos", baseAmount: "2 colheres de sopa (30 g)", values: { calories: 117, protein: 4, carbs: 20, fat: 2.4, fiber: 3, vitA: 0, vitC: 0, vitD: 0, calcio: 15, ferro: 1.4, magnesio: 40, potassio: 100, zinco: 1, sodio: 2, vitB12: 0 }, grams: 30 },
-  { terms: ["granola"], label: "Granola", baseAmount: "30 g", values: { calories: 120, protein: 3, carbs: 19, fat: 4, fiber: 2.5, vitA: 0, vitC: 0, vitD: 0, calcio: 20, ferro: 1, magnesio: 30, potassio: 90, zinco: 0.6, sodio: 15, vitB12: 0 }, grams: 30 },
-  { terms: ["cuscuz"], label: "Cuscuz", baseAmount: "100 g", values: { calories: 112, protein: 2.5, carbs: 23, fat: 0.6, fiber: 1.4, vitA: 5, vitC: 0, vitD: 0, calcio: 8, ferro: 0.4, magnesio: 10, potassio: 40, zinco: 0.3, sodio: 180, vitB12: 0 }, grams: 100 },
-  { terms: ["ovo frito", "ovo de galinha frito", "ovo"], label: "Ovo frito", baseAmount: "1 unidade", values: { calories: 90, protein: 6.3, carbs: 0.4, fat: 7, fiber: 0, vitA: 90, vitC: 0, vitD: 1, calcio: 25, ferro: 0.9, magnesio: 5, potassio: 65, zinco: 0.6, sodio: 95, vitB12: 0.55 }, count: 1 },
-  { terms: ["ovo cozido"], label: "Ovo cozido", baseAmount: "1 unidade", values: { calories: 78, protein: 6.3, carbs: 0.6, fat: 5.3, fiber: 0, vitA: 80, vitC: 0, vitD: 1, calcio: 25, ferro: 0.9, magnesio: 5, potassio: 65, zinco: 0.6, sodio: 70, vitB12: 0.55 }, count: 1 },
-  { terms: ["omelete"], label: "Omelete", baseAmount: "2 ovos", values: { calories: 190, protein: 13, carbs: 1.5, fat: 15, fiber: 0, vitA: 160, vitC: 0, vitD: 2, calcio: 50, ferro: 1.8, magnesio: 10, potassio: 130, zinco: 1.2, sodio: 180, vitB12: 1.1 }, count: 2 },
-  { terms: ["peito de frango", "frango grelhado", "frango"], label: "Peito de frango", baseAmount: "100 g", values: { calories: 165, protein: 31, carbs: 0, fat: 3.6, fiber: 0, vitA: 5, vitC: 0, vitD: 0.1, calcio: 6, ferro: 0.4, magnesio: 25, potassio: 220, zinco: 0.7, sodio: 75, vitB12: 0.36 }, grams: 100 },
-  { terms: ["picanha", "picanha bovina"], label: "Picanha", baseAmount: "100 g", values: { calories: 289, protein: 26, carbs: 0, fat: 20, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 10, ferro: 2.1, magnesio: 20, potassio: 260, zinco: 4.5, sodio: 65, vitB12: 2.6 }, grams: 100 },
-  { terms: ["carne moida refogada", "carne moida"], label: "Carne moída refogada", baseAmount: "100 g", values: { calories: 212, protein: 26, carbs: 0, fat: 11, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 12, ferro: 2.3, magnesio: 18, potassio: 250, zinco: 4, sodio: 90, vitB12: 2.5 }, grams: 100 },
-  { terms: ["bife de patinho", "carne bovina magra", "patinho"], label: "Bife de patinho grelhado", baseAmount: "100 g", values: { calories: 205, protein: 32, carbs: 0, fat: 8, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 8, ferro: 2.5, magnesio: 22, potassio: 300, zinco: 4.2, sodio: 70, vitB12: 2.5 }, grams: 100 },
-  { terms: ["file de tilapia", "peixe grelhado", "tilapia"], label: "Filé de tilápia grelhado", baseAmount: "100 g", values: { calories: 128, protein: 26, carbs: 0, fat: 2.7, fiber: 0, vitA: 5, vitC: 0, vitD: 1, calcio: 10, ferro: 0.5, magnesio: 27, potassio: 300, zinco: 0.4, sodio: 75, vitB12: 1.6 }, grams: 100 },
-  { terms: ["salmao grelhado", "salmao"], label: "Salmão grelhado", baseAmount: "100 g", values: { calories: 208, protein: 22, carbs: 0, fat: 13, fiber: 0, vitA: 40, vitC: 0, vitD: 10, calcio: 12, ferro: 0.5, magnesio: 30, potassio: 380, zinco: 0.5, sodio: 65, vitB12: 2.8 }, grams: 100 },
-  { terms: ["atum em lata", "atum"], label: "Atum em lata", baseAmount: "100 g", values: { calories: 116, protein: 26, carbs: 0, fat: 1, fiber: 0, vitA: 15, vitC: 0, vitD: 2, calcio: 10, ferro: 1.3, magnesio: 30, potassio: 250, zinco: 0.6, sodio: 350, vitB12: 2 }, grams: 100 },
-  { terms: ["camarao cozido", "camarao"], label: "Camarão cozido", baseAmount: "100 g", values: { calories: 99, protein: 24, carbs: 0.2, fat: 0.3, fiber: 0, vitA: 20, vitC: 2, vitD: 0.1, calcio: 60, ferro: 0.4, magnesio: 40, potassio: 260, zinco: 1.6, sodio: 180, vitB12: 1.5 }, grams: 100 },
-  { terms: ["sardinha grelhada", "sardinha assada", "sardinha"], label: "Sardinha grelhada", baseAmount: "100 g", values: { calories: 185, protein: 24.6, carbs: 0, fat: 9.5, fiber: 0, vitA: 32, vitC: 0, vitD: 4.8, calcio: 30, ferro: 1.4, magnesio: 31, potassio: 380, zinco: 1.3, sodio: 100, vitB12: 8.9 }, grams: 100 },
-  { terms: ["file de dourado", "dourado grelhado", "dourado"], label: "Filé de dourado grelhado", baseAmount: "100 g", values: { calories: 109, protein: 24, carbs: 0, fat: 1, fiber: 0, vitA: 15, vitC: 0, vitD: 2, calcio: 20, ferro: 1, magnesio: 30, potassio: 380, zinco: 0.6, sodio: 70, vitB12: 1.6 }, grams: 100 },
-  { terms: ["marisco cozido", "mariscos", "marisco"], label: "Marisco cozido", baseAmount: "100 g", values: { calories: 172, protein: 24, carbs: 7, fat: 4.5, fiber: 0, vitA: 12, vitC: 8, vitD: 0, calcio: 26, ferro: 6, magnesio: 30, potassio: 320, zinco: 2.2, sodio: 250, vitB12: 12 }, grams: 100 },
-  { terms: ["caranguejo cozido", "carne de caranguejo", "caranguejo"], label: "Caranguejo cozido", baseAmount: "100 g", values: { calories: 97, protein: 19, carbs: 0, fat: 1.5, fiber: 0, vitA: 2, vitC: 0, vitD: 0, calcio: 50, ferro: 0.7, magnesio: 40, potassio: 300, zinco: 4, sodio: 300, vitB12: 9 }, grams: 100 },
-  { terms: ["lombo suino", "carne de porco", "lombo assado"], label: "Lombo suíno assado", baseAmount: "100 g", values: { calories: 211, protein: 27, carbs: 0, fat: 11, fiber: 0, vitA: 2, vitC: 0, vitD: 0.5, calcio: 8, ferro: 0.9, magnesio: 22, potassio: 320, zinco: 1.9, sodio: 75, vitB12: 0.6 }, grams: 100 },
-  { terms: ["linguica"], label: "Linguiça", baseAmount: "100 g", values: { calories: 300, protein: 13, carbs: 2, fat: 27, fiber: 0, vitA: 0, vitC: 0, vitD: 0.2, calcio: 10, ferro: 1, magnesio: 15, potassio: 200, zinco: 2, sodio: 950, vitB12: 1 }, grams: 100 },
-  { terms: ["bacon"], label: "Bacon", baseAmount: "30 g", values: { calories: 150, protein: 10, carbs: 0, fat: 12, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 2, ferro: 0.3, magnesio: 5, potassio: 90, zinco: 0.6, sodio: 380, vitB12: 0.2 }, grams: 30 },
-  { terms: ["peito de peru", "presunto de peru"], label: "Peito de peru fatiado", baseAmount: "2 fatias (30 g)", values: { calories: 35, protein: 6, carbs: 1, fat: 1, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 5, ferro: 0.2, magnesio: 6, potassio: 90, zinco: 0.4, sodio: 330, vitB12: 0.15 }, grams: 30 },
-  { terms: ["presunto"], label: "Presunto", baseAmount: "2 fatias (30 g)", values: { calories: 60, protein: 8, carbs: 1, fat: 3, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 3, ferro: 0.2, magnesio: 5, potassio: 80, zinco: 0.4, sodio: 330, vitB12: 0.2 }, grams: 30 },
-  { terms: ["queijo minas"], label: "Queijo minas", baseAmount: "30 g", values: { calories: 72, protein: 5.6, carbs: 0.9, fat: 5.4, fiber: 0, vitA: 30, vitC: 0, vitD: 0, calcio: 180, ferro: 0.1, magnesio: 6, potassio: 30, zinco: 0.6, sodio: 85, vitB12: 0.3 }, grams: 30 },
-  { terms: ["queijo mussarela", "mussarela", "muçarela"], label: "Queijo mussarela", baseAmount: "30 g", values: { calories: 90, protein: 6.6, carbs: 0.6, fat: 6.9, fiber: 0, vitA: 25, vitC: 0, vitD: 0, calcio: 200, ferro: 0.1, magnesio: 6, potassio: 20, zinco: 0.7, sodio: 180, vitB12: 0.3 }, grams: 30 },
-  { terms: ["requeijao"], label: "Requeijão", baseAmount: "1 colher de sopa (20 g)", values: { calories: 55, protein: 1.5, carbs: 1, fat: 5, fiber: 0, vitA: 15, vitC: 0, vitD: 0, calcio: 60, ferro: 0, magnesio: 3, potassio: 15, zinco: 0.2, sodio: 110, vitB12: 0.15 }, grams: 20 },
-  { terms: ["leite integral", "leite"], label: "Leite integral", baseAmount: "1 copo (200 ml)", values: { calories: 122, protein: 6.4, carbs: 9.6, fat: 6.6, fiber: 0, vitA: 60, vitC: 2, vitD: 1, calcio: 240, ferro: 0.1, magnesio: 24, potassio: 300, zinco: 0.8, sodio: 90, vitB12: 0.72 }, ml: 200 },
-  { terms: ["leite desnatado"], label: "Leite desnatado", baseAmount: "1 copo (200 ml)", values: { calories: 70, protein: 6.8, carbs: 9.8, fat: 0.2, fiber: 0, vitA: 30, vitC: 2, vitD: 1, calcio: 250, ferro: 0.1, magnesio: 24, potassio: 320, zinco: 0.8, sodio: 100, vitB12: 0.74 }, ml: 200 },
+  { terms: ["pao frances", "pao de sal", "pao frances comum"], label: "Pão francês", baseAmount: "1 unidade (50 g)", values: { calories: 135, protein: 4.5, carbs: 28, fat: 1.5, fiber: 1.2, vitA: 0, vitC: 0, vitD: 0, calcio: 10, ferro: 1.2, magnesio: 8, potassio: 50, zinco: 0.4 }, grams: 50 },
+  { terms: ["pao de forma tradicional", "pao de forma"], label: "Pão de forma", baseAmount: "2 fatias (50 g)", values: { calories: 130, protein: 4, carbs: 24, fat: 1.6, fiber: 1.4, vitA: 0, vitC: 0, vitD: 0, calcio: 40, ferro: 1, magnesio: 10, potassio: 60, zinco: 0.3 }, grams: 50 },
+  { terms: ["pao de forma integral", "pao integral"], label: "Pão de forma integral", baseAmount: "2 fatias (50 g)", values: { calories: 120, protein: 5, carbs: 22, fat: 1.6, fiber: 3.2, vitA: 0, vitC: 0, vitD: 0, calcio: 30, ferro: 1.3, magnesio: 25, potassio: 80, zinco: 0.6 }, grams: 50 },
+  { terms: ["pao de queijo"], label: "Pão de queijo", baseAmount: "1 unidade (30 g)", values: { calories: 100, protein: 2.3, carbs: 9, fat: 6, fiber: 0.2, vitA: 10, vitC: 0, vitD: 0.1, calcio: 40, ferro: 0.3, magnesio: 5, potassio: 20, zinco: 0.3 }, grams: 30 },
+  { terms: ["tapioca"], label: "Tapioca", baseAmount: "1 unidade (60 g)", values: { calories: 130, protein: 0.2, carbs: 32, fat: 0.1, fiber: 0.3, vitA: 0, vitC: 0, vitD: 0, calcio: 15, ferro: 0.3, magnesio: 5, potassio: 10, zinco: 0.1 }, grams: 60 },
+  { terms: ["macarrao cozido", "macarrao", "massa"], label: "Macarrão cozido", baseAmount: "100 g", values: { calories: 158, protein: 5.8, carbs: 31, fat: 0.9, fiber: 1.8, vitA: 0, vitC: 0, vitD: 0, calcio: 7, ferro: 0.5, magnesio: 18, potassio: 45, zinco: 0.5 }, grams: 100 },
+  { terms: ["batata inglesa", "batata cozida", "batata"], label: "Batata inglesa cozida", baseAmount: "100 g", values: { calories: 87, protein: 1.9, carbs: 20, fat: 0.1, fiber: 1.8, vitA: 0, vitC: 13, vitD: 0, calcio: 8, ferro: 0.3, magnesio: 20, potassio: 380, zinco: 0.3 }, grams: 100 },
+  { terms: ["batata doce"], label: "Batata doce cozida", baseAmount: "100 g", values: { calories: 86, protein: 1.6, carbs: 20, fat: 0.1, fiber: 3, vitA: 700, vitC: 2.4, vitD: 0, calcio: 30, ferro: 0.6, magnesio: 25, potassio: 340, zinco: 0.3 }, grams: 100 },
+  { terms: ["mandioca", "aipim", "macaxeira"], label: "Mandioca cozida", baseAmount: "100 g", values: { calories: 125, protein: 0.6, carbs: 30, fat: 0.3, fiber: 1.6, vitA: 1, vitC: 20, vitD: 0, calcio: 16, ferro: 0.3, magnesio: 21, potassio: 270, zinco: 0.3 }, grams: 100 },
+  { terms: ["arroz integral"], label: "Arroz integral cozido", baseAmount: "100 g", values: { calories: 124, protein: 2.6, carbs: 25.8, fat: 1, fiber: 2.7, vitA: 0, vitC: 0, vitD: 0, calcio: 10, ferro: 0.4, magnesio: 44, potassio: 79, zinco: 0.6 }, grams: 100 },
+  { terms: ["arroz branco", "arroz cozido", "arroz"], label: "Arroz branco cozido", baseAmount: "100 g", values: { calories: 130, protein: 2.5, carbs: 28, fat: 0.3, fiber: 0.4, vitA: 0, vitC: 0, vitD: 0, calcio: 10, ferro: 0.2, magnesio: 12, potassio: 35, zinco: 0.4 }, grams: 100 },
+  { terms: ["aveia em flocos", "aveia"], label: "Aveia em flocos", baseAmount: "2 colheres de sopa (30 g)", values: { calories: 117, protein: 4, carbs: 20, fat: 2.4, fiber: 3, vitA: 0, vitC: 0, vitD: 0, calcio: 15, ferro: 1.4, magnesio: 40, potassio: 100, zinco: 1 }, grams: 30 },
+  { terms: ["granola"], label: "Granola", baseAmount: "30 g", values: { calories: 120, protein: 3, carbs: 19, fat: 4, fiber: 2.5, vitA: 0, vitC: 0, vitD: 0, calcio: 20, ferro: 1, magnesio: 30, potassio: 90, zinco: 0.6 }, grams: 30 },
+  { terms: ["cuscuz"], label: "Cuscuz", baseAmount: "100 g", values: { calories: 112, protein: 2.5, carbs: 23, fat: 0.6, fiber: 1.4, vitA: 5, vitC: 0, vitD: 0, calcio: 8, ferro: 0.4, magnesio: 10, potassio: 40, zinco: 0.3 }, grams: 100 },
+  { terms: ["ovo frito", "ovo de galinha frito", "ovo"], label: "Ovo frito", baseAmount: "1 unidade", values: { calories: 90, protein: 6.3, carbs: 0.4, fat: 7, fiber: 0, vitA: 90, vitC: 0, vitD: 1, calcio: 25, ferro: 0.9, magnesio: 5, potassio: 65, zinco: 0.6 }, count: 1 },
+  { terms: ["ovo cozido"], label: "Ovo cozido", baseAmount: "1 unidade", values: { calories: 78, protein: 6.3, carbs: 0.6, fat: 5.3, fiber: 0, vitA: 80, vitC: 0, vitD: 1, calcio: 25, ferro: 0.9, magnesio: 5, potassio: 65, zinco: 0.6 }, count: 1 },
+  { terms: ["omelete"], label: "Omelete", baseAmount: "2 ovos", values: { calories: 190, protein: 13, carbs: 1.5, fat: 15, fiber: 0, vitA: 160, vitC: 0, vitD: 2, calcio: 50, ferro: 1.8, magnesio: 10, potassio: 130, zinco: 1.2 }, count: 2 },
+  { terms: ["peito de frango", "frango grelhado", "frango"], label: "Peito de frango", baseAmount: "100 g", values: { calories: 165, protein: 31, carbs: 0, fat: 3.6, fiber: 0, vitA: 5, vitC: 0, vitD: 0.1, calcio: 6, ferro: 0.4, magnesio: 25, potassio: 220, zinco: 0.7 }, grams: 100 },
+  { terms: ["picanha", "picanha bovina"], label: "Picanha", baseAmount: "100 g", values: { calories: 289, protein: 26, carbs: 0, fat: 20, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 10, ferro: 2.1, magnesio: 20, potassio: 260, zinco: 4.5 }, grams: 100 },
+  { terms: ["carne moida refogada", "carne moida"], label: "Carne moída refogada", baseAmount: "100 g", values: { calories: 212, protein: 26, carbs: 0, fat: 11, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 12, ferro: 2.3, magnesio: 18, potassio: 250, zinco: 4 }, grams: 100 },
+  { terms: ["bife de patinho", "carne bovina magra", "patinho"], label: "Bife de patinho grelhado", baseAmount: "100 g", values: { calories: 205, protein: 32, carbs: 0, fat: 8, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 8, ferro: 2.5, magnesio: 22, potassio: 300, zinco: 4.2 }, grams: 100 },
+  { terms: ["file de tilapia", "peixe grelhado", "tilapia"], label: "Filé de tilápia grelhado", baseAmount: "100 g", values: { calories: 128, protein: 26, carbs: 0, fat: 2.7, fiber: 0, vitA: 5, vitC: 0, vitD: 1, calcio: 10, ferro: 0.5, magnesio: 27, potassio: 300, zinco: 0.4 }, grams: 100 },
+  { terms: ["salmao grelhado", "salmao"], label: "Salmão grelhado", baseAmount: "100 g", values: { calories: 208, protein: 22, carbs: 0, fat: 13, fiber: 0, vitA: 40, vitC: 0, vitD: 10, calcio: 12, ferro: 0.5, magnesio: 30, potassio: 380, zinco: 0.5 }, grams: 100 },
+  { terms: ["atum em lata", "atum"], label: "Atum em lata", baseAmount: "100 g", values: { calories: 116, protein: 26, carbs: 0, fat: 1, fiber: 0, vitA: 15, vitC: 0, vitD: 2, calcio: 10, ferro: 1.3, magnesio: 30, potassio: 250, zinco: 0.6 }, grams: 100 },
+  { terms: ["camarao cozido", "camarao"], label: "Camarão cozido", baseAmount: "100 g", values: { calories: 99, protein: 24, carbs: 0.2, fat: 0.3, fiber: 0, vitA: 20, vitC: 2, vitD: 0.1, calcio: 60, ferro: 0.4, magnesio: 40, potassio: 260, zinco: 1.6 }, grams: 100 },
+  { terms: ["sardinha grelhada", "sardinha assada", "sardinha"], label: "Sardinha grelhada", baseAmount: "100 g", values: { calories: 185, protein: 24.6, carbs: 0, fat: 9.5, fiber: 0, vitA: 32, vitC: 0, vitD: 4.8, calcio: 30, ferro: 1.4, magnesio: 31, potassio: 380, zinco: 1.3 }, grams: 100 },
+  { terms: ["file de dourado", "dourado grelhado", "dourado"], label: "Filé de dourado grelhado", baseAmount: "100 g", values: { calories: 109, protein: 24, carbs: 0, fat: 1, fiber: 0, vitA: 15, vitC: 0, vitD: 2, calcio: 20, ferro: 1, magnesio: 30, potassio: 380, zinco: 0.6 }, grams: 100 },
+  { terms: ["marisco cozido", "mariscos", "marisco"], label: "Marisco cozido", baseAmount: "100 g", values: { calories: 172, protein: 24, carbs: 7, fat: 4.5, fiber: 0, vitA: 12, vitC: 8, vitD: 0, calcio: 26, ferro: 6, magnesio: 30, potassio: 320, zinco: 2.2 }, grams: 100 },
+  { terms: ["caranguejo cozido", "carne de caranguejo", "caranguejo"], label: "Caranguejo cozido", baseAmount: "100 g", values: { calories: 97, protein: 19, carbs: 0, fat: 1.5, fiber: 0, vitA: 2, vitC: 0, vitD: 0, calcio: 50, ferro: 0.7, magnesio: 40, potassio: 300, zinco: 4 }, grams: 100 },
+  { terms: ["lombo suino", "carne de porco", "lombo assado"], label: "Lombo suíno assado", baseAmount: "100 g", values: { calories: 211, protein: 27, carbs: 0, fat: 11, fiber: 0, vitA: 2, vitC: 0, vitD: 0.5, calcio: 8, ferro: 0.9, magnesio: 22, potassio: 320, zinco: 1.9 }, grams: 100 },
+  { terms: ["linguica"], label: "Linguiça", baseAmount: "100 g", values: { calories: 300, protein: 13, carbs: 2, fat: 27, fiber: 0, vitA: 0, vitC: 0, vitD: 0.2, calcio: 10, ferro: 1, magnesio: 15, potassio: 200, zinco: 2 }, grams: 100 },
+  { terms: ["bacon"], label: "Bacon", baseAmount: "30 g", values: { calories: 150, protein: 10, carbs: 0, fat: 12, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 2, ferro: 0.3, magnesio: 5, potassio: 90, zinco: 0.6 }, grams: 30 },
+  { terms: ["peito de peru", "presunto de peru"], label: "Peito de peru fatiado", baseAmount: "2 fatias (30 g)", values: { calories: 35, protein: 6, carbs: 1, fat: 1, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 5, ferro: 0.2, magnesio: 6, potassio: 90, zinco: 0.4 }, grams: 30 },
+  { terms: ["presunto"], label: "Presunto", baseAmount: "2 fatias (30 g)", values: { calories: 60, protein: 8, carbs: 1, fat: 3, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 3, ferro: 0.2, magnesio: 5, potassio: 80, zinco: 0.4 }, grams: 30 },
+  { terms: ["queijo minas"], label: "Queijo minas", baseAmount: "30 g", values: { calories: 72, protein: 5.6, carbs: 0.9, fat: 5.4, fiber: 0, vitA: 30, vitC: 0, vitD: 0, calcio: 180, ferro: 0.1, magnesio: 6, potassio: 30, zinco: 0.6 }, grams: 30 },
+  { terms: ["queijo mussarela", "mussarela", "muçarela"], label: "Queijo mussarela", baseAmount: "30 g", values: { calories: 90, protein: 6.6, carbs: 0.6, fat: 6.9, fiber: 0, vitA: 25, vitC: 0, vitD: 0, calcio: 200, ferro: 0.1, magnesio: 6, potassio: 20, zinco: 0.7 }, grams: 30 },
+  { terms: ["requeijao"], label: "Requeijão", baseAmount: "1 colher de sopa (20 g)", values: { calories: 55, protein: 1.5, carbs: 1, fat: 5, fiber: 0, vitA: 15, vitC: 0, vitD: 0, calcio: 60, ferro: 0, magnesio: 3, potassio: 15, zinco: 0.2 }, grams: 20 },
+  { terms: ["leite integral", "leite"], label: "Leite integral", baseAmount: "1 copo (200 ml)", values: { calories: 122, protein: 6.4, carbs: 9.6, fat: 6.6, fiber: 0, vitA: 60, vitC: 2, vitD: 1, calcio: 240, ferro: 0.1, magnesio: 24, potassio: 300, zinco: 0.8 }, ml: 200 },
+  { terms: ["leite desnatado"], label: "Leite desnatado", baseAmount: "1 copo (200 ml)", values: { calories: 70, protein: 6.8, carbs: 9.8, fat: 0.2, fiber: 0, vitA: 30, vitC: 2, vitD: 1, calcio: 250, ferro: 0.1, magnesio: 24, potassio: 320, zinco: 0.8 }, ml: 200 },
   // Leite em pó é vendido/medido em gramas (pó), não em ml como o leite líquido -- por isso é um
   // alimento à parte, com base em gramas, em vez de reaproveitar o "leite" líquido acima (que só aceita
   // quantidade em ml e, se a pessoa disser "100 g de leite em pó", só bate com o termo genérico "leite"
   // e cai na porção padrão de 200 ml, cheia, ignorando o "100 g" -- exatamente o problema relatado).
-  { terms: ["leite em po integral", "leite em po"], label: "Leite em pó integral", baseAmount: "100 g", values: { calories: 496, protein: 26.3, carbs: 38.4, fat: 26.7, fiber: 0, vitA: 130, vitC: 3, vitD: 1, calcio: 912, ferro: 0.5, magnesio: 80, potassio: 1330, zinco: 3.3, sodio: 370, vitB12: 3.5 }, grams: 100 },
-  { terms: ["iogurte natural", "iogurte"], label: "Iogurte natural", baseAmount: "1 pote (170 g)", values: { calories: 100, protein: 6, carbs: 8, fat: 5, fiber: 0, vitA: 20, vitC: 1, vitD: 0, calcio: 200, ferro: 0.1, magnesio: 20, potassio: 250, zinco: 1, sodio: 85, vitB12: 0.97 }, grams: 170 },
-  { terms: ["iogurte grego"], label: "Iogurte grego", baseAmount: "100 g", values: { calories: 97, protein: 9, carbs: 4, fat: 5, fiber: 0, vitA: 15, vitC: 0, vitD: 0, calcio: 110, ferro: 0.1, magnesio: 11, potassio: 140, zinco: 0.6, sodio: 50, vitB12: 0.57 }, grams: 100 },
-  { terms: ["whey protein", "whey"], label: "Whey protein", baseAmount: "1 dose (30 g)", values: { calories: 120, protein: 24, carbs: 3, fat: 1.5, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 100, ferro: 0.2, magnesio: 20, potassio: 150, zinco: 1, sodio: 110, vitB12: 0.3 }, grams: 30 },
+  { terms: ["leite em po integral", "leite em po"], label: "Leite em pó integral", baseAmount: "100 g", values: { calories: 496, protein: 26.3, carbs: 38.4, fat: 26.7, fiber: 0, vitA: 130, vitC: 3, vitD: 1, calcio: 912, ferro: 0.5, magnesio: 80, potassio: 1330, zinco: 3.3 }, grams: 100 },
+  { terms: ["iogurte natural", "iogurte"], label: "Iogurte natural", baseAmount: "1 pote (170 g)", values: { calories: 100, protein: 6, carbs: 8, fat: 5, fiber: 0, vitA: 20, vitC: 1, vitD: 0, calcio: 200, ferro: 0.1, magnesio: 20, potassio: 250, zinco: 1 }, grams: 170 },
+  { terms: ["iogurte grego"], label: "Iogurte grego", baseAmount: "100 g", values: { calories: 97, protein: 9, carbs: 4, fat: 5, fiber: 0, vitA: 15, vitC: 0, vitD: 0, calcio: 110, ferro: 0.1, magnesio: 11, potassio: 140, zinco: 0.6 }, grams: 100 },
+  { terms: ["whey protein", "whey"], label: "Whey protein", baseAmount: "1 dose (30 g)", values: { calories: 120, protein: 24, carbs: 3, fat: 1.5, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 100, ferro: 0.2, magnesio: 20, potassio: 150, zinco: 1 }, grams: 30 },
   // Suplementos "puros" (proteína em pó/isolada e vitaminas/minerais em cápsula/gotas) -- diferente dos
   // alimentos acima, aqui a pessoa não está descrevendo uma porção de comida, e sim uma DOSE direta do
   // nutriente (ex.: "30g de proteína", "vitamina D 5000 UI"). Por isso usam "dose" em vez de
@@ -1136,104 +940,104 @@ const foodLibrary = [
   // Proteína: fator 4 kcal/g é o padrão nutricional (Atwater) pra proteína, então "30g de proteína" já
   // sai certo em kcal também, sem precisar de uma tabela de calorias separada.
   { terms: ["proteina em po", "suplemento de proteina", "proteina suplemento", "proteina"], label: "Proteína (suplemento)", baseAmount: "25 g de proteína",
-    values: { calories: 4, protein: 1, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 0, ferro: 0, magnesio: 0, potassio: 0, zinco: 0, sodio: 0, vitB12: 0 },
+    values: { calories: 4, protein: 1, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 0, ferro: 0, magnesio: 0, potassio: 0, zinco: 0 },
     dose: { unidades: ["g", "gramas", "grama"], rotulo: "g", padrao: 25 } },
   { terms: ["vitamina a suplemento", "vitamina a"], label: "Vitamina A (suplemento)", baseAmount: "800 mcg",
-    values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 1, vitC: 0, vitD: 0, calcio: 0, ferro: 0, magnesio: 0, potassio: 0, zinco: 0, sodio: 0, vitB12: 0 },
+    values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 1, vitC: 0, vitD: 0, calcio: 0, ferro: 0, magnesio: 0, potassio: 0, zinco: 0 },
     dose: { unidades: ["mcg", "microgramas"], rotulo: "mcg", padrao: 800 } },
   { terms: ["vitamina c suplemento", "vitamina c"], label: "Vitamina C (suplemento)", baseAmount: "500 mg",
-    values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 1, vitD: 0, calcio: 0, ferro: 0, magnesio: 0, potassio: 0, zinco: 0, sodio: 0, vitB12: 0 },
+    values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 1, vitD: 0, calcio: 0, ferro: 0, magnesio: 0, potassio: 0, zinco: 0 },
     dose: { unidades: ["mg", "miligramas"], rotulo: "mg", padrao: 500 } },
   // Vitamina D é a única aqui cuja dose normalmente vem em UI (Unidades Internacionais), não em
   // mg/mcg -- ex.: "vitamina D 5000 UI", igual ao rótulo do próprio frasco do suplemento. Conversão
   // padrão: 1 mcg de vitamina D = 40 UI, ou seja, 1 UI = 0,025 mcg (por isso o valor em "values" é 0.025
   // mcg por UI).
   { terms: ["vitamina d suplemento", "vitamina d"], label: "Vitamina D (suplemento)", baseAmount: "2.000 UI",
-    values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0.025, calcio: 0, ferro: 0, magnesio: 0, potassio: 0, zinco: 0, sodio: 0, vitB12: 0 },
+    values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0.025, calcio: 0, ferro: 0, magnesio: 0, potassio: 0, zinco: 0 },
     dose: { unidades: ["ui", "iu"], rotulo: "UI", padrao: 2000 } },
   { terms: ["calcio suplemento", "carbonato de calcio", "citrato de calcio", "calcio"], label: "Cálcio (suplemento)", baseAmount: "500 mg",
-    values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 1, ferro: 0, magnesio: 0, potassio: 0, zinco: 0, sodio: 0, vitB12: 0 },
+    values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 1, ferro: 0, magnesio: 0, potassio: 0, zinco: 0 },
     dose: { unidades: ["mg", "miligramas"], rotulo: "mg", padrao: 500 } },
   { terms: ["ferro suplemento", "sulfato ferroso", "ferro"], label: "Ferro (suplemento)", baseAmount: "40 mg",
-    values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 0, ferro: 1, magnesio: 0, potassio: 0, zinco: 0, sodio: 0, vitB12: 0 },
+    values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 0, ferro: 1, magnesio: 0, potassio: 0, zinco: 0 },
     dose: { unidades: ["mg", "miligramas"], rotulo: "mg", padrao: 40 } },
   { terms: ["magnesio suplemento", "cloreto de magnesio", "citrato de magnesio", "magnesio"], label: "Magnésio (suplemento)", baseAmount: "300 mg",
-    values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 0, ferro: 0, magnesio: 1, potassio: 0, zinco: 0, sodio: 0, vitB12: 0 },
+    values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 0, ferro: 0, magnesio: 1, potassio: 0, zinco: 0 },
     dose: { unidades: ["mg", "miligramas"], rotulo: "mg", padrao: 300 } },
   { terms: ["potassio suplemento", "cloreto de potassio", "potassio"], label: "Potássio (suplemento)", baseAmount: "300 mg",
-    values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 0, ferro: 0, magnesio: 0, potassio: 1, zinco: 0, sodio: 0, vitB12: 0 },
+    values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 0, ferro: 0, magnesio: 0, potassio: 1, zinco: 0 },
     dose: { unidades: ["mg", "miligramas"], rotulo: "mg", padrao: 300 } },
   { terms: ["zinco suplemento", "picolinato de zinco", "sulfato de zinco", "zinco"], label: "Zinco (suplemento)", baseAmount: "25 mg",
-    values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 0, ferro: 0, magnesio: 0, potassio: 0, zinco: 1, sodio: 0, vitB12: 0 },
+    values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 0, ferro: 0, magnesio: 0, potassio: 0, zinco: 1 },
     dose: { unidades: ["mg", "miligramas"], rotulo: "mg", padrao: 25 } },
-  { terms: ["feijao", "feijao cozido"], label: "Feijão cozido", baseAmount: "100 g", values: { calories: 76, protein: 4.8, carbs: 13.6, fat: 0.5, fiber: 8.4, vitA: 0, vitC: 1, vitD: 0, calcio: 27, ferro: 1.5, magnesio: 42, potassio: 260, zinco: 1, sodio: 300, vitB12: 0 }, grams: 100 },
-  { terms: ["lentilha"], label: "Lentilha cozida", baseAmount: "100 g", values: { calories: 116, protein: 9, carbs: 20, fat: 0.4, fiber: 8, vitA: 1, vitC: 1.5, vitD: 0, calcio: 19, ferro: 3.3, magnesio: 36, potassio: 370, zinco: 1.3, sodio: 200, vitB12: 0 }, grams: 100 },
-  { terms: ["grao de bico"], label: "Grão de bico cozido", baseAmount: "100 g", values: { calories: 164, protein: 8.9, carbs: 27, fat: 2.6, fiber: 7.6, vitA: 1, vitC: 1.3, vitD: 0, calcio: 49, ferro: 2.9, magnesio: 48, potassio: 290, zinco: 1.5, sodio: 250, vitB12: 0 }, grams: 100 },
-  { terms: ["brocolis"], label: "Brócolis cozido", baseAmount: "100 g", values: { calories: 35, protein: 2.8, carbs: 7, fat: 0.4, fiber: 3.3, vitA: 30, vitC: 65, vitD: 0, calcio: 40, ferro: 0.7, magnesio: 20, potassio: 290, zinco: 0.4, sodio: 40, vitB12: 0 }, grams: 100 },
-  { terms: ["couve refogada", "couve"], label: "Couve refogada", baseAmount: "100 g", values: { calories: 35, protein: 2, carbs: 4, fat: 2, fiber: 3, vitA: 350, vitC: 55, vitD: 0, calcio: 130, ferro: 1, magnesio: 25, potassio: 220, zinco: 0.3, sodio: 180, vitB12: 0 }, grams: 100 },
-  { terms: ["tomate"], label: "Tomate", baseAmount: "1 unidade (100 g)", values: { calories: 18, protein: 0.9, carbs: 3.9, fat: 0.2, fiber: 1.2, vitA: 40, vitC: 14, vitD: 0, calcio: 10, ferro: 0.3, magnesio: 11, potassio: 240, zinco: 0.2, sodio: 5, vitB12: 0 }, grams: 100 },
-  { terms: ["cenoura"], label: "Cenoura crua", baseAmount: "100 g", values: { calories: 41, protein: 0.9, carbs: 10, fat: 0.2, fiber: 2.8, vitA: 830, vitC: 6, vitD: 0, calcio: 33, ferro: 0.3, magnesio: 12, potassio: 320, zinco: 0.2, sodio: 35, vitB12: 0 }, grams: 100 },
-  { terms: ["alface"], label: "Alface", baseAmount: "50 g", values: { calories: 7, protein: 0.7, carbs: 1.2, fat: 0.1, fiber: 0.7, vitA: 75, vitC: 5, vitD: 0, calcio: 18, ferro: 0.4, magnesio: 7, potassio: 100, zinco: 0.1, sodio: 5, vitB12: 0 }, grams: 50 },
-  { terms: ["salada mista", "salada"], label: "Salada mista", baseAmount: "100 g", values: { calories: 25, protein: 1.2, carbs: 4, fat: 0.5, fiber: 1.8, vitA: 150, vitC: 15, vitD: 0, calcio: 25, ferro: 0.5, magnesio: 12, potassio: 200, zinco: 0.2, sodio: 40, vitB12: 0 }, grams: 100 },
-  { terms: ["banana"], label: "Banana", baseAmount: "1 unidade", values: { calories: 90, protein: 1.1, carbs: 23, fat: 0.3, fiber: 2.6, vitA: 3, vitC: 9, vitD: 0, calcio: 6, ferro: 0.3, magnesio: 30, potassio: 380, zinco: 0.2, sodio: 1, vitB12: 0 }, count: 1 },
-  { terms: ["maca"], label: "Maçã", baseAmount: "1 unidade (130 g)", values: { calories: 68, protein: 0.3, carbs: 18, fat: 0.2, fiber: 3, vitA: 4, vitC: 6, vitD: 0, calcio: 8, ferro: 0.2, magnesio: 6, potassio: 150, zinco: 0.1, sodio: 2, vitB12: 0 }, count: 1 },
-  { terms: ["mamao"], label: "Mamão", baseAmount: "100 g", values: { calories: 40, protein: 0.6, carbs: 10, fat: 0.1, fiber: 1.8, vitA: 55, vitC: 60, vitD: 0, calcio: 20, ferro: 0.3, magnesio: 10, potassio: 180, zinco: 0.1, sodio: 3, vitB12: 0 }, grams: 100 },
-  { terms: ["morango"], label: "Morango", baseAmount: "100 g", values: { calories: 32, protein: 0.7, carbs: 7.7, fat: 0.3, fiber: 2, vitA: 1, vitC: 60, vitD: 0, calcio: 16, ferro: 0.4, magnesio: 13, potassio: 150, zinco: 0.1, sodio: 1, vitB12: 0 }, grams: 100 },
-  { terms: ["abacaxi"], label: "Abacaxi", baseAmount: "100 g", values: { calories: 50, protein: 0.5, carbs: 13, fat: 0.1, fiber: 1.4, vitA: 3, vitC: 48, vitD: 0, calcio: 13, ferro: 0.3, magnesio: 12, potassio: 110, zinco: 0.1, sodio: 1, vitB12: 0 }, grams: 100 },
-  { terms: ["manga"], label: "Manga", baseAmount: "1 unidade (200 g)", values: { calories: 120, protein: 1.6, carbs: 30, fat: 0.6, fiber: 3.4, vitA: 110, vitC: 65, vitD: 0, calcio: 22, ferro: 0.3, magnesio: 20, potassio: 340, zinco: 0.2, sodio: 4, vitB12: 0 }, count: 1 },
-  { terms: ["melancia"], label: "Melancia", baseAmount: "1 fatia (150 g)", values: { calories: 46, protein: 0.9, carbs: 11, fat: 0.2, fiber: 0.6, vitA: 70, vitC: 12, vitD: 0, calcio: 11, ferro: 0.4, magnesio: 15, potassio: 170, zinco: 0.15, sodio: 2, vitB12: 0 }, grams: 150 },
-  { terms: ["uva"], label: "Uva", baseAmount: "100 g", values: { calories: 69, protein: 0.7, carbs: 18, fat: 0.2, fiber: 0.9, vitA: 3, vitC: 4, vitD: 0, calcio: 12, ferro: 0.4, magnesio: 7, potassio: 190, zinco: 0.1, sodio: 2, vitB12: 0 }, grams: 100 },
-  { terms: ["abacate"], label: "Abacate", baseAmount: "100 g", values: { calories: 160, protein: 2, carbs: 8.5, fat: 14.7, fiber: 6.7, vitA: 7, vitC: 10, vitD: 0, calcio: 12, ferro: 0.6, magnesio: 29, potassio: 480, zinco: 0.6, sodio: 7, vitB12: 0 }, grams: 100 },
-  { terms: ["melao"], label: "Melão", baseAmount: "100 g", values: { calories: 30, protein: 0.8, carbs: 7.5, fat: 0.1, fiber: 0.5, vitA: 5, vitC: 10, vitD: 0, calcio: 9, ferro: 0.2, magnesio: 10, potassio: 300, zinco: 0.1, sodio: 16, vitB12: 0 }, grams: 100 },
-  { terms: ["mirtilo", "blueberry", "blueberries"], label: "Mirtilo (blueberry)", baseAmount: "100 g", values: { calories: 57, protein: 0.7, carbs: 14.5, fat: 0.3, fiber: 2.4, vitA: 3, vitC: 9.7, vitD: 0, calcio: 6, ferro: 0.3, magnesio: 6, potassio: 77, zinco: 0.2, sodio: 1, vitB12: 0 }, grams: 100 },
-  { terms: ["suco de laranja", "suco laranja"], label: "Suco de laranja", baseAmount: "300 ml", values: { calories: 135, protein: 2, carbs: 31, fat: 0.3, fiber: 0.5, vitA: 15, vitC: 90, vitD: 0, calcio: 30, ferro: 0.5, magnesio: 30, potassio: 500, zinco: 0.2, sodio: 6, vitB12: 0 }, ml: 300 },
-  { terms: ["suco de limao", "suco limao", "limonada"], label: "Suco de limão (limonada)", baseAmount: "300 ml", values: { calories: 90, protein: 0.3, carbs: 23, fat: 0, fiber: 0.3, vitA: 0, vitC: 35, vitD: 0, calcio: 15, ferro: 0.2, magnesio: 10, potassio: 130, zinco: 0.1, sodio: 3, vitB12: 0 }, ml: 300 },
-  { terms: ["suco de uva", "suco uva"], label: "Suco de uva", baseAmount: "300 ml", values: { calories: 150, protein: 0.6, carbs: 37, fat: 0, fiber: 0.3, vitA: 0, vitC: 3, vitD: 0, calcio: 25, ferro: 0.9, magnesio: 25, potassio: 300, zinco: 0.2, sodio: 9, vitB12: 0 }, ml: 300 },
-  { terms: ["suco de abacaxi", "suco abacaxi"], label: "Suco de abacaxi", baseAmount: "300 ml", values: { calories: 120, protein: 0.6, carbs: 30, fat: 0.2, fiber: 0.5, vitA: 3, vitC: 40, vitD: 0, calcio: 20, ferro: 0.5, magnesio: 20, potassio: 200, zinco: 0.2, sodio: 3, vitB12: 0 }, ml: 300 },
-  { terms: ["suco de maracuja", "suco maracuja"], label: "Suco de maracujá", baseAmount: "300 ml", values: { calories: 140, protein: 0.7, carbs: 35, fat: 0.1, fiber: 0.6, vitA: 30, vitC: 45, vitD: 0, calcio: 15, ferro: 0.5, magnesio: 15, potassio: 300, zinco: 0.2, sodio: 9, vitB12: 0 }, ml: 300 },
-  { terms: ["suco de manga", "suco manga"], label: "Suco de manga", baseAmount: "300 ml", values: { calories: 165, protein: 0.8, carbs: 41, fat: 0.3, fiber: 0.6, vitA: 80, vitC: 50, vitD: 0, calcio: 20, ferro: 0.4, magnesio: 15, potassio: 250, zinco: 0.2, sodio: 6, vitB12: 0 }, ml: 300 },
-  { terms: ["suco de morango", "suco morango"], label: "Suco de morango", baseAmount: "300 ml", values: { calories: 110, protein: 0.8, carbs: 27, fat: 0.3, fiber: 0.6, vitA: 3, vitC: 50, vitD: 0, calcio: 25, ferro: 0.6, magnesio: 20, potassio: 220, zinco: 0.2, sodio: 3, vitB12: 0 }, ml: 300 },
-  { terms: ["suco de melancia", "suco melancia"], label: "Suco de melancia", baseAmount: "300 ml", values: { calories: 90, protein: 0.7, carbs: 22, fat: 0.2, fiber: 0.3, vitA: 60, vitC: 20, vitD: 0, calcio: 15, ferro: 0.5, magnesio: 20, potassio: 220, zinco: 0.2, sodio: 6, vitB12: 0 }, ml: 300 },
-  { terms: ["suco de caju", "suco caju"], label: "Suco de caju", baseAmount: "300 ml", values: { calories: 135, protein: 0.5, carbs: 33, fat: 0.2, fiber: 0.3, vitA: 5, vitC: 130, vitD: 0, calcio: 10, ferro: 0.4, magnesio: 15, potassio: 180, zinco: 0.15, sodio: 6, vitB12: 0 }, ml: 300 },
-  { terms: ["suco de acerola", "suco acerola"], label: "Suco de acerola", baseAmount: "300 ml", values: { calories: 90, protein: 0.6, carbs: 21, fat: 0.2, fiber: 0.5, vitA: 20, vitC: 900, vitD: 0, calcio: 15, ferro: 0.5, magnesio: 15, potassio: 200, zinco: 0.15, sodio: 9, vitB12: 0 }, ml: 300 },
-  { terms: ["suco de goiaba", "suco goiaba"], label: "Suco de goiaba", baseAmount: "300 ml", values: { calories: 135, protein: 0.9, carbs: 33, fat: 0.3, fiber: 1.5, vitA: 45, vitC: 150, vitD: 0, calcio: 20, ferro: 0.5, magnesio: 15, potassio: 280, zinco: 0.2, sodio: 9, vitB12: 0 }, ml: 300 },
-  { terms: ["suco de maca", "suco maca"], label: "Suco de maçã", baseAmount: "300 ml", values: { calories: 130, protein: 0.3, carbs: 32, fat: 0.2, fiber: 0.5, vitA: 0, vitC: 3, vitD: 0, calcio: 15, ferro: 0.4, magnesio: 8, potassio: 200, zinco: 0.1, sodio: 9, vitB12: 0 }, ml: 300 },
-  { terms: ["suco de cenoura", "suco cenoura"], label: "Suco de cenoura", baseAmount: "300 ml", values: { calories: 110, protein: 1.5, carbs: 26, fat: 0.3, fiber: 1.5, vitA: 1600, vitC: 20, vitD: 0, calcio: 60, ferro: 0.9, magnesio: 30, potassio: 700, zinco: 0.5, sodio: 180, vitB12: 0 }, ml: 300 },
-  { terms: ["suco verde"], label: "Suco verde (detox)", baseAmount: "300 ml", values: { calories: 100, protein: 1.5, carbs: 23, fat: 0.3, fiber: 2.5, vitA: 250, vitC: 40, vitD: 0, calcio: 60, ferro: 1.2, magnesio: 40, potassio: 400, zinco: 0.4, sodio: 60, vitB12: 0 }, ml: 300 },
-  { terms: ["vitamina de banana"], label: "Vitamina de banana", baseAmount: "300 ml", values: { calories: 220, protein: 7, carbs: 35, fat: 6, fiber: 1.5, vitA: 40, vitC: 10, vitD: 0.5, calcio: 200, ferro: 0.3, magnesio: 35, potassio: 450, zinco: 0.6, sodio: 70, vitB12: 0.55 }, ml: 300 },
-  { terms: ["vitamina de abacate", "vitamina de abacate com leite"], label: "Vitamina de abacate", baseAmount: "300 ml", values: { calories: 260, protein: 6, carbs: 26, fat: 15, fiber: 3.5, vitA: 30, vitC: 8, vitD: 0.5, calcio: 190, ferro: 0.5, magnesio: 40, potassio: 550, zinco: 0.7, sodio: 65, vitB12: 0.5 }, ml: 300 },
-  { terms: ["suco industrializado", "suco de caixinha"], label: "Suco industrializado (caixinha)", baseAmount: "200 ml", values: { calories: 90, protein: 0, carbs: 22, fat: 0, fiber: 0, vitA: 5, vitC: 20, vitD: 0, calcio: 10, ferro: 0.2, magnesio: 5, potassio: 60, zinco: 0.1, sodio: 30, vitB12: 0 }, ml: 200 },
-  { terms: ["cafe com leite"], label: "Café com leite", baseAmount: "1 xícara (200 ml)", values: { calories: 60, protein: 3, carbs: 6, fat: 2.5, fiber: 0, vitA: 25, vitC: 0, vitD: 0.3, calcio: 100, ferro: 0.1, magnesio: 12, potassio: 150, zinco: 0.4, sodio: 45, vitB12: 0.4 }, ml: 200 },
-  { terms: ["cafe preto", "cafezinho", "cafe"], label: "Café preto", baseAmount: "1 xícara (50 ml)", values: { calories: 2, protein: 0.3, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 2, ferro: 0, magnesio: 3, potassio: 30, zinco: 0, sodio: 2, vitB12: 0 }, ml: 50 },
-  { terms: ["cha de camomila", "cha verde", "cha mate", "cha preto", "cha"], label: "Chá (sem açúcar)", baseAmount: "1 xícara (200 ml)", values: { calories: 2, protein: 0, carbs: 0.5, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 2, ferro: 0, magnesio: 2, potassio: 20, zinco: 0, sodio: 4, vitB12: 0 }, ml: 200 },
-  { terms: ["refrigerante", "coca cola", "coca"], label: "Refrigerante", baseAmount: "1 lata (350 ml)", values: { calories: 140, protein: 0, carbs: 37, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 5, ferro: 0, magnesio: 0, potassio: 5, zinco: 0, sodio: 35, vitB12: 0 }, ml: 350 },
-  { terms: ["cerveja"], label: "Cerveja", baseAmount: "1 lata (350 ml)", values: { calories: 150, protein: 1.6, carbs: 12, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 10, ferro: 0.1, magnesio: 20, potassio: 90, zinco: 0.1, sodio: 15, vitB12: 0 }, ml: 350 },
-  { terms: ["agua de coco"], label: "Água de coco", baseAmount: "1 copo (200 ml)", values: { calories: 40, protein: 0.6, carbs: 9, fat: 0.1, fiber: 0, vitA: 0, vitC: 5, vitD: 0, calcio: 30, ferro: 0.5, magnesio: 45, potassio: 470, zinco: 0.2, sodio: 50, vitB12: 0 }, ml: 200 },
-  { terms: ["chocolate ao leite", "chocolate"], label: "Chocolate ao leite", baseAmount: "1 barra pequena (25 g)", values: { calories: 130, protein: 1.9, carbs: 15, fat: 7.3, fiber: 0.8, vitA: 5, vitC: 0, vitD: 0, calcio: 55, ferro: 0.6, magnesio: 15, potassio: 90, zinco: 0.4, sodio: 20, vitB12: 0.06 }, grams: 25 },
-  { terms: ["barra de cereal"], label: "Barra de cereal", baseAmount: "1 unidade (25 g)", values: { calories: 95, protein: 1.3, carbs: 18, fat: 2, fiber: 1.2, vitA: 0, vitC: 0, vitD: 0, calcio: 15, ferro: 0.8, magnesio: 15, potassio: 60, zinco: 0.3, sodio: 30, vitB12: 0 }, grams: 25 },
-  { terms: ["castanha do para", "castanha"], label: "Castanha-do-pará", baseAmount: "5 unidades (15 g)", values: { calories: 92, protein: 2, carbs: 1.7, fat: 9.3, fiber: 1, vitA: 0, vitC: 0, vitD: 0, calcio: 25, ferro: 0.4, magnesio: 55, potassio: 100, zinco: 0.7, sodio: 0.3, vitB12: 0 }, grams: 15 },
-  { terms: ["amendoim"], label: "Amendoim", baseAmount: "30 g", values: { calories: 170, protein: 7.3, carbs: 6, fat: 14.5, fiber: 2.5, vitA: 0, vitC: 0, vitD: 0, calcio: 20, ferro: 0.6, magnesio: 48, potassio: 200, zinco: 0.9, sodio: 50, vitB12: 0 }, grams: 30 },
-  { terms: ["pipoca"], label: "Pipoca", baseAmount: "30 g", values: { calories: 110, protein: 2.3, carbs: 22, fat: 1.5, fiber: 4, vitA: 1, vitC: 0, vitD: 0, calcio: 2, ferro: 0.3, magnesio: 30, potassio: 70, zinco: 0.3, sodio: 140, vitB12: 0 }, grams: 30 },
-  { terms: ["manteiga"], label: "Manteiga", baseAmount: "1 colher de chá (5 g)", values: { calories: 36, protein: 0, carbs: 0, fat: 4, fiber: 0, vitA: 35, vitC: 0, vitD: 0.1, calcio: 1, ferro: 0, magnesio: 0, potassio: 1, zinco: 0, sodio: 40, vitB12: 0 }, grams: 5 },
-  { terms: ["margarina"], label: "Margarina", baseAmount: "1 colher de chá (5 g)", values: { calories: 30, protein: 0, carbs: 0, fat: 3.3, fiber: 0, vitA: 40, vitC: 0, vitD: 0.2, calcio: 1, ferro: 0, magnesio: 0, potassio: 1, zinco: 0, sodio: 35, vitB12: 0 }, grams: 5 },
-  { terms: ["geleia de frutas", "geleia"], label: "Geleia de frutas", baseAmount: "1 colher de sopa (20 g)", values: { calories: 50, protein: 0.1, carbs: 13, fat: 0, fiber: 0.2, vitA: 1, vitC: 2, vitD: 0, calcio: 2, ferro: 0.1, magnesio: 1, potassio: 15, zinco: 0, sodio: 2, vitB12: 0 }, grams: 20 },
-  { terms: ["mel"], label: "Mel", baseAmount: "1 colher de sopa (20 g)", values: { calories: 60, protein: 0.1, carbs: 16, fat: 0, fiber: 0, vitA: 0, vitC: 0.5, vitD: 0, calcio: 1, ferro: 0.1, magnesio: 0.4, potassio: 10, zinco: 0, sodio: 1, vitB12: 0 }, grams: 20 },
-  { terms: ["achocolatado"], label: "Achocolatado", baseAmount: "1 copo (200 ml)", values: { calories: 150, protein: 6, carbs: 20, fat: 5, fiber: 1, vitA: 50, vitC: 1, vitD: 1, calcio: 200, ferro: 0.5, magnesio: 30, potassio: 280, zinco: 0.8, sodio: 90, vitB12: 0.7 }, ml: 200 },
-  { terms: ["pizza"], label: "Pizza (fatia)", baseAmount: "1 fatia (100 g)", values: { calories: 266, protein: 11, carbs: 33, fat: 10, fiber: 2.3, vitA: 30, vitC: 2, vitD: 0.1, calcio: 130, ferro: 1.3, magnesio: 20, potassio: 180, zinco: 1.2, sodio: 600, vitB12: 0.5 }, grams: 100 },
-  { terms: ["hamburguer"], label: "Hambúrguer (lanche)", baseAmount: "1 unidade (150 g)", values: { calories: 400, protein: 20, carbs: 33, fat: 21, fiber: 1.5, vitA: 20, vitC: 1, vitD: 0.2, calcio: 80, ferro: 2.5, magnesio: 25, potassio: 300, zinco: 3, sodio: 700, vitB12: 1.8 }, count: 1 },
-  { terms: ["sanduiche natural"], label: "Sanduíche natural", baseAmount: "1 unidade", values: { calories: 220, protein: 9, carbs: 28, fat: 8, fiber: 2, vitA: 40, vitC: 5, vitD: 0, calcio: 60, ferro: 1, magnesio: 20, potassio: 200, zinco: 0.6, sodio: 350, vitB12: 0.3 }, count: 1 },
-  { terms: ["lasanha"], label: "Lasanha", baseAmount: "100 g", values: { calories: 150, protein: 8, carbs: 15, fat: 6.5, fiber: 1, vitA: 40, vitC: 2, vitD: 0, calcio: 110, ferro: 0.8, magnesio: 15, potassio: 150, zinco: 0.9, sodio: 380, vitB12: 0.5 }, grams: 100 },
-  { terms: ["feijoada"], label: "Feijoada", baseAmount: "100 g", values: { calories: 175, protein: 12, carbs: 12, fat: 9, fiber: 4, vitA: 5, vitC: 1, vitD: 0, calcio: 20, ferro: 1.6, magnesio: 25, potassio: 250, zinco: 1.5, sodio: 420, vitB12: 1 }, grams: 100 },
-  { terms: ["estrogonofe de frango", "estrogonofe"], label: "Estrogonofe de frango", baseAmount: "100 g", values: { calories: 165, protein: 13, carbs: 6, fat: 10, fiber: 0.5, vitA: 15, vitC: 1, vitD: 0.1, calcio: 30, ferro: 0.5, magnesio: 15, potassio: 220, zinco: 0.7, sodio: 330, vitB12: 0.3 }, grams: 100 },
-  { terms: ["frango a parmegiana", "frango empanado"], label: "Frango à parmegiana", baseAmount: "1 unidade (150 g)", values: { calories: 380, protein: 28, carbs: 20, fat: 20, fiber: 1.5, vitA: 40, vitC: 2, vitD: 0.2, calcio: 120, ferro: 1.2, magnesio: 25, potassio: 300, zinco: 1.5, sodio: 520, vitB12: 0.4 }, grams: 150 },
-  { terms: ["pure de batata"], label: "Purê de batata", baseAmount: "100 g", values: { calories: 105, protein: 2, carbs: 16, fat: 4, fiber: 1.3, vitA: 15, vitC: 8, vitD: 0, calcio: 25, ferro: 0.3, magnesio: 15, potassio: 250, zinco: 0.3, sodio: 220, vitB12: 0.1 }, grams: 100 },
-  { terms: ["polenta"], label: "Polenta", baseAmount: "100 g", values: { calories: 85, protein: 2, carbs: 18, fat: 0.5, fiber: 1, vitA: 2, vitC: 0, vitD: 0, calcio: 5, ferro: 0.3, magnesio: 10, potassio: 40, zinco: 0.3, sodio: 180, vitB12: 0 }, grams: 100 },
-  { terms: ["quinoa cozida", "quinoa"], label: "Quinoa cozida", baseAmount: "100 g", values: { calories: 120, protein: 4.4, carbs: 21, fat: 1.9, fiber: 2.8, vitA: 0, vitC: 0, vitD: 0, calcio: 17, ferro: 1.5, magnesio: 64, potassio: 170, zinco: 1.1, sodio: 5, vitB12: 0 }, grams: 100 },
-  { terms: ["pepino"], label: "Pepino", baseAmount: "100 g", values: { calories: 15, protein: 0.7, carbs: 3.6, fat: 0.1, fiber: 0.5, vitA: 3, vitC: 3, vitD: 0, calcio: 15, ferro: 0.3, magnesio: 12, potassio: 150, zinco: 0.2, sodio: 2, vitB12: 0 }, grams: 100 },
-  { terms: ["pera"], label: "Pera", baseAmount: "1 unidade (130 g)", values: { calories: 75, protein: 0.5, carbs: 20, fat: 0.2, fiber: 3.5, vitA: 2, vitC: 5, vitD: 0, calcio: 10, ferro: 0.2, magnesio: 8, potassio: 150, zinco: 0.1, sodio: 1, vitB12: 0 }, count: 1 },
-  { terms: ["kiwi"], label: "Kiwi", baseAmount: "1 unidade (75 g)", values: { calories: 46, protein: 0.9, carbs: 11, fat: 0.4, fiber: 2.3, vitA: 4, vitC: 70, vitD: 0, calcio: 25, ferro: 0.2, magnesio: 12, potassio: 210, zinco: 0.1, sodio: 2, vitB12: 0 }, count: 1 },
-  { terms: ["laranja"], label: "Laranja", baseAmount: "1 unidade (150 g)", values: { calories: 70, protein: 1.4, carbs: 17, fat: 0.2, fiber: 3, vitA: 20, vitC: 70, vitD: 0, calcio: 55, ferro: 0.2, magnesio: 15, potassio: 250, zinco: 0.1, sodio: 0, vitB12: 0 }, count: 1 },
-  { terms: ["limao"], label: "Limão", baseAmount: "1 unidade (70 g)", values: { calories: 20, protein: 0.5, carbs: 6.5, fat: 0.2, fiber: 1.9, vitA: 1, vitC: 35, vitD: 0, calcio: 18, ferro: 0.4, magnesio: 6, potassio: 90, zinco: 0.1, sodio: 1, vitB12: 0 }, count: 1 },
+  { terms: ["feijao", "feijao cozido"], label: "Feijão cozido", baseAmount: "100 g", values: { calories: 76, protein: 4.8, carbs: 13.6, fat: 0.5, fiber: 8.4, vitA: 0, vitC: 1, vitD: 0, calcio: 27, ferro: 1.5, magnesio: 42, potassio: 260, zinco: 1 }, grams: 100 },
+  { terms: ["lentilha"], label: "Lentilha cozida", baseAmount: "100 g", values: { calories: 116, protein: 9, carbs: 20, fat: 0.4, fiber: 8, vitA: 1, vitC: 1.5, vitD: 0, calcio: 19, ferro: 3.3, magnesio: 36, potassio: 370, zinco: 1.3 }, grams: 100 },
+  { terms: ["grao de bico"], label: "Grão de bico cozido", baseAmount: "100 g", values: { calories: 164, protein: 8.9, carbs: 27, fat: 2.6, fiber: 7.6, vitA: 1, vitC: 1.3, vitD: 0, calcio: 49, ferro: 2.9, magnesio: 48, potassio: 290, zinco: 1.5 }, grams: 100 },
+  { terms: ["brocolis"], label: "Brócolis cozido", baseAmount: "100 g", values: { calories: 35, protein: 2.8, carbs: 7, fat: 0.4, fiber: 3.3, vitA: 30, vitC: 65, vitD: 0, calcio: 40, ferro: 0.7, magnesio: 20, potassio: 290, zinco: 0.4 }, grams: 100 },
+  { terms: ["couve refogada", "couve"], label: "Couve refogada", baseAmount: "100 g", values: { calories: 35, protein: 2, carbs: 4, fat: 2, fiber: 3, vitA: 350, vitC: 55, vitD: 0, calcio: 130, ferro: 1, magnesio: 25, potassio: 220, zinco: 0.3 }, grams: 100 },
+  { terms: ["tomate"], label: "Tomate", baseAmount: "1 unidade (100 g)", values: { calories: 18, protein: 0.9, carbs: 3.9, fat: 0.2, fiber: 1.2, vitA: 40, vitC: 14, vitD: 0, calcio: 10, ferro: 0.3, magnesio: 11, potassio: 240, zinco: 0.2 }, grams: 100 },
+  { terms: ["cenoura"], label: "Cenoura crua", baseAmount: "100 g", values: { calories: 41, protein: 0.9, carbs: 10, fat: 0.2, fiber: 2.8, vitA: 830, vitC: 6, vitD: 0, calcio: 33, ferro: 0.3, magnesio: 12, potassio: 320, zinco: 0.2 }, grams: 100 },
+  { terms: ["alface"], label: "Alface", baseAmount: "50 g", values: { calories: 7, protein: 0.7, carbs: 1.2, fat: 0.1, fiber: 0.7, vitA: 75, vitC: 5, vitD: 0, calcio: 18, ferro: 0.4, magnesio: 7, potassio: 100, zinco: 0.1 }, grams: 50 },
+  { terms: ["salada mista", "salada"], label: "Salada mista", baseAmount: "100 g", values: { calories: 25, protein: 1.2, carbs: 4, fat: 0.5, fiber: 1.8, vitA: 150, vitC: 15, vitD: 0, calcio: 25, ferro: 0.5, magnesio: 12, potassio: 200, zinco: 0.2 }, grams: 100 },
+  { terms: ["banana"], label: "Banana", baseAmount: "1 unidade", values: { calories: 90, protein: 1.1, carbs: 23, fat: 0.3, fiber: 2.6, vitA: 3, vitC: 9, vitD: 0, calcio: 6, ferro: 0.3, magnesio: 30, potassio: 380, zinco: 0.2 }, count: 1 },
+  { terms: ["maca"], label: "Maçã", baseAmount: "1 unidade (130 g)", values: { calories: 68, protein: 0.3, carbs: 18, fat: 0.2, fiber: 3, vitA: 4, vitC: 6, vitD: 0, calcio: 8, ferro: 0.2, magnesio: 6, potassio: 150, zinco: 0.1 }, count: 1 },
+  { terms: ["mamao"], label: "Mamão", baseAmount: "100 g", values: { calories: 40, protein: 0.6, carbs: 10, fat: 0.1, fiber: 1.8, vitA: 55, vitC: 60, vitD: 0, calcio: 20, ferro: 0.3, magnesio: 10, potassio: 180, zinco: 0.1 }, grams: 100 },
+  { terms: ["morango"], label: "Morango", baseAmount: "100 g", values: { calories: 32, protein: 0.7, carbs: 7.7, fat: 0.3, fiber: 2, vitA: 1, vitC: 60, vitD: 0, calcio: 16, ferro: 0.4, magnesio: 13, potassio: 150, zinco: 0.1 }, grams: 100 },
+  { terms: ["abacaxi"], label: "Abacaxi", baseAmount: "100 g", values: { calories: 50, protein: 0.5, carbs: 13, fat: 0.1, fiber: 1.4, vitA: 3, vitC: 48, vitD: 0, calcio: 13, ferro: 0.3, magnesio: 12, potassio: 110, zinco: 0.1 }, grams: 100 },
+  { terms: ["manga"], label: "Manga", baseAmount: "1 unidade (200 g)", values: { calories: 120, protein: 1.6, carbs: 30, fat: 0.6, fiber: 3.4, vitA: 110, vitC: 65, vitD: 0, calcio: 22, ferro: 0.3, magnesio: 20, potassio: 340, zinco: 0.2 }, count: 1 },
+  { terms: ["melancia"], label: "Melancia", baseAmount: "1 fatia (150 g)", values: { calories: 46, protein: 0.9, carbs: 11, fat: 0.2, fiber: 0.6, vitA: 70, vitC: 12, vitD: 0, calcio: 11, ferro: 0.4, magnesio: 15, potassio: 170, zinco: 0.15 }, grams: 150 },
+  { terms: ["uva"], label: "Uva", baseAmount: "100 g", values: { calories: 69, protein: 0.7, carbs: 18, fat: 0.2, fiber: 0.9, vitA: 3, vitC: 4, vitD: 0, calcio: 12, ferro: 0.4, magnesio: 7, potassio: 190, zinco: 0.1 }, grams: 100 },
+  { terms: ["abacate"], label: "Abacate", baseAmount: "100 g", values: { calories: 160, protein: 2, carbs: 8.5, fat: 14.7, fiber: 6.7, vitA: 7, vitC: 10, vitD: 0, calcio: 12, ferro: 0.6, magnesio: 29, potassio: 480, zinco: 0.6 }, grams: 100 },
+  { terms: ["melao"], label: "Melão", baseAmount: "100 g", values: { calories: 30, protein: 0.8, carbs: 7.5, fat: 0.1, fiber: 0.5, vitA: 5, vitC: 10, vitD: 0, calcio: 9, ferro: 0.2, magnesio: 10, potassio: 300, zinco: 0.1 }, grams: 100 },
+  { terms: ["mirtilo", "blueberry", "blueberries"], label: "Mirtilo (blueberry)", baseAmount: "100 g", values: { calories: 57, protein: 0.7, carbs: 14.5, fat: 0.3, fiber: 2.4, vitA: 3, vitC: 9.7, vitD: 0, calcio: 6, ferro: 0.3, magnesio: 6, potassio: 77, zinco: 0.2 }, grams: 100 },
+  { terms: ["suco de laranja", "suco laranja"], label: "Suco de laranja", baseAmount: "300 ml", values: { calories: 135, protein: 2, carbs: 31, fat: 0.3, fiber: 0.5, vitA: 15, vitC: 90, vitD: 0, calcio: 30, ferro: 0.5, magnesio: 30, potassio: 500, zinco: 0.2 }, ml: 300 },
+  { terms: ["suco de limao", "suco limao", "limonada"], label: "Suco de limão (limonada)", baseAmount: "300 ml", values: { calories: 90, protein: 0.3, carbs: 23, fat: 0, fiber: 0.3, vitA: 0, vitC: 35, vitD: 0, calcio: 15, ferro: 0.2, magnesio: 10, potassio: 130, zinco: 0.1 }, ml: 300 },
+  { terms: ["suco de uva", "suco uva"], label: "Suco de uva", baseAmount: "300 ml", values: { calories: 150, protein: 0.6, carbs: 37, fat: 0, fiber: 0.3, vitA: 0, vitC: 3, vitD: 0, calcio: 25, ferro: 0.9, magnesio: 25, potassio: 300, zinco: 0.2 }, ml: 300 },
+  { terms: ["suco de abacaxi", "suco abacaxi"], label: "Suco de abacaxi", baseAmount: "300 ml", values: { calories: 120, protein: 0.6, carbs: 30, fat: 0.2, fiber: 0.5, vitA: 3, vitC: 40, vitD: 0, calcio: 20, ferro: 0.5, magnesio: 20, potassio: 200, zinco: 0.2 }, ml: 300 },
+  { terms: ["suco de maracuja", "suco maracuja"], label: "Suco de maracujá", baseAmount: "300 ml", values: { calories: 140, protein: 0.7, carbs: 35, fat: 0.1, fiber: 0.6, vitA: 30, vitC: 45, vitD: 0, calcio: 15, ferro: 0.5, magnesio: 15, potassio: 300, zinco: 0.2 }, ml: 300 },
+  { terms: ["suco de manga", "suco manga"], label: "Suco de manga", baseAmount: "300 ml", values: { calories: 165, protein: 0.8, carbs: 41, fat: 0.3, fiber: 0.6, vitA: 80, vitC: 50, vitD: 0, calcio: 20, ferro: 0.4, magnesio: 15, potassio: 250, zinco: 0.2 }, ml: 300 },
+  { terms: ["suco de morango", "suco morango"], label: "Suco de morango", baseAmount: "300 ml", values: { calories: 110, protein: 0.8, carbs: 27, fat: 0.3, fiber: 0.6, vitA: 3, vitC: 50, vitD: 0, calcio: 25, ferro: 0.6, magnesio: 20, potassio: 220, zinco: 0.2 }, ml: 300 },
+  { terms: ["suco de melancia", "suco melancia"], label: "Suco de melancia", baseAmount: "300 ml", values: { calories: 90, protein: 0.7, carbs: 22, fat: 0.2, fiber: 0.3, vitA: 60, vitC: 20, vitD: 0, calcio: 15, ferro: 0.5, magnesio: 20, potassio: 220, zinco: 0.2 }, ml: 300 },
+  { terms: ["suco de caju", "suco caju"], label: "Suco de caju", baseAmount: "300 ml", values: { calories: 135, protein: 0.5, carbs: 33, fat: 0.2, fiber: 0.3, vitA: 5, vitC: 130, vitD: 0, calcio: 10, ferro: 0.4, magnesio: 15, potassio: 180, zinco: 0.15 }, ml: 300 },
+  { terms: ["suco de acerola", "suco acerola"], label: "Suco de acerola", baseAmount: "300 ml", values: { calories: 90, protein: 0.6, carbs: 21, fat: 0.2, fiber: 0.5, vitA: 20, vitC: 900, vitD: 0, calcio: 15, ferro: 0.5, magnesio: 15, potassio: 200, zinco: 0.15 }, ml: 300 },
+  { terms: ["suco de goiaba", "suco goiaba"], label: "Suco de goiaba", baseAmount: "300 ml", values: { calories: 135, protein: 0.9, carbs: 33, fat: 0.3, fiber: 1.5, vitA: 45, vitC: 150, vitD: 0, calcio: 20, ferro: 0.5, magnesio: 15, potassio: 280, zinco: 0.2 }, ml: 300 },
+  { terms: ["suco de maca", "suco maca"], label: "Suco de maçã", baseAmount: "300 ml", values: { calories: 130, protein: 0.3, carbs: 32, fat: 0.2, fiber: 0.5, vitA: 0, vitC: 3, vitD: 0, calcio: 15, ferro: 0.4, magnesio: 8, potassio: 200, zinco: 0.1 }, ml: 300 },
+  { terms: ["suco de cenoura", "suco cenoura"], label: "Suco de cenoura", baseAmount: "300 ml", values: { calories: 110, protein: 1.5, carbs: 26, fat: 0.3, fiber: 1.5, vitA: 1600, vitC: 20, vitD: 0, calcio: 60, ferro: 0.9, magnesio: 30, potassio: 700, zinco: 0.5 }, ml: 300 },
+  { terms: ["suco verde"], label: "Suco verde (detox)", baseAmount: "300 ml", values: { calories: 100, protein: 1.5, carbs: 23, fat: 0.3, fiber: 2.5, vitA: 250, vitC: 40, vitD: 0, calcio: 60, ferro: 1.2, magnesio: 40, potassio: 400, zinco: 0.4 }, ml: 300 },
+  { terms: ["vitamina de banana"], label: "Vitamina de banana", baseAmount: "300 ml", values: { calories: 220, protein: 7, carbs: 35, fat: 6, fiber: 1.5, vitA: 40, vitC: 10, vitD: 0.5, calcio: 200, ferro: 0.3, magnesio: 35, potassio: 450, zinco: 0.6 }, ml: 300 },
+  { terms: ["vitamina de abacate", "vitamina de abacate com leite"], label: "Vitamina de abacate", baseAmount: "300 ml", values: { calories: 260, protein: 6, carbs: 26, fat: 15, fiber: 3.5, vitA: 30, vitC: 8, vitD: 0.5, calcio: 190, ferro: 0.5, magnesio: 40, potassio: 550, zinco: 0.7 }, ml: 300 },
+  { terms: ["suco industrializado", "suco de caixinha"], label: "Suco industrializado (caixinha)", baseAmount: "200 ml", values: { calories: 90, protein: 0, carbs: 22, fat: 0, fiber: 0, vitA: 5, vitC: 20, vitD: 0, calcio: 10, ferro: 0.2, magnesio: 5, potassio: 60, zinco: 0.1 }, ml: 200 },
+  { terms: ["cafe com leite"], label: "Café com leite", baseAmount: "1 xícara (200 ml)", values: { calories: 60, protein: 3, carbs: 6, fat: 2.5, fiber: 0, vitA: 25, vitC: 0, vitD: 0.3, calcio: 100, ferro: 0.1, magnesio: 12, potassio: 150, zinco: 0.4 }, ml: 200 },
+  { terms: ["cafe preto", "cafezinho", "cafe"], label: "Café preto", baseAmount: "1 xícara (50 ml)", values: { calories: 2, protein: 0.3, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 2, ferro: 0, magnesio: 3, potassio: 30, zinco: 0 }, ml: 50 },
+  { terms: ["cha de camomila", "cha verde", "cha mate", "cha preto", "cha"], label: "Chá (sem açúcar)", baseAmount: "1 xícara (200 ml)", values: { calories: 2, protein: 0, carbs: 0.5, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 2, ferro: 0, magnesio: 2, potassio: 20, zinco: 0 }, ml: 200 },
+  { terms: ["refrigerante", "coca cola", "coca"], label: "Refrigerante", baseAmount: "1 lata (350 ml)", values: { calories: 140, protein: 0, carbs: 37, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 5, ferro: 0, magnesio: 0, potassio: 5, zinco: 0 }, ml: 350 },
+  { terms: ["cerveja"], label: "Cerveja", baseAmount: "1 lata (350 ml)", values: { calories: 150, protein: 1.6, carbs: 12, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 10, ferro: 0.1, magnesio: 20, potassio: 90, zinco: 0.1 }, ml: 350 },
+  { terms: ["agua de coco"], label: "Água de coco", baseAmount: "1 copo (200 ml)", values: { calories: 40, protein: 0.6, carbs: 9, fat: 0.1, fiber: 0, vitA: 0, vitC: 5, vitD: 0, calcio: 30, ferro: 0.5, magnesio: 45, potassio: 470, zinco: 0.2 }, ml: 200 },
+  { terms: ["chocolate ao leite", "chocolate"], label: "Chocolate ao leite", baseAmount: "1 barra pequena (25 g)", values: { calories: 130, protein: 1.9, carbs: 15, fat: 7.3, fiber: 0.8, vitA: 5, vitC: 0, vitD: 0, calcio: 55, ferro: 0.6, magnesio: 15, potassio: 90, zinco: 0.4 }, grams: 25 },
+  { terms: ["barra de cereal"], label: "Barra de cereal", baseAmount: "1 unidade (25 g)", values: { calories: 95, protein: 1.3, carbs: 18, fat: 2, fiber: 1.2, vitA: 0, vitC: 0, vitD: 0, calcio: 15, ferro: 0.8, magnesio: 15, potassio: 60, zinco: 0.3 }, grams: 25 },
+  { terms: ["castanha do para", "castanha"], label: "Castanha-do-pará", baseAmount: "5 unidades (15 g)", values: { calories: 92, protein: 2, carbs: 1.7, fat: 9.3, fiber: 1, vitA: 0, vitC: 0, vitD: 0, calcio: 25, ferro: 0.4, magnesio: 55, potassio: 100, zinco: 0.7 }, grams: 15 },
+  { terms: ["amendoim"], label: "Amendoim", baseAmount: "30 g", values: { calories: 170, protein: 7.3, carbs: 6, fat: 14.5, fiber: 2.5, vitA: 0, vitC: 0, vitD: 0, calcio: 20, ferro: 0.6, magnesio: 48, potassio: 200, zinco: 0.9 }, grams: 30 },
+  { terms: ["pipoca"], label: "Pipoca", baseAmount: "30 g", values: { calories: 110, protein: 2.3, carbs: 22, fat: 1.5, fiber: 4, vitA: 1, vitC: 0, vitD: 0, calcio: 2, ferro: 0.3, magnesio: 30, potassio: 70, zinco: 0.3 }, grams: 30 },
+  { terms: ["manteiga"], label: "Manteiga", baseAmount: "1 colher de chá (5 g)", values: { calories: 36, protein: 0, carbs: 0, fat: 4, fiber: 0, vitA: 35, vitC: 0, vitD: 0.1, calcio: 1, ferro: 0, magnesio: 0, potassio: 1, zinco: 0 }, grams: 5 },
+  { terms: ["margarina"], label: "Margarina", baseAmount: "1 colher de chá (5 g)", values: { calories: 30, protein: 0, carbs: 0, fat: 3.3, fiber: 0, vitA: 40, vitC: 0, vitD: 0.2, calcio: 1, ferro: 0, magnesio: 0, potassio: 1, zinco: 0 }, grams: 5 },
+  { terms: ["geleia de frutas", "geleia"], label: "Geleia de frutas", baseAmount: "1 colher de sopa (20 g)", values: { calories: 50, protein: 0.1, carbs: 13, fat: 0, fiber: 0.2, vitA: 1, vitC: 2, vitD: 0, calcio: 2, ferro: 0.1, magnesio: 1, potassio: 15, zinco: 0 }, grams: 20 },
+  { terms: ["mel"], label: "Mel", baseAmount: "1 colher de sopa (20 g)", values: { calories: 60, protein: 0.1, carbs: 16, fat: 0, fiber: 0, vitA: 0, vitC: 0.5, vitD: 0, calcio: 1, ferro: 0.1, magnesio: 0.4, potassio: 10, zinco: 0 }, grams: 20 },
+  { terms: ["achocolatado"], label: "Achocolatado", baseAmount: "1 copo (200 ml)", values: { calories: 150, protein: 6, carbs: 20, fat: 5, fiber: 1, vitA: 50, vitC: 1, vitD: 1, calcio: 200, ferro: 0.5, magnesio: 30, potassio: 280, zinco: 0.8 }, ml: 200 },
+  { terms: ["pizza"], label: "Pizza (fatia)", baseAmount: "1 fatia (100 g)", values: { calories: 266, protein: 11, carbs: 33, fat: 10, fiber: 2.3, vitA: 30, vitC: 2, vitD: 0.1, calcio: 130, ferro: 1.3, magnesio: 20, potassio: 180, zinco: 1.2 }, grams: 100 },
+  { terms: ["hamburguer"], label: "Hambúrguer (lanche)", baseAmount: "1 unidade (150 g)", values: { calories: 400, protein: 20, carbs: 33, fat: 21, fiber: 1.5, vitA: 20, vitC: 1, vitD: 0.2, calcio: 80, ferro: 2.5, magnesio: 25, potassio: 300, zinco: 3 }, count: 1 },
+  { terms: ["sanduiche natural"], label: "Sanduíche natural", baseAmount: "1 unidade", values: { calories: 220, protein: 9, carbs: 28, fat: 8, fiber: 2, vitA: 40, vitC: 5, vitD: 0, calcio: 60, ferro: 1, magnesio: 20, potassio: 200, zinco: 0.6 }, count: 1 },
+  { terms: ["lasanha"], label: "Lasanha", baseAmount: "100 g", values: { calories: 150, protein: 8, carbs: 15, fat: 6.5, fiber: 1, vitA: 40, vitC: 2, vitD: 0, calcio: 110, ferro: 0.8, magnesio: 15, potassio: 150, zinco: 0.9 }, grams: 100 },
+  { terms: ["feijoada"], label: "Feijoada", baseAmount: "100 g", values: { calories: 175, protein: 12, carbs: 12, fat: 9, fiber: 4, vitA: 5, vitC: 1, vitD: 0, calcio: 20, ferro: 1.6, magnesio: 25, potassio: 250, zinco: 1.5 }, grams: 100 },
+  { terms: ["estrogonofe de frango", "estrogonofe"], label: "Estrogonofe de frango", baseAmount: "100 g", values: { calories: 165, protein: 13, carbs: 6, fat: 10, fiber: 0.5, vitA: 15, vitC: 1, vitD: 0.1, calcio: 30, ferro: 0.5, magnesio: 15, potassio: 220, zinco: 0.7 }, grams: 100 },
+  { terms: ["frango a parmegiana", "frango empanado"], label: "Frango à parmegiana", baseAmount: "1 unidade (150 g)", values: { calories: 380, protein: 28, carbs: 20, fat: 20, fiber: 1.5, vitA: 40, vitC: 2, vitD: 0.2, calcio: 120, ferro: 1.2, magnesio: 25, potassio: 300, zinco: 1.5 }, grams: 150 },
+  { terms: ["pure de batata"], label: "Purê de batata", baseAmount: "100 g", values: { calories: 105, protein: 2, carbs: 16, fat: 4, fiber: 1.3, vitA: 15, vitC: 8, vitD: 0, calcio: 25, ferro: 0.3, magnesio: 15, potassio: 250, zinco: 0.3 }, grams: 100 },
+  { terms: ["polenta"], label: "Polenta", baseAmount: "100 g", values: { calories: 85, protein: 2, carbs: 18, fat: 0.5, fiber: 1, vitA: 2, vitC: 0, vitD: 0, calcio: 5, ferro: 0.3, magnesio: 10, potassio: 40, zinco: 0.3 }, grams: 100 },
+  { terms: ["quinoa cozida", "quinoa"], label: "Quinoa cozida", baseAmount: "100 g", values: { calories: 120, protein: 4.4, carbs: 21, fat: 1.9, fiber: 2.8, vitA: 0, vitC: 0, vitD: 0, calcio: 17, ferro: 1.5, magnesio: 64, potassio: 170, zinco: 1.1 }, grams: 100 },
+  { terms: ["pepino"], label: "Pepino", baseAmount: "100 g", values: { calories: 15, protein: 0.7, carbs: 3.6, fat: 0.1, fiber: 0.5, vitA: 3, vitC: 3, vitD: 0, calcio: 15, ferro: 0.3, magnesio: 12, potassio: 150, zinco: 0.2 }, grams: 100 },
+  { terms: ["pera"], label: "Pera", baseAmount: "1 unidade (130 g)", values: { calories: 75, protein: 0.5, carbs: 20, fat: 0.2, fiber: 3.5, vitA: 2, vitC: 5, vitD: 0, calcio: 10, ferro: 0.2, magnesio: 8, potassio: 150, zinco: 0.1 }, count: 1 },
+  { terms: ["kiwi"], label: "Kiwi", baseAmount: "1 unidade (75 g)", values: { calories: 46, protein: 0.9, carbs: 11, fat: 0.4, fiber: 2.3, vitA: 4, vitC: 70, vitD: 0, calcio: 25, ferro: 0.2, magnesio: 12, potassio: 210, zinco: 0.1 }, count: 1 },
+  { terms: ["laranja"], label: "Laranja", baseAmount: "1 unidade (150 g)", values: { calories: 70, protein: 1.4, carbs: 17, fat: 0.2, fiber: 3, vitA: 20, vitC: 70, vitD: 0, calcio: 55, ferro: 0.2, magnesio: 15, potassio: 250, zinco: 0.1 }, count: 1 },
+  { terms: ["limao"], label: "Limão", baseAmount: "1 unidade (70 g)", values: { calories: 20, protein: 0.5, carbs: 6.5, fat: 0.2, fiber: 1.9, vitA: 1, vitC: 35, vitD: 0, calcio: 18, ferro: 0.4, magnesio: 6, potassio: 90, zinco: 0.1 }, count: 1 },
 ];
 
 const MEAL_TIPOS = ["Caf\u00e9 da manh\u00e3", "Lanche da manh\u00e3", "Almo\u00e7o", "Lanche da tarde", "Jantar", "Ceia", "Suplementa\u00e7\u00e3o", "Outro"];
@@ -1448,15 +1252,7 @@ const CHAVE_CALORIMETRIA = "nutri-track-calorimetria";
 const CHAVE_TREINOS = "nutri-track-treinos";
 const CHAVE_TREINO_ATIVO = "nutri-track-treino-ativo";
 const CHAVE_EXERCICIOS_CUSTOMIZADOS = "nutri-track-exercicios-customizados";
-// Esportes/atividades que a própria pessoa cadastrou (opção "Outro" no seletor de esporte do treino --
-// ver treinoSeletorEsporteTemplate()/resolverEsporteTreino()). Ao contrário de exerciciosCustomizados
-// (que sincroniza com o backend do Google), essa lista fica só no dispositivo: é apenas o nome do
-// esporte pra reaparecer no seletor da próxima vez, sem precisar digitar de novo -- não precisa de
-// sincronização entre aparelhos pra cumprir isso (o registro do treino em si, esse sim, já sincroniza
-// normalmente, incluindo o nome do esporte digitado).
-const CHAVE_ESPORTES_CUSTOMIZADOS = "nutri-track-esportes-customizados";
 const CHAVE_DIARIO_KCAL = "nutri-track-diario-kcal";
-const CHAVE_ULTIMO_DIA_PROCESSADO = "nutri-track-ultimo-dia-processado";
 
 /* ===================== medidas e aferições ===================== */
 const medidaTipos = {
@@ -1502,9 +1298,6 @@ const state = {
   // historyPanelTemplate()/acaoAlternarDiaHistorico(). null = nenhum dia expandido (só a lista de dias).
   historyDiaExpandido: null,
   nutrientAba: "macro", // "macro" | "micro"
-  // Chave do nutriente (nutrientMeta/micronutrientMeta) com o modal de informações aberto, ou null --
-  // ver nutrientInfoModalTemplate()/acaoAbrirInfoNutriente().
-  infoNutrienteAberto: null,
   mealDetalheId: null, // id da refeição aberta no modal de detalhamento, ou null
   // Controla se o campo de corrigir a data está visível dentro do modal de detalhamento -- ver
   // mealDetalheModalTemplate()/acaoAbrirEdicaoDataRefeicao(). Reseta toda vez que o modal abre/fecha.
@@ -1514,12 +1307,6 @@ const state = {
   // cada vez que a pessoa clica em "Encerrar dia" (ver acaoEncerrarDia()). Só existe UM registro por data
   // -- clicar de novo no mesmo dia substitui o anterior, pra sempre refletir o total mais atualizado.
   diarioKcal: readStorage(CHAVE_DIARIO_KCAL, []),
-  // Data (AAAA-MM-DD) do último dia de calendário que a virada automática já processou -- ver
-  // processarViradaDeDia(). Sem valor salvo ainda (primeira vez que essa versão do app roda num
-  // aparelho), assume hoje, pra NÃO fechar retroativamente, do nada, dias antigos que já passaram
-  // antes dessa função existir (esses dias antigos continuam acessíveis normalmente no Histórico,
-  // só não geram um novo registro automático no Diário de Kcal).
-  ultimoDiaProcessado: readStorage(CHAVE_ULTIMO_DIA_PROCESSADO, today()),
   // Ids dos registros do Diário de Kcal expandidos, como mapa { [id]: true } -- ver
   // diarioKcalRegistroTemplate()/acaoAlternarDiaDiarioKcal(). Cada dia expande/recolhe
   // independentemente (não é um accordion de "só um por vez" como o histórico de refeições/treinos --
@@ -1539,13 +1326,11 @@ const state = {
   altura: readStorage(CHAVE_ALTURA, null), // cm
   medidas: readStorage(CHAVE_MEDIDAS, []),
   medidaTipo: "",
-  // Usado quando medidaTipo é "peso" ou "glicemia": se a medição foi feita em jejum ou não -- pra
-  // glicemia, necessário porque os parâmetros de referência são bem diferentes num caso e no outro (ver
-  // GLICEMIA_JEJUM_FAIXAS/GLICEMIA_NAO_JEJUM_FAIXAS); pra peso, pra poder comparar pesagens em jejum de
-  // um dia com o do dia seguinte no Diário de Kcal (ver pesoJejumDoDia()) sem depender de procurar a
-  // palavra "jejum" dentro do texto livre da observação. "" = ainda não respondido (obrigatório antes de
-  // salvar nesses dois tipos); resetado ao trocar de tipo de medição e depois de salvar um registro.
-  medidaJejum: "",
+  // Só usado quando medidaTipo === "glicemia": se a medição foi feita em jejum ou não -- necessário
+  // porque os parâmetros de referência de glicemia são bem diferentes num caso e no outro (ver
+  // GLICEMIA_JEJUM_FAIXAS/GLICEMIA_NAO_JEJUM_FAIXAS). "" = ainda não respondido (obrigatório antes de
+  // salvar); resetado ao trocar de tipo de medição e depois de salvar um registro.
+  medidaGlicemiaJejum: "",
   showHistoricoMedidas: false,
   // Data do dia expandido no histórico de Medidas e Aferições (mesmo accordion por dia do histórico de
   // refeições/treinos) -- ver medidasHistoricoTemplate()/acaoAlternarDiaHistoricoMedidas(). null = nenhum
@@ -1564,12 +1349,6 @@ const state = {
   calorimetriaEditandoId: null, // idem, para calorimetria
   treinos: readStorage(CHAVE_TREINOS, []),
   treinoEsporte: "",
-  // Texto digitado quando a pessoa escolhe "Outro" no seletor de esporte, pra cadastrar uma
-  // modalidade própria -- ver treinoSeletorEsporteTemplate()/resolverEsporteTreino().
-  treinoEsporteCustom: "",
-  // Esportes cadastrados pela própria pessoa (opção "Outro"), só neste dispositivo -- ver comentário
-  // em CHAVE_ESPORTES_CUSTOMIZADOS.
-  esportesCustomizados: readStorage(CHAVE_ESPORTES_CUSTOMIZADOS, []),
   // Data do treino no registro manual (calendário suspenso) -- ver treinoFormManualTemplate(). Vazio até o
   // formulário ser montado, quando é preenchido com a data de hoje (ver treinoDataAtualOuHoje()); permite
   // lançar um treino de um dia anterior, algo que o modo cronômetro (sempre "agora") não permite.
@@ -1596,11 +1375,6 @@ const state = {
   // Data do dia expandido no histórico de treinos (accordion: um dia de cada vez, ou nenhum) -- mesma
   // lógica do histórico de refeições, ver treinoHistoryPanelTemplate()/acaoAlternarDiaHistoricoTreinos().
   historyDiaExpandidoTreinos: null,
-  // Id do treino já salvo em edição no formulário manual (ver acaoEditarTreino()), ou null quando o
-  // formulário é pra registrar um treino novo. Enquanto em edição, os grupos musculares/exercícios do
-  // registro original são preservados como estão (o formulário de edição não reconstrói o seletor de
-  // grupos musculares -- só esporte, data, horários, distância e nota são editáveis).
-  treinoEditandoId: null,
   treinoModo: "cronometro", // "cronometro" | "manual" — só é relevante quando não há treino em andamento
   // Treino em andamento (cronômetro), ou null. Formato: { esporte, date, horaInicioClock,
   // segmentoAtualInicio (timestamp ms de quando o trecho atual começou a rodar, ou null se pausado),
@@ -1618,7 +1392,6 @@ function persistCalorimetria() { writeStorage(CHAVE_CALORIMETRIA, state.calorime
 function persistTreinos() { writeStorage(CHAVE_TREINOS, state.treinos); }
 function persistTreinoAtivo() { writeStorage(CHAVE_TREINO_ATIVO, state.treinoAtivo); }
 function persistExerciciosCustomizados() { writeStorage(CHAVE_EXERCICIOS_CUSTOMIZADOS, state.exerciciosCustomizados); }
-function persistEsportesCustomizados() { writeStorage(CHAVE_ESPORTES_CUSTOMIZADOS, state.esportesCustomizados); }
 function persistDiarioKcal() { writeStorage(CHAVE_DIARIO_KCAL, state.diarioKcal); }
 
 /* ===================== helpers de derivação ===================== */
@@ -1655,25 +1428,11 @@ function consumedToday() {
 }
 function remainingToday() { const consumed = consumedToday(); const out = {}; for (const k of Object.keys(state.goals)) out[k] = state.goals[k] - consumed[k]; return out; }
 function mealTotal() { return state.preview.reduce((sum, f) => addNutrients(sum, f.values), emptyNutrients); }
-// Dias que aparecem no Histórico de refeições -- de propósito, SEM o dia de hoje: enquanto o dia não
-// vira de verdade (meia-noite no relógio do aparelho, ver processarViradaDeDia()), os registros de
-// hoje aparecem só na lista "Refeições de hoje" (mealListTemplate()), nunca duplicados aqui no
-// Histórico. Mesmo padrão em historyDaysTreinos()/historyDaysMedidas().
-function historyDays() { const t = today(); return Array.from(new Set(state.meals.map((m) => m.date))).filter((d) => d !== t).sort().reverse(); }
+function historyDays() { return Array.from(new Set(state.meals.map((m) => m.date))).sort().reverse(); }
 function dateLabel(date) { return new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long" }).format(new Date(date + "T12:00:00")); }
-// Igual dateLabel(), mas com o ano incluído -- usado onde a data aparece sozinha, sem outro registro
-// próximo que já dê o ano de contexto (ex.: "Exame realizado em ..." no card de Bioimpedância e
-// Calorimetria).
-function dateLabelComAno(date) { return new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date(date + "T12:00:00")); }
 function todayTreinos() { const t = today(); return state.treinos.filter((tr) => tr.date === t); }
-// Sem o dia de hoje -- ver comentário de historyDays().
-function historyDaysTreinos() { const t = today(); return Array.from(new Set(state.treinos.map((tr) => tr.date))).filter((d) => d !== t).sort().reverse(); }
-// Sem o dia de hoje -- ver comentário de historyDays().
-function historyDaysMedidas() { const t = today(); return Array.from(new Set(state.medidas.map((m) => m.date))).filter((d) => d !== t).sort().reverse(); }
-// Lista "Registros de hoje" do card de Medidas e Aferições -- mesmo padrão de todayMeals()/todayTreinos():
-// simplesmente as medidas com a data de hoje, sempre visível no card (ver medidaListTemplate()), sem
-// precisar abrir o Histórico de registros pra enxergar o que já foi medido hoje.
-function todayMedidas() { const t = today(); return state.medidas.filter((m) => m.date === t); }
+function historyDaysTreinos() { return Array.from(new Set(state.treinos.map((tr) => tr.date))).sort().reverse(); }
+function historyDaysMedidas() { return Array.from(new Set(state.medidas.map((m) => m.date))).sort().reverse(); }
 // Duração em minutos entre dois horários "HH:MM" do mesmo dia (não trata treino que passa da meia-noite).
 function duracaoMinutos(inicio, fim) {
   const [hi, mi] = inicio.split(":").map(Number);
@@ -2128,22 +1887,16 @@ function acaoMostrarCampoNovaSenha() { state.showNovaSenha = true; render(); }
 function acaoTrocarAba(aba) { state.activeTab = aba; render(); }
 
 /* ===================== medidas e aferições ===================== */
-// Tipos de medida que exigem responder "em jejum?" antes de salvar -- ver medidasFormTemplate()/
-// acaoSalvarMedida(). Glicemia precisa porque os parâmetros de referência da classificação mudam
-// bastante num caso e no outro (ver GLICEMIA_JEJUM_FAIXAS/GLICEMIA_NAO_JEJUM_FAIXAS); peso, pra poder
-// comparar pesagens em jejum de um dia com o do seguinte no Diário de Kcal (ver pesoJejumDoDia()), sem
-// depender de procurar "jejum" no texto livre da observação.
-const MEDIDA_TIPOS_COM_JEJUM = ["peso", "glicemia"];
-function acaoSelecionarTipoMedida(tipo) { state.medidaTipo = tipo; state.medidaJejum = ""; render(); }
+function acaoSelecionarTipoMedida(tipo) { state.medidaTipo = tipo; state.medidaGlicemiaJejum = ""; render(); }
 // Trocar a resposta de jejum dispara um re-render (pra atualizar o <select> com a opção escolhida), e
 // esse re-render recria o campo de valor/observação do zero (não são inputs "controlados" por
 // state) -- sem isso, um valor já digitado antes de responder a pergunta de jejum seria perdido. Por
 // isso guarda o que já estava digitado e devolve pros campos recriados, igual a um input "não
 // controlado" resistiria a esse tipo de re-render.
-function acaoSelecionarJejum(valor) {
+function acaoSelecionarJejumGlicemia(valor) {
   const valorDigitado = (document.getElementById("medida-valor") || {}).value || "";
   const notaDigitada = (document.getElementById("medida-nota") || {}).value || "";
-  state.medidaJejum = valor;
+  state.medidaGlicemiaJejum = valor;
   render();
   const inputValor = document.getElementById("medida-valor");
   if (inputValor) inputValor.value = valorDigitado;
@@ -2159,8 +1912,10 @@ function acaoSalvarMedida() {
   const meta = medidaTipos[tipo];
   const valor = meta.texto ? valorBruto : valorBruto.replace(",", ".");
   if (!meta.texto && isNaN(Number(valor))) { toastError("Informe um valor numérico válido."); return; }
-  // Ver MEDIDA_TIPOS_COM_JEJUM -- pergunta em medidasFormTemplate().
-  if (MEDIDA_TIPOS_COM_JEJUM.includes(tipo) && state.medidaJejum !== "sim" && state.medidaJejum !== "nao") {
+  // Glicemia precisa saber se foi em jejum ou não antes de salvar, porque os parâmetros de referência
+  // usados na classificação/legenda do registro são bem diferentes num caso e no outro -- ver
+  // legendaMedida()/classificarMedida() e a pergunta em medidasFormTemplate().
+  if (tipo === "glicemia" && state.medidaGlicemiaJejum !== "sim" && state.medidaGlicemiaJejum !== "nao") {
     toastError("Informe se a medição foi feita em jejum.");
     return;
   }
@@ -2176,11 +1931,11 @@ function acaoSalvarMedida() {
   // não mudar o IMC de pesos antigos se a altura for atualizada depois. Sem altura cadastrada ainda,
   // fica sem IMC (mesma mensagem do card do topo pedindo pra cadastrar a altura em Bioimpedância).
   if (tipo === "peso") novaMedida.imc = calcularImcDoPeso(Number(valor));
-  if (MEDIDA_TIPOS_COM_JEJUM.includes(tipo)) novaMedida.jejum = state.medidaJejum === "sim";
+  if (tipo === "glicemia") novaMedida.jejum = state.medidaGlicemiaJejum === "sim";
   state.medidas = state.medidas.concat([novaMedida]);
   persistMedidas();
   state.medidaTipo = "";
-  state.medidaJejum = "";
+  state.medidaGlicemiaJejum = "";
   toastSuccess(tipo === "peso" && novaMedida.imc
     ? "Registro salvo no histórico (IMC " + formatNumber(novaMedida.imc, 1) + ")."
     : "Registro salvo no histórico.");
@@ -2522,10 +2277,6 @@ function acaoSalvarRefeicao() {
   render();
 }
 function acaoTrocarAbaNutrientes(aba) { state.nutrientAba = aba; render(); }
-// Abre/fecha o modal de informações (função no organismo + fontes alimentares) de um card de macro ou
-// micronutriente -- ver nutrientInfoModalTemplate()/NUTRIENT_INFO.
-function acaoAbrirInfoNutriente(chave) { state.infoNutrienteAberto = chave; render(); }
-function acaoFecharInfoNutriente() { state.infoNutrienteAberto = null; render(); }
 function acaoAbrirDetalheRefeicao(id) { state.mealDetalheId = id; state.mealDetalheEditandoData = false; render(); }
 function acaoFecharDetalheRefeicao() { state.mealDetalheId = null; state.mealDetalheEditandoData = false; render(); }
 function acaoAbrirEdicaoDataRefeicao() { state.mealDetalheEditandoData = true; render(); }
@@ -2615,90 +2366,10 @@ function acaoEncerrarDia() {
   // até agora, usando o id deste próprio registro do Diário como corte -- e esse registro sincroniza com
   // o Google, então o corte vale em qualquer aparelho conectado à mesma conta, não só neste. Uma
   // refeição registrada depois deste clique volta a contar normalmente nos cards, e o corte só muda de
-  // novo no próximo "Encerrar dia" -- OU sozinho, na próxima virada de meia-noite (ver
-  // processarViradaDeDia()/fecharDiaAutomaticamente()), o que vier primeiro. Esse botão continua
-  // servindo pra quem quiser fechar o dia mais cedo (ex.: antes de dormir); quem não clicar tem o dia
-  // fechado automaticamente à meia-noite mesmo assim.
+  // novo no próximo "Encerrar dia" -- a virada do relógio à meia-noite não reseta nada sozinha.
   toastSuccess("Dia encerrado — resumo guardado no Diário de Kcal em " + dateLabel(t) + ". Os cards de consumo foram zerados.");
   if (state.account) enviarComFila("salvarDiarioKcalGoogle", [state.usuario.email, registro]);
   render();
-}
-// Fecha (ou confirma, se a pessoa já tinha fechado esse dia manualmente antes da meia-noite) o
-// registro do Diário de Kcal de UM dia específico que já virou -- chamada por processarViradaDeDia()
-// pra cada dia de calendário que passou desde a última verificação. Ao contrário do corte por id do
-// "Encerrar dia" manual (mealsDesdeUltimoEncerramento(), que pode juntar vários dias atrasados no
-// mesmo resumo se a pessoa esquecer de clicar -- bug já relatado, ver comentário de
-// recalcularDiarioKcalRegistro() logo abaixo), aqui o corte é sempre por DATA: cada dia gera (ou
-// confirma) o SEU PRÓPRIO registro, nunca misturando refeições de dias diferentes, mesmo que o app
-// fique dias fechado. Sem nenhuma refeição/treino registrado nesse dia e sem registro já existente,
-// não cria nada (nada pra resumir). Congela a meta/objetivo vigente NO MOMENTO do fechamento
-// automático, exceto quando o dia já tinha sido fechado manualmente antes -- aí preserva a meta já
-// congelada naquele momento, só atualizando o corteId (pra cobrir qualquer refeição registrada depois
-// do clique manual mas ainda no mesmo dia).
-function fecharDiaAutomaticamente(date) {
-  const mealsDoDia = state.meals.filter((m) => m.date === date);
-  const treinosDoDia = state.treinos.filter((tr) => tr.date === date);
-  const existente = state.diarioKcal.find((r) => r.date === date);
-  if (!mealsDoDia.length && !existente) return; // nada registrado nesse dia -- nada a fechar
-  const totais = mealsDoDia.reduce((sum, m) => addNutrients(sum, m), emptyNutrients);
-  const refeicoes = mealsDoDia.map((m) => {
-    const r = { name: m.name, time: m.time, alimentos: m.detected || [] };
-    NUTRIENT_KEYS.forEach((k) => { r[k] = m[k] || 0; });
-    return r;
-  });
-  const caloriasQueimadas = treinosDoDia.reduce((soma, tr) => soma + (tr.caloriasQueimadas || 0), 0);
-  const corteId = mealsDoDia.reduce((maior, m) => Math.max(maior, m.id), existente && existente.corteId != null ? existente.corteId : 0);
-  const registro = Object.assign({
-    id: existente ? existente.id : Date.now(), date: date, refeicoes: refeicoes, caloriasQueimadas: caloriasQueimadas, corteId: corteId,
-    metaCalorias: existente ? existente.metaCalorias : state.goals.calories,
-    metaProtein: existente ? existente.metaProtein : state.goals.protein,
-    metaCarbs: existente ? existente.metaCarbs : state.goals.carbs,
-    metaFat: existente ? existente.metaFat : state.goals.fat,
-    metaFiber: existente ? existente.metaFiber : state.goals.fiber,
-    objetivo: existente ? existente.objetivo : (state.goals.objetivo || ""),
-  }, totais);
-  state.diarioKcal = state.diarioKcal.filter((r) => r.date !== date).concat([registro]);
-  persistDiarioKcal();
-  if (state.account) enviarComFila("salvarDiarioKcalGoogle", [state.usuario.email, registro]);
-}
-// Virada automática de dia: às 0h (no relógio do APARELHO -- não existe nada rodando no servidor com o
-// app fechado, então a virada só é detectada quando o app está aberto, ver os pontos que chamam essa
-// função mais abaixo), cada dia de calendário que passou desde a última verificação vira, sozinho, um
-// registro no Diário de Kcal (fecharDiaAutomaticamente()) -- e os cards de consumo do novo dia
-// começam do zero automaticamente, já que corteDiaAberto() passa a considerar esse novo corteId. As
-// listas "de hoje" de refeições/treinos/medidas também esvaziam sozinhas nesse momento, sem precisar
-// de nenhuma lógica extra: elas já filtram por state.X.date === today(), e today() reflete a data real
-// do aparelho -- uma vez que o dia vira, os registros de ontem simplesmente deixam de bater com
-// today() e passam a aparecer só no Histórico (ver historyDays()/historyDaysTreinos()/
-// historyDaysMedidas(), que agora excluem o dia de hoje de propósito). Se o app ficar fechado vários
-// dias, cada dia perdido no meio vira seu PRÓPRIO registro de histórico (nunca junta dois dias num
-// só). Devolve true se algum dia foi processado (pra quem chamou saber se precisa re-renderizar).
-function processarViradaDeDia() {
-  const hoje = today();
-  const ultimo = state.ultimoDiaProcessado || hoje;
-  if (ultimo >= hoje) { state.ultimoDiaProcessado = hoje; return false; }
-  let cursor = proximoDia(ultimo);
-  let processouAlgum = false;
-  // Guarda de segurança: nunca deveria rodar mais que uns poucos milhares de iterações (isso
-  // representaria anos de app fechado), mas evita loop infinito caso proximoDia() devolva null por
-  // algum motivo inesperado (data corrompida no storage, por exemplo).
-  let seguranca = 0;
-  while (cursor && cursor < hoje && seguranca < 3650) {
-    fecharDiaAutomaticamente(cursor);
-    processouAlgum = true;
-    cursor = proximoDia(cursor);
-    seguranca++;
-  }
-  state.ultimoDiaProcessado = hoje;
-  writeStorage(CHAVE_ULTIMO_DIA_PROCESSADO, hoje);
-  return processouAlgum;
-}
-// Chamada ao abrir o app, ao voltar pra aba/foco (visibilitychange/focus) e periodicamente enquanto o
-// app fica aberto (ver verificarViradaDeDiaPeriodicamente()) -- roda processarViradaDeDia() e só
-// re-renderiza se algo realmente mudou (evita re-render à toa a cada verificação, a maioria das quais
-// não encontra nenhum dia novo pra fechar).
-function verificarViradaDeDia() {
-  if (processarViradaDeDia()) render();
 }
 // Corrige um registro já fechado no Diário de Kcal pra refletir só as refeições REALMENTE daquele dia
 // (comparando por DATA), em vez da janela "desde o último Encerrar dia" usada no momento do fechamento
@@ -2725,19 +2396,6 @@ function recalcularDiarioKcalRegistro(registro) {
   });
   const caloriasQueimadas = state.treinos.filter((tr) => tr.date === registro.date).reduce((soma, tr) => soma + (tr.caloriasQueimadas || 0), 0);
   return Object.assign({}, registro, totais, { refeicoes, caloriasQueimadas });
-}
-// Se já existe um dia encerrado no Diário de Kcal para essa data, recalcula e ressincroniza esse
-// registro (ver recalcularDiarioKcalRegistro()) -- usado depois de editar um treino (ver
-// acaoSalvarTreino()), já que a edição pode mudar as calorias queimadas somadas num dia já fechado
-// (ex.: corrigir a duração ou o esporte de um treino cujo dia já foi encerrado). Sem registro fechado
-// pra essa data, não faz nada -- nada pra ressincronizar.
-function sincronizarDiarioKcalDoDia(date) {
-  const registro = state.diarioKcal.find((r) => r.date === date);
-  if (!registro) return;
-  const corrigido = recalcularDiarioKcalRegistro(registro);
-  state.diarioKcal = state.diarioKcal.map((r) => (r.id === registro.id ? corrigido : r));
-  persistDiarioKcal();
-  if (state.account) enviarComFila("salvarDiarioKcalGoogle", [state.usuario.email, corrigido]);
 }
 function acaoRecalcularDiarioKcal(id) {
   const registro = state.diarioKcal.find((r) => r.id === id);
@@ -3025,28 +2683,16 @@ function lockedTemplate() {
     "</div>";
 }
 
-// Botão de informação (ícone "i") ao lado do título de um card de macro/micronutriente -- abre o
-// modal com função no organismo + principais fontes alimentares (ver nutrientInfoModalTemplate()).
-// stopPropagation() porque alguns cards (ex.: refeição) ficam dentro de elementos clicáveis -- aqui não
-// é o caso, mas mantém o padrão já usado nos outros botões dentro de linhas clicáveis do app.
-function nutrientInfoBtnTemplate(key, label) {
-  return '<button class="nutrient-info-btn" aria-label="Informações sobre ' + esc(label) + '" onclick="event.stopPropagation(); acaoAbrirInfoNutriente(\'' + key + '\')">' + icon("info") + "</button>";
-}
-// Cards da aba "Macronutrientes" -- calorias NÃO entra aqui: calorias é a unidade de energia, não um
-// macronutriente (proteína, carboidrato, gordura e fibra são os macronutrientes de fato). O consumo/
-// meta de calorias já aparece no card "Seu resumo de hoje", no topo da aba Nutrição -- a pedido do
-// usuário, não duplicado aqui. nutrientMeta.calories continua existindo (usado em outros lugares: Metas
-// do dia, chips de detalhamento da refeição), só não entra neste grid.
 function nutrientCardsTemplate() {
   const consumed = consumedToday();
-  return Object.keys(nutrientMeta).filter((key) => key !== "calories").map((key) => {
+  return Object.keys(nutrientMeta).map((key) => {
     const meta = nutrientMeta[key];
     const over = consumed[key] > state.goals[key];
-    const digits = 1;
+    const digits = key === "calories" ? 0 : 1;
     return '' +
       '<div class="nutrient-card"><div class="nutrient-card-head">' +
         '<div class="nutrient-card-left"><div class="nutrient-icon" style="background:' + meta.soft + ";color:" + meta.color + '">' + icon(meta.icon) + "</div>" +
-        '<span class="nutrient-name">' + meta.label + "</span>" + nutrientInfoBtnTemplate(key, meta.label) + "</div>" +
+        '<span class="nutrient-name">' + meta.label + "</span></div>" +
         '<span class="nutrient-unit">' + meta.unit + "</span>" +
       "</div>" +
       '<div class="nutrient-stats"><div><div class="stat-label">Consumido</div><div class="stat-value-row"><span class="stat-value">' + formatNumber(consumed[key], digits) + '</span><span class="stat-unit">' + meta.unit + "</span></div></div>" +
@@ -3069,7 +2715,7 @@ function micronutrientCardsTemplate() {
     return '' +
       '<div class="nutrient-card"><div class="nutrient-card-head">' +
         '<div class="nutrient-card-left"><div class="nutrient-icon" style="background:' + meta.soft + ";color:" + meta.color + '">' + icon(meta.icon) + "</div>" +
-        '<span class="nutrient-name">' + meta.label + "</span>" + nutrientInfoBtnTemplate(key, meta.label) + "</div>" +
+        '<span class="nutrient-name">' + meta.label + "</span></div>" +
         '<span class="nutrient-unit">' + meta.unit + "</span>" +
       "</div>" +
       '<div class="nutrient-stats"><div><div class="stat-label">Consumido</div><div class="stat-value-row"><span class="stat-value">' + formatNumber(valor, digits) + '</span><span class="stat-unit">' + meta.unit + "</span></div></div>" +
@@ -3261,30 +2907,7 @@ function acaoAlternarHistorico() {
 }
 
 /* ===================== treinos/esportes ===================== */
-function acaoSelecionarEsporte(valor) {
-  state.treinoEsporte = valor;
-  if (valor !== "Outro") state.treinoEsporteCustom = "";
-  render();
-}
-// Resolve o nome final do esporte a partir da seleção do formulário: se a pessoa escolheu "Outro", usa
-// o texto digitado, cadastrando-o em esportesCustomizados (se ainda não existir) pra reaparecer no
-// seletor da próxima vez -- senão usa direto o valor já selecionado. Devolve "" se a seleção for
-// inválida (nada escolhido, ou "Outro" com o campo de texto vazio).
-function resolverEsporteTreino() {
-  if (state.treinoEsporte !== "Outro") return state.treinoEsporte;
-  // Lê direto do DOM (mesmo padrão de nota/distância em acaoSalvarTreino/acaoEncerrarTreino) -- essa
-  // função roda como a PRIMEIRA linha de acaoIniciarTreino()/acaoSalvarTreino(), antes de qualquer
-  // render(), então o texto digitado pode ainda não ter sido capturado em state.treinoEsporteCustom
-  // (isso só acontece dentro de captureFormState(), chamado no início de um render()).
-  const el = document.getElementById("treino-esporte-custom");
-  const nome = ((el ? el.value : state.treinoEsporteCustom) || "").trim();
-  if (!nome) return "";
-  if (!ESPORTE_TIPOS.includes(nome) && !state.esportesCustomizados.includes(nome)) {
-    state.esportesCustomizados = state.esportesCustomizados.concat([nome]).sort((a, b) => a.localeCompare(b, "pt-BR"));
-    persistEsportesCustomizados();
-  }
-  return nome;
-}
+function acaoSelecionarEsporte(valor) { state.treinoEsporte = valor; render(); }
 
 // Adiciona um grupo muscular ao registro de treino atual (dropdown de treinoGruposMuscularesCampoTemplate()).
 // Pode adicionar quantos grupos quiser -- cada um vira um bloco separado com checkboxes dos exercícios
@@ -3404,8 +3027,8 @@ function pararTickTreino() {
 }
 
 function acaoIniciarTreino() {
-  const esporte = resolverEsporteTreino();
-  if (!esporte) { toastError(state.treinoEsporte === "Outro" ? "Informe o nome do esporte." : "Selecione o esporte."); return; }
+  const esporte = state.treinoEsporte;
+  if (!esporte) { toastError("Selecione o esporte."); return; }
   const now = new Date();
   state.treinoAtivo = {
     esporte, date: today(),
@@ -3556,7 +3179,6 @@ function acaoEncerrarTreino() {
   persistTreinoAtivo();
   pararTickTreino();
   state.treinoEsporte = "";
-  state.treinoEsporteCustom = "";
   state.treinoNota = "";
   state.treinoDistanciaKm = "";
   state.treinoGruposSelecionados = [];
@@ -3597,57 +3219,9 @@ function acaoCancelarTreinoAtivo() {
   render();
 }
 
-// Abre o formulário manual já preenchido com os dados de um treino salvo (clicado em "Treinos de
-// hoje" ou no histórico), para editar em vez de registrar um novo -- mesmo padrão de
-// acaoEditarBioimpedancia()/acaoEditarCalorimetria(). Os grupos musculares/exercícios do registro (se
-// for Musculação) NÃO são recarregados no seletor -- ficam preservados como estão e só voltam a mudar
-// se a pessoa remontá-los do zero; o formulário de edição cobre esporte, data, horários, distância e
-// nota, que são os campos que também afetam a estimativa de calorias queimadas.
-function acaoEditarTreino(id) {
-  const t = state.treinos.find((tr) => tr.id === id);
-  if (!t) return;
-  state.treinoModo = "manual";
-  state.treinoEsporte = t.esporte;
-  state.treinoData = t.date;
-  state.treinoHoraInicio = t.horaInicio;
-  state.treinoHoraFim = t.horaFim;
-  state.treinoNota = t.nota || "";
-  state.treinoDistanciaKm = t.distanciaKm ? String(t.distanciaKm) : "";
-  state.showHistoryTreinos = false;
-  state.historyDiaExpandidoTreinos = null;
-  limparFotoTreinoSelecionada();
-  state.treinoEditandoId = id;
-  render();
-  // O formulário manual pode já estar montado na tela (ex.: editar um treino logo depois de editar
-  // outro, sem trocar de aba) -- nesse caso captureFormState(), chamado no INÍCIO do render() acima,
-  // recaptura os valores ainda presentes no DOM (do preenchimento anterior) antes desse novo
-  // preenchimento ter chance de aparecer, sobrescrevendo os campos de state setados logo acima. Escreve
-  // direto nos inputs, depois do render(), pra garantir que o formulário sempre reflita o treino que
-  // está sendo editado -- mesmo padrão (e mesmo motivo) do ajuste em acaoSelecionarJejum().
-  const dataEl = document.getElementById("treino-data");
-  const inicioEl = document.getElementById("treino-hora-inicio");
-  const fimEl = document.getElementById("treino-hora-fim");
-  const notaEl = document.getElementById("treino-nota");
-  const distanciaEl = document.getElementById("treino-distancia");
-  if (dataEl) dataEl.value = t.date;
-  if (inicioEl) inicioEl.value = t.horaInicio;
-  if (fimEl) fimEl.value = t.horaFim;
-  if (notaEl) notaEl.value = t.nota || "";
-  if (distanciaEl) distanciaEl.value = t.distanciaKm ? String(t.distanciaKm) : "";
-  toastSuccess("Treino carregado no formulário para edição.");
-}
-function acaoCancelarEdicaoTreino() {
-  state.treinoEditandoId = null;
-  state.treinoEsporte = "";
-  state.treinoEsporteCustom = "";
-  state.treinoData = "";
-  state.treinoNota = "";
-  state.treinoDistanciaKm = "";
-  render();
-}
 function acaoSalvarTreino() {
-  const esporte = resolverEsporteTreino();
-  if (!esporte) { toastError(state.treinoEsporte === "Outro" ? "Informe o nome do esporte." : "Selecione o esporte."); return; }
+  const esporte = state.treinoEsporte;
+  if (!esporte) { toastError("Selecione o esporte."); return; }
   const dataEl = document.getElementById("treino-data");
   const dataTreino = dataEl && dataEl.value ? dataEl.value : today();
   if (dataTreino > today()) { toastError("A data do treino não pode ser no futuro."); return; }
@@ -3662,63 +3236,15 @@ function acaoSalvarTreino() {
   const notaEl = document.getElementById("treino-nota");
   const nota = notaEl ? notaEl.value : "";
   const distanciaEl = document.getElementById("treino-distancia");
-  const esporteCustomEl = document.getElementById("treino-esporte-custom");
   const camposDistancia = calcularCamposDistanciaTreino(esporte, duracaoMin);
-
-  // Modo edição (ver acaoEditarTreino()): atualiza o registro já salvo em vez de criar um novo,
-  // preservando id e grupos musculares -- e, ao final, ressincroniza qualquer dia já encerrado no
-  // Diário de Kcal que dependa desse treino (o dia antigo, se a data mudou, e o dia novo), pra
-  // calorias queimadas de um dia já fechado não ficarem desatualizadas depois da edição. A foto segue o
-  // mesmo padrão de acaoSalvarBioimpedancia(): sem selecionar um novo arquivo, a foto já anexada
-  // continua a mesma; selecionando um novo, ela é enviada em segundo plano e substitui a anterior só
-  // quando terminar.
-  const editandoId = state.treinoEditandoId;
-  if (editandoId != null) {
-    const registro = state.treinos.find((tr) => tr.id === editandoId);
-    if (!registro) { toastError("Treino não encontrado."); return; }
-    const dataAntiga = registro.date;
-    registro.esporte = esporte;
-    registro.date = dataTreino;
-    registro.horaInicio = horaInicio;
-    registro.horaFim = horaFim;
-    registro.duracaoMin = duracaoMin;
-    registro.nota = nota;
-    Object.assign(registro, camposDistancia);
-    registro.caloriasQueimadas = estimarCaloriasQueimadas(registro);
-    const arquivoFoto = treinoFotoSelecionada;
-    if (arquivoFoto) registro.fotoUrl = ""; // preenchida de novo quando o novo anexo terminar de enviar
-    state.treinos = state.treinos.map((tr) => (tr.id === editandoId ? registro : tr));
-    persistTreinos();
-    state.treinoEditandoId = null;
-    state.treinoEsporte = "";
-    state.treinoEsporteCustom = "";
-    state.treinoData = "";
-    state.treinoNota = "";
-    state.treinoDistanciaKm = "";
-    if (dataEl) dataEl.value = "";
-    inicioEl.value = "";
-    fimEl.value = "";
-    if (notaEl) notaEl.value = "";
-    if (distanciaEl) distanciaEl.value = "";
-    if (esporteCustomEl) esporteCustomEl.value = "";
-    limparFotoTreinoSelecionada();
-    sincronizarDiarioKcalDoDia(dataAntiga);
-    if (registro.date !== dataAntiga) sincronizarDiarioKcalDoDia(registro.date);
-    toastSuccess(arquivoFoto ? "Treino atualizado. Enviando a nova foto em segundo plano..." : "Treino atualizado.");
-    const promessaEdicao = state.account ? enviarComFila("atualizarTreinoGoogle", [state.usuario.email, registro]) : Promise.resolve();
-    render();
-    if (arquivoFoto) processarFotoTreinoEmSegundoPlano(registro.id, arquivoFoto, promessaEdicao);
-    return;
-  }
-
   const gruposMusculares = obterGruposMuscularesParaSalvar();
+
   const novoTreino = Object.assign({ id: Date.now(), date: dataTreino, esporte, horaInicio, horaFim, duracaoMin, fotoUrl: "", nota, gruposMusculares }, camposDistancia);
   novoTreino.caloriasQueimadas = estimarCaloriasQueimadas(novoTreino);
   const arquivoFoto = treinoFotoSelecionada;
   state.treinos = state.treinos.concat([novoTreino]);
   persistTreinos();
   state.treinoEsporte = "";
-  state.treinoEsporteCustom = "";
   state.treinoData = "";
   state.treinoNota = "";
   state.treinoDistanciaKm = "";
@@ -3733,7 +3259,6 @@ function acaoSalvarTreino() {
   fimEl.value = "";
   if (notaEl) notaEl.value = "";
   if (distanciaEl) distanciaEl.value = "";
-  if (esporteCustomEl) esporteCustomEl.value = "";
   limparFotoTreinoSelecionada();
   toastSuccess(arquivoFoto ? "Treino registrado. Enviando a foto em segundo plano..." : "Treino registrado.");
   const promessaRegistroBase = state.account ? enviarComFila("salvarTreinoGoogle", [state.usuario.email, novoTreino]) : Promise.resolve();
@@ -3742,14 +3267,9 @@ function acaoSalvarTreino() {
 }
 
 function acaoRemoverTreino(id) {
-  const t = state.treinos.find((tr) => tr.id === id);
-  state.treinos = state.treinos.filter((tr) => tr.id !== id);
+  state.treinos = state.treinos.filter((t) => t.id !== id);
   persistTreinos();
   if (state.account) enviarComFila("removerTreinoGoogle", [state.usuario.email, id]);
-  // Mesmo motivo do sincronizarDiarioKcalDoDia() em acaoSalvarTreino(): se o dia desse treino já tinha
-  // sido encerrado no Diário de Kcal, as calorias queimadas guardadas lá incluíam esse treino -- sem
-  // ressincronizar, o registro fechado ficaria com um valor a mais depois da remoção.
-  if (t) sincronizarDiarioKcalDoDia(t.date);
   render();
 }
 
@@ -3827,7 +3347,6 @@ function treinoListTemplate() {
     (t.nota ? '<div class="meal-row-nota">' + icon("help") + " " + esc(t.nota) + "</div>" : "") +
     "</div></div>" +
     '<div class="meal-row-right"><div class="meal-row-stat"><div class="meal-row-kcal">' + esc(formatarDuracao(t.duracaoMin)) + "</div></div>" +
-    '<button class="meal-row-edit" aria-label="Editar treino" onclick="acaoEditarTreino(' + t.id + ')">' + icon("edit") + "</button>" +
     '<button class="meal-row-delete" aria-label="Remover treino" onclick="acaoRemoverTreino(' + t.id + ')">' + icon("trash") + "</button></div></div>"
   ).join("");
 }
@@ -3863,7 +3382,7 @@ function treinoHistoryDayCardTemplate(date) {
       (expandido
         ? '<div class="history-day-meals">' + dayTreinos.map((t) =>
             '<div class="history-day-meal history-day-meal-static' + ((t.nota || t.distanciaKm || t.caloriasQueimadas || (t.gruposMusculares && t.gruposMusculares.length)) ? " history-day-meal-com-nota" : "") + '">' +
-              '<div class="history-day-meal-linha"><span>' + emojiEsporte(t.esporte) + " " + esc(t.esporte) + " · " + esc(t.horaInicio) + "–" + esc(t.horaFim) + "</span><span>" + esc(formatarDuracao(t.duracaoMin)) + (t.fotoUrl ? ' <a class="history-day-meal-foto-link" href="' + esc(t.fotoUrl) + '" target="_blank" rel="noopener" aria-label="Ver foto do treino">' + icon("camera") + "</a>" : "") + ' <button class="history-day-meal-editar-link" aria-label="Editar treino" onclick="event.stopPropagation(); acaoEditarTreino(' + t.id + ')">' + icon("edit") + "</button></span></div>" +
+              '<div class="history-day-meal-linha"><span>' + emojiEsporte(t.esporte) + " " + esc(t.esporte) + " · " + esc(t.horaInicio) + "–" + esc(t.horaFim) + "</span><span>" + esc(formatarDuracao(t.duracaoMin)) + (t.fotoUrl ? ' <a class="history-day-meal-foto-link" href="' + esc(t.fotoUrl) + '" target="_blank" rel="noopener" aria-label="Ver foto do treino">' + icon("camera") + "</a>" : "") + "</span></div>" +
               (t.distanciaKm ? '<p class="history-day-meal-distancia">' + esc(treinoDistanciaResumoTexto(t)) + "</p>" : "") +
               treinoGruposMuscularesListaHtml(t) +
               (t.caloriasQueimadas ? '<p class="history-day-meal-calorias-queimadas">' + esc(treinoCaloriasResumoTexto(t)) + " queimadas (estimativa)</p>" : "") +
@@ -3888,7 +3407,6 @@ function acaoRemoverDiaHistoricoTreinos(date) {
   persistTreinos();
   if (state.account) idsDoDia.forEach((id) => enviarComFila("removerTreinoGoogle", [state.usuario.email, id]));
   if (state.historyDiaExpandidoTreinos === date) state.historyDiaExpandidoTreinos = null;
-  sincronizarDiarioKcalDoDia(date);
   render();
 }
 // Cada vez que o histórico é aberto, começa com todos os dias fechados (evita reabrir com um dia antigo
@@ -3929,34 +3447,6 @@ function alimentoDetalheTemplate(a) {
         Object.keys(micronutrientMeta).map((key) => '<div class="meal-detalhe-micro">' + micronutrientMeta[key].label + ": <span>" + formatNumber(v[key] || 0, 1) + " " + micronutrientMeta[key].unit + "</span></div>").join("") +
       "</div>" +
     "</div>";
-}
-
-// Modal de informações de um macro/micronutriente (função no organismo + principais fontes
-// alimentares), aberto pelo botão "i" ao lado do título do card -- ver acaoAbrirInfoNutriente()/
-// NUTRIENT_INFO. Busca a meta em nutrientMeta OU micronutrientMeta (a chave pode ser de qualquer um
-// dos dois grupos, dependendo de qual card foi clicado).
-function nutrientInfoModalTemplate() {
-  const chave = state.infoNutrienteAberto;
-  if (!chave) return "";
-  const meta = nutrientMeta[chave] || micronutrientMeta[chave];
-  const info = NUTRIENT_INFO[chave];
-  if (!meta || !info) return "";
-  return '' +
-    '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharInfoNutriente();}">' +
-    '<div class="modal-card nutrient-info-modal">' +
-      '<div class="meal-detalhe-head"><div class="nutrient-info-modal-title">' +
-        '<div class="nutrient-icon" style="background:' + meta.soft + ";color:" + meta.color + '">' + icon(meta.icon) + "</div>" +
-        "<h2>" + esc(meta.label) + "</h2>" +
-      "</div>" +
-      '<button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharInfoNutriente()">' + icon("x") + "</button></div>" +
-      '<div class="nutrient-info-secao"><h3>Principais funções no organismo</h3>' +
-        '<ul class="nutrient-info-lista">' + info.funcoes.map((f) => "<li>" + esc(f) + "</li>").join("") + "</ul>" +
-      "</div>" +
-      '<div class="nutrient-info-secao"><h3>Principais fontes alimentares</h3>' +
-        '<div class="nutrient-info-chips">' + info.fontes.map((f) => '<span class="nutrient-info-chip" style="background:' + meta.soft + ";color:" + meta.color + '">' + esc(f) + "</span>").join("") + "</div>" +
-      "</div>" +
-      '<p class="nutrient-info-fonte">' + icon("help") + " Fonte: " + esc(info.fonte) + "</p>" +
-    "</div></div>";
 }
 
 // Busca em TODOS os registros (não só os de hoje), porque o modal também é aberto a partir do painel
@@ -4473,14 +3963,7 @@ function bioimpedanciaSectionTemplate() {
       "</section>";
   }
   const linha = (valor, label) => '<div class="bioimpedancia-resumo-linha"><span class="bioimpedancia-resumo-valor-sm">' + valor + '</span><span class="bioimpedancia-resumo-label">' + label + "</span></div>";
-  // Cabeçalho de cada coluna (Bioimpedância/Calorimetria): legenda no canto superior esquerdo do
-  // campo, com a data do último exame logo abaixo -- a pedido do usuário, substitui a legenda única
-  // que ficava solta no rodapé do card (ver antigo .bioimpedancia-atualizado), já que agora cada
-  // coluna mostra sua própria data.
-  const cabecalhoColuna = (texto, ultimoRegistro) => '<div class="bioimpedancia-resumo-coluna-head">' +
-    '<span class="bioimpedancia-resumo-coluna-legenda">' + texto + "</span>" +
-    '<span class="bioimpedancia-resumo-coluna-data">' + (ultimoRegistro ? "Exame realizado em " + dateLabelComAno(ultimoRegistro.date) + "." : "Sem registro ainda.") + "</span>" +
-  "</div>";
+  const legendaColuna = (texto) => '<span class="bioimpedancia-resumo-coluna-legenda">' + texto + "</span>";
   return '<section class="medidas-section">' +
     '<div class="medidas-section-title-row"><h2 class="medidas-section-title">' + icon("ruler") + " Bioimpedância e Calorimetria</h2>" +
     '<div class="medidas-section-title-actions">' +
@@ -4490,17 +3973,18 @@ function bioimpedanciaSectionTemplate() {
     '<div class="bioimpedancia-resumo">' +
       '<div class="bioimpedancia-resumo-item"><span class="bioimpedancia-resumo-valor">' + (ultimoBio && ultimoBio.altura ? formatNumber(ultimoBio.altura, 1) : "—") + '</span><span class="bioimpedancia-resumo-label">Altura (cm)</span></div>' +
       '<div class="bioimpedancia-resumo-item bioimpedancia-resumo-item-multi">' +
-        cabecalhoColuna("Bioimpedância", ultimoBio) +
+        legendaColuna("Bioimpedância") +
         linha(ultimoBio && ultimoBio.peso ? formatNumber(ultimoBio.peso, 1) : "—", "Peso (kg)") +
         linha(ultimoBio && ultimoBio.massaMuscular ? formatNumber(ultimoBio.massaMuscular, 1) : "—", "Massa musc. (kg)") +
         linha(ultimoBio && ultimoBio.gordura ? formatNumber(ultimoBio.gordura, 1) : "—", "Gordura (%)") +
       "</div>" +
       '<div class="bioimpedancia-resumo-item bioimpedancia-resumo-item-multi">' +
-        cabecalhoColuna("Calorimetria", ultimoCalo) +
+        legendaColuna("Calorimetria") +
         linha(ultimoCalo && ultimoCalo.tmb ? formatNumber(ultimoCalo.tmb) : "—", "TMB (kcal)") +
         linha(ultimoCalo && ultimoCalo.get ? formatNumber(ultimoCalo.get) : "—", "GET (kcal)") +
       "</div>" +
     "</div>" +
+    '<p class="bioimpedancia-atualizado">Bioimpedância: ' + (ultimoBio ? dateLabel(ultimoBio.date) : "sem registro") + " · Calorimetria: " + (ultimoCalo ? dateLabel(ultimoCalo.date) : "sem registro") + "</p>" +
     "</section>";
 }
 
@@ -4585,24 +4069,9 @@ function acaoAlternarDiaHistoricoMedidas(date) {
   render();
 }
 
-// Lista "Registros de hoje" do card de Medidas e Aferições, SEMPRE visível junto com o formulário --
-// mesmo espírito de mealListTemplate()/treinoListTemplate() (refeições e treinos já mostram os
-// registros do dia sem precisar abrir o Histórico; medidas ficava pra trás nisso). Reaproveita
-// medidaHistoryRowTemplate() pra cada linha: é a MESMA informação (tipo, horário, jejum/nota,
-// classificação e legenda) já mostrada dentro de um dia expandido no Histórico -- só muda o
-// agrupamento (aqui é só hoje, direto no card, sem precisar abrir o Histórico nem expandir um dia).
-function medidaListTemplate() {
-  const medidas = todayMedidas().slice().sort((a, b) => b.id - a.id);
-  if (!medidas.length) {
-    return '<div class="meal-empty"><div class="meal-empty-icon">' + icon("ruler") + "</div><p>Nenhuma medida registrada hoje</p><p>Escolha o tipo de medição abaixo e registre sua primeira aferição do dia.</p></div>";
-  }
-  return '<div class="medida-history-list">' + medidas.map(medidaHistoryRowTemplate).join("") + "</div>";
-}
-
 function medidasFormTemplate() {
   const tipo = state.medidaTipo;
   const meta = tipo ? medidaTipos[tipo] : null;
-  const hoje = todayMedidas();
   return '' +
     '<section class="medidas-section">' +
       '<div class="medidas-section-title-row"><h2 class="medidas-section-title">' + icon("plus") + " Medidas e Aferições</h2>" +
@@ -4619,14 +4088,14 @@ function medidasFormTemplate() {
           '<div class="medida-input-row"><div><label class="field-label">' + meta.label + " (" + meta.unidade + ")</label>" +
           '<input id="medida-valor" class="field-input" placeholder="' + meta.placeholder + '" onkeydown="if(event.key===\'Enter\') acaoSalvarMedida();"/>' +
           '<p class="imc-empty" style="margin-top:6px">' + meta.exemplo + "</p></div>" +
-          (MEDIDA_TIPOS_COM_JEJUM.includes(tipo) ?
+          (tipo === "glicemia" ?
             '<div><label class="field-label">Foi medida em jejum?</label>' +
-            '<select id="medida-jejum" class="field-input" onchange="acaoSelecionarJejum(this.value)">' +
+            '<select id="medida-glicemia-jejum" class="field-input" onchange="acaoSelecionarJejumGlicemia(this.value)">' +
               '<option value="">Selecione...</option>' +
-              '<option value="sim"' + (state.medidaJejum === "sim" ? " selected" : "") + ">Sim, em jejum</option>" +
-              '<option value="nao"' + (state.medidaJejum === "nao" ? " selected" : "") + ">Não, fora do jejum</option>" +
+              '<option value="sim"' + (state.medidaGlicemiaJejum === "sim" ? " selected" : "") + ">Sim, em jejum</option>" +
+              '<option value="nao"' + (state.medidaGlicemiaJejum === "nao" ? " selected" : "") + ">Não, fora do jejum</option>" +
             "</select>" +
-            '<p class="imc-empty" style="margin-top:6px">' + (tipo === "glicemia" ? "Usamos essa informação pra avaliar o resultado com o parâmetro de referência correto." : "Usamos essa informação para comparar corretamente seu peso em jejum entre os dias no Diário de Kcal.") + "</p></div>"
+            '<p class="imc-empty" style="margin-top:6px">Usamos essa informação pra avaliar o resultado com o parâmetro de referência correto.</p></div>'
             : ""
           ) +
           '<div><label class="field-label">Observação (opcional)</label>' +
@@ -4634,9 +4103,6 @@ function medidasFormTemplate() {
           '<button class="btn-primary" onclick="acaoSalvarMedida()">' + icon("check") + " Salvar registro</button></div>"
           : ""
         ) +
-      "</div>" +
-      '<div class="medidas-hoje"><div class="history-eyebrow">' + icon("clock") + " Registros de hoje" + (hoje.length ? " (" + hoje.length + ")" : "") + "</div>" +
-        medidaListTemplate() +
       "</div>" +
     "</section>";
 }
@@ -4662,20 +4128,10 @@ function medidasTabTemplate() {
 // Mesmo layout de duas colunas da aba Nutrição (formulário + histórico do dia), aplicado a treinos.
 // Seletor de esporte reaproveitado tanto no modo cronômetro quanto no modo manual.
 function treinoSeletorEsporteTemplate() {
-  // Lista base + esportes que a pessoa já cadastrou antes (ver CHAVE_ESPORTES_CUSTOMIZADOS). Se o
-  // esporte do registro atual (ex.: ao editar um treino sincronizado de outro aparelho) não está em
-  // nenhuma das duas listas, ele entra também -- senão o seletor mostraria "Selecione o esporte..." e
-  // perderia visualmente a modalidade já escolhida, mesmo com o valor certo salvo no treino.
-  let opcoes = ESPORTE_TIPOS.concat(state.esportesCustomizados);
-  if (state.treinoEsporte && state.treinoEsporte !== "Outro" && !opcoes.includes(state.treinoEsporte)) opcoes = opcoes.concat([state.treinoEsporte]);
   return '<select id="treino-esporte-select" class="meal-select" onchange="acaoSelecionarEsporte(this.value)">' +
     '<option value="">Selecione o esporte...</option>' +
-    opcoes.map((e) => '<option value="' + esc(e) + '"' + (state.treinoEsporte === e ? " selected" : "") + ">" + esc(e) + "</option>").join("") +
-    '<option value="Outro"' + (state.treinoEsporte === "Outro" ? " selected" : "") + '>Outro (cadastrar esporte)</option>' +
-  "</select>" +
-  (state.treinoEsporte === "Outro"
-    ? '<input id="treino-esporte-custom" class="meal-input" placeholder="Nome do esporte/atividade" value="' + esc(state.treinoEsporteCustom) + '"/>'
-    : "");
+    ESPORTE_TIPOS.map((e) => '<option value="' + esc(e) + '"' + (state.treinoEsporte === e ? " selected" : "") + ">" + esc(e) + "</option>").join("") +
+  "</select>";
 }
 
 // Observação livre sobre o treino (ex.: "treino pesado", "alto astral") — opcional, mesma lógica de
@@ -4776,15 +4232,8 @@ function treinoFotoCampoTemplate() {
     (treinoFotoSelecionada
       ? '<div class="treino-foto-preview"><img src="' + esc(treinoFotoPreviewUrl) + '" alt="Foto do treino"/>' +
           '<button type="button" class="treino-foto-remover" aria-label="Remover foto selecionada" onclick="acaoRemoverFotoTreino()">' + icon("x") + "</button></div>"
-      // Duas opções lado a lado: tirar foto na hora (câmera, atributo "capture") ou carregar uma foto já
-      // existente na galeria/arquivos do aparelho (sem "capture", pra não forçar a câmera) -- mesmo
-      // manipulador onFotoTreinoSelecionada() pros dois, já que ambos são só um <input type="file"> comum.
-      : '<div class="treino-foto-botoes">' +
-          '<label class="treino-foto-btn" for="treino-foto-input">' + icon("camera") + " Tirar foto" +
-            '<input id="treino-foto-input" type="file" accept="image/*" capture="environment" style="display:none" onchange="onFotoTreinoSelecionada(event)"/></label>' +
-          '<label class="treino-foto-btn" for="treino-foto-input-upload">' + icon("image") + " Carregar foto" +
-            '<input id="treino-foto-input-upload" type="file" accept="image/*" style="display:none" onchange="onFotoTreinoSelecionada(event)"/></label>' +
-        "</div>"
+      : '<label class="treino-foto-btn" for="treino-foto-input">' + icon("camera") + " Tirar foto do treino" +
+          '<input id="treino-foto-input" type="file" accept="image/*" capture="environment" style="display:none" onchange="onFotoTreinoSelecionada(event)"/></label>'
     ) +
   "</div>";
 }
@@ -4827,23 +4276,17 @@ function treinoFormManualTemplate() {
       '<div><label class="meal-form-label">Término</label><input id="treino-hora-fim" type="time" class="meal-input" value="' + esc(state.treinoHoraFim) + '"/></div>' +
     "</div>" +
     treinoDistanciaCampoTemplate() +
-    (state.treinoEditandoId == null ? treinoGruposMuscularesCampoTemplate() : "") +
+    treinoGruposMuscularesCampoTemplate() +
     treinoNotaCampoTemplate() +
     treinoFotoCampoTemplate() +
-    '<button class="btn-ghost-light" onclick="acaoSalvarTreino()">' + icon("check") + (state.treinoEditandoId != null ? " Salvar alterações" : " Salvar treino") + "</button>" +
-    (state.treinoEditandoId != null ? '<button class="treino-cancelar-btn" onclick="acaoCancelarEdicaoTreino()">Cancelar edição</button>' : "") +
+    '<button class="btn-ghost-light" onclick="acaoSalvarTreino()">' + icon("check") + " Salvar treino</button>" +
   "</div>";
 }
 
 // Por padrão o registro é por cronômetro (iniciar/pausar/encerrar); "Registrar manualmente" continua
-// disponível pra quem quer lançar um treino que já terminou, sem cronometrar ao vivo. Em modo edição
-// (ver acaoEditarTreino()) pula direto pro formulário manual, sem as abas -- editar um treino já salvo
-// não faz sentido por cronômetro.
+// disponível pra quem quer lançar um treino que já terminou, sem cronometrar ao vivo.
 function treinoFormularioTemplate() {
   if (state.treinoAtivo) return treinoCronometroAtivoTemplate();
-  if (state.treinoEditandoId != null) {
-    return '<p class="meal-card-desc">Ajuste os dados do treino e salve as alterações.</p>' + treinoFormManualTemplate();
-  }
   return '' +
     '<p class="meal-card-desc">Selecione a modalidade e ' + (state.treinoModo === "manual" ? "informe os horários de início e término." : "toque em iniciar quando começar.") + "</p>" +
     '<div class="treino-modo-tabs">' +
@@ -4854,11 +4297,10 @@ function treinoFormularioTemplate() {
 }
 
 function treinosTabTemplate() {
-  const editando = state.treinoEditandoId != null;
   return '<main>' +
     '<section class="dashboard-grid">' +
-      '<aside class="meal-card"><div class="meal-card-eyebrow">' + icon(editando ? "edit" : "flame") + (editando ? " Editar treino" : " Novo treino") + "</div>" +
-      "<h2>" + (editando ? "Corrigindo um treino já salvo" : "Qual esporte você praticou?") + "</h2>" +
+      '<aside class="meal-card"><div class="meal-card-eyebrow">' + icon("flame") + " Novo treino</div>" +
+      "<h2>Qual esporte você praticou?</h2>" +
       treinoFormularioTemplate() +
       "</aside>" +
       '<div class="history-card"><div class="history-card-head">' +
@@ -4989,80 +4431,27 @@ function diarioKcalMetaAtingida(saldo, objetivoChave) {
   if (objetivoChave === "ganho_massa") return saldo >= 0;
   return Math.abs(saldo) <= TOLERANCIA_EQUILIBRIO;
 }
-// Equivalência clássica entre déficit/superávit calórico e variação de gordura corporal: ~7.700 kcal
-// por kg (regra de Wishnofsky, 1958 -- gordura pura tem ~9 kcal/g, mas o tecido adiposo tem água e
-// outras estruturas junto, rendendo ~7,7 kcal/g na prática). É uma estimativa de referência, não uma
-// previsão exata: no longo prazo ela superestima a perda/ganho real, porque o corpo se adapta (gasto
-// energético cai conforme o peso muda e em déficit prolongado) e parte do peso perdido/ganho pode ser
-// massa magra, não só gordura -- por isso o texto sempre marca o valor em kg como equivalência do saldo
-// do dia, não como uma promessa de quanto a balança vai marcar.
-const KCAL_POR_KG_GORDURA = 7700;
-// Soma 1 dia a uma data "AAAA-MM-DD" (string local, sem fuso) e devolve no mesmo formato -- usada pra
-// comparar o peso em jejum de um dia com o do dia seguinte (ver pesoJejumDoDia()). Monta a data com
-// componentes locais (Date(ano, mes-1, dia) + setDate) em vez de mexer na string diretamente, pra lidar
-// corretamente com viradas de mês/ano.
-function proximoDia(dateStr) {
-  const partes = String(dateStr || "").split("-").map(Number);
-  if (partes.length !== 3 || partes.some((n) => isNaN(n))) return null;
-  const d = new Date(partes[0], partes[1] - 1, partes[2]);
-  d.setDate(d.getDate() + 1);
-  const ano = d.getFullYear();
-  const mes = String(d.getMonth() + 1).padStart(2, "0");
-  const dia = String(d.getDate()).padStart(2, "0");
-  return ano + "-" + mes + "-" + dia;
-}
-// Peso em jejum registrado num dia específico (só considera medidas de peso com jejum=true -- ver
-// MEDIDA_TIPOS_COM_JEJUM/acaoSalvarMedida()) -- usado pra comparar o peso em jejum de um dia com o do dia
-// seguinte na Análise do objetivo do Diário de Kcal (diarioKcalAnaliseObjetivoTemplate()). Quando há mais
-// de um registro de peso em jejum no mesmo dia, usa o mais antigo (o primeiro da manhã, cenário mais
-// comum de pesagem em jejum), não o mais recente.
-function pesoJejumDoDia(date) {
-  const registros = state.medidas.filter((m) => m.tipo === "peso" && m.date === date && m.jejum === true).sort((a, b) => a.id - b.id);
-  return registros.length ? Number(registros[0].valor) : null;
-}
 // Seção "Análise do objetivo:" -- resume o dia em relação ao objetivo escolhido: kcal consumidos, kcal
 // gastos (mesmo gasto total de diarioKcalGastosTemplate()) e o saldo, dizendo se a meta do dia (déficit,
 // superávit ou equilíbrio, dependendo do objetivo -- ver diarioKcalMetaAtingida()) foi atingida ou não.
 // Texto combinado com o usuário: "meta (Objetivo) - atingida ✅" em negrito azul, ou "meta (Objetivo) -
 // não atingida ❌" em negrito vermelho -- só o trecho do status fica destacado, o resto da linha continua
-// na cor neutra. O saldo em kcal também vem seguido de "/ X kg" -- a equivalência em gordura corporal
-// (ver KCAL_POR_KG_GORDURA), pra dar uma noção mais concreta do que aquele número de kcal representa.
-// Imediatamente abaixo do saldo, quando há peso em jejum registrado (ver pesoJejumDoDia()) pro dia do
-// registro e/ou pro dia seguinte, mostra os dois pesos e a diferença entre eles -- pra comparar a
-// variação real da balança com a equivalência estimada do saldo calórico do dia (ver a nota logo
-// abaixo). Só aparece quando pelo menos um dos dois pesos foi registrado, pra não poluir o card com
-// "não registrado" em dias sem pesagem.
+// na cor neutra.
 function diarioKcalAnaliseObjetivoTemplate(r) {
   const info = diarioKcalGastoTotalInfo(r);
   const objetivoChave = r.metaCalorias != null ? r.objetivo : state.goals.objetivo;
-  // Equivalência em kg (ver KCAL_POR_KG_GORDURA) ao lado de QUALQUER valor de kcal desta seção -- não só
-  // o saldo, mas também consumidos e gastos -- pra dar a mesma noção concreta em todas as linhas.
-  const kgEquiv = (kcal) => formatNumber(Math.abs(kcal) / KCAL_POR_KG_GORDURA, 2) + " kg";
-  const linhas = ['<div class="diario-kcal-gastos-linha">' + icon("utensils") + " Kcal consumidos no dia: " + formatNumber(r.calories) + " kcal / " + kgEquiv(r.calories) + "</div>"];
+  const linhas = ['<div class="diario-kcal-gastos-linha">' + icon("utensils") + " Kcal consumidos no dia: " + formatNumber(r.calories) + " kcal</div>"];
   if (info.gastoTotal == null) {
     linhas.push('<div class="diario-kcal-gastos-linha">' + icon("flame") + " Kcal gastos no dia: sem calorimetria registrada</div>");
   } else {
     const saldo = r.calories - info.gastoTotal;
-    const saldoTexto = (saldo > 0 ? "superávit de " : saldo < 0 ? "déficit de " : "") + formatNumber(Math.abs(saldo)) + " kcal / " + kgEquiv(saldo);
+    const saldoTexto = (saldo > 0 ? "superávit de " : saldo < 0 ? "déficit de " : "") + formatNumber(Math.abs(saldo)) + " kcal";
     const atingida = diarioKcalMetaAtingida(saldo, objetivoChave);
     const objetivoLabel = objetivoChave && OBJETIVOS_META[objetivoChave] ? OBJETIVOS_META[objetivoChave].label : "";
     const status = atingida == null ? "" :
       ' — <strong class="' + (atingida ? "diario-kcal-meta-atingida" : "diario-kcal-meta-nao-atingida") + '">meta (' + esc(objetivoLabel) + ") - " + (atingida ? "atingida ✅" : "não atingida ❌") + "</strong>";
-    linhas.push('<div class="diario-kcal-gastos-linha">' + icon("flame") + " Kcal gastos no dia: " + formatNumber(info.gastoTotal) + " kcal / " + kgEquiv(info.gastoTotal) + "</div>");
+    linhas.push('<div class="diario-kcal-gastos-linha">' + icon("flame") + " Kcal gastos no dia: " + formatNumber(info.gastoTotal) + " kcal</div>");
     linhas.push('<div class="diario-kcal-gastos-linha">' + icon("flame") + " Saldo de kcal do dia: " + saldoTexto + status + "</div>");
-    const diaSeguinte = proximoDia(r.date);
-    const pesoHoje = pesoJejumDoDia(r.date);
-    const pesoAmanha = diaSeguinte ? pesoJejumDoDia(diaSeguinte) : null;
-    if (pesoHoje != null || pesoAmanha != null) {
-      linhas.push('<div class="diario-kcal-gastos-linha">' + icon("activity") + " Peso em jejum do dia (" + dataCurta(r.date) + "): " + (pesoHoje != null ? formatNumber(pesoHoje, 1) + " kg" : "não registrado") + "</div>");
-      linhas.push('<div class="diario-kcal-gastos-linha">' + icon("activity") + " Peso em jejum do dia seguinte (" + dataCurta(diaSeguinte) + "): " + (pesoAmanha != null ? formatNumber(pesoAmanha, 1) + " kg" : "não registrado") + "</div>");
-      if (pesoHoje != null && pesoAmanha != null) {
-        const diferencaPeso = pesoAmanha - pesoHoje;
-        const diferencaPesoTexto = (diferencaPeso > 0 ? "+" : diferencaPeso < 0 ? "-" : "") + formatNumber(Math.abs(diferencaPeso), 1) + " kg";
-        linhas.push('<div class="diario-kcal-gastos-linha">' + icon("activity") + " Diferença entre os pesos em jejum: " + diferencaPesoTexto + "</div>");
-      }
-    }
-    linhas.push('<p class="diario-kcal-equivalencia-nota">' + icon("help") + " Equivalência de referência: ~7.700 kcal por kg de gordura corporal (regra de Wishnofsky) -- não é uma previsão exata da balança.</p>");
   }
   return '<div class="diario-kcal-gastos"><p class="diario-kcal-dia-subtitulo">Análise do objetivo:</p>' + linhas.join("") + "</div>";
 }
@@ -5189,7 +4578,7 @@ function homeTemplate() {
   return '' +
     '<div class="app-shell">' +
     '<button class="hamburger-btn" onclick="acaoAbrirSidebar()" aria-label="Abrir menu"><span></span></button>' +
-    sidebarTemplate() + editarPerfilTemplate() + mealDetalheModalTemplate() + nutrientInfoModalTemplate() +
+    sidebarTemplate() + editarPerfilTemplate() + mealDetalheModalTemplate() +
     '<div class="home-content"><div class="home-inner">' +
     (state.account ? fullHomeTemplate() : lockedTemplate()) +
     "</div></div></div>";
@@ -5224,8 +4613,6 @@ function captureFormState() {
     state.caloFormValores = valores;
   }
 
-  const treinoEsporteCustomEl = document.getElementById("treino-esporte-custom");
-  if (treinoEsporteCustomEl) state.treinoEsporteCustom = treinoEsporteCustomEl.value;
   const treinoDataEl = document.getElementById("treino-data");
   if (treinoDataEl) state.treinoData = treinoDataEl.value;
   const treinoInicioEl = document.getElementById("treino-hora-inicio");
@@ -5289,23 +4676,12 @@ async function doInstall() {
 }
 
 /* ===================== inicialização ===================== */
-// Processa a virada de dia ANTES do primeiro render -- pega qualquer dia (ou vários, se o app ficou
-// fechado) que já tenha virado desde a última vez que o app foi aberto, pra abrir a tela já com os
-// cards/listas "de hoje" corretos (ver processarViradaDeDia()), sem precisar de um segundo render logo
-// em seguida.
-processarViradaDeDia();
 render();
 initInstallPrompt();
 if (state.usuario) sincronizarDoServidor();
 // Se havia um treino em andamento quando o app foi fechado/recarregado, retoma o cronômetro na tela
 // (o tempo decorrido é sempre recalculado a partir do timestamp salvo, então não se perde nada).
 iniciarTickTreinoSeNecessario();
-// Enquanto o app ficar aberto e em primeiro plano (ex.: esquecido aberto numa aba do PC durante a
-// noite), verifica a cada minuto se a meia-noite já passou -- sem isso, a virada só seria detectada na
-// próxima vez que o app fosse reaberto/recarregado (ver verificarViradaDeDia()). Um minuto é preciso o
-// suficiente (ninguém precisa que os cards zerem no segundo exato da meia-noite) e não pesa nada rodar
-// em segundo plano.
-setInterval(verificarViradaDeDia, 60000);
 
 // Em celular, abrir um seletor nativo (ex.: o calendário do campo de data) costuma disparar um
 // "visibilitychange" no navegador (a página é considerada momentaneamente escondida enquanto o
@@ -5322,9 +4698,9 @@ function formularioDeEdicaoAberto() {
 // enquanto este ficava parado em segundo plano. Sem isso, o app só atualizava na abertura (boot), e
 // ficava com dados desatualizados até ser fechado e reaberto de verdade.
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible" && !formularioDeEdicaoAberto()) { verificarViradaDeDia(); sincronizarDoServidor(); }
+  if (document.visibilityState === "visible" && !formularioDeEdicaoAberto()) sincronizarDoServidor();
 });
-window.addEventListener("focus", () => { if (!formularioDeEdicaoAberto()) { verificarViradaDeDia(); sincronizarDoServidor(); } });
+window.addEventListener("focus", () => { if (!formularioDeEdicaoAberto()) sincronizarDoServidor(); });
 </script>
 </body>
 </html>
