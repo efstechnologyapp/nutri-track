@@ -156,6 +156,7 @@ svg{ display: block; }
 @media (min-width: 640px){ .summary-edit-btn{ top:20px; right:20px; } }
 .summary-inner{ position:relative; }
 .summary-label{ display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:#587a50; }
+.summary-meta{ margin-top:4px; font-size:12px; font-weight:400; color:#7c9673; }
 .summary-stats{ margin-top:20px; display:flex; align-items:flex-end; justify-content:space-between; gap:20px; }
 .summary-remaining-value{ font-family:'Fraunces',serif; font-size:36px; font-weight:600; letter-spacing:-0.06em; color:#1d4b3d; }
 .summary-remaining-label{ margin-top:4px; font-size:14px; color:#6f8d67; }
@@ -491,6 +492,14 @@ svg{ display: block; }
 .medidas-history-list{ margin-top:16px; display:flex; flex-direction:column; }
 .medida-history-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 0; border-top:1px solid #edf0eb; }
 .medida-history-row:first-child{ border-top:none; padding-top:4px; }
+/* No histórico de Medidas e Aferições (não no de Bioimpedância/Calorimetria, que reaproveita
+   .medida-history-row "solto" acima), cada registro vem envolvido num .medida-history-item, que agora é
+   quem controla o espaçamento/divisória entre registros -- a linha .medida-history-row interna fica sem
+   padding/borda próprios, e a legenda de classificação clínica (.medida-history-legenda) entra como
+   última linha do mesmo item, abaixo da linha principal. Ver medidaHistoryRowTemplate(). */
+.medida-history-item{ padding:14px 0; border-top:1px solid #edf0eb; }
+.medida-history-item:first-child{ border-top:none; padding-top:4px; }
+.medida-history-item .medida-history-row{ padding:0; border-top:none; }
 .medida-history-left{ min-width:0; }
 .medida-history-tipo{ display:block; font-size:14px; font-weight:600; color:#31564a; }
 .medida-history-meta{ margin-top:4px; display:flex; align-items:center; gap:4px; font-size:12px; color:#9aa9a1; }
@@ -498,7 +507,9 @@ svg{ display: block; }
 .medida-history-right{ display:flex; flex-shrink:0; align-items:center; gap:12px; }
 .medida-history-valor-col{ display:flex; flex-direction:column; align-items:flex-end; gap:2px; }
 .medida-history-valor{ font-size:14px; font-weight:600; color:#3d6355; }
-.medida-history-imc{ font-size:11px; color:#789087; }
+.medida-history-status{ font-size:11px; font-weight:600; }
+.medida-history-legenda{ margin:10px 0 0; display:flex; align-items:flex-start; gap:6px; font-size:11px; line-height:1.4; color:#92a099; }
+.medida-history-legenda .icon{ margin-top:1px; width:13px; height:13px; color:#9db69a; flex-shrink:0; }
 
 /* ---------- modal (editar perfil) ---------- */
 .modal-overlay{ position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.4); padding:16px; }
@@ -1295,6 +1306,11 @@ const state = {
   altura: readStorage(CHAVE_ALTURA, null), // cm
   medidas: readStorage(CHAVE_MEDIDAS, []),
   medidaTipo: "",
+  // Só usado quando medidaTipo === "glicemia": se a medição foi feita em jejum ou não -- necessário
+  // porque os parâmetros de referência de glicemia são bem diferentes num caso e no outro (ver
+  // GLICEMIA_JEJUM_FAIXAS/GLICEMIA_NAO_JEJUM_FAIXAS). "" = ainda não respondido (obrigatório antes de
+  // salvar); resetado ao trocar de tipo de medição e depois de salvar um registro.
+  medidaGlicemiaJejum: "",
   showHistoricoMedidas: false,
   // Data do dia expandido no histórico de Medidas e Aferições (mesmo accordion por dia do histórico de
   // refeições/treinos) -- ver medidasHistoricoTemplate()/acaoAlternarDiaHistoricoMedidas(). null = nenhum
@@ -1533,6 +1549,186 @@ const IMC_FAIXAS = [
 ];
 function faixaImc(imc) { return IMC_FAIXAS.find((f) => imc < f.ate); }
 function classificarImc(imc) { return faixaImc(imc).label; }
+
+/* ===================== classificação clínica dos registros de medidas e aferições =====================
+   Mesma lógica do IMC_FAIXAS/faixaImc acima, só que aplicada aos demais tipos de medida: cada registro
+   salvo mostra, logo abaixo do valor, uma classificação (baixo/normal/alto ou equivalente) e, na última
+   linha do próprio registro, uma legenda compacta com os parâmetros de referência e a fonte -- ver
+   classificarMedida()/legendaMedida(), usados em medidaHistoryRowTemplate(). Pescoço fica de fora por
+   não ter um valor de referência médico simples e amplamente aceito (ver conversa com o usuário). Os
+   valores abaixo foram checados em fontes médicas atuais (idealmente de referência no Brasil) em
+   setembro de 2026 -- ver as legendas de cada tipo para a fonte específica. */
+
+// Pressão arterial (aferida em mmHg, formato "sistólica/diastólica") -- Diretriz Brasileira de
+// Hipertensão Arterial (Sociedades Brasileiras de Cardiologia, Hipertensão e Nefrologia, 2020), com o
+// corte de hipotensão (abaixo de 90/60 mmHg) sendo o critério clínico usual. Quando sistólica e
+// diastólica caem em categorias diferentes, prevalece a mais alta (regra da própria diretriz).
+const PRESSAO_FAIXAS = [
+  { min: 180, minDiastolica: 110, label: "Hipertensão estágio 3 (crise hipertensiva)", cor: "#c13f34", corSuave: "#f7ddd9" },
+  { min: 160, minDiastolica: 100, label: "Hipertensão estágio 2", cor: "#d1652f", corSuave: "#f9e4d8" },
+  { min: 140, minDiastolica: 90, label: "Hipertensão estágio 1", cor: "#dd8636", corSuave: "#fbecdb" },
+  { min: 120, minDiastolica: 80, label: "Pré-hipertensão", cor: "#d9a92e", corSuave: "#faf2dc" },
+];
+function classificarPressao(sistolica, diastolica) {
+  for (const f of PRESSAO_FAIXAS) {
+    if (sistolica >= f.min || diastolica >= f.minDiastolica) return { label: f.label, cor: f.cor, corSuave: f.corSuave };
+  }
+  if (sistolica < 90 || diastolica < 60) return { label: "Pressão baixa", cor: "#6fb3d9", corSuave: "#e7f3fa" };
+  return { label: "Pressão normal", cor: "#4b9350", corSuave: "#e9f5e9" };
+}
+
+// Frequência cardíaca de repouso (bpm) -- valores de referência amplamente usados pela cardiologia
+// (Sociedade Brasileira de Cardiologia): normal entre 50 e 99 bpm em repouso.
+const BATIMENTOS_FAIXAS = [
+  { ate: 50, label: "Bradicardia (frequência baixa)", cor: "#6fb3d9", corSuave: "#e7f3fa" },
+  { ate: 100, label: "Frequência normal", cor: "#4b9350", corSuave: "#e9f5e9" },
+  { ate: Infinity, label: "Taquicardia (frequência alta)", cor: "#c13f34", corSuave: "#f7ddd9" },
+];
+function faixaBatimentos(bpm) { return BATIMENTOS_FAIXAS.find((f) => bpm < f.ate); }
+
+// Glicemia (mg/dL) -- Sociedade Brasileira de Diabetes (Diretriz, 2024/2026). Os cortes de jejum são os
+// diagnósticos oficiais (normal <100, pré-diabetes 100-125, diabetes ≥126). Fora do jejum não há um
+// critério diagnóstico único (depende de quando foi a última refeição); usamos o corte de glicemia
+// casual (≥200 mg/dL sugere diabetes, mesmo critério usado quando há sintomas) e 140 mg/dL como o limite
+// mais aceito para "dentro do esperado" fora do jejum. Abaixo de 70 mg/dL é hipoglicemia em qualquer
+// contexto (critério clínico usual, independente de jejum).
+const GLICEMIA_JEJUM_FAIXAS = [
+  { ate: 70, label: "Hipoglicemia", cor: "#6fb3d9", corSuave: "#e7f3fa" },
+  { ate: 100, label: "Glicemia normal (em jejum)", cor: "#4b9350", corSuave: "#e9f5e9" },
+  { ate: 126, label: "Pré-diabetes (glicemia de jejum alterada)", cor: "#d9a92e", corSuave: "#faf2dc" },
+  { ate: Infinity, label: "Faixa de diabetes", cor: "#c13f34", corSuave: "#f7ddd9" },
+];
+const GLICEMIA_NAO_JEJUM_FAIXAS = [
+  { ate: 70, label: "Hipoglicemia", cor: "#6fb3d9", corSuave: "#e7f3fa" },
+  { ate: 140, label: "Glicemia normal (fora do jejum)", cor: "#4b9350", corSuave: "#e9f5e9" },
+  { ate: 200, label: "Glicemia elevada (fora do jejum)", cor: "#d9a92e", corSuave: "#faf2dc" },
+  { ate: Infinity, label: "Glicemia muito alta (sugestiva de diabetes)", cor: "#c13f34", corSuave: "#f7ddd9" },
+];
+function faixaGlicemia(valor, jejum) { return (jejum ? GLICEMIA_JEJUM_FAIXAS : GLICEMIA_NAO_JEJUM_FAIXAS).find((f) => valor < f.ate); }
+
+// Temperatura corporal (°C) -- parâmetros clínicos usuais de enfermagem/semiologia médica.
+const TEMPERATURA_FAIXAS = [
+  { ate: 35, label: "Hipotermia", cor: "#6fb3d9", corSuave: "#e7f3fa" },
+  { ate: 37.3, label: "Temperatura normal", cor: "#4b9350", corSuave: "#e9f5e9" },
+  { ate: 37.8, label: "Febrícula (febre baixa)", cor: "#d9a92e", corSuave: "#faf2dc" },
+  { ate: 39, label: "Febre", cor: "#dd8636", corSuave: "#fbecdb" },
+  { ate: 40, label: "Febre alta", cor: "#d1652f", corSuave: "#f9e4d8" },
+  { ate: Infinity, label: "Hiperpirexia", cor: "#c13f34", corSuave: "#f7ddd9" },
+];
+function faixaTemperatura(temp) { return TEMPERATURA_FAIXAS.find((f) => temp < f.ate); }
+
+// Saturação de oxigênio (SpO₂, %) -- Sociedade Brasileira de Pneumologia e Tisiologia: 95-100% é a
+// faixa normal para quem não tem doença pulmonar; abaixo de 90% já indica avaliação médica.
+const SATURACAO_FAIXAS = [
+  { ate: 85, label: "Saturação muito baixa (risco à vida)", cor: "#c13f34", corSuave: "#f7ddd9" },
+  { ate: 90, label: "Saturação baixa", cor: "#d1652f", corSuave: "#f9e4d8" },
+  { ate: 95, label: "Saturação levemente reduzida", cor: "#d9a92e", corSuave: "#faf2dc" },
+  { ate: Infinity, label: "Saturação normal", cor: "#4b9350", corSuave: "#e9f5e9" },
+];
+function faixaSaturacao(spo2) { return SATURACAO_FAIXAS.find((f) => spo2 < f.ate); }
+
+// Circunferência da cintura (cm) -- Organização Mundial da Saúde, com cortes diferentes por sexo. Sem
+// sexo informado no perfil não é possível classificar (ver faixaCintura()) -- a legenda avisa nesse caso.
+const CINTURA_FAIXAS = {
+  masculino: [
+    { ate: 94, label: "Risco não aumentado", cor: "#4b9350", corSuave: "#e9f5e9" },
+    { ate: 102, label: "Risco aumentado", cor: "#d9a92e", corSuave: "#faf2dc" },
+    { ate: Infinity, label: "Risco muito aumentado", cor: "#c13f34", corSuave: "#f7ddd9" },
+  ],
+  feminino: [
+    { ate: 80, label: "Risco não aumentado", cor: "#4b9350", corSuave: "#e9f5e9" },
+    { ate: 88, label: "Risco aumentado", cor: "#d9a92e", corSuave: "#faf2dc" },
+    { ate: Infinity, label: "Risco muito aumentado", cor: "#c13f34", corSuave: "#f7ddd9" },
+  ],
+};
+function faixaCintura(cm, sexo) {
+  const faixas = CINTURA_FAIXAS[sexo];
+  return faixas ? faixas.find((f) => cm < f.ate) : null;
+}
+
+// Classifica um registro de medida (peso, pressão, batimentos, glicemia, temperatura, saturação ou
+// cintura) na sua faixa clínica, ou null quando o tipo não tem classificação (pescoço) ou o valor não
+// pôde ser interpretado. Usado tanto pro status mostrado abaixo do valor quanto (indiretamente, via
+// legendaMedida()) pra decidir se a legenda de fonte aparece no registro.
+function classificarMedida(r) {
+  switch (r.tipo) {
+    case "peso": {
+      if (r.imc == null) return null;
+      const f = faixaImc(r.imc);
+      return f ? { label: f.label, cor: f.cor, corSuave: f.corSuave } : null;
+    }
+    case "pressao": {
+      const partes = String(r.valor).split("/");
+      if (partes.length !== 2) return null;
+      const sistolica = Number(partes[0].trim().replace(",", "."));
+      const diastolica = Number(partes[1].trim().replace(",", "."));
+      if (isNaN(sistolica) || isNaN(diastolica)) return null;
+      return classificarPressao(sistolica, diastolica);
+    }
+    case "batimentos": {
+      const valor = Number(String(r.valor).replace(",", "."));
+      if (isNaN(valor)) return null;
+      const f = faixaBatimentos(valor);
+      return f ? { label: f.label, cor: f.cor, corSuave: f.corSuave } : null;
+    }
+    case "glicemia": {
+      const valor = Number(String(r.valor).replace(",", "."));
+      if (isNaN(valor)) return null;
+      const f = faixaGlicemia(valor, !!r.jejum);
+      return f ? { label: f.label, cor: f.cor, corSuave: f.corSuave } : null;
+    }
+    case "temperatura": {
+      const valor = Number(String(r.valor).replace(",", "."));
+      if (isNaN(valor)) return null;
+      const f = faixaTemperatura(valor);
+      return f ? { label: f.label, cor: f.cor, corSuave: f.corSuave } : null;
+    }
+    case "saturacao": {
+      const valor = Number(String(r.valor).replace(",", "."));
+      if (isNaN(valor)) return null;
+      const f = faixaSaturacao(valor);
+      return f ? { label: f.label, cor: f.cor, corSuave: f.corSuave } : null;
+    }
+    case "cintura": {
+      const valor = Number(String(r.valor).replace(",", "."));
+      if (isNaN(valor)) return null;
+      const sexo = state.usuario && state.usuario.sexo;
+      const f = faixaCintura(valor, sexo);
+      return f ? { label: f.label, cor: f.cor, corSuave: f.corSuave } : null;
+    }
+    default:
+      return null; // pescoço e outros tipos sem referência médica simples ficam sem classificação
+  }
+}
+// Legenda de fonte de cada tipo de medida (última linha do registro, no mesmo espírito de
+// macroFonteNotaTemplate()/.micro-fonte-nota) -- só é mostrada quando classificarMedida() conseguiu
+// classificar o registro (ver medidaHistoryRowTemplate()).
+function legendaMedida(r) {
+  switch (r.tipo) {
+    case "peso":
+      return "Classificação por IMC (peso ÷ altura²): abaixo de 18,5 abaixo do peso; 18,5–24,9 peso normal; 25–29,9 sobrepeso; 30–34,9 obesidade grau I; 35–39,9 obesidade grau II; 40 ou mais obesidade grau III — Organização Mundial da Saúde.";
+    case "pressao":
+      return "Pressão arterial (mmHg): baixa < 90/60; normal < 120/80; pré-hipertensão 120–139/80–89; hipertensão estágio 1 140–159/90–99; estágio 2 160–179/100–109; estágio 3 (crise) ≥ 180/110 — Diretriz Brasileira de Hipertensão Arterial (SBC/SBH/SBN, 2020).";
+    case "batimentos":
+      return "Frequência cardíaca de repouso: abaixo de 50 bpm bradicardia; 50–99 bpm normal; 100 bpm ou mais taquicardia — Sociedade Brasileira de Cardiologia.";
+    case "glicemia":
+      return r.jejum
+        ? "Glicemia em jejum: abaixo de 70 mg/dL hipoglicemia; até 99 mg/dL normal; 100–125 mg/dL pré-diabetes; 126 mg/dL ou mais faixa de diabetes — Sociedade Brasileira de Diabetes."
+        : "Glicemia fora do jejum: abaixo de 70 mg/dL hipoglicemia; até 139 mg/dL dentro do esperado; 140–199 mg/dL elevada; 200 mg/dL ou mais sugestiva de diabetes — Sociedade Brasileira de Diabetes.";
+    case "temperatura":
+      return "Temperatura corporal: abaixo de 35°C hipotermia; 35–37,2°C normal; 37,3–37,7°C febrícula; 37,8–38,9°C febre; 39–40°C febre alta; acima de 40°C hiperpirexia — parâmetros clínicos usuais (enfermagem/semiologia médica).";
+    case "saturacao":
+      return "Saturação de oxigênio (SpO₂): 95–100% normal; 90–94% levemente reduzida; 85–89% baixa; abaixo de 85% muito baixa (risco à vida) — Sociedade Brasileira de Pneumologia e Tisiologia.";
+    case "cintura": {
+      const sexo = state.usuario && state.usuario.sexo;
+      if (sexo === "masculino") return "Circunferência da cintura (homens): abaixo de 94 cm risco não aumentado; 94–101,9 cm risco aumentado; 102 cm ou mais risco muito aumentado — Organização Mundial da Saúde.";
+      if (sexo === "feminino") return "Circunferência da cintura (mulheres): abaixo de 80 cm risco não aumentado; 80–87,9 cm risco aumentado; 88 cm ou mais risco muito aumentado — Organização Mundial da Saúde.";
+      return "Circunferência da cintura (Organização Mundial da Saúde): risco aumentado a partir de 94 cm em homens e 80 cm em mulheres; risco muito aumentado a partir de 102 cm em homens e 88 cm em mulheres. Informe seu sexo no perfil para ver a sua classificação.";
+    }
+    default:
+      return null;
+  }
+}
 /* Limites (em kg/m²) usados para desenhar as faixas coloridas do gráfico de IMC. */
 const IMC_ESCALA_MIN = 15;
 const IMC_ESCALA_MAX = 45;
@@ -1659,7 +1855,22 @@ function acaoMostrarCampoNovaSenha() { state.showNovaSenha = true; render(); }
 function acaoTrocarAba(aba) { state.activeTab = aba; render(); }
 
 /* ===================== medidas e aferições ===================== */
-function acaoSelecionarTipoMedida(tipo) { state.medidaTipo = tipo; render(); }
+function acaoSelecionarTipoMedida(tipo) { state.medidaTipo = tipo; state.medidaGlicemiaJejum = ""; render(); }
+// Trocar a resposta de jejum dispara um re-render (pra atualizar o <select> com a opção escolhida), e
+// esse re-render recria o campo de valor/observação do zero (não são inputs "controlados" por
+// state) -- sem isso, um valor já digitado antes de responder a pergunta de jejum seria perdido. Por
+// isso guarda o que já estava digitado e devolve pros campos recriados, igual a um input "não
+// controlado" resistiria a esse tipo de re-render.
+function acaoSelecionarJejumGlicemia(valor) {
+  const valorDigitado = (document.getElementById("medida-valor") || {}).value || "";
+  const notaDigitada = (document.getElementById("medida-nota") || {}).value || "";
+  state.medidaGlicemiaJejum = valor;
+  render();
+  const inputValor = document.getElementById("medida-valor");
+  if (inputValor) inputValor.value = valorDigitado;
+  const inputNota = document.getElementById("medida-nota");
+  if (inputNota) inputNota.value = notaDigitada;
+}
 function acaoSalvarMedida() {
   const tipo = state.medidaTipo;
   if (!tipo || !medidaTipos[tipo]) { toastError("Selecione o tipo de medição."); return; }
@@ -1669,6 +1880,13 @@ function acaoSalvarMedida() {
   const meta = medidaTipos[tipo];
   const valor = meta.texto ? valorBruto : valorBruto.replace(",", ".");
   if (!meta.texto && isNaN(Number(valor))) { toastError("Informe um valor numérico válido."); return; }
+  // Glicemia precisa saber se foi em jejum ou não antes de salvar, porque os parâmetros de referência
+  // usados na classificação/legenda do registro são bem diferentes num caso e no outro -- ver
+  // legendaMedida()/classificarMedida() e a pergunta em medidasFormTemplate().
+  if (tipo === "glicemia" && state.medidaGlicemiaJejum !== "sim" && state.medidaGlicemiaJejum !== "nao") {
+    toastError("Informe se a medição foi feita em jejum.");
+    return;
+  }
   const notaInput = document.getElementById("medida-nota");
   const nota = notaInput ? notaInput.value.trim() : "";
   const now = new Date();
@@ -1681,9 +1899,11 @@ function acaoSalvarMedida() {
   // não mudar o IMC de pesos antigos se a altura for atualizada depois. Sem altura cadastrada ainda,
   // fica sem IMC (mesma mensagem do card do topo pedindo pra cadastrar a altura em Bioimpedância).
   if (tipo === "peso") novaMedida.imc = calcularImcDoPeso(Number(valor));
+  if (tipo === "glicemia") novaMedida.jejum = state.medidaGlicemiaJejum === "sim";
   state.medidas = state.medidas.concat([novaMedida]);
   persistMedidas();
   state.medidaTipo = "";
+  state.medidaGlicemiaJejum = "";
   toastSuccess(tipo === "peso" && novaMedida.imc
     ? "Registro salvo no histórico (IMC " + formatNumber(novaMedida.imc, 1) + ")."
     : "Registro salvo no histórico.");
@@ -3710,18 +3930,30 @@ function medidasHistoryDayCardTemplate(date) {
         icon("chevron", "history-day-chevron") + "</span>" +
       "</div>" +
       (expandido
-        ? '<div class="medidas-history-list">' + dayMedidas.map((r) => {
-            const meta = medidaTipos[r.tipo] || { label: r.tipo, unidade: "" };
-            return '<div class="medida-history-row"><div class="medida-history-left"><span class="medida-history-tipo">' + esc(meta.label) + "</span>" +
-              '<span class="medida-history-meta">' + icon("clock") + " " + esc(r.time) + "</span>" +
-              (r.nota ? '<span class="medida-history-nota">' + icon("help") + " " + esc(r.nota) + "</span>" : "") +
-              "</div>" +
-              '<div class="medida-history-right"><div class="medida-history-valor-col"><span class="medida-history-valor">' + esc(String(r.valor)) + " " + esc(meta.unidade) + "</span>" +
-              (r.tipo === "peso" && r.imc ? '<span class="medida-history-imc">IMC ' + formatNumber(r.imc, 1) + " · " + esc(classificarImc(r.imc)) + "</span>" : "") + "</div>" +
-              '<button class="meal-row-delete" aria-label="Remover registro" onclick="acaoRemoverMedida(' + r.id + ')">' + icon("trash") + "</button></div></div>";
-          }).join("") + "</div>"
+        ? '<div class="medidas-history-list">' + dayMedidas.map(medidaHistoryRowTemplate).join("") + "</div>"
         : ""
       ) +
+    "</div>";
+}
+// Uma linha do histórico de Medidas e Aferições: tipo, horário, observação (e, só pra glicemia, se foi
+// em jejum), valor e -- quando aplicável -- uma classificação clínica logo abaixo do valor
+// (classificarMedida()) e uma legenda compacta na ÚLTIMA linha do próprio registro com os parâmetros de
+// referência e a fonte (legendaMedida()), a pedido do usuário. Pescoço fica sem classificação/legenda.
+function medidaHistoryRowTemplate(r) {
+  const meta = medidaTipos[r.tipo] || { label: r.tipo, unidade: "" };
+  const classificacao = classificarMedida(r);
+  const legenda = legendaMedida(r);
+  return '' +
+    '<div class="medida-history-item">' +
+      '<div class="medida-history-row"><div class="medida-history-left"><span class="medida-history-tipo">' + esc(meta.label) + "</span>" +
+      '<span class="medida-history-meta">' + icon("clock") + " " + esc(r.time) + "</span>" +
+      (r.tipo === "glicemia" ? '<span class="medida-history-meta">' + (r.jejum ? "Em jejum" : "Fora do jejum") + "</span>" : "") +
+      (r.nota ? '<span class="medida-history-nota">' + icon("help") + " " + esc(r.nota) + "</span>" : "") +
+      "</div>" +
+      '<div class="medida-history-right"><div class="medida-history-valor-col"><span class="medida-history-valor">' + esc(String(r.valor)) + " " + esc(meta.unidade) + "</span>" +
+      (classificacao ? '<span class="medida-history-status" style="color:' + classificacao.cor + '">' + (r.tipo === "peso" && r.imc ? "IMC " + formatNumber(r.imc, 1) + " · " : "") + esc(classificacao.label) + "</span>" : "") + "</div>" +
+      '<button class="meal-row-delete" aria-label="Remover registro" onclick="acaoRemoverMedida(' + r.id + ')">' + icon("trash") + "</button></div></div>" +
+      (legenda ? '<p class="medida-history-legenda">' + icon("help") + " " + esc(legenda) + "</p>" : "") +
     "</div>";
 }
 // Exclui TODOS os registros de medida daquele dia -- o "registro do dia" no histórico é o agrupamento
@@ -3761,8 +3993,18 @@ function medidasFormTemplate() {
           '<div class="medida-input-row"><div><label class="field-label">' + meta.label + " (" + meta.unidade + ")</label>" +
           '<input id="medida-valor" class="field-input" placeholder="' + meta.placeholder + '" onkeydown="if(event.key===\'Enter\') acaoSalvarMedida();"/>' +
           '<p class="imc-empty" style="margin-top:6px">' + meta.exemplo + "</p></div>" +
+          (tipo === "glicemia" ?
+            '<div><label class="field-label">Foi medida em jejum?</label>' +
+            '<select id="medida-glicemia-jejum" class="field-input" onchange="acaoSelecionarJejumGlicemia(this.value)">' +
+              '<option value="">Selecione...</option>' +
+              '<option value="sim"' + (state.medidaGlicemiaJejum === "sim" ? " selected" : "") + ">Sim, em jejum</option>" +
+              '<option value="nao"' + (state.medidaGlicemiaJejum === "nao" ? " selected" : "") + ">Não, fora do jejum</option>" +
+            "</select>" +
+            '<p class="imc-empty" style="margin-top:6px">Usamos essa informação pra avaliar o resultado com o parâmetro de referência correto.</p></div>'
+            : ""
+          ) +
           '<div><label class="field-label">Observação (opcional)</label>' +
-          '<textarea id="medida-nota" class="field-input medida-nota-textarea" rows="2" placeholder="Ex.: em jejum, após o treino, antes de dormir..."></textarea></div>' +
+          '<textarea id="medida-nota" class="field-input medida-nota-textarea" rows="2" placeholder="Ex.: após o treino, antes de dormir..."></textarea></div>' +
           '<button class="btn-primary" onclick="acaoSalvarMedida()">' + icon("check") + " Salvar registro</button></div>"
           : ""
         ) +
@@ -4175,6 +4417,9 @@ function nutricaoTabTemplate() {
         '<button class="summary-edit-btn" aria-label="Editar metas diárias" onclick="state.showGoals=!state.showGoals;render()">' + icon("edit") + "</button>" +
         '<div class="summary-inner">' +
         '<div class="summary-label">' + icon("sparkles") + " Seu resumo de hoje</div>" +
+        (state.goals.objetivo && OBJETIVOS_META[state.goals.objetivo]
+          ? '<div class="summary-meta">Meta: ' + esc(OBJETIVOS_META[state.goals.objetivo].label) + "</div>"
+          : "") +
         '<div class="summary-stats"><div><div class="summary-remaining-value">' + formatNumber(Math.max(0, remaining.calories)) + '</div><div class="summary-remaining-label">kcal restantes</div></div>' +
         '<div class="summary-consumed"><div class="summary-consumed-value">' + formatNumber(consumed.calories) + '</div><div class="summary-consumed-label">de ' + formatNumber(state.goals.calories) + " kcal</div></div></div>" +
         '<div class="progress-track-light"><div class="progress-fill-light" style="width:' + pct(consumed.calories, state.goals.calories) + '%"></div></div>' +
