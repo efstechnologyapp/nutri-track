@@ -309,6 +309,18 @@ svg{ display: block; }
 .meal-preview-total-row .label{ font-size:14px; font-weight:600; color:#f0f7eb; }
 .meal-preview-total-row .value{ font-family:'Fraunces',serif; font-size:24px; font-weight:600; color:#d9efbd; }
 .meal-preview-macros{ margin-top:4px; text-align:right; font-size:12px; color:#a9c6b7; }
+.exposicao-solar-aviso{ margin:0 0 4px; display:flex; align-items:flex-start; gap:6px; font-size:12.5px; line-height:1.5; color:#d9efbd; }
+.exposicao-solar-aviso .icon{ flex:0 0 auto; width:14px; height:14px; margin-top:2px; }
+.exposicao-solar-link{ font-weight:600; color:#fff; text-decoration:underline; text-underline-offset:2px; }
+.exposicao-solar-localizacao{ margin:0 0 10px; display:flex; align-items:flex-start; gap:6px; font-size:12.5px; line-height:1.5; color:#a9c6b7; }
+.exposicao-solar-localizacao .icon{ flex:0 0 auto; width:14px; height:14px; margin-top:2px; }
+.exposicao-solar-localizacao-ok{ color:#d9efbd; }
+.exposicao-solar-localizacao-buscando{ color:#b8d4ba; font-style:italic; }
+.exposicao-solar-localizacao-aviso{ color:#e8c98a; }
+.exposicao-solar-resultado{ display:flex; align-items:baseline; gap:8px; }
+.exposicao-solar-valor{ font-family:'Fraunces',serif; font-size:32px; font-weight:600; color:#d9efbd; }
+.exposicao-solar-unidade{ font-size:13px; color:#b8d4ba; }
+.exposicao-solar-detalhe{ margin:8px 0 0; font-size:12.5px; color:#a9c6b7; }
 .btn-accent{ margin-top:16px; display:flex; width:100%; align-items:center; justify-content:center; gap:8px; border-radius:12px; background:#d3e9b9; padding:12px 16px; font-size:14px; font-weight:700; color:#1c4d3e; transition:background .15s; }
 .btn-accent:hover{ background:#e0f2ca; }
 
@@ -740,7 +752,7 @@ const authApi = {
   reenviarCodigo: (email) => chamarApi("reenviarCodigo", { email }),
   login: (email, senha) => chamarApi("login", { email, senha }),
   buscarPerfil: (email) => chamarApi("buscarPerfil", { email }),
-  atualizarPerfil: (email, senhaAtual, novoNome, novaSenha, dataNascimento, sexo) => chamarApi("atualizarPerfil", { email, senhaAtual, novoNome, novaSenha, dataNascimento, sexo }),
+  atualizarPerfil: (email, senhaAtual, novoNome, novaSenha, dataNascimento, sexo, tipoPele) => chamarApi("atualizarPerfil", { email, senhaAtual, novoNome, novaSenha, dataNascimento, sexo, tipoPele }),
   atualizarFoto: (email, foto) => chamarApi("atualizarFoto", { email, foto }),
   conectarGoogle: (email, code) => chamarApi("conectarGoogle", { email, code }),
   desconectarGoogle: (email) => chamarApi("desconectarGoogle", { email }),
@@ -1260,7 +1272,139 @@ const foodLibrary = [
   { terms: ["limao"], label: "Limão", baseAmount: "1 unidade (70 g)", values: { calories: 20, protein: 0.5, carbs: 6.5, fat: 0.2, fiber: 1.9, vitA: 1, vitC: 35, vitD: 0, calcio: 18, ferro: 0.4, magnesio: 6, potassio: 90, zinco: 0.1, sodio: 1, vitB12: 0 }, count: 1 },
 ];
 
-const MEAL_TIPOS = ["Caf\u00e9 da manh\u00e3", "Lanche da manh\u00e3", "Almo\u00e7o", "Lanche da tarde", "Jantar", "Ceia", "Suplementa\u00e7\u00e3o", "Outro"];
+const MEAL_TIPOS = ["Caf\u00e9 da manh\u00e3", "Lanche da manh\u00e3", "Almo\u00e7o", "Lanche da tarde", "Jantar", "Ceia", "Suplementa\u00e7\u00e3o", "Exposi\u00e7\u00e3o Solar", "Outro"];
+
+/* ===================== exposi\u00e7\u00e3o solar (vitamina D) ===================== */
+// O sol \u00e9 a principal fonte de vitamina D do corpo (a pele sintetiza a partir da radia\u00e7\u00e3o UVB) -- essa
+// se\u00e7\u00e3o estima quanto foi sintetizado numa exposi\u00e7\u00e3o, a partir do hor\u00e1rio de in\u00edcio/fim, do \u00edndice UV
+// real do local (via geolocaliza\u00e7\u00e3o do dispositivo + API p\u00fablica Open-Meteo, sem chave de acesso) e do
+// tipo de pele cadastrado no perfil do usu\u00e1rio (ver TIPOS_PELE/editarPerfilTemplate()). Quando a
+// localiza\u00e7\u00e3o n\u00e3o \u00e9 autorizada ou a busca do \u00edndice UV falha (sem internet, API fora do ar), o app cai
+// automaticamente pro modo manual (a pessoa informa como estava o c\u00e9u) -- ver
+// exposicaoSolarCamposTemplate()/acaoObterLocalizacaoExposicao(). N\u00e3o \u00e9 uma medi\u00e7\u00e3o real (s\u00f3 exame de
+// sangue mostra o n\u00edvel de verdade) -- \u00e9 uma ESTIMATIVA com base nos fatores que mais pesam na s\u00edntese
+// cut\u00e2nea de vitamina D. Fontes: Holick MF, "Vitamin D Deficiency" (New England Journal of Medicine,
+// 2007) e "Environmental factors that influence the cutaneous production of vitamin D" (American Journal
+// of Clinical Nutrition, 2008); NIH Office of Dietary Supplements \u2014 Vitamin D Fact Sheet.
+
+// Fototipos de pele (escala inspirada em Fitzpatrick, em linguagem do dia a dia) -- fator relativo de
+// velocidade de s\u00edntese de vitamina D: pele mais clara sintetiza bem mais r\u00e1pido que pele mais escura,
+// na MESMA quantidade de sol (a melanina compete com o precursor da vitamina D pela radia\u00e7\u00e3o UVB).
+const TIPOS_PELE = [
+  { valor: "tipo1", label: "Pele muito clara \u2014 sempre queima, nunca bronzeia", fator: 1 },
+  { valor: "tipo2", label: "Pele clara \u2014 queima f\u00e1cil, bronzeia pouco", fator: 0.9 },
+  { valor: "tipo3", label: "Pele morena clara \u2014 queima moderado, bronzeia aos poucos", fator: 0.7 },
+  { valor: "tipo4", label: "Pele morena \u2014 queima pouco, bronzeia bem", fator: 0.55 },
+  { valor: "tipo5", label: "Pele morena escura \u2014 raramente queima, bronzeia bastante", fator: 0.4 },
+  { valor: "tipo6", label: "Pele negra \u2014 praticamente n\u00e3o queima", fator: 0.25 },
+];
+// Sem tipo de pele cadastrado, cai pro fototipo intermedi\u00e1rio (tipo 3) s\u00f3 pra n\u00e3o travar um c\u00e1lculo j\u00e1
+// em andamento -- na pr\u00e1tica a tela de exposi\u00e7\u00e3o solar exige o cadastro antes de liberar o bot\u00e3o de
+// calcular (ver exposicaoSolarCamposTemplate()), ent\u00e3o esse fallback quase nunca \u00e9 usado de verdade.
+function fatorTipoPele(valor) { const t = TIPOS_PELE.find((x) => x.valor === valor); return t ? t.fator : 0.7; }
+
+// Condi\u00e7\u00e3o do c\u00e9u no momento da exposi\u00e7\u00e3o -- s\u00f3 usada no modo MANUAL (fallback), quando n\u00e3o foi
+// poss\u00edvel obter o \u00edndice UV real pela localiza\u00e7\u00e3o (ver calcularVitaminaDSolPorUV() mais abaixo, que \u00e9 o
+// caminho preferido). Nuvens bloqueiam boa parte (mas n\u00e3o toda) a radia\u00e7\u00e3o UVB.
+const CEU_FATOR = { limpo: 1, parcial: 0.6, nublado: 0.25 };
+const CEU_LABEL = { limpo: "C\u00e9u limpo (sol forte, sem nuvens)", parcial: "Parcialmente nublado", nublado: "Muito nublado / encoberto" };
+
+// Intensidade relativa da radia\u00e7\u00e3o UVB conforme a hora do dia -- curva suave com pico ao meio-dia e
+// zero antes das 6h/depois das 18h, aproximando o formato real da curva solar sem precisar saber
+// latitude, esta\u00e7\u00e3o do ano ou \u00edndice UV em tempo real. Usada s\u00f3 no modo manual (calcularVitaminaDSol()
+// / fallback sem localiza\u00e7\u00e3o) -- quando h\u00e1 \u00edndice UV real dispon\u00edvel, ele j\u00e1 embute a varia\u00e7\u00e3o por
+// hor\u00e1rio e essa curva n\u00e3o \u00e9 usada (ver calcularVitaminaDSolPorUV()).
+function fatorHorarioSolar(horaDecimal) {
+  if (horaDecimal <= 6 || horaDecimal >= 18) return 0;
+  return Math.max(0, Math.cos((horaDecimal - 12) * (Math.PI / 12)));
+}
+// "13:30" -> 13.5
+function horaParaDecimal(hhmm) {
+  const partes = String(hhmm).split(":");
+  const h = Number(partes[0]);
+  const m = Number(partes[1] || 0);
+  return h + m / 60;
+}
+
+// Calibrado pra que ~15 minutos de sol a pino (meio-dia), c\u00e9u limpo, fototipo 3 (o "meio-termo" da
+// escala) produzam cerca de 25 mcg (\u22481000 UI) de vitamina D -- estimativa de exposi\u00e7\u00e3o moderada
+// amplamente citada na literatura (ver Holick, 2007). TETO: a pele se autorregula e para de sintetizar
+// mais vitamina D depois de um certo ponto (fotodegrada\u00e7\u00e3o do excesso de pr\u00e9-vitamina D3) -- por isso
+// o resultado nunca passa de ~250 mcg (\u224810.000 UI) numa \u00fanica exposi\u00e7\u00e3o, por mais tempo de sol que dure.
+const VITAMINA_D_SOL_TAXA_BASE = 2.4; // mcg por minuto, em condi\u00e7\u00f5es de refer\u00eancia (fator 1 em tudo)
+const VITAMINA_D_SOL_TETO_MCG = 250;
+const VITAMINA_D_SOL_PASSO_MIN = 5; // granularidade da integra\u00e7\u00e3o num\u00e9rica ao longo da janela de exposi\u00e7\u00e3o
+
+// Soma o fator hora-a-hora ao longo de toda a janela de exposi\u00e7\u00e3o (em vez de s\u00f3 olhar um ponto m\u00e9dio)
+// -- importa pra janelas longas que atravessam hor\u00e1rios bem diferentes (ex.: 9h \u00e0s 15h tem sol muito
+// mais forte no meio do que nas pontas). Retorna null se o hor\u00e1rio de t\u00e9rmino n\u00e3o for depois do in\u00edcio,
+// ou se a condi\u00e7\u00e3o do c\u00e9u n\u00e3o for uma das reconhecidas.
+function calcularVitaminaDSol(inicio, fim, ceu, tipoPeleValor) {
+  const inicioDec = horaParaDecimal(inicio);
+  const fimDec = horaParaDecimal(fim);
+  if (!(inicio && fim) || !(fimDec > inicioDec)) return null;
+  const fatorCeu = CEU_FATOR[ceu];
+  if (fatorCeu == null) return null;
+  const fatorPele = fatorTipoPele(tipoPeleValor);
+  const passoHoras = VITAMINA_D_SOL_PASSO_MIN / 60;
+  let minutosPonderados = 0;
+  for (let h = inicioDec; h < fimDec; h += passoHoras) {
+    minutosPonderados += fatorHorarioSolar(h) * VITAMINA_D_SOL_PASSO_MIN;
+  }
+  const mcg = Math.min(VITAMINA_D_SOL_TETO_MCG, VITAMINA_D_SOL_TAXA_BASE * minutosPonderados * fatorCeu * fatorPele);
+  return { mcg, minutos: Math.round((fimDec - inicioDec) * 60) };
+}
+
+// ---- Caminho preferido: \u00edndice UV real, via geolocaliza\u00e7\u00e3o do dispositivo ----
+// Quando o navegador consegue a localiza\u00e7\u00e3o do usu\u00e1rio, buscarIndiceUVAtual() traz o \u00edndice UV real
+// hora-a-hora de HOJE pra aquele local (API p\u00fablica e gratuita Open-Meteo, sem chave de acesso). O
+// \u00edndice UV \u00e9 uma medida direta da radia\u00e7\u00e3o (inclui nuvens, esta\u00e7\u00e3o do ano, latitude, tudo isso j\u00e1
+// embutido), ent\u00e3o substitui de vez a curva estimada por hor\u00e1rio + a sele\u00e7\u00e3o manual do c\u00e9u -- \u00e9 um
+// c\u00e1lculo mais preciso, e continua sem precisar de nenhuma chave de API paga.
+// Interpola linearmente entre as duas leituras hor\u00e1rias mais pr\u00f3ximas (a API s\u00f3 d\u00e1 1 valor por hora).
+function uvIndexNaHora(horaDecimal, uvHorario) {
+  if (!uvHorario || !uvHorario.uv || !uvHorario.uv.length) return 0;
+  const h0 = Math.max(0, Math.min(uvHorario.uv.length - 1, Math.floor(horaDecimal)));
+  const h1 = Math.min(uvHorario.uv.length - 1, h0 + 1);
+  const frac = horaDecimal - h0;
+  const v0 = uvHorario.uv[h0] != null ? uvHorario.uv[h0] : 0;
+  const v1 = uvHorario.uv[h1] != null ? uvHorario.uv[h1] : v0;
+  return v0 + (v1 - v0) * frac;
+}
+// Calibrado no MESMO ponto de refer\u00eancia do modo manual (ver calcularVitaminaDSol() acima): \u00edndice UV 7
+// (sol forte ao meio-dia, c\u00e9u limpo) por 15 minutos, fototipo 3, \u2248 25 mcg de vitamina D.
+const VITAMINA_D_SOL_UV_REF = 7;
+const VITAMINA_D_SOL_MIN_REF = 15;
+const VITAMINA_D_SOL_MCG_REF = 25;
+const VITAMINA_D_SOL_TAXA_UV = VITAMINA_D_SOL_MCG_REF / (VITAMINA_D_SOL_UV_REF * VITAMINA_D_SOL_MIN_REF * fatorTipoPele("tipo3"));
+// Mesma integra\u00e7\u00e3o num\u00e9rica de calcularVitaminaDSol() (passos de 5 min ao longo da janela), s\u00f3 que
+// pesando pelo \u00edndice UV real de cada instante em vez da curva estimada \u00d7 fator do c\u00e9u. Retorna null se
+// o hor\u00e1rio de t\u00e9rmino n\u00e3o for depois do in\u00edcio, ou se n\u00e3o houver dados de \u00edndice UV em m\u00e3os.
+function calcularVitaminaDSolPorUV(inicio, fim, uvHorario, tipoPeleValor) {
+  const inicioDec = horaParaDecimal(inicio);
+  const fimDec = horaParaDecimal(fim);
+  if (!(inicio && fim) || !(fimDec > inicioDec)) return null;
+  if (!uvHorario || !uvHorario.uv || !uvHorario.uv.length) return null;
+  const fatorPele = fatorTipoPele(tipoPeleValor);
+  const passoHoras = VITAMINA_D_SOL_PASSO_MIN / 60;
+  let uvMinutos = 0;
+  for (let h = inicioDec; h < fimDec; h += passoHoras) {
+    uvMinutos += uvIndexNaHora(h, uvHorario) * VITAMINA_D_SOL_PASSO_MIN;
+  }
+  const mcg = Math.min(VITAMINA_D_SOL_TETO_MCG, VITAMINA_D_SOL_TAXA_UV * uvMinutos * fatorPele);
+  return { mcg, minutos: Math.round((fimDec - inicioDec) * 60) };
+}
+// Consulta o \u00edndice UV hora-a-hora de HOJE pra uma coordenada, usando a API p\u00fablica e gratuita
+// Open-Meteo (sem chave de acesso, sem cadastro, aceita chamadas direto do navegador). Lan\u00e7a erro se a
+// consulta falhar (sem internet, API fora do ar) -- quem chama trata isso caindo pro modo manual.
+async function buscarIndiceUVAtual(lat, lon) {
+  const url = "https://api.open-meteo.com/v1/forecast?latitude=" + encodeURIComponent(lat) + "&longitude=" + encodeURIComponent(lon) + "&hourly=uv_index&timezone=auto&forecast_days=1";
+  const resposta = await fetch(url);
+  if (!resposta.ok) throw new Error("Falha ao consultar \u00edndice UV (HTTP " + resposta.status + ")");
+  const dados = await resposta.json();
+  if (!dados || !dados.hourly || !Array.isArray(dados.hourly.uv_index)) throw new Error("Resposta inesperada da API de \u00edndice UV");
+  return { horarios: dados.hourly.time, uv: dados.hourly.uv_index };
+}
 
 // Em ordem alfab\u00e9tica.
 const ESPORTE_TIPOS = ["Boxe", "Caminhada", "Ciclismo", "Corrida", "Futebol", "Jiu-jitsu", "Muay Thai", "Muscula\u00e7\u00e3o", "Nata\u00e7\u00e3o", "T\u00eanis"];
@@ -1520,6 +1664,18 @@ const state = {
   mealTipo: "",
   mealNomeCustom: "",
   mealDescription: "",
+  // Campos do formulário de "Exposição Solar" -- ver exposicaoSolarCamposTemplate()/
+  // acaoCalcularExposicaoSolar()/calcularVitaminaDSol(). Só aparecem quando mealTipo === "Exposição
+  // Solar" (ver acaoSelecionarTipoRefeicao()), mesmo espírito de mealNomeCustom para "Outro".
+  exposicaoInicio: "",
+  exposicaoFim: "",
+  exposicaoCeu: "",
+  // Status da busca de localização/índice UV pra exposição solar -- ver acaoObterLocalizacaoExposicao()/
+  // exposicaoSolarCamposTemplate(). "idle" = ainda não tentou; "buscando"; "ok" (com exposicaoUVHorario
+  // preenchido); "negado" (permissão de localização recusada); "indisponivel" (sem suporte no
+  // dispositivo); "erro" (falha de rede/API); "manual" (usuário optou por informar o céu à mao).
+  exposicaoLocalizacaoStatus: "idle",
+  exposicaoUVHorario: null,
   showGoals: false,
   showHistory: false,
   // Data do dia expandido no histórico de refeições (accordion: um dia de cada vez, ou nenhum) -- ver
@@ -2108,7 +2264,7 @@ async function acaoEntrar(email, senha) {
       toastError(resposta.erro || "Não foi possível entrar.");
       return;
     }
-    state.usuario = { nome: resposta.nome, email: resposta.email, foto: resposta.foto || "", dataNascimento: resposta.dataNascimento || "", sexo: resposta.sexo || "" };
+    state.usuario = { nome: resposta.nome, email: resposta.email, foto: resposta.foto || "", dataNascimento: resposta.dataNascimento || "", sexo: resposta.sexo || "", tipoPele: resposta.tipoPele || "" };
     persistUsuario();
     render();
     sincronizarDoServidor();
@@ -2161,17 +2317,17 @@ function acaoSair() {
   toastSuccess("Você saiu da sua conta.");
   render();
 }
-async function acaoSalvarPerfil(nome, senhaAtual, novaSenha, dataNascimento, sexo) {
+async function acaoSalvarPerfil(nome, senhaAtual, novaSenha, dataNascimento, sexo, tipoPele) {
   if (!nome.trim()) { toastError("O nome não pode ficar em branco."); return; }
   if (!senhaAtual) { toastError("Digite sua senha atual para confirmar as alterações."); return; }
   if (novaSenha && novaSenha.length < 6) { toastError("A nova senha precisa ter pelo menos 6 caracteres."); return; }
   const btn = document.getElementById("perfil-btn");
   if (btn) btn.disabled = true;
   try {
-    const resposta = await authApi.atualizarPerfil(state.usuario.email, senhaAtual, nome.trim(), novaSenha || undefined, dataNascimento || "", sexo || "");
+    const resposta = await authApi.atualizarPerfil(state.usuario.email, senhaAtual, nome.trim(), novaSenha || undefined, dataNascimento || "", sexo || "", tipoPele || "");
     if (!resposta.ok) { toastError(resposta.erro || "Não foi possível salvar."); return; }
     toastSuccess("Perfil atualizado.");
-    state.usuario = { nome: resposta.nome || nome.trim(), email: state.usuario.email, foto: state.usuario.foto || "", dataNascimento: dataNascimento || "", sexo: sexo || "" };
+    state.usuario = { nome: resposta.nome || nome.trim(), email: state.usuario.email, foto: state.usuario.foto || "", dataNascimento: dataNascimento || "", sexo: sexo || "", tipoPele: tipoPele || "" };
     persistUsuario();
     state.showEditarPerfil = false;
     state.showNovaSenha = false;
@@ -2429,20 +2585,21 @@ function mesclarExerciciosCustomizados(local, remoto) {
   return resultado;
 }
 
-// Mantém nome/foto/data de nascimento/sexo atualizados em qualquer aparelho logado na mesma conta.
-// Esses campos ficam guardados na nossa própria conta de usuário (não dependem do Google estar
-// conectado), mas antes só eram buscados no momento do login — por isso um dado editado no celular
-// não aparecia no PC (e vice-versa) enquanto o app continuasse aberto e logado lá. Roda sempre junto
-// da sincronização normal (abertura do app, volta de segundo plano, foco na janela).
+// Mantém nome/foto/data de nascimento/sexo/tipo de pele atualizados em qualquer aparelho logado na
+// mesma conta. Esses campos ficam guardados na nossa própria conta de usuário (não dependem do Google
+// estar conectado), mas antes só eram buscados no momento do login — por isso um dado editado no
+// celular não aparecia no PC (e vice-versa) enquanto o app continuasse aberto e logado lá. Roda sempre
+// junto da sincronização normal (abertura do app, volta de segundo plano, foco na janela).
 async function sincronizarPerfilDoServidor() {
   try {
     const resposta = await authApi.buscarPerfil(state.usuario.email);
     if (!resposta || !resposta.ok) return;
     const mudou = state.usuario.nome !== resposta.nome || (state.usuario.foto || "") !== (resposta.foto || "") ||
-      (state.usuario.dataNascimento || "") !== (resposta.dataNascimento || "") || (state.usuario.sexo || "") !== (resposta.sexo || "");
+      (state.usuario.dataNascimento || "") !== (resposta.dataNascimento || "") || (state.usuario.sexo || "") !== (resposta.sexo || "") ||
+      (state.usuario.tipoPele || "") !== (resposta.tipoPele || "");
     if (!mudou) return;
     state.usuario = Object.assign({}, state.usuario, {
-      nome: resposta.nome, foto: resposta.foto || "", dataNascimento: resposta.dataNascimento || "", sexo: resposta.sexo || "",
+      nome: resposta.nome, foto: resposta.foto || "", dataNascimento: resposta.dataNascimento || "", sexo: resposta.sexo || "", tipoPele: resposta.tipoPele || "",
     });
     persistUsuario();
     render();
@@ -2554,8 +2711,83 @@ function acaoAnalisar() {
   render();
 }
 function acaoSelecionarTipoRefeicao(tipo) {
+  // Trocar de/para "Exposição Solar" invalida o que já estava calculado -- o preview de "Exposição
+  // Solar" (um item só, com só vitamina D) não faz sentido misturado com o preview de alimentos (vários
+  // itens, com kcal/macros), e vice-versa. Trocar entre dois tipos de refeição "normais" continua
+  // preservando o preview de alimentos já calculado, como sempre foi.
+  if (tipo === "Exposição Solar" || state.mealTipo === "Exposição Solar") { state.preview = []; state.mealDescription = ""; }
   state.mealTipo = tipo;
   if (tipo !== "Outro") state.mealNomeCustom = "";
+  // Ao entrar em "Exposição Solar" pela primeira vez, já tenta obter a localização sozinho (sem exigir
+  // um clique extra) -- só na primeira vez (status "idle"), pra não ficar pedindo de novo toda hora que
+  // a pessoa troca de tipo de refeição e volta.
+  if (tipo === "Exposição Solar" && state.exposicaoLocalizacaoStatus === "idle") {
+    acaoObterLocalizacaoExposicao(); // já chama render() internamente
+    return;
+  }
+  render();
+}
+// Pede a localização do dispositivo (API padrão do navegador, sem custo) e busca o índice UV real do
+// local/dia (buscarIndiceUVAtual()) -- é o que deixa o cálculo de vitamina D mais preciso, usando dados
+// reais de radiação em vez de só uma curva estimada pela hora do relógio. Se a localização for negada,
+// indisponível, ou a busca do índice UV falhar (sem internet, API fora do ar), cai automaticamente pro
+// modo manual (seleção do céu) sem travar o registro -- ver exposicaoSolarCamposTemplate().
+function acaoObterLocalizacaoExposicao() {
+  if (!navigator.geolocation) { state.exposicaoLocalizacaoStatus = "indisponivel"; render(); return; }
+  state.exposicaoLocalizacaoStatus = "buscando";
+  render();
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      buscarIndiceUVAtual(pos.coords.latitude, pos.coords.longitude).then((dados) => {
+        state.exposicaoUVHorario = dados;
+        state.exposicaoLocalizacaoStatus = "ok";
+        render();
+      }).catch(() => { state.exposicaoLocalizacaoStatus = "erro"; render(); });
+    },
+    (erro) => { state.exposicaoLocalizacaoStatus = (erro && erro.code === 1) ? "negado" : "indisponivel"; render(); },
+    { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }
+  );
+}
+// Deixa a pessoa pular a localização de propósito (ou voltar pro modo manual mesmo já tendo o índice UV
+// em mãos) sem precisar esperar a permissão do navegador falhar sozinha -- ver exposicaoSolarCamposTemplate().
+function acaoUsarCeuManual() { state.exposicaoLocalizacaoStatus = "manual"; render(); }
+// Lê os campos do formulário de exposição solar, calcula a vitamina D estimada (calcularVitaminaDSol())
+// e monta um item de preview no MESMO formato de um alimento identificado ({label, amount, values}) --
+// é o que permite reaproveitar mealTotal()/acaoSalvarRefeicao() sem duplicar lógica de salvar refeição.
+function acaoCalcularExposicaoSolar() {
+  const inicioEl = document.getElementById("exposicao-inicio");
+  const fimEl = document.getElementById("exposicao-fim");
+  const inicio = inicioEl ? inicioEl.value : "";
+  const fim = fimEl ? fimEl.value : "";
+  state.exposicaoInicio = inicio;
+  state.exposicaoFim = fim;
+  const tipoPele = state.usuario && state.usuario.tipoPele;
+  if (!tipoPele) { toastError("Cadastre seu tipo de pele no perfil antes de calcular."); return; }
+  if (!inicio || !fim) { toastError("Informe o horário de início e fim da exposição."); return; }
+
+  // Caminho preferido: já temos o índice UV real da localização (ver acaoObterLocalizacaoExposicao()).
+  // Só cai pro modo manual (seleção do céu) quando isso não foi possível.
+  const usandoUV = state.exposicaoLocalizacaoStatus === "ok" && state.exposicaoUVHorario;
+  let resultado, detalheFonte;
+  if (usandoUV) {
+    resultado = calcularVitaminaDSolPorUV(inicio, fim, state.exposicaoUVHorario, tipoPele);
+    detalheFonte = "índice UV real da sua localização";
+  } else {
+    const ceuEl = document.getElementById("exposicao-ceu");
+    const ceu = ceuEl ? ceuEl.value : "";
+    state.exposicaoCeu = ceu;
+    if (!ceu) { toastError("Selecione como estava o céu (ou tente obter sua localização novamente)."); return; }
+    resultado = calcularVitaminaDSol(inicio, fim, ceu, tipoPele);
+    detalheFonte = CEU_LABEL[ceu] + " (informado manualmente)";
+  }
+  if (!resultado) { toastError("O horário de término precisa ser depois do horário de início."); return; }
+  state.preview = [{
+    label: "Exposição solar",
+    amount: inicio + "–" + fim + " (" + resultado.minutos + " min) · " + detalheFonte,
+    values: Object.assign({}, emptyNutrients, { vitD: resultado.mcg }),
+  }];
+  state.mealDescription = "Exposição solar de " + inicio + " às " + fim + " (" + resultado.minutos + " minutos) · " + detalheFonte;
+  toastSuccess("Vitamina D estimada: " + formatNumber(resultado.mcg, 1) + " mcg.");
   render();
 }
 function acaoSalvarRefeicao() {
@@ -2567,8 +2799,12 @@ function acaoSalvarRefeicao() {
   if (!state.preview.length) { toastError("Analise a descrição antes de salvar a refeição."); return; }
   const now = new Date();
   const total = mealTotal();
+  // Sem textarea de descrição no modo "Exposição Solar" (ver exposicaoSolarCamposTemplate()) -- a
+  // descrição, nesse caso, já foi montada automaticamente em acaoCalcularExposicaoSolar() e guardada
+  // direto em state.mealDescription, sem precisar de um campo de texto na tela.
+  const description = descInput ? descInput.value.trim() : state.mealDescription;
   const novaRefeicao = Object.assign({}, total, {
-    id: Date.now(), date: today(), name: mealName, description: descInput.value.trim(),
+    id: Date.now(), date: today(), name: mealName, description: description,
     detected: state.preview.map((f) => f.label), time: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
     // Guarda o detalhamento por alimento (nome, quantidade e todos os nutrientes daquele alimento
     // específico) — é o que permite abrir uma refeição no histórico e ver o que cada alimento
@@ -2578,7 +2814,10 @@ function acaoSalvarRefeicao() {
   state.meals = state.meals.concat([novaRefeicao]);
   persistMeals();
   state.preview = [];
-  state.mealTipo = ""; state.mealNomeCustom = ""; descInput.value = "";
+  state.mealTipo = ""; state.mealNomeCustom = ""; state.mealDescription = "";
+  state.exposicaoInicio = ""; state.exposicaoFim = ""; state.exposicaoCeu = "";
+  state.exposicaoLocalizacaoStatus = "idle"; state.exposicaoUVHorario = null;
+  if (descInput) descInput.value = "";
   toastSuccess("Refeição registrada no histórico.");
   if (state.account) enviarComFila("salvarRefeicaoGoogle", [state.usuario.email, novaRefeicao]);
   render();
@@ -2946,10 +3185,11 @@ function submitPerfil() {
   const nome = document.getElementById("perfil-nome").value;
   const dataNascimento = document.getElementById("perfil-data-nascimento").value;
   const sexo = document.getElementById("perfil-sexo").value;
+  const tipoPele = document.getElementById("perfil-tipo-pele").value;
   const senhaAtual = document.getElementById("perfil-senha-atual").value;
   const novaSenhaEl = document.getElementById("perfil-nova-senha");
   const novaSenha = novaSenhaEl ? novaSenhaEl.value : "";
-  acaoSalvarPerfil(nome, senhaAtual, novaSenha, dataNascimento, sexo);
+  acaoSalvarPerfil(nome, senhaAtual, novaSenha, dataNascimento, sexo, tipoPele);
 }
 
 /* ===================== templates ===================== */
@@ -3066,6 +3306,11 @@ function editarPerfilTemplate() {
           '<option value="masculino"' + (u.sexo === "masculino" ? " selected" : "") + ">Masculino</option>" +
           '<option value="prefiro_nao_informar"' + (u.sexo === "prefiro_nao_informar" ? " selected" : "") + ">Prefiro não informar</option>" +
         "</select></div>" +
+        '<div><label class="field-label">Tipo de pele</label><select id="perfil-tipo-pele" class="field-input">' +
+          '<option value="">Selecione...</option>' +
+          TIPOS_PELE.map((t) => '<option value="' + t.valor + '"' + (u.tipoPele === t.valor ? " selected" : "") + ">" + esc(t.label) + "</option>").join("") +
+        "</select>" +
+        '<p class="imc-empty" style="margin-top:6px">Usamos essa informação pra estimar sua produção de vitamina D quando você registra uma Exposição Solar em Nutrição.</p></div>' +
         (state.showNovaSenha ?
           '<div><label class="field-label">Nova senha</label><input id="perfil-nova-senha" type="password" class="field-input" placeholder="Pelo menos 6 caracteres" autofocus/></div>'
           :
@@ -3243,6 +3488,63 @@ function mealPreviewTemplate() {
     ).join("") + "</div>" +
     '<div class="meal-preview-total"><div class="meal-preview-total-row"><span class="label">Total da refeição</span><span class="value">' + formatNumber(total.calories) + " kcal</span></div>" +
     '<div class="meal-preview-macros">P ' + formatNumber(total.protein, 1) + " · C " + formatNumber(total.carbs, 1) + " · G " + formatNumber(total.fat, 1) + " · F " + formatNumber(total.fiber, 1) + "</div></div>" +
+    '<button class="btn-accent" onclick="acaoSalvarRefeicao()">' + icon("check") + " Salvar no histórico</button>" +
+    "</div>";
+}
+
+// Campos do formulário de "Exposição Solar" -- substitui a textarea de descrição + "Calcular refeição"
+// quando state.mealTipo === "Exposição Solar" (ver a montagem condicional em nutricaoTabTemplate()).
+// Exige tipo de pele cadastrado no perfil (ver TIPOS_PELE) porque é o fator isolado mais importante pra
+// estimar a produção de vitamina D -- sem ele, o botão de calcular fica desabilitado e mostra um aviso
+// com atalho direto pra tela de editar perfil.
+function exposicaoSolarCamposTemplate() {
+  const semTipoPele = !(state.usuario && state.usuario.tipoPele);
+  const status = state.exposicaoLocalizacaoStatus;
+  const usandoUV = status === "ok" && state.exposicaoUVHorario;
+  const buscando = status === "buscando";
+
+  let blocoLocalizacao;
+  if (buscando) {
+    blocoLocalizacao = '<p class="exposicao-solar-localizacao exposicao-solar-localizacao-buscando">' + icon("sun") + " Obtendo sua localização e o índice UV de hoje...</p>";
+  } else if (usandoUV) {
+    blocoLocalizacao = '<p class="exposicao-solar-localizacao exposicao-solar-localizacao-ok">' + icon("check") + ' Usando o índice UV real da sua localização de hoje. <button type="button" class="exposicao-solar-link" onclick="acaoUsarCeuManual()">Prefiro informar o céu manualmente</button></p>';
+  } else {
+    const avisos = { negado: "Localização não autorizada.", indisponivel: "Localização indisponível neste dispositivo.", erro: "Não consegui buscar o índice UV agora (sem internet?)." };
+    const aviso = avisos[status] || "";
+    blocoLocalizacao = '<p class="exposicao-solar-localizacao' + (aviso ? " exposicao-solar-localizacao-aviso" : "") + '">' +
+      (aviso ? icon("help") + " " + aviso + " Informe o céu manualmente abaixo, ou " : "") +
+      '<button type="button" class="exposicao-solar-link" onclick="acaoObterLocalizacaoExposicao()">' + (aviso ? "tente de novo" : "usar minha localização pra um cálculo mais preciso") + "</button>." +
+      "</p>";
+  }
+
+  return '' +
+    (semTipoPele ?
+      '<p class="exposicao-solar-aviso">' + icon("help") + ' Cadastre seu <button type="button" class="exposicao-solar-link" onclick="acaoAbrirEditarPerfil()">tipo de pele no perfil</button> pra calcular -- é o que mais influencia a velocidade de produção de vitamina D pela pele.</p>'
+      : "") +
+    '<div class="meal-form-row">' +
+      '<div><label class="meal-form-label">Início da exposição</label><input id="exposicao-inicio" type="time" class="meal-input" value="' + esc(state.exposicaoInicio) + '"/></div>' +
+      '<div><label class="meal-form-label">Fim da exposição</label><input id="exposicao-fim" type="time" class="meal-input" value="' + esc(state.exposicaoFim) + '"/></div>' +
+    "</div>" +
+    blocoLocalizacao +
+    (!usandoUV && !buscando ?
+      '<div><label class="meal-form-label">Como estava o céu?</label>' +
+        '<select id="exposicao-ceu" class="meal-select">' +
+          '<option value="">Selecione...</option>' +
+          Object.keys(CEU_LABEL).map((c) => '<option value="' + c + '"' + (state.exposicaoCeu === c ? " selected" : "") + ">" + esc(CEU_LABEL[c]) + "</option>").join("") +
+        "</select></div>"
+      : "") +
+    '<button class="btn-ghost-light" ' + (semTipoPele || buscando ? "disabled" : "") + ' onclick="acaoCalcularExposicaoSolar()">' + icon("sun") + " Calcular exposição solar</button>";
+}
+// Resultado do cálculo de vitamina D por exposição solar -- no lugar do preview genérico de alimentos
+// (mealPreviewTemplate()), que é focado em kcal/macros, algo que não existe numa exposição solar (só a
+// vitamina D estimada).
+function exposicaoSolarPreviewTemplate() {
+  if (!state.preview.length) return "";
+  const item = state.preview[0];
+  return '' +
+    '<div class="meal-preview"><div class="meal-preview-head"><span>Vitamina D estimada</span>' + icon("check") + "</div>" +
+    '<div class="exposicao-solar-resultado"><span class="exposicao-solar-valor">' + formatNumber(item.values.vitD, 1) + '</span> <span class="exposicao-solar-unidade">mcg de vitamina D</span></div>' +
+    '<p class="exposicao-solar-detalhe">' + esc(item.amount) + "</p>" +
     '<button class="btn-accent" onclick="acaoSalvarRefeicao()">' + icon("check") + " Salvar no histórico</button>" +
     "</div>";
 }
@@ -3972,9 +4274,15 @@ function mealListTemplate() {
   // kcal, sem o percentual.
   const metaCalorias = state.goals.calories;
   return meals.map((m) => {
+    // "Exposição Solar" não tem kcal/macros (só vitamina D) -- mostra o resultado que faz sentido pra
+    // esse tipo de registro em vez de "0 kcal" (tecnicamente certo, mas confuso de bater o olho).
+    const exposicaoSolar = m.name === "Exposição Solar";
     const percentualTexto = metaCalorias > 0 ? " / " + formatNumber((m.calories / metaCalorias) * 100, 1) + "%" : "";
-    return '<div class="meal-row" onclick="acaoAbrirDetalheRefeicao(' + m.id + ')"><div class="meal-row-left"><div class="meal-row-icon">' + icon("utensils") + '</div><div class="meal-row-text"><div class="meal-row-name">' + esc(m.name) + '</div><div class="meal-row-meta">' + icon("clock") + " " + esc(m.time) + " · " + esc(m.detected.join(", ")) + "</div></div></div>" +
-    '<div class="meal-row-right"><div class="meal-row-stat"><div class="meal-row-kcal">' + formatNumber(m.calories) + " kcal" + percentualTexto + '</div><div class="meal-row-macro">P ' + formatNumber(m.protein, 1) + " · C " + formatNumber(m.carbs, 1) + " · G " + formatNumber(m.fat, 1) + "</div></div>" +
+    return '<div class="meal-row" onclick="acaoAbrirDetalheRefeicao(' + m.id + ')"><div class="meal-row-left"><div class="meal-row-icon">' + icon(exposicaoSolar ? "sun" : "utensils") + '</div><div class="meal-row-text"><div class="meal-row-name">' + esc(m.name) + '</div><div class="meal-row-meta">' + icon("clock") + " " + esc(m.time) + " · " + esc(m.detected.join(", ")) + "</div></div></div>" +
+    '<div class="meal-row-right"><div class="meal-row-stat">' + (exposicaoSolar
+      ? '<div class="meal-row-kcal">' + formatNumber(m.vitD, 1) + " mcg vitamina D</div>"
+      : '<div class="meal-row-kcal">' + formatNumber(m.calories) + " kcal" + percentualTexto + '</div><div class="meal-row-macro">P ' + formatNumber(m.protein, 1) + " · C " + formatNumber(m.carbs, 1) + " · G " + formatNumber(m.fat, 1) + "</div>"
+    ) + "</div>" +
     '<button class="meal-row-delete" aria-label="Remover refeição" onclick="event.stopPropagation(); acaoRemoverRefeicao(' + m.id + ')">' + icon("trash") + "</button></div></div>";
   }).join("");
 }
@@ -5305,19 +5613,24 @@ function nutricaoTabTemplate() {
         macroFonteNotaTemplate()
       ) +
       '<section class="dashboard-grid">' +
-        '<aside class="meal-card"><div class="meal-card-eyebrow">' + icon("sparkles") + " Nova refeição</div>" +
-        "<h2>O que você vai comer?</h2>" +
-        '<p class="meal-card-desc">Escreva naturalmente. Ex.: “1 pão francês, 1 ovo frito e 300 ml de suco de laranja”.</p>' +
+        '<aside class="meal-card"><div class="meal-card-eyebrow">' + icon(state.mealTipo === "Exposição Solar" ? "sun" : "sparkles") + (state.mealTipo === "Exposição Solar" ? " Exposição solar" : " Nova refeição") + "</div>" +
+        "<h2>" + (state.mealTipo === "Exposição Solar" ? "Quanto tempo você ficou no sol?" : "O que você vai comer?") + "</h2>" +
+        '<p class="meal-card-desc">' + (state.mealTipo === "Exposição Solar"
+          ? "Informe o horário de início e fim da exposição e como estava o céu — calculamos uma estimativa da vitamina D sintetizada pela pele."
+          : "Escreva naturalmente. Ex.: “1 pão francês, 1 ovo frito e 300 ml de suco de laranja”.") + "</p>" +
         '<div class="meal-form">' +
           '<select id="meal-tipo-select" class="meal-select" onchange="acaoSelecionarTipoRefeicao(this.value)">' +
             '<option value="">Selecione a refeição...</option>' +
             MEAL_TIPOS.map((t) => '<option value="' + esc(t) + '"' + (state.mealTipo === t ? " selected" : "") + ">" + esc(t) + "</option>").join("") +
           "</select>" +
           (state.mealTipo === "Outro" ? '<input id="meal-nome-custom" class="meal-input" placeholder="Nome da refeição" value="' + esc(state.mealNomeCustom) + '"/>' : "") +
-          '<textarea id="meal-description" class="meal-textarea" placeholder="Descreva os alimentos e quantidades..." rows="4">' + esc(state.mealDescription) + "</textarea>" +
-          '<button class="btn-ghost-light" onclick="acaoAnalisar()">' + icon("sparkles") + " Calcular refeição</button>" +
+          (state.mealTipo === "Exposição Solar"
+            ? exposicaoSolarCamposTemplate()
+            : '<textarea id="meal-description" class="meal-textarea" placeholder="Descreva os alimentos e quantidades..." rows="4">' + esc(state.mealDescription) + "</textarea>" +
+              '<button class="btn-ghost-light" onclick="acaoAnalisar()">' + icon("sparkles") + " Calcular refeição</button>"
+          ) +
         "</div>" +
-        mealPreviewTemplate() +
+        (state.mealTipo === "Exposição Solar" ? exposicaoSolarPreviewTemplate() : mealPreviewTemplate()) +
         "</aside>" +
         '<div class="history-card"><div class="history-card-head">' +
           '<div><div class="history-eyebrow">' + icon("utensils") + " Refeições de hoje</div><h2>O que você comeu</h2></div>" +
@@ -5348,6 +5661,13 @@ function captureFormState() {
   const descEl = document.getElementById("meal-description");
   if (customEl) state.mealNomeCustom = customEl.value;
   if (descEl) state.mealDescription = descEl.value;
+
+  const exposicaoInicioEl = document.getElementById("exposicao-inicio");
+  if (exposicaoInicioEl) state.exposicaoInicio = exposicaoInicioEl.value;
+  const exposicaoFimEl = document.getElementById("exposicao-fim");
+  if (exposicaoFimEl) state.exposicaoFim = exposicaoFimEl.value;
+  const exposicaoCeuEl = document.getElementById("exposicao-ceu");
+  if (exposicaoCeuEl) state.exposicaoCeu = exposicaoCeuEl.value;
 
   // O formulário de bioimpedância/calorimetria também precisa sobreviver a um render() no meio do
   // preenchimento (ex.: ao escolher um anexo, que atualiza a prévia do arquivo chamando render()) —
