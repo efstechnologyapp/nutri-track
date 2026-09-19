@@ -1334,11 +1334,13 @@ const state = {
   altura: readStorage(CHAVE_ALTURA, null), // cm
   medidas: readStorage(CHAVE_MEDIDAS, []),
   medidaTipo: "",
-  // Só usado quando medidaTipo === "glicemia": se a medição foi feita em jejum ou não -- necessário
-  // porque os parâmetros de referência de glicemia são bem diferentes num caso e no outro (ver
-  // GLICEMIA_JEJUM_FAIXAS/GLICEMIA_NAO_JEJUM_FAIXAS). "" = ainda não respondido (obrigatório antes de
-  // salvar); resetado ao trocar de tipo de medição e depois de salvar um registro.
-  medidaGlicemiaJejum: "",
+  // Usado quando medidaTipo é "peso" ou "glicemia": se a medição foi feita em jejum ou não -- pra
+  // glicemia, necessário porque os parâmetros de referência são bem diferentes num caso e no outro (ver
+  // GLICEMIA_JEJUM_FAIXAS/GLICEMIA_NAO_JEJUM_FAIXAS); pra peso, pra poder comparar pesagens em jejum de
+  // um dia com o do dia seguinte no Diário de Kcal (ver pesoJejumDoDia()) sem depender de procurar a
+  // palavra "jejum" dentro do texto livre da observação. "" = ainda não respondido (obrigatório antes de
+  // salvar nesses dois tipos); resetado ao trocar de tipo de medição e depois de salvar um registro.
+  medidaJejum: "",
   showHistoricoMedidas: false,
   // Data do dia expandido no histórico de Medidas e Aferições (mesmo accordion por dia do histórico de
   // refeições/treinos) -- ver medidasHistoricoTemplate()/acaoAlternarDiaHistoricoMedidas(). null = nenhum
@@ -1900,16 +1902,22 @@ function acaoMostrarCampoNovaSenha() { state.showNovaSenha = true; render(); }
 function acaoTrocarAba(aba) { state.activeTab = aba; render(); }
 
 /* ===================== medidas e aferições ===================== */
-function acaoSelecionarTipoMedida(tipo) { state.medidaTipo = tipo; state.medidaGlicemiaJejum = ""; render(); }
+// Tipos de medida que exigem responder "em jejum?" antes de salvar -- ver medidasFormTemplate()/
+// acaoSalvarMedida(). Glicemia precisa porque os parâmetros de referência da classificação mudam
+// bastante num caso e no outro (ver GLICEMIA_JEJUM_FAIXAS/GLICEMIA_NAO_JEJUM_FAIXAS); peso, pra poder
+// comparar pesagens em jejum de um dia com o do seguinte no Diário de Kcal (ver pesoJejumDoDia()), sem
+// depender de procurar "jejum" no texto livre da observação.
+const MEDIDA_TIPOS_COM_JEJUM = ["peso", "glicemia"];
+function acaoSelecionarTipoMedida(tipo) { state.medidaTipo = tipo; state.medidaJejum = ""; render(); }
 // Trocar a resposta de jejum dispara um re-render (pra atualizar o <select> com a opção escolhida), e
 // esse re-render recria o campo de valor/observação do zero (não são inputs "controlados" por
 // state) -- sem isso, um valor já digitado antes de responder a pergunta de jejum seria perdido. Por
 // isso guarda o que já estava digitado e devolve pros campos recriados, igual a um input "não
 // controlado" resistiria a esse tipo de re-render.
-function acaoSelecionarJejumGlicemia(valor) {
+function acaoSelecionarJejum(valor) {
   const valorDigitado = (document.getElementById("medida-valor") || {}).value || "";
   const notaDigitada = (document.getElementById("medida-nota") || {}).value || "";
-  state.medidaGlicemiaJejum = valor;
+  state.medidaJejum = valor;
   render();
   const inputValor = document.getElementById("medida-valor");
   if (inputValor) inputValor.value = valorDigitado;
@@ -1925,10 +1933,8 @@ function acaoSalvarMedida() {
   const meta = medidaTipos[tipo];
   const valor = meta.texto ? valorBruto : valorBruto.replace(",", ".");
   if (!meta.texto && isNaN(Number(valor))) { toastError("Informe um valor numérico válido."); return; }
-  // Glicemia precisa saber se foi em jejum ou não antes de salvar, porque os parâmetros de referência
-  // usados na classificação/legenda do registro são bem diferentes num caso e no outro -- ver
-  // legendaMedida()/classificarMedida() e a pergunta em medidasFormTemplate().
-  if (tipo === "glicemia" && state.medidaGlicemiaJejum !== "sim" && state.medidaGlicemiaJejum !== "nao") {
+  // Ver MEDIDA_TIPOS_COM_JEJUM -- pergunta em medidasFormTemplate().
+  if (MEDIDA_TIPOS_COM_JEJUM.includes(tipo) && state.medidaJejum !== "sim" && state.medidaJejum !== "nao") {
     toastError("Informe se a medição foi feita em jejum.");
     return;
   }
@@ -1944,11 +1950,11 @@ function acaoSalvarMedida() {
   // não mudar o IMC de pesos antigos se a altura for atualizada depois. Sem altura cadastrada ainda,
   // fica sem IMC (mesma mensagem do card do topo pedindo pra cadastrar a altura em Bioimpedância).
   if (tipo === "peso") novaMedida.imc = calcularImcDoPeso(Number(valor));
-  if (tipo === "glicemia") novaMedida.jejum = state.medidaGlicemiaJejum === "sim";
+  if (MEDIDA_TIPOS_COM_JEJUM.includes(tipo)) novaMedida.jejum = state.medidaJejum === "sim";
   state.medidas = state.medidas.concat([novaMedida]);
   persistMedidas();
   state.medidaTipo = "";
-  state.medidaGlicemiaJejum = "";
+  state.medidaJejum = "";
   toastSuccess(tipo === "peso" && novaMedida.imc
     ? "Registro salvo no histórico (IMC " + formatNumber(novaMedida.imc, 1) + ")."
     : "Registro salvo no histórico.");
@@ -3271,7 +3277,7 @@ function acaoEditarTreino(id) {
   // recaptura os valores ainda presentes no DOM (do preenchimento anterior) antes desse novo
   // preenchimento ter chance de aparecer, sobrescrevendo os campos de state setados logo acima. Escreve
   // direto nos inputs, depois do render(), pra garantir que o formulário sempre reflita o treino que
-  // está sendo editado -- mesmo padrão (e mesmo motivo) do ajuste em acaoSelecionarJejumGlicemia().
+  // está sendo editado -- mesmo padrão (e mesmo motivo) do ajuste em acaoSelecionarJejum().
   const dataEl = document.getElementById("treino-data");
   const inicioEl = document.getElementById("treino-hora-inicio");
   const fimEl = document.getElementById("treino-hora-fim");
@@ -4212,14 +4218,14 @@ function medidasFormTemplate() {
           '<div class="medida-input-row"><div><label class="field-label">' + meta.label + " (" + meta.unidade + ")</label>" +
           '<input id="medida-valor" class="field-input" placeholder="' + meta.placeholder + '" onkeydown="if(event.key===\'Enter\') acaoSalvarMedida();"/>' +
           '<p class="imc-empty" style="margin-top:6px">' + meta.exemplo + "</p></div>" +
-          (tipo === "glicemia" ?
+          (MEDIDA_TIPOS_COM_JEJUM.includes(tipo) ?
             '<div><label class="field-label">Foi medida em jejum?</label>' +
-            '<select id="medida-glicemia-jejum" class="field-input" onchange="acaoSelecionarJejumGlicemia(this.value)">' +
+            '<select id="medida-jejum" class="field-input" onchange="acaoSelecionarJejum(this.value)">' +
               '<option value="">Selecione...</option>' +
-              '<option value="sim"' + (state.medidaGlicemiaJejum === "sim" ? " selected" : "") + ">Sim, em jejum</option>" +
-              '<option value="nao"' + (state.medidaGlicemiaJejum === "nao" ? " selected" : "") + ">Não, fora do jejum</option>" +
+              '<option value="sim"' + (state.medidaJejum === "sim" ? " selected" : "") + ">Sim, em jejum</option>" +
+              '<option value="nao"' + (state.medidaJejum === "nao" ? " selected" : "") + ">Não, fora do jejum</option>" +
             "</select>" +
-            '<p class="imc-empty" style="margin-top:6px">Usamos essa informação pra avaliar o resultado com o parâmetro de referência correto.</p></div>'
+            '<p class="imc-empty" style="margin-top:6px">' + (tipo === "glicemia" ? "Usamos essa informação pra avaliar o resultado com o parâmetro de referência correto." : "Usamos essa informação para comparar corretamente seu peso em jejum entre os dias no Diário de Kcal.") + "</p></div>"
             : ""
           ) +
           '<div><label class="field-label">Observação (opcional)</label>' +
@@ -4570,6 +4576,29 @@ function diarioKcalMetaAtingida(saldo, objetivoChave) {
 // massa magra, não só gordura -- por isso o texto sempre marca o valor em kg como equivalência do saldo
 // do dia, não como uma promessa de quanto a balança vai marcar.
 const KCAL_POR_KG_GORDURA = 7700;
+// Soma 1 dia a uma data "AAAA-MM-DD" (string local, sem fuso) e devolve no mesmo formato -- usada pra
+// comparar o peso em jejum de um dia com o do dia seguinte (ver pesoJejumDoDia()). Monta a data com
+// componentes locais (Date(ano, mes-1, dia) + setDate) em vez de mexer na string diretamente, pra lidar
+// corretamente com viradas de mês/ano.
+function proximoDia(dateStr) {
+  const partes = String(dateStr || "").split("-").map(Number);
+  if (partes.length !== 3 || partes.some((n) => isNaN(n))) return null;
+  const d = new Date(partes[0], partes[1] - 1, partes[2]);
+  d.setDate(d.getDate() + 1);
+  const ano = d.getFullYear();
+  const mes = String(d.getMonth() + 1).padStart(2, "0");
+  const dia = String(d.getDate()).padStart(2, "0");
+  return ano + "-" + mes + "-" + dia;
+}
+// Peso em jejum registrado num dia específico (só considera medidas de peso com jejum=true -- ver
+// MEDIDA_TIPOS_COM_JEJUM/acaoSalvarMedida()) -- usado pra comparar o peso em jejum de um dia com o do dia
+// seguinte na Análise do objetivo do Diário de Kcal (diarioKcalAnaliseObjetivoTemplate()). Quando há mais
+// de um registro de peso em jejum no mesmo dia, usa o mais antigo (o primeiro da manhã, cenário mais
+// comum de pesagem em jejum), não o mais recente.
+function pesoJejumDoDia(date) {
+  const registros = state.medidas.filter((m) => m.tipo === "peso" && m.date === date && m.jejum === true).sort((a, b) => a.id - b.id);
+  return registros.length ? Number(registros[0].valor) : null;
+}
 // Seção "Análise do objetivo:" -- resume o dia em relação ao objetivo escolhido: kcal consumidos, kcal
 // gastos (mesmo gasto total de diarioKcalGastosTemplate()) e o saldo, dizendo se a meta do dia (déficit,
 // superávit ou equilíbrio, dependendo do objetivo -- ver diarioKcalMetaAtingida()) foi atingida ou não.
@@ -4577,6 +4606,11 @@ const KCAL_POR_KG_GORDURA = 7700;
 // não atingida ❌" em negrito vermelho -- só o trecho do status fica destacado, o resto da linha continua
 // na cor neutra. O saldo em kcal também vem seguido de "/ X kg" -- a equivalência em gordura corporal
 // (ver KCAL_POR_KG_GORDURA), pra dar uma noção mais concreta do que aquele número de kcal representa.
+// Imediatamente abaixo do saldo, quando há peso em jejum registrado (ver pesoJejumDoDia()) pro dia do
+// registro e/ou pro dia seguinte, mostra os dois pesos e a diferença entre eles -- pra comparar a
+// variação real da balança com a equivalência estimada do saldo calórico do dia (ver a nota logo
+// abaixo). Só aparece quando pelo menos um dos dois pesos foi registrado, pra não poluir o card com
+// "não registrado" em dias sem pesagem.
 function diarioKcalAnaliseObjetivoTemplate(r) {
   const info = diarioKcalGastoTotalInfo(r);
   const objetivoChave = r.metaCalorias != null ? r.objetivo : state.goals.objetivo;
@@ -4595,6 +4629,18 @@ function diarioKcalAnaliseObjetivoTemplate(r) {
       ' — <strong class="' + (atingida ? "diario-kcal-meta-atingida" : "diario-kcal-meta-nao-atingida") + '">meta (' + esc(objetivoLabel) + ") - " + (atingida ? "atingida ✅" : "não atingida ❌") + "</strong>";
     linhas.push('<div class="diario-kcal-gastos-linha">' + icon("flame") + " Kcal gastos no dia: " + formatNumber(info.gastoTotal) + " kcal / " + kgEquiv(info.gastoTotal) + "</div>");
     linhas.push('<div class="diario-kcal-gastos-linha">' + icon("flame") + " Saldo de kcal do dia: " + saldoTexto + status + "</div>");
+    const diaSeguinte = proximoDia(r.date);
+    const pesoHoje = pesoJejumDoDia(r.date);
+    const pesoAmanha = diaSeguinte ? pesoJejumDoDia(diaSeguinte) : null;
+    if (pesoHoje != null || pesoAmanha != null) {
+      linhas.push('<div class="diario-kcal-gastos-linha">' + icon("activity") + " Peso em jejum do dia (" + dataCurta(r.date) + "): " + (pesoHoje != null ? formatNumber(pesoHoje, 1) + " kg" : "não registrado") + "</div>");
+      linhas.push('<div class="diario-kcal-gastos-linha">' + icon("activity") + " Peso em jejum do dia seguinte (" + dataCurta(diaSeguinte) + "): " + (pesoAmanha != null ? formatNumber(pesoAmanha, 1) + " kg" : "não registrado") + "</div>");
+      if (pesoHoje != null && pesoAmanha != null) {
+        const diferencaPeso = pesoAmanha - pesoHoje;
+        const diferencaPesoTexto = (diferencaPeso > 0 ? "+" : diferencaPeso < 0 ? "-" : "") + formatNumber(Math.abs(diferencaPeso), 1) + " kg";
+        linhas.push('<div class="diario-kcal-gastos-linha">' + icon("activity") + " Diferença entre os pesos em jejum: " + diferencaPesoTexto + "</div>");
+      }
+    }
     linhas.push('<p class="diario-kcal-equivalencia-nota">' + icon("help") + " Equivalência de referência: ~7.700 kcal por kg de gordura corporal (regra de Wishnofsky) -- não é uma previsão exata da balança.</p>");
   }
   return '<div class="diario-kcal-gastos"><p class="diario-kcal-dia-subtitulo">Análise do objetivo:</p>' + linhas.join("") + "</div>";
