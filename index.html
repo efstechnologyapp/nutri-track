@@ -943,6 +943,16 @@ const micronutrientMeta = {
   zinco: { label: "Zinco", unit: "mg", color: "#8d7ab0", soft: "#f1edf7", icon: "sparkles" },
   sodio: { label: "Sódio", unit: "mg", color: "#7a95a6", soft: "#eaf1f3", icon: "salt" },
 };
+// Vitamina D também é comumente informada em UI (Unidades Internacionais) -- é como aparece no rótulo
+// dos frascos de suplemento (ex.: "5000 UI"), diferente das demais vitaminas/minerais daqui, que só
+// aparecem em mcg/mg. Por isso, em todo lugar do app onde um valor de vitamina D em mcg é mostrado pro
+// usuário, mostramos as duas unidades juntas: "X mcg / Y UI" -- mesma conversão já usada em
+// doseAmountForFood() pros alimentos de suplementação (1 mcg = 40 UI, ou seja 1 UI = 0,025 mcg).
+const VITAMINA_D_MCG_PARA_UI = 40;
+function formatVitaminaDComUI(mcg, digitsMcg) {
+  const valor = mcg || 0;
+  return formatNumber(valor, digitsMcg == null ? 1 : digitsMcg) + " mcg / " + formatNumber(valor * VITAMINA_D_MCG_PARA_UI, 0) + " UI";
+}
 // Valores Diários de Referência (VDR) oficiais da ANVISA pra rotulagem nutricional -- Instrução
 // Normativa IN nº 75/2020 (Anexo II), a norma EM VIGOR hoje (substituiu a antiga RDC nº 269/2005, cujos
 // valores mais baixos ainda estavam aqui: vitamina A 600mcg, vitamina C 45mg, vitamina D 5mcg, magnésio
@@ -1377,9 +1387,32 @@ const VITAMINA_D_SOL_UV_REF = 7;
 const VITAMINA_D_SOL_MIN_REF = 15;
 const VITAMINA_D_SOL_MCG_REF = 25;
 const VITAMINA_D_SOL_TAXA_UV = VITAMINA_D_SOL_MCG_REF / (VITAMINA_D_SOL_UV_REF * VITAMINA_D_SOL_MIN_REF * fatorTipoPele("tipo3"));
+// A cobertura de nuvens (0-100%, tamb\u00e9m vinda da Open-Meteo -- ver buscarIndiceUVAtual()) j\u00e1 est\u00e1
+// embutida no \u00edndice UV (nuvem forte derruba o \u00edndice), mas o PR\u00d3PRIO SISTEMA tamb\u00e9m informa pro
+// usu\u00e1rio, em palavras, que condi\u00e7\u00e3o de tempo foi detectada durante a exposi\u00e7\u00e3o -- nas mesmas
+// categorias do modo manual (CEU_LABEL), s\u00f3 que descobertas automaticamente em vez de perguntadas.
+function condicaoCeuPorNuvens(percentualNuvens) {
+  if (percentualNuvens == null) return "";
+  if (percentualNuvens < 25) return CEU_LABEL.limpo;
+  if (percentualNuvens < 70) return CEU_LABEL.parcial;
+  return CEU_LABEL.nublado;
+}
+// Mesma interpola\u00e7\u00e3o hor\u00e1ria de uvIndexNaHora(), s\u00f3 que pra cobertura de nuvens em vez de \u00edndice UV.
+function nuvensNaHora(horaDecimal, uvHorario) {
+  if (!uvHorario || !uvHorario.nuvens || !uvHorario.nuvens.length) return null;
+  const h0 = Math.max(0, Math.min(uvHorario.nuvens.length - 1, Math.floor(horaDecimal)));
+  const h1 = Math.min(uvHorario.nuvens.length - 1, h0 + 1);
+  const frac = horaDecimal - h0;
+  const v0 = uvHorario.nuvens[h0] != null ? uvHorario.nuvens[h0] : 0;
+  const v1 = uvHorario.nuvens[h1] != null ? uvHorario.nuvens[h1] : v0;
+  return v0 + (v1 - v0) * frac;
+}
 // Mesma integra\u00e7\u00e3o num\u00e9rica de calcularVitaminaDSol() (passos de 5 min ao longo da janela), s\u00f3 que
-// pesando pelo \u00edndice UV real de cada instante em vez da curva estimada \u00d7 fator do c\u00e9u. Retorna null se
-// o hor\u00e1rio de t\u00e9rmino n\u00e3o for depois do in\u00edcio, ou se n\u00e3o houver dados de \u00edndice UV em m\u00e3os.
+// pesando pelo \u00edndice UV real de cada instante em vez da curva estimada \u00d7 fator do c\u00e9u. Tamb\u00e9m calcula a
+// cobertura de nuvens M\u00c9DIA da janela (nuvensMedia) e a condi\u00e7\u00e3o de tempo em palavras (condicaoTempo) --
+// \u00e9 o que permite o app informar pro usu\u00e1rio como estava o tempo durante a exposi\u00e7\u00e3o, sem precisar
+// perguntar. Retorna null se o hor\u00e1rio de t\u00e9rmino n\u00e3o for depois do in\u00edcio, ou se n\u00e3o houver dados de
+// \u00edndice UV em m\u00e3os.
 function calcularVitaminaDSolPorUV(inicio, fim, uvHorario, tipoPeleValor) {
   const inicioDec = horaParaDecimal(inicio);
   const fimDec = horaParaDecimal(fim);
@@ -1388,22 +1421,28 @@ function calcularVitaminaDSolPorUV(inicio, fim, uvHorario, tipoPeleValor) {
   const fatorPele = fatorTipoPele(tipoPeleValor);
   const passoHoras = VITAMINA_D_SOL_PASSO_MIN / 60;
   let uvMinutos = 0;
+  let somaNuvens = 0;
+  let passosComNuvens = 0;
   for (let h = inicioDec; h < fimDec; h += passoHoras) {
     uvMinutos += uvIndexNaHora(h, uvHorario) * VITAMINA_D_SOL_PASSO_MIN;
+    const nuvensNoInstante = nuvensNaHora(h, uvHorario);
+    if (nuvensNoInstante != null) { somaNuvens += nuvensNoInstante; passosComNuvens++; }
   }
   const mcg = Math.min(VITAMINA_D_SOL_TETO_MCG, VITAMINA_D_SOL_TAXA_UV * uvMinutos * fatorPele);
-  return { mcg, minutos: Math.round((fimDec - inicioDec) * 60) };
+  const nuvensMedia = passosComNuvens ? somaNuvens / passosComNuvens : null;
+  return { mcg, minutos: Math.round((fimDec - inicioDec) * 60), nuvensMedia, condicaoTempo: condicaoCeuPorNuvens(nuvensMedia) };
 }
-// Consulta o \u00edndice UV hora-a-hora de HOJE pra uma coordenada, usando a API p\u00fablica e gratuita
-// Open-Meteo (sem chave de acesso, sem cadastro, aceita chamadas direto do navegador). Lan\u00e7a erro se a
-// consulta falhar (sem internet, API fora do ar) -- quem chama trata isso caindo pro modo manual.
+// Consulta o \u00edndice UV E a cobertura de nuvens hora-a-hora de HOJE pra uma coordenada, usando a API
+// p\u00fablica e gratuita Open-Meteo (sem chave de acesso, sem cadastro, aceita chamadas direto do
+// navegador). Lan\u00e7a erro se a consulta falhar (sem internet, API fora do ar) -- quem chama trata isso
+// caindo pro modo manual.
 async function buscarIndiceUVAtual(lat, lon) {
-  const url = "https://api.open-meteo.com/v1/forecast?latitude=" + encodeURIComponent(lat) + "&longitude=" + encodeURIComponent(lon) + "&hourly=uv_index&timezone=auto&forecast_days=1";
+  const url = "https://api.open-meteo.com/v1/forecast?latitude=" + encodeURIComponent(lat) + "&longitude=" + encodeURIComponent(lon) + "&hourly=uv_index,cloud_cover&timezone=auto&forecast_days=1";
   const resposta = await fetch(url);
   if (!resposta.ok) throw new Error("Falha ao consultar \u00edndice UV (HTTP " + resposta.status + ")");
   const dados = await resposta.json();
   if (!dados || !dados.hourly || !Array.isArray(dados.hourly.uv_index)) throw new Error("Resposta inesperada da API de \u00edndice UV");
-  return { horarios: dados.hourly.time, uv: dados.hourly.uv_index };
+  return { horarios: dados.hourly.time, uv: dados.hourly.uv_index, nuvens: Array.isArray(dados.hourly.cloud_cover) ? dados.hourly.cloud_cover : [] };
 }
 
 // Em ordem alfab\u00e9tica.
@@ -2771,7 +2810,9 @@ function acaoCalcularExposicaoSolar() {
   let resultado, detalheFonte;
   if (usandoUV) {
     resultado = calcularVitaminaDSolPorUV(inicio, fim, state.exposicaoUVHorario, tipoPele);
-    detalheFonte = "índice UV real da sua localização";
+    // O sistema informa sozinho a condição do tempo detectada (a partir da cobertura de nuvens do
+    // mesmo local/horário) -- não precisa perguntar pro usuário como estava o céu.
+    detalheFonte = "índice UV real da sua localização" + (resultado && resultado.condicaoTempo ? " · " + resultado.condicaoTempo : "");
   } else {
     const ceuEl = document.getElementById("exposicao-ceu");
     const ceu = ceuEl ? ceuEl.value : "";
@@ -2787,7 +2828,7 @@ function acaoCalcularExposicaoSolar() {
     values: Object.assign({}, emptyNutrients, { vitD: resultado.mcg }),
   }];
   state.mealDescription = "Exposição solar de " + inicio + " às " + fim + " (" + resultado.minutos + " minutos) · " + detalheFonte;
-  toastSuccess("Vitamina D estimada: " + formatNumber(resultado.mcg, 1) + " mcg.");
+  toastSuccess("Vitamina D estimada: " + formatVitaminaDComUI(resultado.mcg, 1) + ".");
   render();
 }
 function acaoSalvarRefeicao() {
@@ -3373,17 +3414,26 @@ function micronutrientCardsTemplate() {
     const valor = consumed[key] || 0;
     const over = valor > goal;
     const digits = meta.unit === "mg" && goal >= 100 ? 0 : 1;
+    // Vitamina D é a única exibida em mcg/UI ao mesmo tempo (ver formatVitaminaDComUI()) -- as demais
+    // continuam só no seu "unit" normal (mg/mcg).
+    const ehVitD = key === "vitD";
+    const textoConsumido = ehVitD ? formatVitaminaDComUI(valor, digits) : formatNumber(valor, digits) + " " + meta.unit;
+    const textoGoal = ehVitD ? formatVitaminaDComUI(goal, digits) : formatNumber(goal, digits) + " " + meta.unit;
+    const textoDelta = over
+      ? (ehVitD ? formatVitaminaDComUI(valor - goal, digits) : formatNumber(valor - goal, digits) + " " + meta.unit) + " acima da referência"
+      : (ehVitD ? formatVitaminaDComUI(Math.max(0, goal - valor), digits) : formatNumber(Math.max(0, goal - valor), digits) + " " + meta.unit) + " restantes";
     return '' +
       '<div class="nutrient-card"><div class="nutrient-card-head">' +
         '<div class="nutrient-card-left"><div class="nutrient-icon" style="background:' + meta.soft + ";color:" + meta.color + '">' + icon(meta.icon) + "</div>" +
         '<span class="nutrient-name">' + meta.label + "</span>" + nutrientInfoBtnTemplate(key, meta.label) + "</div>" +
-        '<span class="nutrient-unit">' + meta.unit + "</span>" +
+        '<span class="nutrient-unit">' + meta.unit + (ehVitD ? " / UI" : "") + "</span>" +
       "</div>" +
-      '<div class="nutrient-stats"><div><div class="stat-label">Consumido</div><div class="stat-value-row"><span class="stat-value">' + formatNumber(valor, digits) + '</span><span class="stat-unit">' + meta.unit + "</span></div></div>" +
-      '<div class="stat-goal"><div class="stat-label">Referência diária</div><div class="stat-goal-value">' + formatNumber(goal, digits) + " " + meta.unit + "</div></div></div>" +
+      '<div class="nutrient-stats"><div><div class="stat-label">Consumido</div><div class="stat-value-row"><span class="stat-value">' +
+        (ehVitD ? textoConsumido + "</span>" : formatNumber(valor, digits) + '</span><span class="stat-unit">' + meta.unit + "</span>") +
+      "</div></div>" +
+      '<div class="stat-goal"><div class="stat-label">Referência diária</div><div class="stat-goal-value">' + textoGoal + "</div></div></div>" +
       '<div class="progress-track"><div class="progress-fill" style="width:' + pct(valor, goal) + "%;background:" + (over ? "#d76c54" : meta.color) + '"></div></div>' +
-      '<div class="nutrient-delta" style="color:' + (over ? "#c35e4b" : "#789087") + '">' + icon(over ? "arrowup" : "arrowdown") + " " +
-      (over ? formatNumber(valor - goal, digits) + " " + meta.unit + " acima da referência" : formatNumber(Math.max(0, goal - valor), digits) + " " + meta.unit + " restantes") +
+      '<div class="nutrient-delta" style="color:' + (over ? "#c35e4b" : "#789087") + '">' + icon(over ? "arrowup" : "arrowdown") + " " + textoDelta +
       "</div></div>";
   }).join("");
 }
@@ -3507,7 +3557,7 @@ function exposicaoSolarCamposTemplate() {
   if (buscando) {
     blocoLocalizacao = '<p class="exposicao-solar-localizacao exposicao-solar-localizacao-buscando">' + icon("sun") + " Obtendo sua localização e o índice UV de hoje...</p>";
   } else if (usandoUV) {
-    blocoLocalizacao = '<p class="exposicao-solar-localizacao exposicao-solar-localizacao-ok">' + icon("check") + ' Usando o índice UV real da sua localização de hoje. <button type="button" class="exposicao-solar-link" onclick="acaoUsarCeuManual()">Prefiro informar o céu manualmente</button></p>';
+    blocoLocalizacao = '<p class="exposicao-solar-localizacao exposicao-solar-localizacao-ok">' + icon("check") + ' Usando o índice UV real e a condição do tempo (nuvens) da sua localização de hoje -- detectados automaticamente. <button type="button" class="exposicao-solar-link" onclick="acaoUsarCeuManual()">Prefiro informar o céu manualmente</button></p>';
   } else {
     const avisos = { negado: "Localização não autorizada.", indisponivel: "Localização indisponível neste dispositivo.", erro: "Não consegui buscar o índice UV agora (sem internet?)." };
     const aviso = avisos[status] || "";
@@ -3543,7 +3593,7 @@ function exposicaoSolarPreviewTemplate() {
   const item = state.preview[0];
   return '' +
     '<div class="meal-preview"><div class="meal-preview-head"><span>Vitamina D estimada</span>' + icon("check") + "</div>" +
-    '<div class="exposicao-solar-resultado"><span class="exposicao-solar-valor">' + formatNumber(item.values.vitD, 1) + '</span> <span class="exposicao-solar-unidade">mcg de vitamina D</span></div>' +
+    '<div class="exposicao-solar-resultado"><span class="exposicao-solar-valor">' + formatNumber(item.values.vitD, 1) + '</span> <span class="exposicao-solar-unidade">mcg / ' + formatNumber(item.values.vitD * VITAMINA_D_MCG_PARA_UI, 0) + ' UI de vitamina D</span></div>' +
     '<p class="exposicao-solar-detalhe">' + esc(item.amount) + "</p>" +
     '<button class="btn-accent" onclick="acaoSalvarRefeicao()">' + icon("check") + " Salvar no histórico</button>" +
     "</div>";
@@ -4280,7 +4330,7 @@ function mealListTemplate() {
     const percentualTexto = metaCalorias > 0 ? " / " + formatNumber((m.calories / metaCalorias) * 100, 1) + "%" : "";
     return '<div class="meal-row" onclick="acaoAbrirDetalheRefeicao(' + m.id + ')"><div class="meal-row-left"><div class="meal-row-icon">' + icon(exposicaoSolar ? "sun" : "utensils") + '</div><div class="meal-row-text"><div class="meal-row-name">' + esc(m.name) + '</div><div class="meal-row-meta">' + icon("clock") + " " + esc(m.time) + " · " + esc(m.detected.join(", ")) + "</div></div></div>" +
     '<div class="meal-row-right"><div class="meal-row-stat">' + (exposicaoSolar
-      ? '<div class="meal-row-kcal">' + formatNumber(m.vitD, 1) + " mcg vitamina D</div>"
+      ? '<div class="meal-row-kcal">' + formatVitaminaDComUI(m.vitD, 1) + " vitamina D</div>"
       : '<div class="meal-row-kcal">' + formatNumber(m.calories) + " kcal" + percentualTexto + '</div><div class="meal-row-macro">P ' + formatNumber(m.protein, 1) + " · C " + formatNumber(m.carbs, 1) + " · G " + formatNumber(m.fat, 1) + "</div>"
     ) + "</div>" +
     '<button class="meal-row-delete" aria-label="Remover refeição" onclick="event.stopPropagation(); acaoRemoverRefeicao(' + m.id + ')">' + icon("trash") + "</button></div></div>";
@@ -4296,7 +4346,7 @@ function alimentoDetalheTemplate(a) {
         Object.keys(nutrientMeta).map((key) => '<span class="meal-detalhe-chip">' + nutrientMeta[key].label + ": " + formatNumber(v[key] || 0, key === "calories" ? 0 : 1) + " " + nutrientMeta[key].unit + "</span>").join("") +
       "</div>" +
       '<div class="meal-detalhe-micros">' +
-        Object.keys(micronutrientMeta).map((key) => '<div class="meal-detalhe-micro">' + micronutrientMeta[key].label + ": <span>" + formatNumber(v[key] || 0, 1) + " " + micronutrientMeta[key].unit + "</span></div>").join("") +
+        Object.keys(micronutrientMeta).map((key) => '<div class="meal-detalhe-micro">' + micronutrientMeta[key].label + ": <span>" + (key === "vitD" ? formatVitaminaDComUI(v[key] || 0, 1) : formatNumber(v[key] || 0, 1) + " " + micronutrientMeta[key].unit) + "</span></div>").join("") +
       "</div>" +
     "</div>";
 }
@@ -5373,6 +5423,15 @@ function diarioKcalNutrienteTexto(label, consumido, meta, unidade) {
   const percentual = meta > 0 ? (consumido / meta) * 100 : 0;
   return label + " " + formatNumber(consumido, 1) + unidade + "/" + formatNumber(meta, 1) + unidade + " (" + formatNumber(percentual, 1) + "%)";
 }
+// Mesma ideia de diarioKcalNutrienteTexto(), só que pra vitamina D -- que também é mostrada em mcg/UI
+// (ver formatVitaminaDComUI()) -- em vez do "consumidoUN/metaUN" genérico, usa parênteses pra separar
+// claramente o valor em UI do "/" que já compara consumido com a meta: ex. "Vitamina D 5,0 mcg (200
+// UI)/15,0 mcg (600 UI) (33,3%)".
+function diarioKcalNutrienteTextoVitaminaD(label, consumido, meta) {
+  const percentual = meta > 0 ? (consumido / meta) * 100 : 0;
+  const comUI = (v) => formatNumber(v, 1) + " mcg (" + formatNumber(v * VITAMINA_D_MCG_PARA_UI, 0) + " UI)";
+  return label + " " + comUI(consumido) + "/" + comUI(meta) + " (" + formatNumber(percentual, 1) + "%)";
+}
 // Macronutrientes (proteína/carboidrato/gordura/fibra) comparados com a meta CONGELADA no registro (ver
 // acaoEncerrarDia()) -- mesma lógica de fallback de diarioKcalMetaTexto() pra registros antigos sem meta
 // salva.
@@ -5396,7 +5455,10 @@ function diarioKcalMicrosTemplate(r) {
   return Object.keys(micronutrientMeta).map((k) => {
     const meta = MICRO_GOALS[k];
     const classe = diarioKcalCompararMetaClasse(r[k] || 0, meta);
-    return '<span class="diario-kcal-nutriente' + classe + '">' + diarioKcalNutrienteTexto(micronutrientMeta[k].label, r[k] || 0, meta, micronutrientMeta[k].unit) + "</span>";
+    const texto = k === "vitD"
+      ? diarioKcalNutrienteTextoVitaminaD(micronutrientMeta[k].label, r[k] || 0, meta)
+      : diarioKcalNutrienteTexto(micronutrientMeta[k].label, r[k] || 0, meta, micronutrientMeta[k].unit);
+    return '<span class="diario-kcal-nutriente' + classe + '">' + texto + "</span>";
   }).join(" · ");
 }
 // Seção "Kcal gastos no dia:" -- gasto em repouso (GET, da Calorimetria mais recente já registrada em
