@@ -4580,18 +4580,20 @@ const KCAL_POR_KG_GORDURA = 7700;
 function diarioKcalAnaliseObjetivoTemplate(r) {
   const info = diarioKcalGastoTotalInfo(r);
   const objetivoChave = r.metaCalorias != null ? r.objetivo : state.goals.objetivo;
-  const linhas = ['<div class="diario-kcal-gastos-linha">' + icon("utensils") + " Kcal consumidos no dia: " + formatNumber(r.calories) + " kcal</div>"];
+  // Equivalência em kg (ver KCAL_POR_KG_GORDURA) ao lado de QUALQUER valor de kcal desta seção -- não só
+  // o saldo, mas também consumidos e gastos -- pra dar a mesma noção concreta em todas as linhas.
+  const kgEquiv = (kcal) => formatNumber(Math.abs(kcal) / KCAL_POR_KG_GORDURA, 2) + " kg";
+  const linhas = ['<div class="diario-kcal-gastos-linha">' + icon("utensils") + " Kcal consumidos no dia: " + formatNumber(r.calories) + " kcal / " + kgEquiv(r.calories) + "</div>"];
   if (info.gastoTotal == null) {
     linhas.push('<div class="diario-kcal-gastos-linha">' + icon("flame") + " Kcal gastos no dia: sem calorimetria registrada</div>");
   } else {
     const saldo = r.calories - info.gastoTotal;
-    const saldoKg = Math.abs(saldo) / KCAL_POR_KG_GORDURA;
-    const saldoTexto = (saldo > 0 ? "superávit de " : saldo < 0 ? "déficit de " : "") + formatNumber(Math.abs(saldo)) + " kcal / " + formatNumber(saldoKg, 2) + " kg";
+    const saldoTexto = (saldo > 0 ? "superávit de " : saldo < 0 ? "déficit de " : "") + formatNumber(Math.abs(saldo)) + " kcal / " + kgEquiv(saldo);
     const atingida = diarioKcalMetaAtingida(saldo, objetivoChave);
     const objetivoLabel = objetivoChave && OBJETIVOS_META[objetivoChave] ? OBJETIVOS_META[objetivoChave].label : "";
     const status = atingida == null ? "" :
       ' — <strong class="' + (atingida ? "diario-kcal-meta-atingida" : "diario-kcal-meta-nao-atingida") + '">meta (' + esc(objetivoLabel) + ") - " + (atingida ? "atingida ✅" : "não atingida ❌") + "</strong>";
-    linhas.push('<div class="diario-kcal-gastos-linha">' + icon("flame") + " Kcal gastos no dia: " + formatNumber(info.gastoTotal) + " kcal</div>");
+    linhas.push('<div class="diario-kcal-gastos-linha">' + icon("flame") + " Kcal gastos no dia: " + formatNumber(info.gastoTotal) + " kcal / " + kgEquiv(info.gastoTotal) + "</div>");
     linhas.push('<div class="diario-kcal-gastos-linha">' + icon("flame") + " Saldo de kcal do dia: " + saldoTexto + status + "</div>");
     linhas.push('<p class="diario-kcal-equivalencia-nota">' + icon("help") + " Equivalência de referência: ~7.700 kcal por kg de gordura corporal (regra de Wishnofsky) -- não é uma previsão exata da balança.</p>");
   }
