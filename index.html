@@ -265,7 +265,8 @@ svg{ display: block; }
 .treino-distancia-campo{ margin-top:16px; }
 .treino-distancia-nota{ margin:6px 0 0; font-size:11px; line-height:1.5; color:#9fb5aa; }
 .treino-foto-campo{ margin-top:16px; }
-.treino-foto-btn{ display:flex; width:100%; align-items:center; justify-content:center; gap:8px; border-radius:12px; border:1.5px dashed rgba(255,255,255,.28); background:rgba(255,255,255,.05); padding:12px 16px; font-size:13px; font-weight:600; color:#cfe4c8; cursor:pointer; transition:background .15s, border-color .15s; }
+.treino-foto-botoes{ display:flex; gap:10px; }
+.treino-foto-btn{ display:flex; flex:1; width:100%; align-items:center; justify-content:center; gap:8px; border-radius:12px; border:1.5px dashed rgba(255,255,255,.28); background:rgba(255,255,255,.05); padding:12px 16px; font-size:13px; font-weight:600; color:#cfe4c8; cursor:pointer; transition:background .15s, border-color .15s; }
 .treino-foto-btn:hover{ background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.45); }
 .treino-foto-preview{ position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:14px; background:rgba(255,255,255,.06); }
 .treino-foto-preview img{ display:block; width:100%; max-height:220px; object-fit:cover; }
@@ -649,6 +650,7 @@ const ICON_PATHS = {
   chevron: '<path d="M6 9l6 6 6-6"/>',
   salt: '<path d="M9 3h6l2 4v12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V7Z"/><path d="M9 7h6"/><circle cx="10.5" cy="11" r=".5"/><circle cx="13.5" cy="11" r=".5"/><circle cx="12" cy="14" r=".5"/><circle cx="10.5" cy="17" r=".5"/><circle cx="13.5" cy="17" r=".5"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+  image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',
 };
 function icon(name, cls) {
   const p = ICON_PATHS[name] || "";
@@ -1446,6 +1448,13 @@ const CHAVE_CALORIMETRIA = "nutri-track-calorimetria";
 const CHAVE_TREINOS = "nutri-track-treinos";
 const CHAVE_TREINO_ATIVO = "nutri-track-treino-ativo";
 const CHAVE_EXERCICIOS_CUSTOMIZADOS = "nutri-track-exercicios-customizados";
+// Esportes/atividades que a própria pessoa cadastrou (opção "Outro" no seletor de esporte do treino --
+// ver treinoSeletorEsporteTemplate()/resolverEsporteTreino()). Ao contrário de exerciciosCustomizados
+// (que sincroniza com o backend do Google), essa lista fica só no dispositivo: é apenas o nome do
+// esporte pra reaparecer no seletor da próxima vez, sem precisar digitar de novo -- não precisa de
+// sincronização entre aparelhos pra cumprir isso (o registro do treino em si, esse sim, já sincroniza
+// normalmente, incluindo o nome do esporte digitado).
+const CHAVE_ESPORTES_CUSTOMIZADOS = "nutri-track-esportes-customizados";
 const CHAVE_DIARIO_KCAL = "nutri-track-diario-kcal";
 const CHAVE_ULTIMO_DIA_PROCESSADO = "nutri-track-ultimo-dia-processado";
 
@@ -1555,6 +1564,12 @@ const state = {
   calorimetriaEditandoId: null, // idem, para calorimetria
   treinos: readStorage(CHAVE_TREINOS, []),
   treinoEsporte: "",
+  // Texto digitado quando a pessoa escolhe "Outro" no seletor de esporte, pra cadastrar uma
+  // modalidade própria -- ver treinoSeletorEsporteTemplate()/resolverEsporteTreino().
+  treinoEsporteCustom: "",
+  // Esportes cadastrados pela própria pessoa (opção "Outro"), só neste dispositivo -- ver comentário
+  // em CHAVE_ESPORTES_CUSTOMIZADOS.
+  esportesCustomizados: readStorage(CHAVE_ESPORTES_CUSTOMIZADOS, []),
   // Data do treino no registro manual (calendário suspenso) -- ver treinoFormManualTemplate(). Vazio até o
   // formulário ser montado, quando é preenchido com a data de hoje (ver treinoDataAtualOuHoje()); permite
   // lançar um treino de um dia anterior, algo que o modo cronômetro (sempre "agora") não permite.
@@ -1603,6 +1618,7 @@ function persistCalorimetria() { writeStorage(CHAVE_CALORIMETRIA, state.calorime
 function persistTreinos() { writeStorage(CHAVE_TREINOS, state.treinos); }
 function persistTreinoAtivo() { writeStorage(CHAVE_TREINO_ATIVO, state.treinoAtivo); }
 function persistExerciciosCustomizados() { writeStorage(CHAVE_EXERCICIOS_CUSTOMIZADOS, state.exerciciosCustomizados); }
+function persistEsportesCustomizados() { writeStorage(CHAVE_ESPORTES_CUSTOMIZADOS, state.esportesCustomizados); }
 function persistDiarioKcal() { writeStorage(CHAVE_DIARIO_KCAL, state.diarioKcal); }
 
 /* ===================== helpers de derivação ===================== */
@@ -3245,7 +3261,30 @@ function acaoAlternarHistorico() {
 }
 
 /* ===================== treinos/esportes ===================== */
-function acaoSelecionarEsporte(valor) { state.treinoEsporte = valor; render(); }
+function acaoSelecionarEsporte(valor) {
+  state.treinoEsporte = valor;
+  if (valor !== "Outro") state.treinoEsporteCustom = "";
+  render();
+}
+// Resolve o nome final do esporte a partir da seleção do formulário: se a pessoa escolheu "Outro", usa
+// o texto digitado, cadastrando-o em esportesCustomizados (se ainda não existir) pra reaparecer no
+// seletor da próxima vez -- senão usa direto o valor já selecionado. Devolve "" se a seleção for
+// inválida (nada escolhido, ou "Outro" com o campo de texto vazio).
+function resolverEsporteTreino() {
+  if (state.treinoEsporte !== "Outro") return state.treinoEsporte;
+  // Lê direto do DOM (mesmo padrão de nota/distância em acaoSalvarTreino/acaoEncerrarTreino) -- essa
+  // função roda como a PRIMEIRA linha de acaoIniciarTreino()/acaoSalvarTreino(), antes de qualquer
+  // render(), então o texto digitado pode ainda não ter sido capturado em state.treinoEsporteCustom
+  // (isso só acontece dentro de captureFormState(), chamado no início de um render()).
+  const el = document.getElementById("treino-esporte-custom");
+  const nome = ((el ? el.value : state.treinoEsporteCustom) || "").trim();
+  if (!nome) return "";
+  if (!ESPORTE_TIPOS.includes(nome) && !state.esportesCustomizados.includes(nome)) {
+    state.esportesCustomizados = state.esportesCustomizados.concat([nome]).sort((a, b) => a.localeCompare(b, "pt-BR"));
+    persistEsportesCustomizados();
+  }
+  return nome;
+}
 
 // Adiciona um grupo muscular ao registro de treino atual (dropdown de treinoGruposMuscularesCampoTemplate()).
 // Pode adicionar quantos grupos quiser -- cada um vira um bloco separado com checkboxes dos exercícios
@@ -3365,8 +3404,8 @@ function pararTickTreino() {
 }
 
 function acaoIniciarTreino() {
-  const esporte = state.treinoEsporte;
-  if (!esporte) { toastError("Selecione o esporte."); return; }
+  const esporte = resolverEsporteTreino();
+  if (!esporte) { toastError(state.treinoEsporte === "Outro" ? "Informe o nome do esporte." : "Selecione o esporte."); return; }
   const now = new Date();
   state.treinoAtivo = {
     esporte, date: today(),
@@ -3517,6 +3556,7 @@ function acaoEncerrarTreino() {
   persistTreinoAtivo();
   pararTickTreino();
   state.treinoEsporte = "";
+  state.treinoEsporteCustom = "";
   state.treinoNota = "";
   state.treinoDistanciaKm = "";
   state.treinoGruposSelecionados = [];
@@ -3599,14 +3639,15 @@ function acaoEditarTreino(id) {
 function acaoCancelarEdicaoTreino() {
   state.treinoEditandoId = null;
   state.treinoEsporte = "";
+  state.treinoEsporteCustom = "";
   state.treinoData = "";
   state.treinoNota = "";
   state.treinoDistanciaKm = "";
   render();
 }
 function acaoSalvarTreino() {
-  const esporte = state.treinoEsporte;
-  if (!esporte) { toastError("Selecione o esporte."); return; }
+  const esporte = resolverEsporteTreino();
+  if (!esporte) { toastError(state.treinoEsporte === "Outro" ? "Informe o nome do esporte." : "Selecione o esporte."); return; }
   const dataEl = document.getElementById("treino-data");
   const dataTreino = dataEl && dataEl.value ? dataEl.value : today();
   if (dataTreino > today()) { toastError("A data do treino não pode ser no futuro."); return; }
@@ -3621,6 +3662,7 @@ function acaoSalvarTreino() {
   const notaEl = document.getElementById("treino-nota");
   const nota = notaEl ? notaEl.value : "";
   const distanciaEl = document.getElementById("treino-distancia");
+  const esporteCustomEl = document.getElementById("treino-esporte-custom");
   const camposDistancia = calcularCamposDistanciaTreino(esporte, duracaoMin);
 
   // Modo edição (ver acaoEditarTreino()): atualiza o registro já salvo em vez de criar um novo,
@@ -3649,6 +3691,7 @@ function acaoSalvarTreino() {
     persistTreinos();
     state.treinoEditandoId = null;
     state.treinoEsporte = "";
+    state.treinoEsporteCustom = "";
     state.treinoData = "";
     state.treinoNota = "";
     state.treinoDistanciaKm = "";
@@ -3657,6 +3700,7 @@ function acaoSalvarTreino() {
     fimEl.value = "";
     if (notaEl) notaEl.value = "";
     if (distanciaEl) distanciaEl.value = "";
+    if (esporteCustomEl) esporteCustomEl.value = "";
     limparFotoTreinoSelecionada();
     sincronizarDiarioKcalDoDia(dataAntiga);
     if (registro.date !== dataAntiga) sincronizarDiarioKcalDoDia(registro.date);
@@ -3674,6 +3718,7 @@ function acaoSalvarTreino() {
   state.treinos = state.treinos.concat([novoTreino]);
   persistTreinos();
   state.treinoEsporte = "";
+  state.treinoEsporteCustom = "";
   state.treinoData = "";
   state.treinoNota = "";
   state.treinoDistanciaKm = "";
@@ -3688,6 +3733,7 @@ function acaoSalvarTreino() {
   fimEl.value = "";
   if (notaEl) notaEl.value = "";
   if (distanciaEl) distanciaEl.value = "";
+  if (esporteCustomEl) esporteCustomEl.value = "";
   limparFotoTreinoSelecionada();
   toastSuccess(arquivoFoto ? "Treino registrado. Enviando a foto em segundo plano..." : "Treino registrado.");
   const promessaRegistroBase = state.account ? enviarComFila("salvarTreinoGoogle", [state.usuario.email, novoTreino]) : Promise.resolve();
@@ -4616,10 +4662,20 @@ function medidasTabTemplate() {
 // Mesmo layout de duas colunas da aba Nutrição (formulário + histórico do dia), aplicado a treinos.
 // Seletor de esporte reaproveitado tanto no modo cronômetro quanto no modo manual.
 function treinoSeletorEsporteTemplate() {
+  // Lista base + esportes que a pessoa já cadastrou antes (ver CHAVE_ESPORTES_CUSTOMIZADOS). Se o
+  // esporte do registro atual (ex.: ao editar um treino sincronizado de outro aparelho) não está em
+  // nenhuma das duas listas, ele entra também -- senão o seletor mostraria "Selecione o esporte..." e
+  // perderia visualmente a modalidade já escolhida, mesmo com o valor certo salvo no treino.
+  let opcoes = ESPORTE_TIPOS.concat(state.esportesCustomizados);
+  if (state.treinoEsporte && state.treinoEsporte !== "Outro" && !opcoes.includes(state.treinoEsporte)) opcoes = opcoes.concat([state.treinoEsporte]);
   return '<select id="treino-esporte-select" class="meal-select" onchange="acaoSelecionarEsporte(this.value)">' +
     '<option value="">Selecione o esporte...</option>' +
-    ESPORTE_TIPOS.map((e) => '<option value="' + esc(e) + '"' + (state.treinoEsporte === e ? " selected" : "") + ">" + esc(e) + "</option>").join("") +
-  "</select>";
+    opcoes.map((e) => '<option value="' + esc(e) + '"' + (state.treinoEsporte === e ? " selected" : "") + ">" + esc(e) + "</option>").join("") +
+    '<option value="Outro"' + (state.treinoEsporte === "Outro" ? " selected" : "") + '>Outro (cadastrar esporte)</option>' +
+  "</select>" +
+  (state.treinoEsporte === "Outro"
+    ? '<input id="treino-esporte-custom" class="meal-input" placeholder="Nome do esporte/atividade" value="' + esc(state.treinoEsporteCustom) + '"/>'
+    : "");
 }
 
 // Observação livre sobre o treino (ex.: "treino pesado", "alto astral") — opcional, mesma lógica de
@@ -4720,8 +4776,15 @@ function treinoFotoCampoTemplate() {
     (treinoFotoSelecionada
       ? '<div class="treino-foto-preview"><img src="' + esc(treinoFotoPreviewUrl) + '" alt="Foto do treino"/>' +
           '<button type="button" class="treino-foto-remover" aria-label="Remover foto selecionada" onclick="acaoRemoverFotoTreino()">' + icon("x") + "</button></div>"
-      : '<label class="treino-foto-btn" for="treino-foto-input">' + icon("camera") + " Tirar foto do treino" +
-          '<input id="treino-foto-input" type="file" accept="image/*" capture="environment" style="display:none" onchange="onFotoTreinoSelecionada(event)"/></label>'
+      // Duas opções lado a lado: tirar foto na hora (câmera, atributo "capture") ou carregar uma foto já
+      // existente na galeria/arquivos do aparelho (sem "capture", pra não forçar a câmera) -- mesmo
+      // manipulador onFotoTreinoSelecionada() pros dois, já que ambos são só um <input type="file"> comum.
+      : '<div class="treino-foto-botoes">' +
+          '<label class="treino-foto-btn" for="treino-foto-input">' + icon("camera") + " Tirar foto" +
+            '<input id="treino-foto-input" type="file" accept="image/*" capture="environment" style="display:none" onchange="onFotoTreinoSelecionada(event)"/></label>' +
+          '<label class="treino-foto-btn" for="treino-foto-input-upload">' + icon("image") + " Carregar foto" +
+            '<input id="treino-foto-input-upload" type="file" accept="image/*" style="display:none" onchange="onFotoTreinoSelecionada(event)"/></label>' +
+        "</div>"
     ) +
   "</div>";
 }
@@ -5161,6 +5224,8 @@ function captureFormState() {
     state.caloFormValores = valores;
   }
 
+  const treinoEsporteCustomEl = document.getElementById("treino-esporte-custom");
+  if (treinoEsporteCustomEl) state.treinoEsporteCustom = treinoEsporteCustomEl.value;
   const treinoDataEl = document.getElementById("treino-data");
   if (treinoDataEl) state.treinoData = treinoDataEl.value;
   const treinoInicioEl = document.getElementById("treino-hora-inicio");
