@@ -1315,6 +1315,10 @@ const state = {
   // consumidos/meta e a Análise do objetivo); macro/micronutrientes, refeições e o detalhamento de kcal
   // gastos só aparecem depois de expandir.
   diarioKcalDiasExpandidos: {},
+  // Id do registro do Diário de Kcal cujo campo de corrigir data está aberto no momento, ou null -- ver
+  // diarioKcalRegistroTemplate()/acaoAbrirEdicaoDataDiarioKcal(). Só um por vez (abrir outro fecha o
+  // anterior automaticamente, por ser o mesmo state).
+  diarioKcalEditandoDataId: null,
   showEditarPerfil: false,
   showNovaSenha: false,
   sidebarOpen: false,
@@ -2377,9 +2381,12 @@ function acaoEncerrarDia() {
 // de refeições exibida e as calorias queimadas usando só state.meals/state.treinos daquela DATA
 // específica. NÃO mexe no corteId (os cards de consumo continuam sem recontar essas refeições antigas) —
 // só corrige o que fica exibido/guardado nesse registro.
-function acaoRecalcularDiarioKcal(id) {
-  const registro = state.diarioKcal.find((r) => r.id === id);
-  if (!registro) return;
+// Recalcula totais/refeições/calorias queimadas de um registro do Diário de Kcal a partir de
+// state.meals/state.treinos DAQUELA DATA (registro.date) -- usado tanto pelo botão "Recalcular" quanto,
+// automaticamente, depois de corrigir a data do registro (ver acaoEditarDataDiarioKcal()), já que nos
+// dois casos o objetivo é o mesmo: fazer o registro refletir de fato as refeições e treinos do dia que
+// ele diz representar.
+function recalcularDiarioKcalRegistro(registro) {
   const mealsDoDia = state.meals.filter((m) => m.date === registro.date);
   const totais = mealsDoDia.reduce((sum, m) => addNutrients(sum, m), emptyNutrients);
   const refeicoes = mealsDoDia.map((m) => {
@@ -2388,11 +2395,49 @@ function acaoRecalcularDiarioKcal(id) {
     return linha;
   });
   const caloriasQueimadas = state.treinos.filter((tr) => tr.date === registro.date).reduce((soma, tr) => soma + (tr.caloriasQueimadas || 0), 0);
-  const corrigido = Object.assign({}, registro, totais, { refeicoes, caloriasQueimadas });
+  return Object.assign({}, registro, totais, { refeicoes, caloriasQueimadas });
+}
+function acaoRecalcularDiarioKcal(id) {
+  const registro = state.diarioKcal.find((r) => r.id === id);
+  if (!registro) return;
+  const corrigido = recalcularDiarioKcalRegistro(registro);
   state.diarioKcal = state.diarioKcal.map((r) => (r.id === id ? corrigido : r));
   persistDiarioKcal();
   if (state.account) enviarComFila("salvarDiarioKcalGoogle", [state.usuario.email, corrigido]);
-  toastSuccess("Registro de " + dateLabel(registro.date) + " recalculado com as refeições daquele dia.");
+  toastSuccess("Registro de " + dateLabel(registro.date) + " recalculado com as refeições e treinos daquele dia.");
+  render();
+}
+function acaoAbrirEdicaoDataDiarioKcal(id) { state.diarioKcalEditandoDataId = id; render(); }
+function acaoCancelarEdicaoDataDiarioKcal() { state.diarioKcalEditandoDataId = null; render(); }
+// Corrige a data de um registro já encerrado no Diário de Kcal -- pensado pro caso em que a pessoa
+// esqueceu de clicar em "Encerrar dia" no dia certo e só encerrou depois, fazendo o resumo ser salvo com
+// a data do clique em vez da data real das refeições (ex.: esqueceu de encerrar 18/09 e só encerrou em
+// 19/09 -- o resumo nasce com date=19/09). Não existe endpoint de "atualizar" no backend (só
+// salvar/remover -- ver salvarDiarioKcalGoogle()/removerDiarioKcalGoogle() no Code.gs), então a correção
+// é feita como remover o registro antigo e recriar um novo, idêntico, só que com a data certa e um id
+// novo -- mesmo padrão usado em acaoEditarDataRefeicao(). Logo depois, já recalcula o registro (ver
+// recalcularDiarioKcalRegistro()) com as refeições e treinos da data corrigida, pra também resolver de
+// uma vez o caso comum de o resumo ter sido calculado com os treinos do dia errado.
+function acaoEditarDataDiarioKcal(id, novaData) {
+  if (!novaData) { toastError("Selecione uma data."); return; }
+  if (novaData > today()) { toastError("A data não pode ser no futuro."); return; }
+  const registro = state.diarioKcal.find((r) => r.id === id);
+  if (!registro) return;
+  if (registro.date === novaData) { state.diarioKcalEditandoDataId = null; render(); return; }
+  if (state.diarioKcal.some((r) => r.id !== id && r.date === novaData)) {
+    toastError("Já existe um registro encerrado em " + dateLabel(novaData) + ". Remova-o antes de mover este registro para essa data.");
+    return;
+  }
+  const movido = Object.assign({}, registro, { id: Date.now(), date: novaData });
+  const corrigido = recalcularDiarioKcalRegistro(movido);
+  state.diarioKcal = state.diarioKcal.filter((r) => r.id !== id).concat([corrigido]);
+  persistDiarioKcal();
+  if (state.account) {
+    enviarComFila("removerDiarioKcalGoogle", [state.usuario.email, id]);
+    enviarComFila("salvarDiarioKcalGoogle", [state.usuario.email, corrigido]);
+  }
+  state.diarioKcalEditandoDataId = null;
+  toastSuccess("Data corrigida para " + dateLabel(novaData) + " -- refeições e treinos daquele dia recalculados.");
   render();
 }
 // Remove um registro (dia) já encerrado no Diário de Kcal -- ver diarioKcalRegistroTemplate().
@@ -4429,8 +4474,17 @@ function diarioKcalRegistroTemplate(r) {
     '<div class="diario-kcal-dia-head history-day-head-btn" onclick="acaoAlternarDiaDiarioKcal(' + r.id + ')"><span class="diario-kcal-dia-data">' + icon("calendar") + " " + dateLabel(r.date) + "</span>" +
       '<span class="diario-kcal-dia-head-direita"><span class="diario-kcal-dia-kcal">' + formatNumber(r.calories) + " kcal</span>" +
       '<button class="diario-kcal-recalcular-btn" aria-label="Recalcular registro de ' + esc(dateLabel(r.date)) + ' com as refeições daquele dia" title="Recalcular com as refeições daquele dia" onclick="event.stopPropagation(); acaoRecalcularDiarioKcal(' + r.id + ')">' + icon("rotate") + "</button>" +
+      '<button class="diario-kcal-recalcular-btn" aria-label="Corrigir a data do registro de ' + esc(dateLabel(r.date)) + '" title="Corrigir data" onclick="event.stopPropagation(); acaoAbrirEdicaoDataDiarioKcal(' + r.id + ')">' + icon("edit") + "</button>" +
       '<button class="meal-row-delete" aria-label="Excluir registro de ' + esc(dateLabel(r.date)) + '" onclick="event.stopPropagation(); acaoRemoverDiarioKcal(' + r.id + ')">' + icon("trash") + "</button>" +
       icon("chevron", "history-day-chevron") + "</span></div>" +
+    (state.diarioKcalEditandoDataId === r.id
+      ? '<div class="meal-detalhe-data-editar" onclick="event.stopPropagation()">' +
+          '<div class="meal-detalhe-data-editar-row">' +
+            '<input type="date" id="diario-kcal-data-input-' + r.id + '" class="field-input" value="' + esc(r.date) + '" max="' + esc(today()) + '"/>' +
+            '<button class="meal-detalhe-data-salvar-btn" onclick="acaoEditarDataDiarioKcal(' + r.id + ', document.getElementById(\'diario-kcal-data-input-' + r.id + '\').value)">Salvar</button>' +
+            '<button class="meal-detalhe-data-cancelar-btn" onclick="acaoCancelarEdicaoDataDiarioKcal()">Cancelar</button>' +
+          "</div></div>"
+      : "") +
     '<div class="diario-kcal-dia-meta">' + diarioKcalMetaTexto(r) + "</div>" +
     (expandido ? '' +
       '<div class="diario-kcal-dia-macros">' + diarioKcalMacrosTemplate(r) + "</div>" +
