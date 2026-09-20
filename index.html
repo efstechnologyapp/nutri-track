@@ -1855,18 +1855,21 @@ function today() { return todayKey(); }
 // "Encerrar dia" (que não apaga nem esconde refeição nenhuma, só reseta os CARDS -- ver mais abaixo).
 function todayMeals() { const t = today(); return state.meals.filter((m) => m.date === t); }
 // Corte usado pelos CARDS de consumo (kcal/macro/micronutrientes -- consumedToday()) e pelo resumo
-// salvo em "Encerrar dia": o maior id de refeição já incluído no último "Encerrar dia" (em qualquer
-// aparelho da mesma conta, já que state.diarioKcal sincroniza) -- ver r.corteId, calculado em
-// acaoEncerrarDia(). Combinado com o usuário: os CARDS não reiniciam sozinhos na virada do dia (meia-
-// noite) -- só reiniciam quando a pessoa clica em "Encerrar dia" mesmo. Por isso o corte usa o maior
-// corteId entre TODOS os registros do Diário (não só um de hoje) e é aplicado sobre TODAS as refeições
-// (não só as de hoje): enquanto ninguém encerrar o dia, uma refeição registrada depois da meia-noite
-// continua contando nos cards normalmente, mesmo já sendo, no calendário, um dia diferente das
-// anteriores. IMPORTANTE: usa r.corteId (o id das refeições realmente incluídas), NUNCA r.id (que é só
-// o timestamp do clique em "Encerrar dia", e pode ficar maior que ids de refeições futuras registradas
-// num aparelho com o relógio certo, se o aparelho que clicou tinha o relógio adiantado -- isso travava
-// os cards em zero mesmo com refeições de hoje na lista). r.corteId != null trata registros salvos antes
-// dessa coluna existir (caem pro próprio r.id, mesmo comportamento de antes, só pra não quebrar).
+// salvo em "Encerrar dia": o maior id de refeição já incluído no último fechamento de dia (em qualquer
+// aparelho da mesma conta, já que state.diarioKcal sincroniza) -- ver r.corteId. Um fechamento pode ser
+// MANUAL (clique em "Encerrar dia", ver acaoEncerrarDia()) ou AUTOMÁTICO (virada de meia-noite, ver
+// fecharDiaAutomaticamente()/processarViradaDeDia()) -- os cards reiniciam sozinhos na virada do dia,
+// e quem quiser fechar mais cedo (ex.: antes de dormir) pode clicar em "Encerrar dia" a qualquer
+// momento. Por isso o corte usa o maior corteId entre TODOS os registros do Diário (não só um de hoje)
+// e é aplicado sobre TODAS as refeições (não só as de hoje): enquanto o app não processar a virada
+// (nenhum "hoje" verificado desde então -- ver processarViradaDeDia()), uma refeição registrada depois
+// da meia-noite continua contando nos cards normalmente, mesmo já sendo, no calendário, um dia
+// diferente das anteriores. IMPORTANTE: usa r.corteId (o id das refeições realmente incluídas), NUNCA
+// r.id (que é só o timestamp do clique/fechamento, e pode ficar maior que ids de refeições futuras
+// registradas num aparelho com o relógio certo, se o aparelho que fechou tinha o relógio adiantado --
+// isso travava os cards em zero mesmo com refeições de hoje na lista). r.corteId != null trata
+// registros salvos antes dessa coluna existir (caem pro próprio r.id, mesmo comportamento de antes, só
+// pra não quebrar).
 function corteDiaAberto() {
   return state.diarioKcal.reduce((maior, r) => Math.max(maior, r.corteId != null ? r.corteId : r.id), 0);
 }
@@ -3015,11 +3018,21 @@ function fecharDiaAutomaticamente(date) {
 // historyDaysMedidas(), que agora excluem o dia de hoje de propósito). Se o app ficar fechado vários
 // dias, cada dia perdido no meio vira seu PRÓPRIO registro de histórico (nunca junta dois dias num
 // só). Devolve true se algum dia foi processado (pra quem chamou saber se precisa re-renderizar).
+// BUG CORRIGIDO (relatado pelo usuário: virada de meia-noite moveu refeições/treinos/medidas pro
+// Histórico normalmente, mas os cards de consumo não zeraram e o Diário de Kcal do dia anterior não
+// apareceu sozinho): o cursor começava em proximoDia(ultimo) em vez de no próprio "ultimo". Como
+// state.ultimoDiaProcessado é resalvo como "hoje" a CADA checagem (mesmo sem nenhum dia ter virado --
+// ver o final desta função), no caso mais comum (app checado uma vez por dia, então "ultimo" é sempre
+// exatamente o dia anterior a "hoje" na primeira checagem depois da meia-noite) isso fazia
+// cursor === hoje de cara, e o laço (que só roda enquanto cursor < hoje) nunca executava nem uma vez --
+// ou seja, fecharDiaAutomaticamente() nunca era chamada no dia a dia normal, só quando o app ficava
+// fechado 2+ dias corridos (gap maior que um dia entre checagens). É por isso que os testes antigos
+// (que sempre simulavam "app fechado vários dias") passavam sem pegar esse bug.
 function processarViradaDeDia() {
   const hoje = today();
   const ultimo = state.ultimoDiaProcessado || hoje;
   if (ultimo >= hoje) { state.ultimoDiaProcessado = hoje; return false; }
-  let cursor = proximoDia(ultimo);
+  let cursor = ultimo; // começa no próprio "ultimo" (o primeiro dia ainda não fechado), não no dia seguinte
   let processouAlgum = false;
   // Guarda de segurança: nunca deveria rodar mais que uns poucos milhares de iterações (isso
   // representaria anos de app fechado), mas evita loop infinito caso proximoDia() devolva null por
