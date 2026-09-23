@@ -312,6 +312,8 @@ svg{ display: block; }
 .exposicao-solar-aviso{ margin:0 0 4px; display:flex; align-items:flex-start; gap:6px; font-size:12.5px; line-height:1.5; color:#d9efbd; }
 .exposicao-solar-aviso .icon{ flex:0 0 auto; width:14px; height:14px; margin-top:2px; }
 .exposicao-solar-link{ font-weight:600; color:#fff; text-decoration:underline; text-underline-offset:2px; }
+.produto-cadastrar-btn{ display:inline-flex; align-items:center; gap:6px; margin:10px 0 4px; border-radius:999px; border:1px solid rgba(184,214,156,.35); background:rgba(255,255,255,.06); padding:7px 14px; font-size:13px; font-weight:600; color:#e3f2d3; transition:background .15s; }
+.produto-cadastrar-btn:hover{ background:rgba(255,255,255,.14); }
 .exposicao-solar-localizacao{ margin:0 0 10px; display:flex; align-items:flex-start; gap:6px; font-size:12.5px; line-height:1.5; color:#a9c6b7; }
 .exposicao-solar-localizacao .icon{ flex:0 0 auto; width:14px; height:14px; margin-top:2px; }
 .exposicao-solar-localizacao-ok{ color:#d9efbd; }
@@ -454,6 +456,7 @@ svg{ display: block; }
 .imc-value{ font-family:'Fraunces',serif; font-size:36px; font-weight:600; color:#214c3d; }
 .imc-class{ border-radius:999px; background:#eef6e4; padding:4px 12px; font-size:12px; font-weight:600; color:#4b7048; }
 .imc-empty{ margin:16px 0 0; font-size:13px; line-height:1.5; color:#8a9c93; }
+.imc-peso-referencia{ margin:4px 0 0; font-family:'Fraunces',serif; font-style:italic; font-size:12.5px; font-weight:400; color:#9aa9a1; }
 .imc-chart{ margin-top:20px; }
 .imc-chart-marker-wrap{ position:relative; height:30px; }
 .imc-chart-marker{ position:absolute; bottom:0; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; }
@@ -575,6 +578,16 @@ svg{ display: block; }
 .nutrient-info-lista li::before{ content:""; position:absolute; left:0; top:7px; width:5px; height:5px; border-radius:999px; background:#a7c19b; }
 .nutrient-info-chips{ display:flex; flex-wrap:wrap; gap:6px; }
 .nutrient-info-chip{ border-radius:999px; padding:5px 11px; font-size:12px; font-weight:600; }
+.nutrient-info-refeicoes-lista{ display:flex; flex-direction:column; gap:12px; }
+.nutrient-info-refeicao-row{ display:flex; align-items:center; gap:10px; }
+.nutrient-info-refeicao-rank{ flex-shrink:0; width:20px; font-size:12px; font-weight:700; color:#9aa9a1; text-align:center; }
+.nutrient-info-refeicao-info{ flex:1; min-width:0; }
+.nutrient-info-refeicao-nome{ font-size:13.5px; font-weight:600; color:#3d5a4f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.nutrient-info-refeicao-hora{ font-weight:400; color:#9aa9a1; }
+.nutrient-info-refeicao-barra{ margin-top:5px; height:5px; border-radius:999px; background:#eef1ec; overflow:hidden; }
+.nutrient-info-refeicao-barra-fill{ height:100%; border-radius:999px; }
+.nutrient-info-refeicao-valor{ flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; font-size:12.5px; font-weight:700; color:#3d5a4f; line-height:1.3; }
+.nutrient-info-refeicao-pct{ font-size:11px; font-weight:500; color:#9aa9a1; }
 .nutrient-info-fonte{ margin:18px 0 0; padding-top:14px; border-top:1px solid #edf0eb; display:flex; align-items:flex-start; gap:6px; font-size:11px; line-height:1.4; color:#9aa9a1; }
 .nutrient-info-fonte .icon{ margin-top:1px; width:13px; height:13px; color:#b7c2ba; flex-shrink:0; }
 .meal-detalhe-close{ display:flex; height:32px; width:32px; flex-shrink:0; align-items:center; justify-content:center; border-radius:999px; color:#9aa9a1; }
@@ -1130,6 +1143,7 @@ const foodLibrary = [
   { terms: ["macarrao cozido", "macarrao", "massa"], label: "Macarrão cozido", baseAmount: "100 g", values: { calories: 158, protein: 5.8, carbs: 31, fat: 0.9, fiber: 1.8, vitA: 0, vitC: 0, vitD: 0, calcio: 7, ferro: 0.5, magnesio: 18, potassio: 45, zinco: 0.5, sodio: 180, vitB12: 0 }, grams: 100 },
   { terms: ["batata inglesa", "batata cozida", "batata"], label: "Batata inglesa cozida", baseAmount: "100 g", values: { calories: 87, protein: 1.9, carbs: 20, fat: 0.1, fiber: 1.8, vitA: 0, vitC: 13, vitD: 0, calcio: 8, ferro: 0.3, magnesio: 20, potassio: 380, zinco: 0.3, sodio: 200, vitB12: 0 }, grams: 100 },
   { terms: ["batata doce"], label: "Batata doce cozida", baseAmount: "100 g", values: { calories: 86, protein: 1.6, carbs: 20, fat: 0.1, fiber: 3, vitA: 700, vitC: 2.4, vitD: 0, calcio: 30, ferro: 0.6, magnesio: 25, potassio: 340, zinco: 0.3, sodio: 30, vitB12: 0 }, grams: 100 },
+  { terms: ["batata palha"], label: "Batata palha", baseAmount: "100 g", values: { calories: 542, protein: 5, carbs: 48, fat: 36, fiber: 2.7, vitA: 0, vitC: 8, vitD: 0, calcio: 20, ferro: 1.5, magnesio: 30, potassio: 780, zinco: 0.5, sodio: 700, vitB12: 0 }, grams: 100 },
   { terms: ["mandioca", "aipim", "macaxeira"], label: "Mandioca cozida", baseAmount: "100 g", values: { calories: 125, protein: 0.6, carbs: 30, fat: 0.3, fiber: 1.6, vitA: 1, vitC: 20, vitD: 0, calcio: 16, ferro: 0.3, magnesio: 21, potassio: 270, zinco: 0.3, sodio: 15, vitB12: 0 }, grams: 100 },
   { terms: ["arroz integral"], label: "Arroz integral cozido", baseAmount: "100 g", values: { calories: 124, protein: 2.6, carbs: 25.8, fat: 1, fiber: 2.7, vitA: 0, vitC: 0, vitD: 0, calcio: 10, ferro: 0.4, magnesio: 44, potassio: 79, zinco: 0.6, sodio: 150, vitB12: 0 }, grams: 100 },
   { terms: ["arroz branco", "arroz cozido", "arroz"], label: "Arroz branco cozido", baseAmount: "100 g", values: { calories: 130, protein: 2.5, carbs: 28, fat: 0.3, fiber: 0.4, vitA: 0, vitC: 0, vitD: 0, calcio: 10, ferro: 0.2, magnesio: 12, potassio: 35, zinco: 0.4, sodio: 150, vitB12: 0 }, grams: 100 },
@@ -1138,27 +1152,44 @@ const foodLibrary = [
   { terms: ["cuscuz"], label: "Cuscuz", baseAmount: "100 g", values: { calories: 112, protein: 2.5, carbs: 23, fat: 0.6, fiber: 1.4, vitA: 5, vitC: 0, vitD: 0, calcio: 8, ferro: 0.4, magnesio: 10, potassio: 40, zinco: 0.3, sodio: 180, vitB12: 0 }, grams: 100 },
   { terms: ["ovo frito", "ovo de galinha frito", "ovo"], label: "Ovo frito", baseAmount: "1 unidade", values: { calories: 90, protein: 6.3, carbs: 0.4, fat: 7, fiber: 0, vitA: 90, vitC: 0, vitD: 1, calcio: 25, ferro: 0.9, magnesio: 5, potassio: 65, zinco: 0.6, sodio: 95, vitB12: 0.55 }, count: 1 },
   { terms: ["ovo cozido"], label: "Ovo cozido", baseAmount: "1 unidade", values: { calories: 78, protein: 6.3, carbs: 0.6, fat: 5.3, fiber: 0, vitA: 80, vitC: 0, vitD: 1, calcio: 25, ferro: 0.9, magnesio: 5, potassio: 65, zinco: 0.6, sodio: 70, vitB12: 0.55 }, count: 1 },
+  { terms: ["ovo de codorna", "ovos de codorna", "codorna"], label: "Ovo de codorna", baseAmount: "1 unidade", values: { calories: 14, protein: 1.2, carbs: 0.1, fat: 1, fiber: 0, vitA: 14, vitC: 0, vitD: 0.1, calcio: 6, ferro: 0.3, magnesio: 1, potassio: 12, zinco: 0.1, sodio: 13, vitB12: 0.15 }, count: 1 },
   { terms: ["omelete"], label: "Omelete", baseAmount: "2 ovos", values: { calories: 190, protein: 13, carbs: 1.5, fat: 15, fiber: 0, vitA: 160, vitC: 0, vitD: 2, calcio: 50, ferro: 1.8, magnesio: 10, potassio: 130, zinco: 1.2, sodio: 180, vitB12: 1.1 }, count: 2 },
   { terms: ["peito de frango", "frango grelhado", "frango"], label: "Peito de frango", baseAmount: "100 g", values: { calories: 165, protein: 31, carbs: 0, fat: 3.6, fiber: 0, vitA: 5, vitC: 0, vitD: 0.1, calcio: 6, ferro: 0.4, magnesio: 25, potassio: 220, zinco: 0.7, sodio: 75, vitB12: 0.36 }, grams: 100 },
   { terms: ["picanha", "picanha bovina"], label: "Picanha", baseAmount: "100 g", values: { calories: 289, protein: 26, carbs: 0, fat: 20, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 10, ferro: 2.1, magnesio: 20, potassio: 260, zinco: 4.5, sodio: 65, vitB12: 2.6 }, grams: 100 },
   { terms: ["carne moida refogada", "carne moida"], label: "Carne moída refogada", baseAmount: "100 g", values: { calories: 212, protein: 26, carbs: 0, fat: 11, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 12, ferro: 2.3, magnesio: 18, potassio: 250, zinco: 4, sodio: 90, vitB12: 2.5 }, grams: 100 },
   { terms: ["bife de patinho", "carne bovina magra", "patinho"], label: "Bife de patinho grelhado", baseAmount: "100 g", values: { calories: 205, protein: 32, carbs: 0, fat: 8, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 8, ferro: 2.5, magnesio: 22, potassio: 300, zinco: 4.2, sodio: 70, vitB12: 2.5 }, grams: 100 },
+  { terms: ["carne de sol"], label: "Carne de sol grelhada", baseAmount: "100 g", values: { calories: 199, protein: 32, carbs: 0, fat: 7, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 10, ferro: 3, magnesio: 22, potassio: 320, zinco: 5.5, sodio: 1200, vitB12: 3 }, grams: 100 },
+  { terms: ["maminha"], label: "Maminha grelhada", baseAmount: "100 g", values: { calories: 163, protein: 28, carbs: 0, fat: 5, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 8, ferro: 2.2, magnesio: 21, potassio: 320, zinco: 4, sodio: 60, vitB12: 2.4 }, grams: 100 },
+  { terms: ["cupim assado", "cupim"], label: "Cupim assado", baseAmount: "100 g", values: { calories: 280, protein: 24, carbs: 0, fat: 20, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 9, ferro: 2, magnesio: 19, potassio: 280, zinco: 4, sodio: 60, vitB12: 2.2 }, grams: 100 },
+  { terms: ["alcatra"], label: "Alcatra grelhada", baseAmount: "100 g", values: { calories: 179, protein: 30, carbs: 0, fat: 6, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 8, ferro: 2.3, magnesio: 22, potassio: 320, zinco: 4.3, sodio: 55, vitB12: 2.5 }, grams: 100 },
   { terms: ["file de tilapia", "peixe grelhado", "tilapia"], label: "Filé de tilápia grelhado", baseAmount: "100 g", values: { calories: 128, protein: 26, carbs: 0, fat: 2.7, fiber: 0, vitA: 5, vitC: 0, vitD: 1, calcio: 10, ferro: 0.5, magnesio: 27, potassio: 300, zinco: 0.4, sodio: 75, vitB12: 1.6 }, grams: 100 },
   { terms: ["salmao grelhado", "salmao"], label: "Salmão grelhado", baseAmount: "100 g", values: { calories: 208, protein: 22, carbs: 0, fat: 13, fiber: 0, vitA: 40, vitC: 0, vitD: 10, calcio: 12, ferro: 0.5, magnesio: 30, potassio: 380, zinco: 0.5, sodio: 65, vitB12: 2.8 }, grams: 100 },
   { terms: ["atum em lata", "atum"], label: "Atum em lata", baseAmount: "100 g", values: { calories: 116, protein: 26, carbs: 0, fat: 1, fiber: 0, vitA: 15, vitC: 0, vitD: 2, calcio: 10, ferro: 1.3, magnesio: 30, potassio: 250, zinco: 0.6, sodio: 350, vitB12: 2 }, grams: 100 },
   { terms: ["camarao cozido", "camarao"], label: "Camarão cozido", baseAmount: "100 g", values: { calories: 99, protein: 24, carbs: 0.2, fat: 0.3, fiber: 0, vitA: 20, vitC: 2, vitD: 0.1, calcio: 60, ferro: 0.4, magnesio: 40, potassio: 260, zinco: 1.6, sodio: 180, vitB12: 1.5 }, grams: 100 },
   { terms: ["sardinha grelhada", "sardinha assada", "sardinha"], label: "Sardinha grelhada", baseAmount: "100 g", values: { calories: 185, protein: 24.6, carbs: 0, fat: 9.5, fiber: 0, vitA: 32, vitC: 0, vitD: 4.8, calcio: 30, ferro: 1.4, magnesio: 31, potassio: 380, zinco: 1.3, sodio: 100, vitB12: 8.9 }, grams: 100 },
   { terms: ["file de dourado", "dourado grelhado", "dourado"], label: "Filé de dourado grelhado", baseAmount: "100 g", values: { calories: 109, protein: 24, carbs: 0, fat: 1, fiber: 0, vitA: 15, vitC: 0, vitD: 2, calcio: 20, ferro: 1, magnesio: 30, potassio: 380, zinco: 0.6, sodio: 70, vitB12: 1.6 }, grams: 100 },
+  { terms: ["file de pescada amarela", "peixe pescada amarela", "pescada amarela", "pescada"], label: "Pescada amarela grelhada", baseAmount: "100 g", values: { calories: 108, protein: 21, carbs: 0, fat: 2, fiber: 0, vitA: 5, vitC: 0, vitD: 1, calcio: 15, ferro: 0.5, magnesio: 28, potassio: 320, zinco: 0.5, sodio: 70, vitB12: 1.4 }, grams: 100 },
   { terms: ["marisco cozido", "mariscos", "marisco"], label: "Marisco cozido", baseAmount: "100 g", values: { calories: 172, protein: 24, carbs: 7, fat: 4.5, fiber: 0, vitA: 12, vitC: 8, vitD: 0, calcio: 26, ferro: 6, magnesio: 30, potassio: 320, zinco: 2.2, sodio: 250, vitB12: 12 }, grams: 100 },
   { terms: ["caranguejo cozido", "carne de caranguejo", "caranguejo"], label: "Caranguejo cozido", baseAmount: "100 g", values: { calories: 97, protein: 19, carbs: 0, fat: 1.5, fiber: 0, vitA: 2, vitC: 0, vitD: 0, calcio: 50, ferro: 0.7, magnesio: 40, potassio: 300, zinco: 4, sodio: 300, vitB12: 9 }, grams: 100 },
   { terms: ["lombo suino", "carne de porco", "lombo assado"], label: "Lombo suíno assado", baseAmount: "100 g", values: { calories: 211, protein: 27, carbs: 0, fat: 11, fiber: 0, vitA: 2, vitC: 0, vitD: 0.5, calcio: 8, ferro: 0.9, magnesio: 22, potassio: 320, zinco: 1.9, sodio: 75, vitB12: 0.6 }, grams: 100 },
   { terms: ["linguica"], label: "Linguiça", baseAmount: "100 g", values: { calories: 300, protein: 13, carbs: 2, fat: 27, fiber: 0, vitA: 0, vitC: 0, vitD: 0.2, calcio: 10, ferro: 1, magnesio: 15, potassio: 200, zinco: 2, sodio: 950, vitB12: 1 }, grams: 100 },
+  // Termos mais específicos que "linguica" (o termo mais longo sempre vence -- ver comentário sobre isso
+  // em detectFoods()), então "linguiça bovina/de porco/de frango" caem nesses itens em vez de sempre
+  // baterem no genérico "Linguiça" acima.
+  { terms: ["linguica bovina", "linguica de boi"], label: "Linguiça bovina", baseAmount: "100 g", values: { calories: 250, protein: 15, carbs: 2, fat: 20, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 10, ferro: 1.8, magnesio: 15, potassio: 220, zinco: 3, sodio: 900, vitB12: 1.5 }, grams: 100 },
+  { terms: ["linguica de porco", "linguica suina", "linguica de porco toscana", "linguica toscana"], label: "Linguiça de porco", baseAmount: "100 g", values: { calories: 320, protein: 13, carbs: 2, fat: 29, fiber: 0, vitA: 0, vitC: 0, vitD: 0.2, calcio: 10, ferro: 1, magnesio: 15, potassio: 200, zinco: 2, sodio: 980, vitB12: 1 }, grams: 100 },
+  { terms: ["linguica de frango", "linguica de aves"], label: "Linguiça de frango", baseAmount: "100 g", values: { calories: 180, protein: 15, carbs: 2, fat: 12, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 8, ferro: 1, magnesio: 15, potassio: 210, zinco: 1.5, sodio: 850, vitB12: 0.5 }, grams: 100 },
+  { terms: ["salsicha"], label: "Salsicha", baseAmount: "1 unidade (50 g)", values: { calories: 129, protein: 5.7, carbs: 1.5, fat: 11.3, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 5, ferro: 0.5, magnesio: 5, potassio: 70, zinco: 0.8, sodio: 435, vitB12: 0.25 }, grams: 50 },
   { terms: ["bacon"], label: "Bacon", baseAmount: "30 g", values: { calories: 150, protein: 10, carbs: 0, fat: 12, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 2, ferro: 0.3, magnesio: 5, potassio: 90, zinco: 0.6, sodio: 380, vitB12: 0.2 }, grams: 30 },
   { terms: ["peito de peru", "presunto de peru"], label: "Peito de peru fatiado", baseAmount: "2 fatias (30 g)", values: { calories: 35, protein: 6, carbs: 1, fat: 1, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 5, ferro: 0.2, magnesio: 6, potassio: 90, zinco: 0.4, sodio: 330, vitB12: 0.15 }, grams: 30 },
   { terms: ["presunto"], label: "Presunto", baseAmount: "2 fatias (30 g)", values: { calories: 60, protein: 8, carbs: 1, fat: 3, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 3, ferro: 0.2, magnesio: 5, potassio: 80, zinco: 0.4, sodio: 330, vitB12: 0.2 }, grams: 30 },
   { terms: ["queijo minas"], label: "Queijo minas", baseAmount: "30 g", values: { calories: 72, protein: 5.6, carbs: 0.9, fat: 5.4, fiber: 0, vitA: 30, vitC: 0, vitD: 0, calcio: 180, ferro: 0.1, magnesio: 6, potassio: 30, zinco: 0.6, sodio: 85, vitB12: 0.3 }, grams: 30 },
   { terms: ["queijo mussarela", "mussarela", "muçarela"], label: "Queijo mussarela", baseAmount: "30 g", values: { calories: 90, protein: 6.6, carbs: 0.6, fat: 6.9, fiber: 0, vitA: 25, vitC: 0, vitD: 0, calcio: 200, ferro: 0.1, magnesio: 6, potassio: 20, zinco: 0.7, sodio: 180, vitB12: 0.3 }, grams: 30 },
   { terms: ["queijo gorgonzola", "gorgonzola"], label: "Queijo gorgonzola", baseAmount: "30 g", values: { calories: 106, protein: 6.4, carbs: 0.7, fat: 8.6, fiber: 0, vitA: 62, vitC: 0, vitD: 0.2, calcio: 158, ferro: 0.1, magnesio: 7, potassio: 77, zinco: 0.8, sodio: 419, vitB12: 0.4 }, grams: 30 },
+  { terms: ["queijo coalho", "coalho"], label: "Queijo coalho", baseAmount: "30 g", values: { calories: 98, protein: 7.2, carbs: 0.5, fat: 7.5, fiber: 0, vitA: 22, vitC: 0, vitD: 0, calcio: 182, ferro: 0.1, magnesio: 6, potassio: 20, zinco: 0.7, sodio: 144, vitB12: 0.3 }, grams: 30 },
+  { terms: ["queijo parmesao", "parmesao"], label: "Queijo parmesão", baseAmount: "30 g", values: { calories: 118, protein: 10.7, carbs: 1, fat: 7.7, fiber: 0, vitA: 9, vitC: 0, vitD: 0, calcio: 333, ferro: 0.1, magnesio: 12, potassio: 19, zinco: 0.8, sodio: 413, vitB12: 0.26 }, grams: 30 },
+  { terms: ["queijo prato"], label: "Queijo prato", baseAmount: "30 g", values: { calories: 108, protein: 7.6, carbs: 0.6, fat: 8.7, fiber: 0, vitA: 25, vitC: 0, vitD: 0, calcio: 210, ferro: 0.1, magnesio: 6, potassio: 20, zinco: 0.7, sodio: 141, vitB12: 0.3 }, grams: 30 },
+  { terms: ["queijo gouda", "gouda"], label: "Queijo gouda", baseAmount: "30 g", values: { calories: 107, protein: 7.5, carbs: 0.7, fat: 8.2, fiber: 0, vitA: 59, vitC: 0, vitD: 0.2, calcio: 210, ferro: 0.1, magnesio: 6, potassio: 20, zinco: 1.2, sodio: 246, vitB12: 0.32 }, grams: 30 },
   { terms: ["requeijao"], label: "Requeijão", baseAmount: "1 colher de sopa (20 g)", values: { calories: 55, protein: 1.5, carbs: 1, fat: 5, fiber: 0, vitA: 15, vitC: 0, vitD: 0, calcio: 60, ferro: 0, magnesio: 3, potassio: 15, zinco: 0.2, sodio: 110, vitB12: 0.15 }, grams: 20 },
   { terms: ["leite integral", "leite"], label: "Leite integral", baseAmount: "1 copo (200 ml)", values: { calories: 122, protein: 6.4, carbs: 9.6, fat: 6.6, fiber: 0, vitA: 60, vitC: 2, vitD: 1, calcio: 240, ferro: 0.1, magnesio: 24, potassio: 300, zinco: 0.8, sodio: 90, vitB12: 0.72 }, ml: 200 },
   { terms: ["leite desnatado"], label: "Leite desnatado", baseAmount: "1 copo (200 ml)", values: { calories: 70, protein: 6.8, carbs: 9.8, fat: 0.2, fiber: 0, vitA: 30, vitC: 2, vitD: 1, calcio: 250, ferro: 0.1, magnesio: 24, potassio: 320, zinco: 0.8, sodio: 100, vitB12: 0.74 }, ml: 200 },
@@ -1253,9 +1284,23 @@ const foodLibrary = [
   { terms: ["cafe preto", "cafezinho", "cafe"], label: "Café preto", baseAmount: "1 xícara (50 ml)", values: { calories: 2, protein: 0.3, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 2, ferro: 0, magnesio: 3, potassio: 30, zinco: 0, sodio: 2, vitB12: 0 }, ml: 50 },
   { terms: ["cha de camomila", "cha verde", "cha mate", "cha preto", "cha"], label: "Chá (sem açúcar)", baseAmount: "1 xícara (200 ml)", values: { calories: 2, protein: 0, carbs: 0.5, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 2, ferro: 0, magnesio: 2, potassio: 20, zinco: 0, sodio: 4, vitB12: 0 }, ml: 200 },
   { terms: ["refrigerante", "coca cola", "coca"], label: "Refrigerante", baseAmount: "1 lata (350 ml)", values: { calories: 140, protein: 0, carbs: 37, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 5, ferro: 0, magnesio: 0, potassio: 5, zinco: 0, sodio: 35, vitB12: 0 }, ml: 350 },
+  // Termos mais específicos que "coca cola"/"coca" (o termo mais longo sempre vence -- ver
+  // detectFoods()), então "coca cola zero"/"coca zero" caem aqui em vez de sempre baterem no
+  // "Refrigerante" comum acima. "Sprite" comum (não zero) não tem termo próprio de propósito -- sem um
+  // termo "sprite" isolado apontando pra cá, o valor zero-caloria só é usado quando a pessoa realmente
+  // diz "zero", evitando subestimar um refrigerante açucarado comum descrito como "sprite".
+  { terms: ["coca cola zero", "coca zero"], label: "Coca-Cola Zero", baseAmount: "1 lata (350 ml)", values: { calories: 1, protein: 0, carbs: 0.3, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 3, ferro: 0, magnesio: 0, potassio: 3, zinco: 0, sodio: 15, vitB12: 0 }, ml: 350 },
+  { terms: ["sprite zero"], label: "Sprite Zero", baseAmount: "1 lata (350 ml)", values: { calories: 1, protein: 0, carbs: 0.2, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 0, ferro: 0, magnesio: 0, potassio: 0, zinco: 0, sodio: 20, vitB12: 0 }, ml: 350 },
   { terms: ["cerveja"], label: "Cerveja", baseAmount: "1 lata (350 ml)", values: { calories: 150, protein: 1.6, carbs: 12, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 10, ferro: 0.1, magnesio: 20, potassio: 90, zinco: 0.1, sodio: 15, vitB12: 0 }, ml: 350 },
+  { terms: ["caipirinha de cachaca", "caipirinha"], label: "Caipirinha de cachaça", baseAmount: "1 copo (200 ml)", values: { calories: 190, protein: 0, carbs: 16, fat: 0, fiber: 0.2, vitA: 0, vitC: 10, vitD: 0, calcio: 5, ferro: 0.2, magnesio: 5, potassio: 40, zinco: 0, sodio: 2, vitB12: 0 }, ml: 200 },
+  // "Água" pura (H2O) -- pedido explícito do usuário, pra registrar consumo de água (hidratação) do
+  // mesmo jeito que qualquer outra bebida, em ml ou litros (ver o novo suporte a litros em
+  // amountForFood()). Sem calorias/nutrientes (água pura), só ocupa espaço no registro pra fins de
+  // acompanhamento de hidratação.
+  { terms: ["agua", "h2o"], label: "Água", baseAmount: "1 copo (200 ml)", values: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 0, ferro: 0, magnesio: 0, potassio: 0, zinco: 0, sodio: 0, vitB12: 0 }, ml: 200 },
   { terms: ["agua de coco"], label: "Água de coco", baseAmount: "1 copo (200 ml)", values: { calories: 40, protein: 0.6, carbs: 9, fat: 0.1, fiber: 0, vitA: 0, vitC: 5, vitD: 0, calcio: 30, ferro: 0.5, magnesio: 45, potassio: 470, zinco: 0.2, sodio: 50, vitB12: 0 }, ml: 200 },
   { terms: ["chocolate ao leite", "chocolate"], label: "Chocolate ao leite", baseAmount: "1 barra pequena (25 g)", values: { calories: 130, protein: 1.9, carbs: 15, fat: 7.3, fiber: 0.8, vitA: 5, vitC: 0, vitD: 0, calcio: 55, ferro: 0.6, magnesio: 15, potassio: 90, zinco: 0.4, sodio: 20, vitB12: 0.06 }, grams: 25 },
+  { terms: ["brigadeiro"], label: "Brigadeiro", baseAmount: "1 unidade (15 g)", values: { calories: 62, protein: 0.9, carbs: 9, fat: 2.4, fiber: 0.3, vitA: 5, vitC: 0, vitD: 0, calcio: 20, ferro: 0.3, magnesio: 5, potassio: 40, zinco: 0.1, sodio: 15, vitB12: 0.05 }, grams: 15 },
   { terms: ["barra de cereal"], label: "Barra de cereal", baseAmount: "1 unidade (25 g)", values: { calories: 95, protein: 1.3, carbs: 18, fat: 2, fiber: 1.2, vitA: 0, vitC: 0, vitD: 0, calcio: 15, ferro: 0.8, magnesio: 15, potassio: 60, zinco: 0.3, sodio: 30, vitB12: 0 }, grams: 25 },
   { terms: ["castanha do para", "castanha"], label: "Castanha-do-pará", baseAmount: "5 unidades (15 g)", values: { calories: 92, protein: 2, carbs: 1.7, fat: 9.3, fiber: 1, vitA: 0, vitC: 0, vitD: 0, calcio: 25, ferro: 0.4, magnesio: 55, potassio: 100, zinco: 0.7, sodio: 0.3, vitB12: 0 }, grams: 15 },
   { terms: ["amendoim"], label: "Amendoim", baseAmount: "30 g", values: { calories: 170, protein: 7.3, carbs: 6, fat: 14.5, fiber: 2.5, vitA: 0, vitC: 0, vitD: 0, calcio: 20, ferro: 0.6, magnesio: 48, potassio: 200, zinco: 0.9, sodio: 50, vitB12: 0 }, grams: 30 },
@@ -1567,6 +1612,12 @@ function amountForFood(text, position, food) {
   const before = text.slice(Math.max(0, position - 38), position);
   const grams = before.match(/(\d+(?:[.,]\d+)?)\s*(?:g|gramas?|gramos?)\s*(?:de\s*)?$/i);
   const ml = before.match(/(\d+(?:[.,]\d+)?)\s*(?:ml|mililitros?)\s*(?:de\s*)?$/i);
+  // Litros ("1,5 l", "500 lt", "2 litros") -- mesma ideia de "ml", só que convertendo pra ml antes de
+  // dividir por food.ml (1 l = 1000 ml). Pedido explícito do usuário ao cadastrar bebidas (caipirinha,
+  // refrigerante zero, água): "para o usuário informar o consumo em lt ou ml" -- como é uma mudança no
+  // parser genérico de quantidade (não em cada alimento), qualquer bebida medida em ml já passa a aceitar
+  // litros também, sem precisar duplicar lógica por alimento.
+  const litros = before.match(/(\d+(?:[.,]\d+)?)\s*(?:litros?|lts?|l)\s*(?:de\s*)?$/i);
   const units = before.match(/(\d+(?:[.,]\d+)?)\s*(?:unidades?|unid\.?|ovos?|pães?|paes?)\s*(?:de\s*)?$/i);
   const numberOnly = before.match(/(?:^|[\s,;])(?:um|uma|um copo de)?\s*(\d+(?:[.,]\d+)?)\s*$/i);
   const numberWord = /(?:^|[\s,;])(um|uma)\s*$/.test(before);
@@ -1577,6 +1628,7 @@ function amountForFood(text, position, food) {
     if (perUnitGrams) { const value = number(grams); return { multiplier: value / perUnitGrams, amount: formatNumber(value, 0) + " g" }; }
   }
   if (food.ml && ml) { const value = number(ml); return { multiplier: value / food.ml, amount: formatNumber(value, 0) + " ml" }; }
+  if (food.ml && litros) { const valorMl = number(litros) * 1000; return { multiplier: valorMl / food.ml, amount: formatNumber(valorMl, 0) + " ml" }; }
   if (units) { const value = number(units); return { multiplier: value / (food.count || 1), amount: formatNumber(value, 0) + " unidade" + (value > 1 ? "s" : "") }; }
   // Um número solto do lado do alimento, sem "g"/"ml"/"unidades" (ex.: "1 pão francês", "2 bananas",
   // "3 ovos") quase sempre significa "N porções" na fala natural — não "N gramas". Antes isso era
@@ -1609,8 +1661,26 @@ function doseAmountForFood(text, position, length, food) {
   return { multiplier: dose.padrao, amount: food.baseAmount };
 }
 
+// Estimativa de quantos gramas um item identificado contribui -- usada só pra somar o "peso do produto"
+// no cadastro de um produto pronto (ver acaoCadastrarProduto()); o resto do app (mealTotal(),
+// alimentoDetalheTemplate() etc.) ignora esse campo normalmente. Não é uma medição real: pra alimentos
+// medidos em ml, assume-se 1 ml ≈ 1 g (razoável pra molhos/caldos de cozinha); pra alimentos contados
+// por unidade sem peso digitado, usa o peso típico da unidade (ver unitGramsFromBaseAmount()) ou, na
+// falta desse dado, um padrão de 100 g; suplementos (food.dose) têm massa desprezível numa receita.
+function gramsEstimadosParaItem(food, multiplier) {
+  if (food.grams) return multiplier * food.grams;
+  if (food.ml) return multiplier * food.ml;
+  if (food.count) return multiplier * (unitGramsFromBaseAmount(food.baseAmount) || 100);
+  return 0;
+}
 function detectFoods(description) {
   const text = normalizeText(description);
+  // Alimentos reconhecidos = a biblioteca embutida (foodLibrary) + os produtos que a própria pessoa
+  // cadastrou (ver CHAVE_PRODUTOS_CUSTOMIZADOS/acaoCadastrarProduto()) -- cada produto customizado tem
+  // exatamente o mesmo formato de uma entrada da biblioteca (terms/label/baseAmount/values/grams), então
+  // participa do reconhecimento normalmente, inclusive podendo ser digitado com quantidade (ex.: "150g
+  // de pastel de camarão").
+  const biblioteca = foodLibrary.concat(state.produtosCustomizados || []);
   // Junta todos os termos de todos os alimentos que aparecem no texto, em vez de resolver um alimento
   // de cada vez na ordem em que aparecem na biblioteca. Isso importa porque vários termos mais
   // específicos contêm um termo mais curto de OUTRO alimento (ex.: "suco de uva" contém "uva", que
@@ -1619,7 +1689,7 @@ function detectFoods(description) {
   // (do mais longo pro mais curto) e aceitando de forma gulosa sem sobreposição de intervalos, o termo
   // mais específico (mais longo) sempre vence — não importa a ordem em que foi declarado.
   const candidates = [];
-  for (const food of foodLibrary) {
+  for (const food of biblioteca) {
     for (const term of food.terms) {
       const normalizedTerm = normalizeText(term);
       const position = text.indexOf(normalizedTerm);
@@ -1635,7 +1705,7 @@ function detectFoods(description) {
     const overlaps = occupied.some((range) => c.position < range.end && c.position + c.length > range.start);
     if (overlaps) continue;
     const r = c.food.dose ? doseAmountForFood(text, c.position, c.length, c.food) : amountForFood(text, c.position, c.food);
-    found.push({ label: c.food.label, amount: r.amount, values: scale(c.food.values, r.multiplier) });
+    found.push({ label: c.food.label, amount: r.amount, values: scale(c.food.values, r.multiplier), gramsEstimados: gramsEstimadosParaItem(c.food, r.multiplier) });
     usedFoods.add(c.food);
     occupied.push({ start: c.position, end: c.position + c.length });
   }
@@ -1664,6 +1734,13 @@ const CHAVE_EXERCICIOS_CUSTOMIZADOS = "nutri-track-exercicios-customizados";
 const CHAVE_ESPORTES_CUSTOMIZADOS = "nutri-track-esportes-customizados";
 const CHAVE_DIARIO_KCAL = "nutri-track-diario-kcal";
 const CHAVE_ULTIMO_DIA_PROCESSADO = "nutri-track-ultimo-dia-processado";
+// Produtos/receitas que a própria pessoa cadastrou (ver cadastrarProdutoModalTemplate()/
+// acaoCadastrarProduto()) -- cada um vira uma entrada no MESMO formato de foodLibrary (terms/label/
+// baseAmount/values/grams), calculada a partir dos ingredientes informados, e passa a ser reconhecido
+// em QUALQUER descrição de refeição futura (ver detectFoods()). Igual esportesCustomizados, fica só no
+// dispositivo (não sincroniza com o Google) -- é apenas o "catálogo" pessoal de produtos prontos, não
+// um registro de consumo em si.
+const CHAVE_PRODUTOS_CUSTOMIZADOS = "nutri-track-produtos-customizados";
 
 /* ===================== medidas e aferições ===================== */
 const medidaTipos = {
@@ -1703,6 +1780,12 @@ const state = {
   mealTipo: "",
   mealNomeCustom: "",
   mealDescription: "",
+  // Data da refeição -- por padrão vazio (o formulário mostra "hoje" como valor exibido, ver
+  // mealDataTemplate()), mas pode ser mudada pra um dia passado pra registrar algo esquecido (ex.:
+  // "esqueci de registrar a janta de ontem"), igual já era possível pro treino (ver state.treinoData).
+  // Pedido explícito do usuário depois de esquecer de registrar janta e treino de um dia que já tinha
+  // virado -- ver acaoSalvarRefeicao()/sincronizarDiarioKcalDoDia().
+  mealData: "",
   // Campos do formulário de "Exposição Solar" -- ver exposicaoSolarCamposTemplate()/
   // acaoCalcularExposicaoSolar()/calcularVitaminaDSol(). Só aparecem quando mealTipo === "Exposição
   // Solar" (ver acaoSelecionarTipoRefeicao()), mesmo espírito de mealNomeCustom para "Outro".
@@ -1715,6 +1798,13 @@ const state = {
   // dispositivo); "erro" (falha de rede/API); "manual" (usuário optou por informar o céu à mao).
   exposicaoLocalizacaoStatus: "idle",
   exposicaoUVHorario: null,
+  // Produtos/receitas cadastrados pela própria pessoa -- ver comentário em CHAVE_PRODUTOS_CUSTOMIZADOS.
+  produtosCustomizados: readStorage(CHAVE_PRODUTOS_CUSTOMIZADOS, []),
+  // Modal "Cadastrar produto no cardápio" -- ver cadastrarProdutoModalTemplate()/acaoAbrirCadastrarProduto().
+  showCadastrarProduto: false,
+  produtoNome: "",
+  produtoIngredientes: "",
+  produtoPreview: [], // ingredientes já identificados (mesmo formato de state.preview) -- ver acaoAnalisarIngredientesProduto()
   showGoals: false,
   showHistory: false,
   // Data do dia expandido no histórico de refeições (accordion: um dia de cada vez, ou nenhum) -- ver
@@ -1847,6 +1937,7 @@ function persistTreinos() { writeStorage(CHAVE_TREINOS, state.treinos); }
 function persistTreinoAtivo() { writeStorage(CHAVE_TREINO_ATIVO, state.treinoAtivo); }
 function persistExerciciosCustomizados() { writeStorage(CHAVE_EXERCICIOS_CUSTOMIZADOS, state.exerciciosCustomizados); }
 function persistEsportesCustomizados() { writeStorage(CHAVE_ESPORTES_CUSTOMIZADOS, state.esportesCustomizados); }
+function persistProdutosCustomizados() { writeStorage(CHAVE_PRODUTOS_CUSTOMIZADOS, state.produtosCustomizados); }
 function persistDiarioKcal() { writeStorage(CHAVE_DIARIO_KCAL, state.diarioKcal); }
 
 /* ===================== helpers de derivação ===================== */
@@ -2752,6 +2843,63 @@ function acaoAnalisar() {
   else toastSuccess(found.length + " alimento" + (found.length > 1 ? "s" : "") + " identificado" + (found.length > 1 ? "s" : "") + ".");
   render();
 }
+/* ===================== cadastrar produto no cardápio ===================== */
+// Deixa a pessoa cadastrar um produto/receita PRÓPRIO (ex.: "Pastel de Camarão") a partir dos
+// ingredientes que o compõem, reaproveitando o MESMO reconhecedor de alimentos já usado pra descrever
+// uma refeição (detectFoods()) -- em vez de inventar outra forma de entrada, a pessoa digita os
+// ingredientes exatamente como já digitaria numa refeição normal (ex.: "100g de camarão, 50g de trigo,
+// 10g de molho de tomate"), e o app soma os nutrientes e o peso de cada ingrediente identificado. O
+// produto cadastrado passa a ser reconhecido em QUALQUER refeição futura, junto com os alimentos da
+// biblioteca embutida (ver a mudança em detectFoods()).
+function acaoAbrirCadastrarProduto() {
+  state.showCadastrarProduto = true;
+  state.produtoNome = "";
+  state.produtoIngredientes = "";
+  state.produtoPreview = [];
+  render();
+}
+function acaoFecharCadastrarProduto() { state.showCadastrarProduto = false; render(); }
+function acaoAnalisarIngredientesProduto() {
+  const el = document.getElementById("produto-ingredientes");
+  const descricao = el ? el.value : "";
+  if (!descricao.trim()) { toastError("Descreva os ingredientes do produto."); return; }
+  const found = detectFoods(descricao);
+  state.produtoPreview = found;
+  if (!found.length) toastError("Não identifiquei ingredientes conhecidos nessa descrição.");
+  else toastSuccess(found.length + " ingrediente" + (found.length > 1 ? "s" : "") + " identificado" + (found.length > 1 ? "s" : "") + ".");
+  render();
+}
+// Soma os nutrientes e o peso estimado (gramsEstimadosParaItem()) de todos os ingredientes já
+// identificados, e registra o produto em state.produtosCustomizados -- a partir daí ele é só mais uma
+// entrada reconhecida por detectFoods(), no mesmo formato de qualquer alimento da biblioteca embutida
+// (terms/label/baseAmount/values/grams).
+function acaoCadastrarProduto() {
+  const nomeEl = document.getElementById("produto-nome");
+  const nome = nomeEl ? nomeEl.value.trim() : "";
+  if (!nome) { toastError("Informe o nome do produto."); return; }
+  if (!state.produtoPreview.length) { toastError("Analise os ingredientes antes de cadastrar o produto."); return; }
+  const termoNormalizado = normalizeText(nome);
+  if (state.produtosCustomizados.some((p) => normalizeText(p.label) === termoNormalizado)) {
+    toastError("Já existe um produto cadastrado com esse nome."); return;
+  }
+  const totalValues = state.produtoPreview.reduce((sum, item) => addNutrients(sum, item.values), emptyNutrients);
+  // Sem nenhum ingrediente com peso estimável (caso raro -- só suplementos, por exemplo), cai pra 100g
+  // como peso padrão, só pra não deixar o produto com peso zero (o que quebraria a conversão de gramas
+  // quando alguém digitar uma quantidade desse produto numa refeição futura).
+  const pesoTotal = Math.round(state.produtoPreview.reduce((soma, item) => soma + (item.gramsEstimados || 0), 0)) || 100;
+  const novoProduto = { terms: [termoNormalizado], label: nome, baseAmount: pesoTotal + " g", values: totalValues, grams: pesoTotal };
+  state.produtosCustomizados = state.produtosCustomizados.concat([novoProduto]);
+  persistProdutosCustomizados();
+  toastSuccess('Produto "' + nome + '" cadastrado no cardápio! Agora você pode usá-lo em qualquer refeição.');
+  state.showCadastrarProduto = false;
+  render();
+}
+function acaoRemoverProdutoCustomizado(index) {
+  state.produtosCustomizados = state.produtosCustomizados.filter((_, i) => i !== index);
+  persistProdutosCustomizados();
+  toastSuccess("Produto removido do cardápio.");
+  render();
+}
 function acaoSelecionarTipoRefeicao(tipo) {
   // Trocar de/para "Exposição Solar" invalida o que já estava calculado -- o preview de "Exposição
   // Solar" (um item só, com só vitamina D) não faz sentido misturado com o preview de alimentos (vários
@@ -2841,6 +2989,12 @@ function acaoSalvarRefeicao() {
   if (!state.mealTipo) { toastError("Selecione a refeição."); return; }
   if (!mealName) { toastError("Informe o nome da refeição."); return; }
   if (!state.preview.length) { toastError("Analise a descrição antes de salvar a refeição."); return; }
+  // Data da refeição -- normalmente "hoje", mas pode ser um dia passado pra registrar algo esquecido
+  // (ver campo #meal-data em nutricaoTabTemplate()/state.mealData). Mesmo padrão já usado pro treino
+  // (#treino-data).
+  const dataEl = document.getElementById("meal-data");
+  const dataRefeicao = dataEl && dataEl.value ? dataEl.value : today();
+  if (dataRefeicao > today()) { toastError("A data da refeição não pode ser no futuro."); return; }
   const now = new Date();
   const total = mealTotal();
   // Sem textarea de descrição no modo "Exposição Solar" (ver exposicaoSolarCamposTemplate()) -- a
@@ -2848,7 +3002,7 @@ function acaoSalvarRefeicao() {
   // direto em state.mealDescription, sem precisar de um campo de texto na tela.
   const description = descInput ? descInput.value.trim() : state.mealDescription;
   const novaRefeicao = Object.assign({}, total, {
-    id: Date.now(), date: today(), name: mealName, description: description,
+    id: Date.now(), date: dataRefeicao, name: mealName, description: description,
     detected: state.preview.map((f) => f.label), time: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
     // Guarda o detalhamento por alimento (nome, quantidade e todos os nutrientes daquele alimento
     // específico) — é o que permite abrir uma refeição no histórico e ver o que cada alimento
@@ -2858,12 +3012,17 @@ function acaoSalvarRefeicao() {
   state.meals = state.meals.concat([novaRefeicao]);
   persistMeals();
   state.preview = [];
-  state.mealTipo = ""; state.mealNomeCustom = ""; state.mealDescription = "";
+  state.mealTipo = ""; state.mealNomeCustom = ""; state.mealDescription = ""; state.mealData = "";
   state.exposicaoInicio = ""; state.exposicaoFim = ""; state.exposicaoCeu = "";
   state.exposicaoLocalizacaoStatus = "idle"; state.exposicaoUVHorario = null;
   if (descInput) descInput.value = "";
-  toastSuccess("Refeição registrada no histórico.");
+  if (dataEl) dataEl.value = "";
+  toastSuccess(dataRefeicao === today() ? "Refeição registrada no histórico." : "Refeição registrada em " + dateLabel(dataRefeicao) + ".");
   if (state.account) enviarComFila("salvarRefeicaoGoogle", [state.usuario.email, novaRefeicao]);
+  // Se esse dia já tinha sido encerrado no Diário de Kcal (ex.: registrando uma refeição esquecida de
+  // um dia que já virou -- ver comentário em state.mealData), ressincroniza esse registro fechado pra
+  // já incluir a refeição recém-adicionada, sem precisar clicar manualmente em "Recalcular".
+  sincronizarDiarioKcalDoDia(dataRefeicao);
   render();
 }
 function acaoTrocarAbaNutrientes(aba) { state.nutrientAba = aba; render(); }
@@ -2897,12 +3056,20 @@ function acaoEditarDataRefeicao(id, novaData) {
   state.mealDetalheId = corrigida.id;
   state.mealDetalheEditandoData = false;
   toastSuccess("Data da refeição corrigida para " + dateLabel(novaData) + ".");
+  // Se o dia antigo e/ou o dia novo já estiverem encerrados no Diário de Kcal, ressincroniza os dois --
+  // mesmo padrão de acaoSalvarTreino() ao mudar a data de um treino já salvo.
+  sincronizarDiarioKcalDoDia(m.date);
+  sincronizarDiarioKcalDoDia(novaData);
   render();
 }
 function acaoRemoverRefeicao(id) {
-  state.meals = state.meals.filter((m) => m.id !== id);
+  const m = state.meals.find((meal) => meal.id === id);
+  state.meals = state.meals.filter((meal) => meal.id !== id);
   persistMeals();
   if (state.account) enviarComFila("removerRefeicaoGoogle", [state.usuario.email, id]);
+  // Se o dia dessa refeição já tinha sido encerrado no Diário de Kcal, ressincroniza esse registro pra
+  // não ficar com calorias/nutrientes a mais depois da remoção (mesmo padrão de acaoRemoverTreino()).
+  if (m) sincronizarDiarioKcalDoDia(m.date);
   render();
 }
 function acaoTrocarAbaNutricao(aba) { state.nutricaoAba = aba; render(); }
@@ -4164,6 +4331,11 @@ function acaoSalvarTreino() {
   limparFotoTreinoSelecionada();
   toastSuccess(arquivoFoto ? "Treino registrado. Enviando a foto em segundo plano..." : "Treino registrado.");
   const promessaRegistroBase = state.account ? enviarComFila("salvarTreinoGoogle", [state.usuario.email, novoTreino]) : Promise.resolve();
+  // Mesmo motivo do sincronizarDiarioKcalDoDia() no modo edição acima: se dataTreino for um dia que já
+  // tinha sido encerrado no Diário de Kcal (ex.: registrando agora um treino esquecido de um dia que já
+  // virou), o registro fechado precisa ser ressincronizado pra já incluir as calorias queimadas desse
+  // treino novo -- sem isso, ficava faltando até a pessoa clicar manualmente em "Recalcular".
+  sincronizarDiarioKcalDoDia(dataTreino);
   render();
   if (arquivoFoto) processarFotoTreinoEmSegundoPlano(novoTreino.id, arquivoFoto, promessaRegistroBase);
 }
@@ -4364,6 +4536,55 @@ function alimentoDetalheTemplate(a) {
     "</div>";
 }
 
+// Refeições de hoje (as mesmas que os cards somam -- ver mealsDesdeUltimoEncerramento()) que têm ALGUMA
+// contribuição pro nutriente "chave" (>0), da que mais contribuiu pra que menos contribuiu -- usada na
+// nova seção "Refeições que mais influenciaram" do modal de informações de cada card (ver
+// nutrientInfoModalTemplate()). Pedido explícito do usuário. Empates mantêm a ordem cronológica
+// (sort() é estável), e uma "Exposição Solar" registrada hoje entra na lista normalmente quando a
+// chave é vitD (é a única em que ela contribui) -- sem precisar de nenhum caso especial, já que ela é
+// só mais um registro em state.meals com vitD > 0 e as demais chaves zeradas.
+function refeicoesQueMaisInfluenciaramNutriente(chave) {
+  return mealsDesdeUltimoEncerramento()
+    .map((m) => ({ id: m.id, name: m.name, time: m.time, valor: m[chave] || 0 }))
+    .filter((r) => r.valor > 0)
+    .sort((a, b) => b.valor - a.valor);
+}
+// Formata o valor de UMA refeição pra uma chave de nutriente qualquer (macro ou micro), com a mesma
+// regra de casas decimais já usada nos cards (nutrientCardsTemplate()/micronutrientCardsTemplate()) --
+// calorias sem casas decimais, os demais macros com 1, micronutrientes em mg com referência >= 100
+// sem casas decimais (ex.: cálcio, potássio, sódio) e os demais com 1. Vitamina D sempre em "mcg / UI"
+// (ver formatVitaminaDComUI()), igual em todo o resto do app.
+function formatNutrienteValorGenerico(chave, valor) {
+  if (chave === "vitD") return formatVitaminaDComUI(valor, 1);
+  const macro = nutrientMeta[chave];
+  if (macro) return formatNumber(valor, chave === "calories" ? 0 : 1) + " " + macro.unit;
+  const micro = micronutrientMeta[chave];
+  if (!micro) return formatNumber(valor, 1);
+  const goal = MICRO_GOALS[chave];
+  const digits = micro.unit === "mg" && goal >= 100 ? 0 : 1;
+  return formatNumber(valor, digits) + " " + micro.unit;
+}
+// Seção "Refeições que mais influenciaram" do modal de informações de um nutriente -- lista as
+// refeições de hoje com alguma contribuição pra esse nutriente, em ordem decrescente de contribuição
+// (ver refeicoesQueMaisInfluenciaramNutriente()), cada uma com uma barrinha proporcional ao quanto ela
+// representa do total consumido hoje daquele nutriente (mesmo pct() já usado nas barras de progresso
+// dos cards). Sem nenhuma refeição com contribuição ainda hoje, mostra um aviso em vez da lista vazia.
+function refeicoesInfluenciaramNutrienteTemplate(chave, meta) {
+  const lista = refeicoesQueMaisInfluenciaramNutriente(chave);
+  if (!lista.length) {
+    return '<p class="imc-empty">Você ainda não registrou hoje nenhuma refeição que contribua para ' + esc(meta.label.toLowerCase()) + ".</p>";
+  }
+  const total = lista.reduce((soma, r) => soma + r.valor, 0);
+  return '<div class="nutrient-info-refeicoes-lista">' + lista.map((r, i) =>
+    '<div class="nutrient-info-refeicao-row">' +
+      '<span class="nutrient-info-refeicao-rank">' + (i + 1) + "º</span>" +
+      '<div class="nutrient-info-refeicao-info"><div class="nutrient-info-refeicao-nome">' + esc(r.name) + ' <span class="nutrient-info-refeicao-hora">· ' + esc(r.time) + "</span></div>" +
+        '<div class="nutrient-info-refeicao-barra"><div class="nutrient-info-refeicao-barra-fill" style="width:' + pct(r.valor, total) + "%;background:" + meta.color + '"></div></div></div>' +
+      '<span class="nutrient-info-refeicao-valor">' + formatNutrienteValorGenerico(chave, r.valor) + '<span class="nutrient-info-refeicao-pct">' + formatNumber(pct(r.valor, total), 0) + "%</span></span>" +
+    "</div>"
+  ).join("") + "</div>";
+}
+
 // Modal de informações de um macro/micronutriente (função no organismo + principais fontes
 // alimentares), aberto pelo botão "i" ao lado do título do card -- ver acaoAbrirInfoNutriente()/
 // NUTRIENT_INFO. Busca a meta em nutrientMeta OU micronutrientMeta (a chave pode ser de qualquer um
@@ -4388,7 +4609,58 @@ function nutrientInfoModalTemplate() {
       '<div class="nutrient-info-secao"><h3>Principais fontes alimentares</h3>' +
         '<div class="nutrient-info-chips">' + info.fontes.map((f) => '<span class="nutrient-info-chip" style="background:' + meta.soft + ";color:" + meta.color + '">' + esc(f) + "</span>").join("") + "</div>" +
       "</div>" +
+      // Pedido explícito do usuário: essa seção (a única com dados pessoais do dia, todas as outras
+      // são conteúdo educativo fixo) deve ser a ÚLTIMA do modal, não a primeira.
+      '<div class="nutrient-info-secao"><h3>Refeições que mais influenciaram hoje</h3>' +
+        refeicoesInfluenciaramNutrienteTemplate(chave, meta) +
+      "</div>" +
       '<p class="nutrient-info-fonte">' + icon("help") + " Fonte: " + esc(info.fonte) + "</p>" +
+    "</div></div>";
+}
+
+// Modal "Cadastrar produto no cardápio" -- acionado por um botão independente do seletor de tipo de
+// refeição (ver nutricaoTabTemplate()); reaproveita o MESMO campo de texto livre + detectFoods() já
+// usado pra refeições normais (ver acaoAnalisarIngredientesProduto()), e o peso total do produto é
+// calculado automaticamente como a soma do peso estimado de cada ingrediente identificado (ver
+// gramsEstimadosParaItem()/acaoCadastrarProduto()) -- decisões confirmadas com o usuário. Uma vez
+// cadastrado, o produto passa a ser reconhecido em qualquer descrição de refeição futura, igual um
+// alimento já existente no foodLibrary (ver detectFoods()).
+function cadastrarProdutoModalTemplate() {
+  if (!state.showCadastrarProduto) return "";
+  const preview = state.produtoPreview;
+  const totalValues = preview.reduce((sum, item) => addNutrients(sum, item.values), emptyNutrients);
+  const pesoTotal = Math.round(preview.reduce((soma, item) => soma + (item.gramsEstimados || 0), 0));
+  return '' +
+    '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharCadastrarProduto();}">' +
+    '<div class="modal-card">' +
+      '<div class="meal-detalhe-head"><h2>Cadastrar produto no cardápio</h2>' +
+      '<button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharCadastrarProduto()">' + icon("x") + "</button></div>" +
+      '<p class="sub">Descreva os ingredientes que compõem o produto (ex.: “100g de camarão, 50g de trigo, 10g de molho de tomate”) e calculamos os nutrientes e o peso total automaticamente, como fazemos com uma refeição comum.</p>' +
+      '<div class="modal-body">' +
+        '<div><label class="field-label">Nome do produto</label><input id="produto-nome" class="field-input" placeholder="Ex.: Pastel de Camarão" value="' + esc(state.produtoNome) + '"/></div>' +
+        '<div><label class="field-label">Ingredientes</label>' +
+          '<textarea id="produto-ingredientes" class="meal-textarea" placeholder="Descreva os ingredientes e quantidades..." rows="3">' + esc(state.produtoIngredientes) + "</textarea>" +
+        "</div>" +
+        '<button class="btn-ghost-light" onclick="acaoAnalisarIngredientesProduto()">' + icon("sparkles") + " Analisar ingredientes</button>" +
+        (preview.length ?
+          '<div class="meal-preview"><div class="meal-preview-head"><span>Ingredientes identificados</span>' + icon("check") + "</div>" +
+          '<div class="meal-preview-list">' + preview.map((f) =>
+            '<div class="meal-preview-row"><span class="food-label">' + esc(f.label) + ' <span class="food-amount">· ' + esc(f.amount) + "</span></span>" +
+            '<span class="food-kcal">' + formatNumber(f.values.calories) + " kcal</span></div>"
+          ).join("") + "</div>" +
+          '<div class="meal-preview-total"><div class="meal-preview-total-row"><span class="label">Total do produto</span><span class="value">' + formatNumber(totalValues.calories) + " kcal</span></div>" +
+          '<div class="meal-preview-macros">Peso estimado: ' + formatNumber(pesoTotal, 0) + " g · P " + formatNumber(totalValues.protein, 1) + " · C " + formatNumber(totalValues.carbs, 1) + " · G " + formatNumber(totalValues.fat, 1) + " · F " + formatNumber(totalValues.fiber, 1) + "</div></div>"
+          + "</div>"
+          : "") +
+        (state.produtosCustomizados.length ?
+          '<div class="meal-preview-head" style="margin-top:18px"><span>Produtos já cadastrados</span></div>' +
+          '<div class="meal-list">' + state.produtosCustomizados.map((p, i) =>
+            '<div class="meal-row"><div><span class="food-label">' + esc(p.label) + '</span> <span class="food-amount">· ' + esc(p.baseAmount) + "</span></div>" +
+            '<button class="meal-row-delete" aria-label="Remover produto" onclick="acaoRemoverProdutoCustomizado(' + i + ')">' + icon("trash") + "</button></div>"
+          ).join("") + "</div>"
+          : "") +
+      "</div>" +
+      '<div class="modal-footer"><button class="btn-primary" onclick="acaoCadastrarProduto()">' + icon("check") + " Cadastrar produto</button></div>" +
     "</div></div>";
 }
 
@@ -4437,13 +4709,19 @@ function homeTabsTemplate() {
 function imcCardTemplate() {
   const imc = calcularImc();
   const faixa = imc ? faixaImc(imc) : null;
+  // Peso que efetivamente entrou na conta do IMC acima (calcularImc() sempre usa o mais recente
+  // registro de peso -- ver ultimoRegistroMedida("peso")) -- exibido discretamente embaixo do
+  // resultado, pra deixar claro de qual pesagem aquele número partiu. Pedido explícito do usuário.
+  const pesoRef = imc ? ultimoRegistroMedida("peso") : null;
+  const pesoRefData = pesoRef ? new Intl.DateTimeFormat("pt-BR", { day: "numeric", month: "long" }).format(new Date(pesoRef.date + "T12:00:00")) : "";
   return '' +
     '<div class="nutrient-card imc-card"><div class="nutrient-card-head">' +
       '<div class="nutrient-card-left"><div class="nutrient-icon" style="background:#eef6e4;color:#4b7048">' + icon("activity") + '</div>' +
       '<span class="nutrient-name">IMC (Índice de Massa Corporal)</span></div>' +
     "</div>" +
     (imc ?
-      '<div class="imc-value-row"><span class="imc-value">' + formatNumber(imc, 1) + '</span><span class="imc-class" style="background:' + faixa.corSuave + ";color:" + faixa.cor + '">' + faixa.label + "</span></div>"
+      '<div class="imc-value-row"><span class="imc-value">' + formatNumber(imc, 1) + '</span><span class="imc-class" style="background:' + faixa.corSuave + ";color:" + faixa.cor + '">' + faixa.label + "</span></div>" +
+      (pesoRef ? '<p class="imc-peso-referencia">Calculado a partir do peso de ' + formatNumber(Number(pesoRef.valor), 1) + " kg, registrado em " + pesoRefData + ".</p>" : "")
       :
       '<p class="imc-empty">Registre seu peso nas Medidas e sua altura na seção de Bioimpedância abaixo para calcular o IMC.</p>'
     ) +
@@ -5693,12 +5971,15 @@ function nutricaoTabTemplate() {
         '<p class="meal-card-desc">' + (state.mealTipo === "Exposição Solar"
           ? "Informe o horário de início e fim da exposição e como estava o céu — calculamos uma estimativa da vitamina D sintetizada pela pele."
           : "Escreva naturalmente. Ex.: “1 pão francês, 1 ovo frito e 300 ml de suco de laranja”.") + "</p>" +
+        (state.mealTipo === "Exposição Solar" ? "" :
+          '<button type="button" class="produto-cadastrar-btn" onclick="acaoAbrirCadastrarProduto()">' + icon("plus") + " Cadastrar produto no cardápio</button>") +
         '<div class="meal-form">' +
           '<select id="meal-tipo-select" class="meal-select" onchange="acaoSelecionarTipoRefeicao(this.value)">' +
             '<option value="">Selecione a refeição...</option>' +
             MEAL_TIPOS.map((t) => '<option value="' + esc(t) + '"' + (state.mealTipo === t ? " selected" : "") + ">" + esc(t) + "</option>").join("") +
           "</select>" +
           (state.mealTipo === "Outro" ? '<input id="meal-nome-custom" class="meal-input" placeholder="Nome da refeição" value="' + esc(state.mealNomeCustom) + '"/>' : "") +
+          '<div><label class="meal-form-label">Data</label><input id="meal-data" type="date" class="meal-input" max="' + esc(today()) + '" value="' + esc(state.mealData || today()) + '"/></div>' +
           (state.mealTipo === "Exposição Solar"
             ? exposicaoSolarCamposTemplate()
             : '<textarea id="meal-description" class="meal-textarea" placeholder="Descreva os alimentos e quantidades..." rows="4">' + esc(state.mealDescription) + "</textarea>" +
@@ -5724,7 +6005,7 @@ function homeTemplate() {
   return '' +
     '<div class="app-shell">' +
     '<button class="hamburger-btn" onclick="acaoAbrirSidebar()" aria-label="Abrir menu"><span></span></button>' +
-    sidebarTemplate() + editarPerfilTemplate() + mealDetalheModalTemplate() + nutrientInfoModalTemplate() +
+    sidebarTemplate() + editarPerfilTemplate() + mealDetalheModalTemplate() + nutrientInfoModalTemplate() + cadastrarProdutoModalTemplate() +
     '<div class="home-content"><div class="home-inner">' +
     (state.account ? fullHomeTemplate() : lockedTemplate()) +
     "</div></div></div>";
@@ -5734,8 +6015,10 @@ function homeTemplate() {
 function captureFormState() {
   const customEl = document.getElementById("meal-nome-custom");
   const descEl = document.getElementById("meal-description");
+  const mealDataEl = document.getElementById("meal-data");
   if (customEl) state.mealNomeCustom = customEl.value;
   if (descEl) state.mealDescription = descEl.value;
+  if (mealDataEl) state.mealData = mealDataEl.value;
 
   const exposicaoInicioEl = document.getElementById("exposicao-inicio");
   if (exposicaoInicioEl) state.exposicaoInicio = exposicaoInicioEl.value;
@@ -5743,6 +6026,11 @@ function captureFormState() {
   if (exposicaoFimEl) state.exposicaoFim = exposicaoFimEl.value;
   const exposicaoCeuEl = document.getElementById("exposicao-ceu");
   if (exposicaoCeuEl) state.exposicaoCeu = exposicaoCeuEl.value;
+
+  const produtoNomeEl = document.getElementById("produto-nome");
+  if (produtoNomeEl) state.produtoNome = produtoNomeEl.value;
+  const produtoIngredientesEl = document.getElementById("produto-ingredientes");
+  if (produtoIngredientesEl) state.produtoIngredientes = produtoIngredientesEl.value;
 
   // O formulário de bioimpedância/calorimetria também precisa sobreviver a um render() no meio do
   // preenchimento (ex.: ao escolher um anexo, que atualiza a prévia do arquivo chamando render()) —
