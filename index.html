@@ -583,7 +583,6 @@ svg{ display: block; }
 .nutrient-info-refeicao-rank{ flex-shrink:0; width:20px; font-size:12px; font-weight:700; color:#9aa9a1; text-align:center; }
 .nutrient-info-refeicao-info{ flex:1; min-width:0; }
 .nutrient-info-refeicao-nome{ font-size:13.5px; font-weight:600; color:#3d5a4f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.nutrient-info-refeicao-hora{ font-weight:400; color:#9aa9a1; }
 .nutrient-info-refeicao-barra{ margin-top:5px; height:5px; border-radius:999px; background:#eef1ec; overflow:hidden; }
 .nutrient-info-refeicao-barra-fill{ height:100%; border-radius:999px; }
 .nutrient-info-refeicao-valor{ flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; font-size:12.5px; font-weight:700; color:#3d5a4f; line-height:1.3; }
@@ -1965,12 +1964,32 @@ function corteDiaAberto() {
   return state.diarioKcal.reduce((maior, r) => Math.max(maior, r.corteId != null ? r.corteId : r.id), 0);
 }
 // Refeições ainda não incluídas em nenhum "Encerrar dia" -- é o que os CARDS somam e o que um novo
-// "Encerrar dia" vai salvar/resetar. Pode incluir refeições de mais de uma data (ex.: a pessoa não
-// encerrou o dia antes da virada da meia-noite) -- de propósito, para o corte só depender do clique em
-// "Encerrar dia", nunca da data.
+// "Encerrar dia" vai salvar/resetar. Pode incluir refeições de mais de uma data logo depois da meia-
+// noite, antes da virada processar (ex.: a pessoa não encerrou o dia antes da virada) -- de propósito,
+// pra o corte por id só depender do clique em "Encerrar dia"/da virada, nunca da data (ver
+// test_dia_aberto_sem_virada.py/test_recalcular_diario_kcal.py: um dia anterior NUNCA encerrado deve
+// continuar somando nos cards de hoje até alguém clicar em "Encerrar dia", mesmo que isso junte vários
+// dias atrasados num resumo só -- comportamento combinado com o usuário, "bug já relatado" mas mantido
+// de propósito).
+// BUG CORRIGIDO (relatado pelo usuário: registrar uma refeição RETROATIVA de um dia que JÁ FOI
+// ENCERRADO (manual ou automaticamente pela virada -- já existe um registro pra essa data em
+// state.diarioKcal) -- ver campo #meal-data em acaoSalvarRefeicao() -- fazia os CARDS de HOJE somarem
+// essa refeição também, além do dia antigo já ter sido corretamente ressincronizado por
+// sincronizarDiarioKcalDoDia()). Causa: o filtro era só por id (m.id > corte) -- uma refeição nova
+// sempre ganha um id novo (Date.now()) maior que qualquer corte já registrado, INDEPENDENTE da data
+// escolhida pra ela. Antes do campo de data retroativa existir isso nunca dava problema (toda refeição
+// nova era sempre de hoje mesmo), mas passou a contar errado assim que refeições puderam ser registradas
+// pra dias passados. CORRIGIDO excluindo especificamente as refeições cuja DATA já tem um registro
+// fechado no Diário de Kcal (exceto o de hoje -- ver comentário em acaoEncerrarDia(): uma refeição
+// registrada depois de um "Encerrar dia" feito mais cedo NO MESMO dia deve voltar a contar normalmente
+// nos cards, então o registro de hoje no Diário não pode, sozinho, excluir refeições novas de hoje --
+// quem cuida disso é o corte por id mesmo). Um dia anterior SEM registro fechado (nunca encerrado)
+// continua contando normalmente, preservando o comportamento "de propósito" descrito acima.
 function mealsDesdeUltimoEncerramento() {
   const corte = corteDiaAberto();
-  return state.meals.filter((m) => m.id > corte);
+  const hoje = today();
+  const diasJaEncerrados = new Set(state.diarioKcal.filter((r) => r.date !== hoje).map((r) => r.date));
+  return state.meals.filter((m) => m.id > corte && !diasJaEncerrados.has(m.date));
 }
 function consumedToday() {
   return mealsDesdeUltimoEncerramento().reduce((sum, m) => addNutrients(sum, m), emptyNutrients);
@@ -4536,20 +4555,32 @@ function alimentoDetalheTemplate(a) {
     "</div>";
 }
 
-// Refeições de hoje (as mesmas que os cards somam -- ver mealsDesdeUltimoEncerramento()) que têm ALGUMA
-// contribuição pro nutriente "chave" (>0), da que mais contribuiu pra que menos contribuiu -- usada na
-// nova seção "Refeições que mais influenciaram" do modal de informações de cada card (ver
-// nutrientInfoModalTemplate()). Pedido explícito do usuário. Empates mantêm a ordem cronológica
-// (sort() é estável), e uma "Exposição Solar" registrada hoje entra na lista normalmente quando a
-// chave é vitD (é a única em que ela contribui) -- sem precisar de nenhum caso especial, já que ela é
-// só mais um registro em state.meals com vitD > 0 e as demais chaves zeradas.
-function refeicoesQueMaisInfluenciaramNutriente(chave) {
-  return mealsDesdeUltimoEncerramento()
-    .map((m) => ({ id: m.id, name: m.name, time: m.time, valor: m[chave] || 0 }))
-    .filter((r) => r.valor > 0)
-    .sort((a, b) => b.valor - a.valor);
+// Alimentos/comidas de hoje (dentro das refeições que os cards somam -- ver
+// mealsDesdeUltimoEncerramento()) que têm ALGUMA contribuição pro nutriente "chave" (>0), da que mais
+// contribuiu pra que menos contribuiu -- usada na seção "Alimentos que mais influenciaram" do modal de
+// informações de cada card (ver nutrientInfoModalTemplate()). CORRIGIDO a pedido do usuário: a versão
+// anterior listava a REFEIÇÃO inteira (ex.: "Almoço"), não o alimento específico (ex.: "Arroz branco
+// cozido") -- agora desce um nível, olhando m.alimentos (o detalhamento por alimento já guardado em
+// cada refeição, ver acaoSalvarRefeicao()) em vez da refeição como um todo. O mesmo alimento comido em
+// mais de uma refeição hoje (ex.: arroz no almoço E na janta) é somado numa linha só -- é a contribuição
+// TOTAL daquele alimento no nutriente que importa aqui, não cada ocasião em que foi comido. Empates
+// mantêm a ordem de primeira aparição (sort() é estável), e "Exposição solar" entra na lista
+// normalmente quando a chave é vitD (é a única em que contribui) -- sem nenhum caso especial, já que é
+// só mais um "alimento" (label "Exposição solar") dentro de uma refeição com vitD > 0.
+function alimentosQueMaisInfluenciaramNutriente(chave) {
+  const porAlimento = new Map();
+  mealsDesdeUltimoEncerramento().forEach((m) => {
+    (m.alimentos || []).forEach((a) => {
+      const valor = (a.values && a.values[chave]) || 0;
+      if (!valor) return;
+      const atual = porAlimento.get(a.label);
+      if (atual) atual.valor += valor;
+      else porAlimento.set(a.label, { label: a.label, valor: valor });
+    });
+  });
+  return Array.from(porAlimento.values()).sort((a, b) => b.valor - a.valor);
 }
-// Formata o valor de UMA refeição pra uma chave de nutriente qualquer (macro ou micro), com a mesma
+// Formata o valor de UM alimento pra uma chave de nutriente qualquer (macro ou micro), com a mesma
 // regra de casas decimais já usada nos cards (nutrientCardsTemplate()/micronutrientCardsTemplate()) --
 // calorias sem casas decimais, os demais macros com 1, micronutrientes em mg com referência >= 100
 // sem casas decimais (ex.: cálcio, potássio, sódio) e os demais com 1. Vitamina D sempre em "mcg / UI"
@@ -4564,21 +4595,21 @@ function formatNutrienteValorGenerico(chave, valor) {
   const digits = micro.unit === "mg" && goal >= 100 ? 0 : 1;
   return formatNumber(valor, digits) + " " + micro.unit;
 }
-// Seção "Refeições que mais influenciaram" do modal de informações de um nutriente -- lista as
-// refeições de hoje com alguma contribuição pra esse nutriente, em ordem decrescente de contribuição
-// (ver refeicoesQueMaisInfluenciaramNutriente()), cada uma com uma barrinha proporcional ao quanto ela
+// Seção "Alimentos que mais influenciaram" do modal de informações de um nutriente -- lista os
+// alimentos de hoje com alguma contribuição pra esse nutriente, em ordem decrescente de contribuição
+// (ver alimentosQueMaisInfluenciaramNutriente()), cada um com uma barrinha proporcional ao quanto
 // representa do total consumido hoje daquele nutriente (mesmo pct() já usado nas barras de progresso
-// dos cards). Sem nenhuma refeição com contribuição ainda hoje, mostra um aviso em vez da lista vazia.
-function refeicoesInfluenciaramNutrienteTemplate(chave, meta) {
-  const lista = refeicoesQueMaisInfluenciaramNutriente(chave);
+// dos cards). Sem nenhum alimento com contribuição ainda hoje, mostra um aviso em vez da lista vazia.
+function alimentosInfluenciaramNutrienteTemplate(chave, meta) {
+  const lista = alimentosQueMaisInfluenciaramNutriente(chave);
   if (!lista.length) {
-    return '<p class="imc-empty">Você ainda não registrou hoje nenhuma refeição que contribua para ' + esc(meta.label.toLowerCase()) + ".</p>";
+    return '<p class="imc-empty">Você ainda não registrou hoje nenhum alimento que contribua para ' + esc(meta.label.toLowerCase()) + ".</p>";
   }
   const total = lista.reduce((soma, r) => soma + r.valor, 0);
   return '<div class="nutrient-info-refeicoes-lista">' + lista.map((r, i) =>
     '<div class="nutrient-info-refeicao-row">' +
       '<span class="nutrient-info-refeicao-rank">' + (i + 1) + "º</span>" +
-      '<div class="nutrient-info-refeicao-info"><div class="nutrient-info-refeicao-nome">' + esc(r.name) + ' <span class="nutrient-info-refeicao-hora">· ' + esc(r.time) + "</span></div>" +
+      '<div class="nutrient-info-refeicao-info"><div class="nutrient-info-refeicao-nome">' + esc(r.label) + "</div>" +
         '<div class="nutrient-info-refeicao-barra"><div class="nutrient-info-refeicao-barra-fill" style="width:' + pct(r.valor, total) + "%;background:" + meta.color + '"></div></div></div>' +
       '<span class="nutrient-info-refeicao-valor">' + formatNutrienteValorGenerico(chave, r.valor) + '<span class="nutrient-info-refeicao-pct">' + formatNumber(pct(r.valor, total), 0) + "%</span></span>" +
     "</div>"
@@ -4611,8 +4642,8 @@ function nutrientInfoModalTemplate() {
       "</div>" +
       // Pedido explícito do usuário: essa seção (a única com dados pessoais do dia, todas as outras
       // são conteúdo educativo fixo) deve ser a ÚLTIMA do modal, não a primeira.
-      '<div class="nutrient-info-secao"><h3>Refeições que mais influenciaram hoje</h3>' +
-        refeicoesInfluenciaramNutrienteTemplate(chave, meta) +
+      '<div class="nutrient-info-secao"><h3>Alimentos que mais influenciaram hoje</h3>' +
+        alimentosInfluenciaramNutrienteTemplate(chave, meta) +
       "</div>" +
       '<p class="nutrient-info-fonte">' + icon("help") + " Fonte: " + esc(info.fonte) + "</p>" +
     "</div></div>";
