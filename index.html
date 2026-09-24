@@ -567,6 +567,21 @@ svg{ display: block; }
 .modal-body{ margin-top:20px; display:flex; flex-direction:column; gap:12px; }
 .modal-footer{ margin-top:20px; }
 .modal-card-wide{ max-width:560px; max-height:85vh; overflow-y:auto; }
+/* .btn-ghost-light foi pensado pro fundo escuro translúcido do resto do app (texto claro sobre fundo
+   escuro) -- dentro de um .modal-card (fundo branco, ex.: modal de Cadastrar produto), o mesmo texto
+   claro fica quase invisível (relatado pelo usuário). Modificador em vez de trocar de classe, pra manter
+   o mesmo tamanho/layout de .btn-ghost-light e só corrigir cor/fundo pro contexto claro -- mesma ideia
+   já usada na correção de .meal-textarea -> .field-input (ver comentário em cadastrarProdutoModalTemplate()). */
+.btn-ghost-light-onlight{ background:rgba(85,114,104,.06); border-color:#dce5db; color:#3d5a4f; }
+.btn-ghost-light-onlight:hover{ background:rgba(85,114,104,.12); }
+/* Modal "Cadastrar produto" ficou mais alto depois da aba de cadastro manual (bem mais campos) -- sem
+   isso, num celular o cartão ultrapassa a tela e o rodapé (botões Cancelar/Cadastrar produto) fica
+   inalcançável (relatado pelo usuário). Cabeçalho/abas ficam fixos, só o miolo (.modal-body) rola, e o
+   rodapé fica sempre visível no fim do cartão -- mesma ideia de "conteúdo rolável com altura máxima" já
+   usada em .modal-card-wide/.nutrient-info-modal, só que aqui com o rodapé fixo em vez de rolar junto. */
+.modal-card-produto{ max-height:85vh; display:flex; flex-direction:column; }
+.modal-card-produto .modal-body{ overflow-y:auto; flex:1 1 auto; min-height:0; }
+.modal-card-produto .modal-footer{ flex:0 0 auto; }
 .meal-detalhe-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
 
 /* ---------- modal (informações do nutriente) ---------- */
@@ -5150,7 +5165,7 @@ function produtoCadastroManualTemplate() {
         : '<label class="bioimpedancia-anexo-btn" for="produto-rotulo-input">' + icon("paperclip") + " Escolher foto do rótulo" +
           '<input id="produto-rotulo-input" type="file" accept="image/*" style="display:none" onchange="onRotuloProdutoSelecionado(event)"/></label>') +
     "</div>" +
-    '<button id="produto-rotulo-ler-btn" class="btn-ghost-light" ' + (state.produtoRotuloLendo ? "disabled" : "") + ' onclick="acaoLerRotuloOCR()">' + icon("sparkles") + " " + (state.produtoRotuloLendo ? "Lendo rótulo..." : "Ler rótulo automaticamente") + "</button>" +
+    '<button id="produto-rotulo-ler-btn" class="btn-ghost-light btn-ghost-light-onlight" ' + (state.produtoRotuloLendo ? "disabled" : "") + ' onclick="acaoLerRotuloOCR()">' + icon("sparkles") + " " + (state.produtoRotuloLendo ? "Lendo rótulo..." : "Ler rótulo automaticamente") + "</button>" +
     '<p class="calo-conclusao-dica">' + icon("help") + " A leitura automática pode errar (foto torta, embalagem curva, brilho) -- sempre confira os valores abaixo antes de salvar. Se preferir, digite direto." + "</p>" +
     '<div><label class="field-label">Porção (o mesmo que está no rótulo, em g ou ml)</label>' +
       '<input id="produto-manual-porcao" type="number" min="0" step="0.1" class="field-input" value="' + esc(state.produtoManualPorcao) + '" placeholder="Ex.: 250"/></div>' +
@@ -5169,7 +5184,7 @@ function cadastrarProdutoModalTemplate() {
   const modo = state.produtoModoCadastro;
   return '' +
     '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharCadastrarProduto();}">' +
-    '<div class="modal-card">' +
+    '<div class="modal-card modal-card-produto">' +
       '<div class="meal-detalhe-head"><h2>Cadastrar produto no cardápio</h2>' +
       '<button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharCadastrarProduto()">' + icon("x") + "</button></div>" +
       '<div class="bioimpedancia-form-tabs">' +
@@ -5185,7 +5200,7 @@ function cadastrarProdutoModalTemplate() {
         '<div><label class="field-label">Ingredientes</label>' +
           '<textarea id="produto-ingredientes" class="field-input" style="resize:none;line-height:1.5" placeholder="Descreva os ingredientes e quantidades..." rows="3">' + esc(state.produtoIngredientes) + "</textarea>" +
         "</div>" +
-        '<button class="btn-ghost-light" onclick="acaoAnalisarIngredientesProduto()">' + icon("sparkles") + " Analisar ingredientes</button>" +
+        '<button class="btn-ghost-light btn-ghost-light-onlight" onclick="acaoAnalisarIngredientesProduto()">' + icon("sparkles") + " Analisar ingredientes</button>" +
         (preview.length ?
           '<div class="meal-preview"><div class="meal-preview-head"><span>Ingredientes identificados</span>' + icon("check") + "</div>" +
           '<div class="meal-preview-list">' + preview.map((f) =>
@@ -5204,7 +5219,10 @@ function cadastrarProdutoModalTemplate() {
           ).join("") + "</div>"
           : "") +
       "</div>" +
-      '<div class="modal-footer"><button class="btn-primary" onclick="' + (modo === "manual" ? "acaoCadastrarProdutoManual" : "acaoCadastrarProduto") + '()">' + icon("check") + " Cadastrar produto</button></div>" +
+      '<div class="modal-footer"><div class="bioimpedancia-form-acoes">' +
+        '<button class="bioimpedancia-btn-secundario" onclick="acaoFecharCadastrarProduto()">Cancelar</button>' +
+        '<button class="btn-primary" onclick="' + (modo === "manual" ? "acaoCadastrarProdutoManual" : "acaoCadastrarProduto") + '()">' + icon("check") + " Cadastrar produto</button>" +
+      "</div></div>" +
     "</div></div>";
 }
 
