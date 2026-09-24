@@ -502,6 +502,17 @@ svg{ display: block; }
 .idade-metabolica-detalhes-corpo a{ color:#4b7048; text-decoration:underline; text-underline-offset:2px; }
 .idade-metabolica-aviso{ color:#8a5a3a; }
 .idade-metabolica-fonte{ font-style:italic; color:#8a9c93; }
+.calo-conclusao-dica{ margin:10px 0 0; display:flex; align-items:flex-start; gap:8px; border-radius:12px; padding:10px 12px; font-size:12px; line-height:1.6; background:#f7f9f5; color:#5c6b62; }
+.calo-conclusao-dica .icon{ margin-top:1px; flex-shrink:0; width:15px; height:15px; color:#8a9c93; }
+.calo-conclusao-idade-metabolica{ margin:10px 0 0; border-radius:14px; background:#f7f9f5; padding:14px 16px; }
+.calo-conclusao-resultado{ display:flex; align-items:flex-start; gap:8px; margin:0 0 8px; font-size:13px; font-weight:600; line-height:1.5; color:#3d5c33; }
+.calo-conclusao-resultado .icon{ margin-top:1px; flex-shrink:0; width:16px; height:16px; color:#6c8d68; }
+.calo-conclusao-resultado-aviso{ color:#8a5a3a; }
+.calo-conclusao-resultado-aviso .icon{ color:#c9762f; }
+.calo-conclusao-titulo{ margin:0 0 4px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#9aa9a1; }
+.calo-conclusao-razao{ margin:0 0 8px; font-size:12px; line-height:1.6; color:#5c6b62; }
+.calo-conclusao-razao:last-of-type{ margin-bottom:0; }
+.calo-conclusao-aviso{ margin:10px 0 0; padding-top:8px; border-top:1px solid #e5e9e1; font-size:11px; line-height:1.6; font-style:italic; color:#8a9c93; }
 .bioimpedancia-form-acoes{ margin-top:20px; display:flex; gap:12px; flex-wrap:wrap; }
 .bioimpedancia-form-acoes .btn-primary{ margin-top:0; flex:1; min-width:160px; }
 .bioimpedancia-form-acoes .bioimpedancia-btn-secundario{ flex:0 0 auto; }
@@ -1327,6 +1338,27 @@ const foodLibrary = [
 ];
 
 const MEAL_TIPOS = ["Caf\u00e9 da manh\u00e3", "Lanche da manh\u00e3", "Almo\u00e7o", "Lanche da tarde", "Jantar", "Ceia", "Suplementa\u00e7\u00e3o", "Exposi\u00e7\u00e3o Solar", "Outro"];
+// Posi\u00e7\u00e3o de uma refei\u00e7\u00e3o na ordem do seletor de tipos (MEAL_TIPOS) -- usada por
+// ordenarPorTipoDeRefeicao() logo abaixo pra exibir as refei\u00e7\u00f5es de um dia sempre na ordem em que os
+// tipos aparecem no seletor (Caf\u00e9 da manh\u00e3, Lanche da manh\u00e3, Almo\u00e7o, ...), nunca na ordem em que
+// foram REGISTRADAS. Uma refei\u00e7\u00e3o "Outro" com nome pr\u00f3prio (ex.: "Bolo de anivers\u00e1rio") n\u00e3o bate
+// literalmente com nenhum item de MEAL_TIPOS -- o nome guardado \u00e9 o texto digitado, n\u00e3o a palavra
+// "Outro" (ver acaoSalvarRefeicao()) -- ent\u00e3o cai no mesmo lugar que "Outro" ocuparia no seletor (por
+// padr\u00e3o, por \u00faltimo).
+function indiceTipoRefeicao(nome) {
+  const i = MEAL_TIPOS.indexOf(nome);
+  return i === -1 ? MEAL_TIPOS.indexOf("Outro") : i;
+}
+// Reordena uma lista de refei\u00e7\u00f5es pela ordem dos tipos no seletor (MEAL_TIPOS), n\u00e3o pela ordem de
+// registro -- pedido do usu\u00e1rio: se a pessoa s\u00f3 lembrar de registrar o almo\u00e7o DEPOIS de j\u00e1 ter
+// registrado a janta ou a ceia daquele dia, o almo\u00e7o deve aparecer ACIMA da janta/ceia na lista, mesmo
+// tendo sido salvo por \u00faltimo. Refei\u00e7\u00f5es do MESMO tipo (ex.: duas "Lanche da tarde" no mesmo dia)
+// mant\u00eam a ordem relativa entre si (sort() \u00e9 est\u00e1vel em todos os motores usados aqui), que \u00e9 a ordem
+// de registro (a lista de entrada j\u00e1 vem nessa ordem, por constru\u00e7\u00e3o) -- faz mais sentido cronol\u00f3gico
+// do que reordenar por hor\u00e1rio digitado manualmente.
+function ordenarPorTipoDeRefeicao(meals) {
+  return meals.slice().sort((a, b) => indiceTipoRefeicao(a.name) - indiceTipoRefeicao(b.name));
+}
 
 /* ===================== exposi\u00e7\u00e3o solar (vitamina D) ===================== */
 // O sol \u00e9 a principal fonte de vitamina D do corpo (a pele sintetiza a partir da radia\u00e7\u00e3o UVB) -- essa
@@ -1854,6 +1886,11 @@ const state = {
   // palavra "jejum" dentro do texto livre da observação. "" = ainda não respondido (obrigatório antes de
   // salvar nesses dois tipos); resetado ao trocar de tipo de medição e depois de salvar um registro.
   medidaJejum: "",
+  // Usado só quando medidaTipo é "peso" (ver MEDIDA_MOMENTO_PESO_OPCOES): em que momento do dia a
+  // pesagem foi feita -- antes de dormir, antes/depois da refeição ou antes/depois do treino. Mostrado
+  // na legenda do card de IMC (ver imcCardTemplate()). "" = ainda não respondido (obrigatório antes de
+  // salvar um peso, igual ao jejum); resetado ao trocar de tipo de medição e depois de salvar um registro.
+  medidaMomentoPeso: "",
   showHistoricoMedidas: false,
   // Data do dia expandido no histórico de Medidas e Aferições (mesmo accordion por dia do histórico de
   // refeições/treinos) -- ver medidasHistoricoTemplate()/acaoAlternarDiaHistoricoMedidas(). null = nenhum
@@ -2505,7 +2542,19 @@ function acaoTrocarAba(aba) { state.activeTab = aba; render(); }
 // comparar pesagens em jejum de um dia com o do seguinte no Diário de Kcal (ver pesoJejumDoDia()), sem
 // depender de procurar "jejum" no texto livre da observação.
 const MEDIDA_TIPOS_COM_JEJUM = ["peso", "glicemia"];
-function acaoSelecionarTipoMedida(tipo) { state.medidaTipo = tipo; state.medidaJejum = ""; render(); }
+// Só pra peso (não glicemia): além de jejum, o usuário também informa em que momento do dia pesou --
+// ajuda a entender variações de peso ligadas a sono, refeição ou treino (retenção de líquidos,
+// esvaziamento gástrico etc.). Mostrado na legenda do card de IMC (ver imcCardTemplate()/
+// legendaContextoPesoReferencia()) junto com a hora e o jejum daquele registro.
+const MEDIDA_MOMENTO_PESO_OPCOES = [
+  { valor: "dormir", label: "Antes de dormir", frase: "antes de dormir" },
+  { valor: "antes_refeicao", label: "Antes da refeição", frase: "antes da refeição" },
+  { valor: "depois_refeicao", label: "Depois da refeição", frase: "depois da refeição" },
+  { valor: "antes_treino", label: "Antes do treino", frase: "antes do treino" },
+  { valor: "depois_treino", label: "Depois do treino", frase: "depois do treino" },
+];
+function momentoPesoInfo(valor) { return MEDIDA_MOMENTO_PESO_OPCOES.find((o) => o.valor === valor) || null; }
+function acaoSelecionarTipoMedida(tipo) { state.medidaTipo = tipo; state.medidaJejum = ""; state.medidaMomentoPeso = ""; render(); }
 // Trocar a resposta de jejum dispara um re-render (pra atualizar o <select> com a opção escolhida), e
 // esse re-render recria o campo de valor/observação do zero (não são inputs "controlados" por
 // state) -- sem isso, um valor já digitado antes de responder a pergunta de jejum seria perdido. Por
@@ -2515,6 +2564,18 @@ function acaoSelecionarJejum(valor) {
   const valorDigitado = (document.getElementById("medida-valor") || {}).value || "";
   const notaDigitada = (document.getElementById("medida-nota") || {}).value || "";
   state.medidaJejum = valor;
+  render();
+  const inputValor = document.getElementById("medida-valor");
+  if (inputValor) inputValor.value = valorDigitado;
+  const inputNota = document.getElementById("medida-nota");
+  if (inputNota) inputNota.value = notaDigitada;
+}
+// Mesmo motivo/mecânica de acaoSelecionarJejum() acima -- preserva o valor/nota já digitados através
+// do re-render disparado pela troca de momento.
+function acaoSelecionarMomentoPeso(valor) {
+  const valorDigitado = (document.getElementById("medida-valor") || {}).value || "";
+  const notaDigitada = (document.getElementById("medida-nota") || {}).value || "";
+  state.medidaMomentoPeso = valor;
   render();
   const inputValor = document.getElementById("medida-valor");
   if (inputValor) inputValor.value = valorDigitado;
@@ -2535,6 +2596,11 @@ function acaoSalvarMedida() {
     toastError("Informe se a medição foi feita em jejum.");
     return;
   }
+  // Ver MEDIDA_MOMENTO_PESO_OPCOES -- pergunta em medidasFormTemplate(), só pra peso.
+  if (tipo === "peso" && !momentoPesoInfo(state.medidaMomentoPeso)) {
+    toastError("Informe em que momento você pesou (antes de dormir, da refeição ou do treino).");
+    return;
+  }
   const notaInput = document.getElementById("medida-nota");
   const nota = notaInput ? notaInput.value.trim() : "";
   const now = new Date();
@@ -2548,10 +2614,12 @@ function acaoSalvarMedida() {
   // fica sem IMC (mesma mensagem do card do topo pedindo pra cadastrar a altura em Bioimpedância).
   if (tipo === "peso") novaMedida.imc = calcularImcDoPeso(Number(valor));
   if (MEDIDA_TIPOS_COM_JEJUM.includes(tipo)) novaMedida.jejum = state.medidaJejum === "sim";
+  if (tipo === "peso") novaMedida.momento = state.medidaMomentoPeso;
   state.medidas = state.medidas.concat([novaMedida]);
   persistMedidas();
   state.medidaTipo = "";
   state.medidaJejum = "";
+  state.medidaMomentoPeso = "";
   toastSuccess(tipo === "peso" && novaMedida.imc
     ? "Registro salvo no histórico (IMC " + formatNumber(novaMedida.imc, 1) + ")."
     : "Registro salvo no histórico.");
@@ -3101,7 +3169,7 @@ function acaoEncerrarDia() {
   // Usa o MESMO conjunto que os cards (consumedToday()) somam -- ver mealsDesdeUltimoEncerramento(),
   // sempre só as refeições de HOJE -- assim o resumo salvo aqui sempre bate exatamente com o que os
   // cards mostravam no instante do clique.
-  const meals = mealsDesdeUltimoEncerramento();
+  const meals = ordenarPorTipoDeRefeicao(mealsDesdeUltimoEncerramento());
   if (!meals.length) { toastError("Registre ao menos uma refeição antes de encerrar o dia."); return; }
   const t = today();
   const totais = meals.reduce((sum, m) => addNutrients(sum, m), emptyNutrients);
@@ -3167,7 +3235,7 @@ function acaoEncerrarDia() {
 // congelada naquele momento, só atualizando o corteId (pra cobrir qualquer refeição registrada depois
 // do clique manual mas ainda no mesmo dia).
 function fecharDiaAutomaticamente(date) {
-  const mealsDoDia = state.meals.filter((m) => m.date === date);
+  const mealsDoDia = ordenarPorTipoDeRefeicao(state.meals.filter((m) => m.date === date));
   const treinosDoDia = state.treinos.filter((tr) => tr.date === date);
   const existente = state.diarioKcal.find((r) => r.date === date);
   if (!mealsDoDia.length && !existente) return; // nada registrado nesse dia -- nada a fechar
@@ -3278,7 +3346,7 @@ function verificarViradaDeDia() {
 // dois casos o objetivo é o mesmo: fazer o registro refletir de fato as refeições e treinos do dia que
 // ele diz representar.
 function recalcularDiarioKcalRegistro(registro) {
-  const mealsDoDia = state.meals.filter((m) => m.date === registro.date);
+  const mealsDoDia = ordenarPorTipoDeRefeicao(state.meals.filter((m) => m.date === registro.date));
   const totais = mealsDoDia.reduce((sum, m) => addNutrients(sum, m), emptyNutrients);
   const refeicoes = mealsDoDia.map((m) => {
     const linha = { name: m.name, time: m.time, alimentos: m.detected || [] };
@@ -3858,7 +3926,7 @@ function historyDayMetaInfo(date) {
   return { meta: state.goals.calories, objetivo: state.goals.objetivo };
 }
 function historyDayCardTemplate(date) {
-  const dayMeals = state.meals.filter((m) => m.date === date);
+  const dayMeals = ordenarPorTipoDeRefeicao(state.meals.filter((m) => m.date === date));
   const dayTotal = dayMeals.reduce((sum, m) => sum + m.calories, 0);
   const expandido = state.historyDiaExpandido === date;
   const metaInfo = historyDayMetaInfo(date);
@@ -4549,7 +4617,7 @@ function acaoAlternarHistoricoTreinos() {
 }
 
 function mealListTemplate() {
-  const meals = todayMeals();
+  const meals = ordenarPorTipoDeRefeicao(todayMeals());
   if (!meals.length) {
     return '<div class="meal-empty"><div class="meal-empty-icon">' + icon("plus") + "</div><p>Nenhuma refeição registrada hoje</p><p>Descreva a primeira refeição no formulário ao lado.</p></div>";
   }
@@ -4687,6 +4755,12 @@ function nutrientInfoModalTemplate() {
 // gramsEstimadosParaItem()/acaoCadastrarProduto()) -- decisões confirmadas com o usuário. Uma vez
 // cadastrado, o produto passa a ser reconhecido em qualquer descrição de refeição futura, igual um
 // alimento já existente no foodLibrary (ver detectFoods()).
+// BUG CORRIGIDO (relatado pelo usuário: texto digitado no campo de ingredientes ficava invisível): o
+// textarea usava a classe .meal-textarea, pensada pro fundo escuro translúcido do resto do app (texto
+// branco sobre fundo escuro -- ver CSS de .meal-input/.meal-textarea/.meal-select) -- mas esse modal
+// (.modal-card) tem fundo CLARO (branco), igual o campo "Nome do produto" ao lado, que já usa
+// corretamente .field-input (texto escuro sobre fundo claro). Trocado pra .field-input também, mesma
+// classe do campo vizinho, pra manter o texto digitado visível e os dois campos consistentes entre si.
 function cadastrarProdutoModalTemplate() {
   if (!state.showCadastrarProduto) return "";
   const preview = state.produtoPreview;
@@ -4701,7 +4775,7 @@ function cadastrarProdutoModalTemplate() {
       '<div class="modal-body">' +
         '<div><label class="field-label">Nome do produto</label><input id="produto-nome" class="field-input" placeholder="Ex.: Pastel de Camarão" value="' + esc(state.produtoNome) + '"/></div>' +
         '<div><label class="field-label">Ingredientes</label>' +
-          '<textarea id="produto-ingredientes" class="meal-textarea" placeholder="Descreva os ingredientes e quantidades..." rows="3">' + esc(state.produtoIngredientes) + "</textarea>" +
+          '<textarea id="produto-ingredientes" class="field-input" style="resize:none;line-height:1.5" placeholder="Descreva os ingredientes e quantidades..." rows="3">' + esc(state.produtoIngredientes) + "</textarea>" +
         "</div>" +
         '<button class="btn-ghost-light" onclick="acaoAnalisarIngredientesProduto()">' + icon("sparkles") + " Analisar ingredientes</button>" +
         (preview.length ?
@@ -4768,6 +4842,31 @@ function homeTabsTemplate() {
     "</div>";
 }
 
+// Junta uma lista de textos numa frase natural em português: com vírgulas entre os itens e "e" antes
+// do último (ex.: ["às 07:15", "em jejum", "antes de dormir"] -> "às 07:15, em jejum e antes de
+// dormir"). Descarta itens vazios. Usado pela legenda do card de IMC (ver
+// legendaContextoPesoReferencia() logo abaixo).
+function juntarComE(itens) {
+  const validos = itens.filter(Boolean);
+  if (!validos.length) return "";
+  if (validos.length === 1) return validos[0];
+  return validos.slice(0, -1).join(", ") + " e " + validos[validos.length - 1];
+}
+// Complementa a legenda do card de IMC ("Calculado a partir do peso de X kg, registrado em [data]")
+// com a hora do registro e o que o usuário informou ao pesar: se foi em jejum ou não, e em que momento
+// (antes de dormir, antes/depois da refeição ou antes/depois do treino -- ver
+// MEDIDA_MOMENTO_PESO_OPCOES/acaoSalvarMedida()). Pedido do usuário. Devolve já com um espaço na
+// frente, pronta pra ser concatenada direto depois da data (ou "" se não houver nada a acrescentar --
+// registros salvos antes desses campos existirem, por exemplo).
+function legendaContextoPesoReferencia(pesoRef) {
+  const momento = pesoRef.momento ? momentoPesoInfo(pesoRef.momento) : null;
+  const texto = juntarComE([
+    pesoRef.time ? "às " + esc(pesoRef.time) : "",
+    typeof pesoRef.jejum === "boolean" ? (pesoRef.jejum ? "em jejum" : "fora de jejum") : "",
+    momento ? momento.frase : "",
+  ]);
+  return texto ? " " + texto : "";
+}
 function imcCardTemplate() {
   const imc = calcularImc();
   const faixa = imc ? faixaImc(imc) : null;
@@ -4783,7 +4882,7 @@ function imcCardTemplate() {
     "</div>" +
     (imc ?
       '<div class="imc-value-row"><span class="imc-value">' + formatNumber(imc, 1) + '</span><span class="imc-class" style="background:' + faixa.corSuave + ";color:" + faixa.cor + '">' + faixa.label + "</span></div>" +
-      (pesoRef ? '<p class="imc-peso-referencia">Calculado a partir do peso de ' + formatNumber(Number(pesoRef.valor), 1) + " kg, registrado em " + pesoRefData + ".</p>" : "")
+      (pesoRef ? '<p class="imc-peso-referencia">Calculado a partir do peso de ' + formatNumber(Number(pesoRef.valor), 1) + " kg, registrado em " + pesoRefData + legendaContextoPesoReferencia(pesoRef) + ".</p>" : "")
       :
       '<p class="imc-empty">Registre seu peso nas Medidas e sua altura na seção de Bioimpedância abaixo para calcular o IMC.</p>'
     ) +
@@ -4893,54 +4992,168 @@ function acaoAbrirHistoricoBioimpedancia(aba) {
 function acaoTrocarAbaHistoricoBioimpedancia(aba) { state.historicoAbaAtiva = aba; render(); }
 function acaoFecharHistoricoBioimpedancia() { state.showHistoricoBioimpedancia = false; render(); }
 
-const BIOIMPEDANCIA_CAMPOS = ["altura", "peso", "gordura", "massaMagra", "massaMuscular", "aguaCorporal", "gorduraVisceral", "idadeMetabolica"];
-const CALORIMETRIA_CAMPOS = ["tmb", "get"];
+const BIOIMPEDANCIA_CAMPOS = ["altura", "peso", "gordura", "massaMagra", "massaMuscular", "aguaCorporal", "gorduraVisceral"];
+// idadeMetabolica morou aqui, mas passou pro formulário de Calorimetria a pedido do usuário -- faz mais
+// sentido junto da TMB, já que é a partir dela que a estimativa é calculada (ver
+// acaoEstimarIdadeMetabolica() logo abaixo). Continua opcional, igual antes.
+const CALORIMETRIA_CAMPOS = ["tmb", "get", "idadeMetabolica"];
 
-// Lê peso/altura direto do DOM (o formulário de bioimpedância não sincroniza esses campos com o state
-// a cada tecla -- só na hora de salvar, ver acaoSalvarBioimpedancia), pra pegar o valor mais atual que
-// a pessoa está digitando agora, mesmo que ainda não tenha sido salvo. TMB vem do registro de
-// Calorimetria mais recente já salvo (é um formulário/aba separado). Preenche o campo "Idade
-// metabólica" direto (sem chamar render()) -- ver comentário em idadeMetabolicaCampoTemplate().
+// Campo movido de Bioimpedância pra Calorimetria a pedido do usuário -- faz mais sentido junto da TMB,
+// já que é a partir dela que a estimativa é calculada. Lê a TMB direto do DOM (o formulário não
+// sincroniza esse campo com o state a cada tecla -- só na hora de salvar, ver acaoSalvarCalorimetria),
+// pra pegar o valor mais atual que a pessoa está digitando agora, mesmo que ainda não tenha sido salvo.
+// Peso e altura vêm do último registro de Bioimpedância já salvo (ultimaBioimpedancia()) -- são campos
+// de OUTRO formulário/aba, não deste. Preenche o campo "Idade metabólica" direto (sem chamar render())
+// -- ver comentário em idadeMetabolicaCampoTemplate() -- e atualiza a conclusão logo abaixo (ver
+// conclusaoIdadeMetabolicaHtml()), que já cobre com mais detalhe a comparação com a idade real.
 function acaoEstimarIdadeMetabolica() {
-  const inputPeso = document.getElementById("bio-peso");
-  const inputAltura = document.getElementById("bio-altura");
-  const peso = inputPeso ? Number(inputPeso.value.trim().replace(",", ".")) : NaN;
-  const altura = inputAltura ? Number(inputAltura.value.trim().replace(",", ".")) : NaN;
-  if (!peso || !altura) { toastError("Informe peso e altura acima antes de calcular a estimativa."); return; }
-  const ultimoCalo = ultimaCalorimetria();
-  if (!ultimoCalo || !ultimoCalo.tmb) { toastError("Registre sua Calorimetria (TMB) em Medidas e Aferições antes de calcular a estimativa de idade metabólica."); return; }
+  const inputTmb = document.getElementById("calo-tmb");
+  const tmb = inputTmb ? Number(inputTmb.value.trim().replace(",", ".")) : NaN;
+  if (!tmb) { toastError("Informe a Taxa Metabólica Basal (TMB) acima antes de calcular a estimativa."); return; }
+  const ultimaBio = ultimaBioimpedancia();
+  if (!ultimaBio || !ultimaBio.peso || !ultimaBio.altura) { toastError("Registre peso e altura em Bioimpedância antes de calcular a estimativa de idade metabólica."); return; }
   const sexo = state.usuario && state.usuario.sexo;
   if (sexo !== "masculino" && sexo !== "feminino") { toastError("Informe seu sexo no seu perfil antes de calcular a estimativa de idade metabólica."); return; }
-  const estimativa = estimarIdadeMetabolica(ultimoCalo.tmb, peso, altura, sexo);
+  const estimativa = estimarIdadeMetabolica(tmb, ultimaBio.peso, ultimaBio.altura, sexo);
   if (estimativa == null) { toastError("Não foi possível calcular a estimativa com os dados informados."); return; }
-  const inputIdade = document.getElementById("bio-idadeMetabolica");
+  const inputIdade = document.getElementById("calo-idadeMetabolica");
   if (inputIdade) inputIdade.value = estimativa;
+  toastSuccess("Idade metabólica estimada em " + estimativa + " anos, com base na TMB informada acima e no peso/altura do registro de Bioimpedância de " + dataCurta(ultimaBio.date) + " e no sexo do perfil. Não é o valor oficial do seu aparelho — veja como calculamos na legenda abaixo. Você ainda pode ajustar manualmente antes de salvar.");
+  acaoAtualizarConclusaoIdadeMetabolica();
+}
 
-  // Se a pessoa tem data de nascimento cadastrada no perfil, comparamos a estimativa com a idade real:
-  // uma diferença grande é sinal de que a TMB registrada foge muito da média prevista só por
-  // peso/altura/sexo (ver comentário em estimarIdadeMetabolica), o que torna a estimativa pouco
-  // confiável nesse caso -- avisamos em vez de simplesmente devolver o número sem contexto.
+// Diferença em dias corridos entre duas datas "AAAA-MM-DD" -- usada só pelas tendências de peso/kcal
+// abaixo. "T12:00:00" (meio-dia) evita o problema de fuso horário que rolaria com meia-noite (ver
+// mesmo padrão em today()/proximoDia()).
+function diasEntre(dateA, dateB) {
+  return Math.round((new Date(dateB + "T12:00:00").getTime() - new Date(dateA + "T12:00:00").getTime()) / 86400000);
+}
+// Tendência de peso nas últimas semanas -- um dos fatores especulativos usados por
+// conclusaoIdadeMetabolicaHtml() (ver comentário lá). Exige pelo menos duas medições de peso na janela
+// E separadas por pelo menos 14 dias -- menos que isso é variação do dia a dia (hidratação, refeição
+// recente etc.), não uma tendência de verdade.
+function tendenciaPesoUltimasSemanas(janelaDias) {
+  const hoje = today();
+  const limite = new Date(hoje + "T12:00:00");
+  limite.setDate(limite.getDate() - janelaDias);
+  const limiteStr = limite.toISOString().slice(0, 10);
+  const registros = state.medidas
+    .filter((m) => m.tipo === "peso" && m.date >= limiteStr && m.date <= hoje)
+    .map((m) => ({ date: m.date, valor: Number(String(m.valor).replace(",", ".")) }))
+    .filter((m) => !isNaN(m.valor))
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  if (registros.length < 2) return null;
+  const primeiro = registros[0];
+  const ultimo = registros[registros.length - 1];
+  const dias = diasEntre(primeiro.date, ultimo.date);
+  if (dias < 14) return null;
+  return { deltaKg: ultimo.valor - primeiro.valor, dias: dias };
+}
+// Consumo/gasto médio das últimas semanas -- ver comentário de tendenciaPesoUltimasSemanas() acima.
+// Usa o Diário de Kcal (state.diarioKcal), que já tem o total consumido e as calorias queimadas em
+// treino de cada dia fechado -- exige pelo menos 7 dias com registro dentro da janela (uma semana
+// cheia), senão a média fica sujeita demais a poucos dias isolados.
+function tendenciaKcalUltimasSemanas(janelaDias, tmb) {
+  const hoje = today();
+  const limite = new Date(hoje + "T12:00:00");
+  limite.setDate(limite.getDate() - janelaDias);
+  const limiteStr = limite.toISOString().slice(0, 10);
+  const registros = state.diarioKcal.filter((r) => r.date >= limiteStr && r.date < hoje && r.calories != null);
+  if (registros.length < 7) return null;
+  const mediaConsumida = registros.reduce((soma, r) => soma + r.calories, 0) / registros.length;
+  const mediaQueimada = registros.reduce((soma, r) => soma + (r.caloriasQueimadas || 0), 0) / registros.length;
+  const mediaGastoTotal = tmb + mediaQueimada;
+  return { mediaConsumida: mediaConsumida, mediaGastoTotal: mediaGastoTotal, saldoMedio: mediaConsumida - mediaGastoTotal, dias: registros.length };
+}
+// Janela usada pelas duas tendências acima -- "últimas semanas", nunca "últimos dias": TMB não muda de
+// um dia pro outro, só composição corporal e hábito alimentar mudam ao longo de semanas/meses (ver
+// conclusaoIdadeMetabolicaHtml() abaixo).
+const JANELA_TENDENCIA_IDADE_METABOLICA_DIAS = 30;
+// "Conclusão" mostrada junto ao campo de idade metabólica na Calorimetria -- pedido do usuário: compara
+// a idade metabólica (do campo, digitada ou calculada) com a idade real (do perfil) e tenta explicar
+// prováveis razões da diferença. Decidido com o usuário: a explicação usa (1) composição corporal
+// (massa muscular/gordura) do último registro de Bioimpedância, quando existir, e (2) a tendência de
+// peso e o saldo calórico médio das ÚLTIMAS SEMANAS (nunca de poucos dias -- ver comentário acima) --
+// sempre deixando claro que é uma correlação especulativa com os dados já registrados no app, não uma
+// causa comprovada nem um diagnóstico. Sem nenhum dado disponível pra nenhuma das duas explicações, cai
+// pra uma resposta honesta genérica em vez de inventar uma causa.
+function conclusaoIdadeMetabolicaHtml(idadeMetabolicaValor, tmbValor) {
+  const idadeMetabolica = Number(String(idadeMetabolicaValor == null ? "" : idadeMetabolicaValor).trim().replace(",", "."));
+  if (!idadeMetabolica) return "";
   const idadeRealInfo = state.usuario && state.usuario.dataNascimento ? calcularIdadeExata(state.usuario.dataNascimento) : null;
-  const diferencaGrande = idadeRealInfo && Math.abs(estimativa - idadeRealInfo.anos) >= LIMIAR_DIFERENCA_IDADE_METABOLICA_ANOS;
-
-  if (diferencaGrande) {
-    const inputMassaMuscular = document.getElementById("bio-massaMuscular");
-    const inputGordura = document.getElementById("bio-gordura");
-    const temComposicaoCorporal = (inputMassaMuscular && inputMassaMuscular.value.trim()) || (inputGordura && inputGordura.value.trim());
-    // Além da idade (instável: cada 5 kcal de diferença já muda 1 ano), mostramos também a eficiência
-    // metabólica relativa -- a razão entre a TMB registrada e a TMB média esperada pra idade/peso/altura
-    // reais -- que é um jeito mais estável e direto de comunicar a mesma informação, sem o efeito
-    // multiplicador do "kcal por ano" da fórmula de Mifflin-St Jeor.
-    const constanteSexoRef = sexo === "masculino" ? 5 : -161;
-    const tmbEsperadaIdadeReal = 10 * peso + 6.25 * altura + constanteSexoRef - 5 * idadeRealInfo.anos;
-    const eficienciaPercentual = tmbEsperadaIdadeReal > 0 ? Math.round((Number(ultimoCalo.tmb) / tmbEsperadaIdadeReal) * 100) : null;
-    toastAviso("Idade metabólica estimada em " + estimativa + " anos, mas essa estimativa ficou bem distante da sua idade real (" + idadeRealInfo.anos + " anos) — a fórmula não é confiável nesse caso." +
-      (eficienciaPercentual != null ? " Um jeito mais estável de ver o mesmo dado: sua TMB registrada está em " + eficienciaPercentual + "% da média esperada pra sua idade, peso e altura." : "") +
-      (temComposicaoCorporal ? " Isso costuma acontecer quando a massa muscular e o percentual de gordura fogem da média (a fórmula não considera esses dados)." : "") +
-      " Prefira o valor mostrado no seu aparelho de bioimpedância, se disponível. Você ainda pode ajustar manualmente antes de salvar.");
-  } else {
-    toastSuccess("Idade metabólica estimada em " + estimativa + " anos, com base na sua TMB registrada e no peso/altura/sexo informados. Não é o valor oficial do seu aparelho — veja como calculamos na legenda abaixo. Você ainda pode ajustar manualmente antes de salvar.");
+  if (!idadeRealInfo) {
+    return '<p class="calo-conclusao-dica">' + icon("help") + " Informe sua data de nascimento no perfil para comparar com sua idade real.</p>";
   }
+  const idadeReal = idadeRealInfo.anos + idadeRealInfo.meses / 12;
+  const diff = idadeMetabolica - idadeReal; // positivo = idade metabólica MAIOR (TMB abaixo do esperado); negativo = MENOR (TMB acima do esperado)
+  const diffAbs = Math.abs(diff);
+
+  if (diffAbs < 3) {
+    return '<div class="calo-conclusao-idade-metabolica"><p class="calo-conclusao-resultado">' + icon("check") +
+      " Sua idade metabólica estimada (" + formatNumber(idadeMetabolica, 1) + " anos) está bem próxima da sua idade real (" + idadeRealInfo.anos + " anos) — sem uma diferença relevante pra explicar.</p></div>";
+  }
+
+  const maisJovem = diff < 0; // TMB acima do previsto pra idade real
+  const razoes = [];
+
+  const ultimaBio = ultimaBioimpedancia();
+  if (ultimaBio && (ultimaBio.massaMuscular != null || ultimaBio.gordura != null)) {
+    const partes = [];
+    if (ultimaBio.massaMuscular != null) partes.push(formatNumber(ultimaBio.massaMuscular, 1) + " kg de massa muscular");
+    if (ultimaBio.gordura != null) partes.push(formatNumber(ultimaBio.gordura, 1) + "% de gordura corporal");
+    razoes.push("<strong>Composição corporal:</strong> seu último registro de Bioimpedância (" + dataCurta(ultimaBio.date) + ") mostra " + partes.join(" e ") +
+      ". A fórmula usada na estimativa não enxerga esses dados — só peso, altura e sexo — e " +
+      (maisJovem
+        ? "mais massa muscular (que consome mais energia em repouso que gordura) costuma elevar a TMB real acima do previsto, o que pode explicar uma idade metabólica estimada mais baixa que a real."
+        : "menos massa muscular ou mais gordura corporal em relação à média costuma reduzir a TMB real abaixo do previsto, o que pode explicar uma idade metabólica estimada mais alta que a real."));
+  }
+
+  const tmb = Number(String(tmbValor == null ? "" : tmbValor).trim().replace(",", "."));
+  if (tmb) {
+    const tendenciaKcal = tendenciaKcalUltimasSemanas(JANELA_TENDENCIA_IDADE_METABOLICA_DIAS, tmb);
+    const tendenciaPeso = tendenciaPesoUltimasSemanas(JANELA_TENDENCIA_IDADE_METABOLICA_DIAS);
+    if (tendenciaKcal) {
+      const deficit = tendenciaKcal.saldoMedio < -100;
+      const superavit = tendenciaKcal.saldoMedio > 100;
+      if (deficit && !maisJovem) {
+        razoes.push("<strong>Consumo x gasto recente:</strong> nos últimos " + tendenciaKcal.dias + " dias com registro no Diário de Kcal, seu consumo médio (" + formatNumber(tendenciaKcal.mediaConsumida) + " kcal/dia) ficou abaixo do seu gasto total médio estimado (" + formatNumber(tendenciaKcal.mediaGastoTotal) + " kcal/dia)" +
+          (tendenciaPeso && tendenciaPeso.deltaKg < -0.5 ? ", e seu peso caiu " + formatNumber(Math.abs(tendenciaPeso.deltaKg), 1) + " kg nesse período" : "") +
+          ". Um déficit calórico sustentado por semanas pode, em alguns casos, reduzir temporariamente o metabolismo basal além do esperado só pela perda de peso (um efeito chamado adaptação metabólica) — é uma correlação plausível com os seus dados, não uma causa comprovada nesse caso.");
+      } else if (superavit && maisJovem) {
+        razoes.push("<strong>Consumo x gasto recente:</strong> nos últimos " + tendenciaKcal.dias + " dias com registro no Diário de Kcal, seu consumo médio (" + formatNumber(tendenciaKcal.mediaConsumida) + " kcal/dia) ficou acima do seu gasto total médio estimado (" + formatNumber(tendenciaKcal.mediaGastoTotal) + " kcal/dia)" +
+          (tendenciaPeso && tendenciaPeso.deltaKg > 0.5 ? ", e seu peso subiu " + formatNumber(tendenciaPeso.deltaKg, 1) + " kg nesse período" : "") +
+          ". Um superávit calórico sustentado, especialmente combinado a treino de força, favorece ganho de massa muscular — o que eleva a TMB real acima do previsto. É uma correlação plausível com os seus dados, não uma causa comprovada nesse caso.");
+      }
+    }
+  }
+
+  if (!razoes.length) {
+    razoes.push("Não há dados suficientes (composição corporal em Bioimpedância, ou histórico de consumo/peso das últimas semanas) pra apontar uma causa específica. Pode ser variação individual normal do seu metabolismo, a margem de erro da própria fórmula — que é uma média populacional, não personalizada — ou uma característica do aparelho/exame que gerou essa TMB.");
+  }
+
+  const naoConfiavel = diffAbs >= LIMIAR_DIFERENCA_IDADE_METABOLICA_ANOS;
+  return '<div class="calo-conclusao-idade-metabolica">' +
+    '<p class="calo-conclusao-resultado' + (naoConfiavel ? " calo-conclusao-resultado-aviso" : "") + '">' + icon(naoConfiavel ? "info" : "sparkles") +
+      " Sua idade metabólica estimada (" + formatNumber(idadeMetabolica, 1) + " anos) está " + formatNumber(diffAbs, 1) + " anos " + (maisJovem ? "mais jovem" : "mais velha") + " que sua idade real (" + idadeRealInfo.anos + " anos)." +
+      (naoConfiavel ? " Essa diferença é grande o bastante pra tornar a estimativa pouco confiável — prefira o valor do seu aparelho, se disponível." : "") +
+    "</p>" +
+    '<p class="calo-conclusao-titulo">Prováveis razões</p>' +
+    razoes.map((r) => '<p class="calo-conclusao-razao">' + r + "</p>").join("") +
+    '<p class="calo-conclusao-aviso">Essas são correlações especulativas com os dados que você já registrou no app, não um diagnóstico. Se a diferença persistir ou for muito grande, vale conversar com um profissional (endocrinologista ou nutricionista).</p>' +
+  "</div>";
+}
+// Reescreve a conclusão acima a cada tecla digitada no campo de idade metabólica ou na TMB (oninput em
+// #calo-idadeMetabolica/#calo-tmb, ver idadeMetabolicaCampoTemplate()/calorimetriaFormCamposTemplate())
+// -- direto no elemento, sem chamar render(), pelo mesmo motivo de idadeMetabolicaCampoTemplate(): não
+// arriscar apagar outros campos desse formulário que a pessoa já tenha digitado e ainda não foram
+// capturados em state.caloFormValores (esses campos não têm onchange, só são lidos do DOM na hora de
+// salvar).
+function acaoAtualizarConclusaoIdadeMetabolica() {
+  const container = document.getElementById("calo-conclusao-idade-metabolica-wrap");
+  const inputIdade = document.getElementById("calo-idadeMetabolica");
+  const inputTmb = document.getElementById("calo-tmb");
+  if (!container || !inputIdade) return;
+  container.innerHTML = conclusaoIdadeMetabolicaHtml(inputIdade.value, inputTmb ? inputTmb.value : "");
 }
 
 function acaoSalvarBioimpedancia() {
@@ -5049,6 +5262,7 @@ function acaoSalvarCalorimetria() {
     registro.date = data;
     registro.tmb = Number(valores.tmb);
     registro.get = Number(valores.get);
+    registro.idadeMetabolica = valores.idadeMetabolica ? Number(valores.idadeMetabolica) : null;
     if (arquivoAnexo) registro.anexoUrl = "";
     persistCalorimetria();
     state.showFormBioimpedancia = false;
@@ -5067,7 +5281,7 @@ function acaoSalvarCalorimetria() {
   const now = new Date();
   const novoRegistro = {
     id: Date.now(), date: data, time: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-    tmb: Number(valores.tmb), get: Number(valores.get), anexoUrl: "",
+    tmb: Number(valores.tmb), get: Number(valores.get), idadeMetabolica: valores.idadeMetabolica ? Number(valores.idadeMetabolica) : null, anexoUrl: "",
   };
   state.calorimetria = state.calorimetria.concat([novoRegistro]);
   persistCalorimetria();
@@ -5114,28 +5328,32 @@ function anexoCampoTemplate(idInput, arquivoSelecionado, onChangeFn, onRemoveFn)
     "</div>";
 }
 
-// O campo de idade metabólica fica em branco por padrão -- a pessoa digita o valor que já saiu na
-// balança/exame de bioimpedância, igual aos outros campos. O botão "Calcular estimativa" é só pra
-// quando o aparelho NÃO informa esse valor: aí o sistema preenche o campo com uma aproximação (ver
-// estimarIdadeMetabolica() e acaoEstimarIdadeMetabolica()), que a pessoa ainda pode editar antes de
-// salvar. Não chama render() -- só escreve direto no input -- pra não arriscar apagar outros campos
-// desse mesmo formulário que a pessoa já tenha digitado e ainda não foram capturados em
-// state.bioFormValores (esses campos não têm onchange, só são lidos do DOM na hora de salvar).
+// Campo movido de Bioimpedância pra Calorimetria a pedido do usuário. Fica em branco por padrão -- a
+// pessoa digita o valor que já saiu do exame/balança, igual aos outros campos. O botão "Calcular
+// estimativa" é só pra quando o exame NÃO informa esse valor: aí o sistema preenche o campo com uma
+// aproximação (ver estimarIdadeMetabolica() e acaoEstimarIdadeMetabolica()), que a pessoa ainda pode
+// editar antes de salvar. Não chama render() -- só escreve direto no input -- pra não arriscar apagar
+// outros campos desse mesmo formulário que a pessoa já tenha digitado e ainda não foram capturados em
+// state.caloFormValores (esses campos não têm onchange, só são lidos do DOM na hora de salvar). Logo
+// abaixo da legenda "Como essa estimativa é calculada", fica a conclusão (ver
+// conclusaoIdadeMetabolicaHtml()) comparando com a idade real -- atualizada ao vivo (oninput) tanto ao
+// editar esse campo quanto a TMB acima, já que a conclusão usa os dois valores.
 function idadeMetabolicaCampoTemplate() {
-  const valores = state.bioFormValores || {};
+  const valores = state.caloFormValores || {};
   return '<div class="idade-metabolica-campo">' +
     '<label class="field-label">Idade metabólica (anos)</label>' +
-    '<input id="bio-idadeMetabolica" type="number" min="0" step="0.1" class="field-input" value="' + esc(valores.idadeMetabolica != null ? valores.idadeMetabolica : "") + '" placeholder="Ex.: 30 (ou deixe em branco e calcule abaixo)"/>' +
+    '<input id="calo-idadeMetabolica" type="number" min="0" step="0.1" class="field-input" value="' + esc(valores.idadeMetabolica != null ? valores.idadeMetabolica : "") + '" placeholder="Ex.: 30 (ou deixe em branco e calcule abaixo)" oninput="acaoAtualizarConclusaoIdadeMetabolica()"/>' +
     '<button type="button" class="idade-metabolica-calcular-btn" onclick="acaoEstimarIdadeMetabolica()">' + icon("sparkles") + " Calcular estimativa</button>" +
     '<details class="idade-metabolica-detalhes">' +
       "<summary>Como essa estimativa é calculada</summary>" +
       '<div class="idade-metabolica-detalhes-corpo">' +
-        "<p>Se o resultado da sua balança ou exame de bioimpedância não trouxer a idade metabólica, o botão acima estima um valor de referência: usamos a fórmula de Mifflin-St Jeor \"ao contrário\" — em vez de calcular sua TMB a partir da sua idade real, calculamos qual idade, pra alguém do seu peso, altura e sexo, resultaria exatamente na TMB que você registrou na Calorimetria.</p>" +
-        "<p class=\"idade-metabolica-aviso\"><strong>Não é um valor oficial.</strong> \"Idade metabólica\" não é uma métrica clínica padronizada — cada fabricante de balança de bioimpedância (Tanita, InBody, Omron etc.) usa sua própria base de referência populacional proprietária, que não é pública. Por isso esse número normalmente é diferente do que aparece no seu aparelho; é só uma aproximação de referência. Sempre prefira o valor do seu próprio exame quando ele estiver disponível.</p>" +
-        "<p class=\"idade-metabolica-aviso\">Essa fórmula considera só peso, altura e sexo — não leva em conta massa muscular nem percentual de gordura. Se sua TMB registrada fugir bastante da média prevista pra esses dados (comum em quem tem mais ou menos músculo que a média), a estimativa pode sair pouco plausível; nesse caso avisamos ao calcular.</p>" +
+        "<p>Se o resultado do seu exame de calorimetria não trouxer a idade metabólica, o botão acima estima um valor de referência: usamos a fórmula de Mifflin-St Jeor \"ao contrário\" — em vez de calcular sua TMB a partir da sua idade real, calculamos qual idade, pra alguém do seu peso, altura e sexo, resultaria exatamente na TMB que você informou acima.</p>" +
+        "<p class=\"idade-metabolica-aviso\"><strong>Não é um valor oficial.</strong> \"Idade metabólica\" não é uma métrica clínica padronizada — cada fabricante de aparelho (Tanita, InBody, Omron etc.) usa sua própria base de referência populacional proprietária, que não é pública. Por isso esse número normalmente é diferente do que aparece no seu aparelho; é só uma aproximação de referência. Sempre prefira o valor do seu próprio exame quando ele estiver disponível.</p>" +
+        "<p class=\"idade-metabolica-aviso\">Essa fórmula considera só peso, altura e sexo — não leva em conta massa muscular nem percentual de gordura. Se sua TMB informada fugir bastante da média prevista pra esses dados (comum em quem tem mais ou menos músculo que a média), a estimativa pode sair pouco plausível; nesse caso avisamos ao calcular.</p>" +
         "<p class=\"idade-metabolica-fonte\">Referência: <a href=\"https://ajcn.nutrition.org/article/S0002-9165(23)16698-6/fulltext\" target=\"_blank\" rel=\"noopener\">Mifflin MD, St Jeor ST, et al. — <em>A new predictive equation for resting energy expenditure in healthy individuals</em>, The American Journal of Clinical Nutrition (1990)</a>.</p>" +
       "</div>" +
     "</details>" +
+    '<div id="calo-conclusao-idade-metabolica-wrap">' + conclusaoIdadeMetabolicaHtml(valores.idadeMetabolica, valores.tmb) + "</div>" +
   "</div>";
 }
 function bioimpedanciaFormCamposTemplate() {
@@ -5153,7 +5371,6 @@ function bioimpedanciaFormCamposTemplate() {
       campo("massaMuscular", "Massa muscular", "kg", "Ex.: 55,2") +
       campo("aguaCorporal", "Água corporal", "%", "Ex.: 55,0") +
       campo("gorduraVisceral", "Gordura visceral", "nível", "Ex.: 8") +
-      idadeMetabolicaCampoTemplate() +
     "</div>" +
     anexoCampoTemplate("bio-anexo-input", anexoSelecionadoBio, "onAnexoBioSelecionado", "acaoRemoverAnexoSelecionadoBio") +
     '<div class="bioimpedancia-form-acoes">' +
@@ -5169,8 +5386,10 @@ function calorimetriaFormCamposTemplate() {
   return '' +
     '<div class="bioimpedancia-form-grid">' +
       '<div><label class="field-label">Data do exame</label><input id="calo-data" type="date" class="field-input" value="' + esc(valores.data != null ? valores.data : today()) + '"/></div>' +
-      campo("tmb", "Taxa Metabólica Basal (TMB)", "kcal", "Ex.: 1650") +
+      '<div><label class="field-label">Taxa Metabólica Basal (TMB) (kcal)</label>' +
+        '<input id="calo-tmb" type="number" min="0" step="0.1" class="field-input" value="' + esc(valores.tmb != null ? valores.tmb : "") + '" placeholder="Ex.: 1650" oninput="acaoAtualizarConclusaoIdadeMetabolica()"/></div>' +
       campo("get", "Gasto Energético Total (GET)", "kcal", "Ex.: 2400") +
+      idadeMetabolicaCampoTemplate() +
     "</div>" +
     anexoCampoTemplate("calo-anexo-input", anexoSelecionadoCalo, "onAnexoCaloSelecionado", "acaoRemoverAnexoSelecionadoCalo") +
     '<div class="bioimpedancia-form-acoes">' +
@@ -5216,14 +5435,15 @@ function valoresBioimpedanciaLegenda(r) {
   if (r.massaMuscular != null) partes.push("Massa muscular: " + formatNumber(r.massaMuscular, 1) + " kg");
   if (r.aguaCorporal != null) partes.push("Água corporal: " + formatNumber(r.aguaCorporal, 1) + "%");
   if (r.gorduraVisceral != null) partes.push("Gordura visceral: nível " + formatNumber(r.gorduraVisceral, 1));
-  if (r.idadeMetabolica != null) partes.push("Idade metabólica: " + formatNumber(r.idadeMetabolica, 1) + " anos");
   return partes.length ? partes.join(" · ") : null;
 }
-// Mesma ideia acima, só que pros dois valores de um registro de Calorimetria (TMB/GET).
+// Mesma ideia acima, só que pros valores de um registro de Calorimetria (TMB/GET/idade metabólica --
+// esse último migrou de Bioimpedância pra cá a pedido do usuário, ver CALORIMETRIA_CAMPOS).
 function valoresCalorimetriaLegenda(r) {
   const partes = [];
   if (r.tmb != null) partes.push("TMB: " + formatNumber(r.tmb) + " kcal");
   if (r.get != null) partes.push("GET: " + formatNumber(r.get) + " kcal");
+  if (r.idadeMetabolica != null) partes.push("Idade metabólica: " + formatNumber(r.idadeMetabolica, 1) + " anos");
   return partes.length ? partes.join(" · ") : null;
 }
 // valoresLegenda: função que devolve o texto da legenda de valores de UM registro (ou null/"" pra não
@@ -5307,6 +5527,7 @@ function bioimpedanciaSectionTemplate() {
         cabecalhoColuna("Calorimetria", ultimoCalo) +
         linha(ultimoCalo && ultimoCalo.tmb ? formatNumber(ultimoCalo.tmb) : "—", "TMB (kcal)") +
         linha(ultimoCalo && ultimoCalo.get ? formatNumber(ultimoCalo.get) : "—", "GET (kcal)") +
+        linha(ultimoCalo && ultimoCalo.idadeMetabolica != null ? formatNumber(ultimoCalo.idadeMetabolica, 1) : "—", "Idade metab. (anos)") +
       "</div>" +
     "</div>" +
     "</section>";
@@ -5514,6 +5735,15 @@ function medidasFormTemplate() {
               '<option value="nao"' + (state.medidaJejum === "nao" ? " selected" : "") + ">Não, fora do jejum</option>" +
             "</select>" +
             '<p class="imc-empty" style="margin-top:6px">' + (tipo === "glicemia" ? "Usamos essa informação pra avaliar o resultado com o parâmetro de referência correto." : "Usamos essa informação para comparar corretamente seu peso em jejum entre os dias no Diário de Kcal.") + "</p></div>"
+            : ""
+          ) +
+          (tipo === "peso" ?
+            '<div><label class="field-label">Em que momento você pesou?</label>' +
+            '<select id="medida-momento-peso" class="field-input" onchange="acaoSelecionarMomentoPeso(this.value)">' +
+              '<option value="">Selecione...</option>' +
+              MEDIDA_MOMENTO_PESO_OPCOES.map((o) => '<option value="' + o.valor + '"' + (state.medidaMomentoPeso === o.valor ? " selected" : "") + ">" + o.label + "</option>").join("") +
+            "</select>" +
+            '<p class="imc-empty" style="margin-top:6px">Mostramos isso, junto com a hora e o jejum, na legenda do card de IMC.</p></div>'
             : ""
           ) +
           '<div><label class="field-label">Observação (opcional)</label>' +
@@ -5937,6 +6167,29 @@ function pesoJejumDoDia(date) {
 // variação real da balança com a equivalência estimada do saldo calórico do dia (ver a nota logo
 // abaixo). Só aparece quando pelo menos um dos dois pesos foi registrado, pra não poluir o card com
 // "não registrado" em dias sem pesagem.
+// Ícone ao final de "Kcal gastos no dia": mostra de relance se aquele gasto total já inclui algum
+// treino/atividade informado pelo usuário naquele dia (r.caloriasQueimadas > 0, ver
+// diarioKcalGastoTotalInfo()) ou se é só o gasto em repouso (GET), sem nenhum treino registrado -- a
+// pedido do usuário, pra não precisar expandir o card e conferir a linha "Atividades/treinos/esportes"
+// (diarioKcalGastosTemplate()) só pra saber se aquele dia teve treino informado.
+function treinoIconeGastos(info) {
+  return info.atividades > 0 ? " 🏋🏻‍♂️✅️" : " 🏋🏻‍♂️❌️";
+}
+// Ícone ao final de "Diferença entre os pesos em jejum": mostra se a variação real da balança bateu com
+// a direção que o objetivo escolhido busca -- perda de peso pra quem quer emagrecer/definir, ganho pra
+// quem quer ganhar peso/massa muscular, e peso estável pra quem busca manutenção/performance/saúde geral
+// (mesmo agrupamento de objetivos já usado em diarioKcalMetaAtingida() pro saldo calórico, aqui aplicado
+// à balança). ✅ quando a variação bate com o que o objetivo busca, ⚠️ quando o peso ficou exatamente
+// igual (sinal neutro -- nem confirma nem contraria o objetivo) OU quando o objetivo é de equilíbrio
+// (nesse caso qualquer variação, pra qualquer lado, é só ruído normal da balança, não um "erro" -- por
+// isso nunca ❌ aqui), e ❌ quando o peso foi na direção OPOSTA à que o objetivo busca.
+function diferencaPesoIcone(diferencaPeso, objetivoChave) {
+  if (!objetivoChave || !OBJETIVOS_META[objetivoChave]) return "";
+  if (diferencaPeso === 0) return " ⚠️";
+  if (objetivoChave === "emagrecimento" || objetivoChave === "definicao") return diferencaPeso < 0 ? " ✅️" : " ❌️";
+  if (objetivoChave === "ganho_massa") return diferencaPeso > 0 ? " ✅️" : " ❌️";
+  return " ⚠️"; // manutenção/performance/saúde geral -- objetivo de equilíbrio, sem "direção errada"
+}
 function diarioKcalAnaliseObjetivoTemplate(r) {
   const info = diarioKcalGastoTotalInfo(r);
   const objetivoChave = r.metaCalorias != null ? r.objetivo : state.goals.objetivo;
@@ -5953,7 +6206,7 @@ function diarioKcalAnaliseObjetivoTemplate(r) {
     const objetivoLabel = objetivoChave && OBJETIVOS_META[objetivoChave] ? OBJETIVOS_META[objetivoChave].label : "";
     const status = atingida == null ? "" :
       ' — <strong class="' + (atingida ? "diario-kcal-meta-atingida" : "diario-kcal-meta-nao-atingida") + '">meta (' + esc(objetivoLabel) + ") - " + (atingida ? "atingida ✅" : "não atingida ❌") + "</strong>";
-    linhas.push('<div class="diario-kcal-gastos-linha">' + icon("flame") + " Kcal gastos no dia: " + formatNumber(info.gastoTotal) + " kcal / " + kgEquiv(info.gastoTotal) + "</div>");
+    linhas.push('<div class="diario-kcal-gastos-linha">' + icon("flame") + " Kcal gastos no dia: " + formatNumber(info.gastoTotal) + " kcal / " + kgEquiv(info.gastoTotal) + treinoIconeGastos(info) + "</div>");
     linhas.push('<div class="diario-kcal-gastos-linha">' + icon("flame") + " Saldo de kcal do dia: " + saldoTexto + status + "</div>");
     const diaSeguinte = proximoDia(r.date);
     const pesoHoje = pesoJejumDoDia(r.date);
@@ -5964,7 +6217,7 @@ function diarioKcalAnaliseObjetivoTemplate(r) {
       if (pesoHoje != null && pesoAmanha != null) {
         const diferencaPeso = pesoAmanha - pesoHoje;
         const diferencaPesoTexto = (diferencaPeso > 0 ? "+" : diferencaPeso < 0 ? "-" : "") + formatNumber(Math.abs(diferencaPeso), 1) + " kg";
-        linhas.push('<div class="diario-kcal-gastos-linha">' + icon("activity") + " Diferença entre os pesos em jejum: " + diferencaPesoTexto + "</div>");
+        linhas.push('<div class="diario-kcal-gastos-linha">' + icon("activity") + " Diferença entre os pesos em jejum: " + diferencaPesoTexto + diferencaPesoIcone(diferencaPeso, objetivoChave) + "</div>");
       }
     }
     linhas.push('<p class="diario-kcal-equivalencia-nota">' + icon("help") + " Equivalência de referência: ~7.700 kcal por kg de gordura corporal (regra de Wishnofsky) -- não é uma previsão exata da balança.</p>");
