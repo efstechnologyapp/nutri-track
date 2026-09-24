@@ -1836,6 +1836,10 @@ const state = {
   // Chave do nutriente (nutrientMeta/micronutrientMeta) com o modal de informações aberto, ou null --
   // ver nutrientInfoModalTemplate()/acaoAbrirInfoNutriente().
   infoNutrienteAberto: null,
+  // "bioimpedancia" | "calorimetria" | null -- qual dos dois modais de informação do exame (mesmo
+  // padrão do de cima, só que pros campos de Bioimpedância e Calorimetria) está aberto -- ver
+  // exameInfoModalTemplate()/acaoAbrirInfoExame().
+  infoExameAberto: null,
   mealDetalheId: null, // id da refeição aberta no modal de detalhamento, ou null
   // Controla se o campo de corrigir a data está visível dentro do modal de detalhamento -- ver
   // mealDetalheModalTemplate()/acaoAbrirEdicaoDataRefeicao(). Reseta toda vez que o modal abre/fecha.
@@ -2212,6 +2216,75 @@ function faixaGorduraEsperada(idadeAnos, sexo) {
 // diretamente comparáveis; (2) foi validado principalmente em estudos com idosos (65+), não é uma
 // "faixa saudável" pra qualquer idade adulta.
 const MASSA_MUSCULAR_BAIXA_LIMIAR_KG = { masculino: 20, feminino: 15 };
+// Frases de comparação "valor medido x valor de referência" pra gordura corporal e massa muscular --
+// extraídas de conclusaoIdadeMetabolicaHtml() (razão "Composição corporal") pra serem reaproveitadas
+// também no modal de informações da Bioimpedância (ver exameInfoBioimpedanciaSecaoTemplate()), sem
+// duplicar a lógica/o texto nos dois lugares.
+function comparacaoGorduraEsperadaTexto(gorduraPct, idadeAnos, sexo) {
+  if (gorduraPct == null) return null;
+  const faixaGordura = faixaGorduraEsperada(idadeAnos, sexo);
+  if (!faixaGordura) return null;
+  const gordura = Number(gorduraPct);
+  const dentroFaixa = gordura >= faixaGordura.min && gordura <= faixaGordura.max;
+  return "Para seu sexo e faixa etária, a gordura corporal esperada fica entre " + faixaGordura.min + "% e " + faixaGordura.max + "% (Gallagher et al., 2000); seu valor medido (" + formatNumber(gordura, 1) + "%) está " +
+    (dentroFaixa
+      ? "dentro dessa faixa"
+      : (gordura > faixaGordura.max
+        ? formatNumber(gordura - faixaGordura.max, 1) + " pontos percentuais acima dela"
+        : formatNumber(faixaGordura.min - gordura, 1) + " pontos percentuais abaixo dela")) + ".";
+}
+function comparacaoMassaMuscularLimiarTexto(massaMuscularKg, sexo) {
+  if (massaMuscularKg == null) return null;
+  const limiarMassaMuscular = MASSA_MUSCULAR_BAIXA_LIMIAR_KG[sexo];
+  if (limiarMassaMuscular == null) return null;
+  const massaMuscular = Number(massaMuscularKg);
+  const acimaLimiar = massaMuscular >= limiarMassaMuscular;
+  return "Sua massa muscular medida foi de " + formatNumber(massaMuscular, 1) + " kg — " + (acimaLimiar ? "acima" : "abaixo") + " do limiar de " + limiarMassaMuscular + " kg que o consenso clínico europeu de sarcopenia (EWGSOP2, 2019) considera massa muscular apendicular baixa " + (sexo === "masculino" ? "em homens" : "em mulheres") + "; esse limiar é medido por DXA (exame hospitalar, só braços e pernas) e validado principalmente em idosos, então não é diretamente comparável ao valor de corpo inteiro de uma balança de bioimpedância — usamos aqui só como referência aproximada, não como diagnóstico.";
+}
+// Faixa de peso "saudável" (IMC entre 18,5 e 24,9) pra uma altura, segundo a classificação de IMC da
+// Organização Mundial da Saúde -- mesmos cortes já usados em IMC_FAIXAS/faixaImc() acima, só que aqui
+// convertidos de volta pra kg (peso = IMC × altura², com a altura em metros) pra poder comparar
+// diretamente com o peso medido no modal de informações da Bioimpedância.
+function faixaPesoSaudavel(alturaCm) {
+  const alturaM = Number(alturaCm) / 100;
+  if (!alturaM) return null;
+  return { min: 18.5 * alturaM * alturaM, max: 24.9 * alturaM * alturaM };
+}
+// Conteúdo dos dois modais de informação "ao lado dos campos de Bioimpedância e Calorimetria" (pedido
+// do usuário) -- mesmo formato/padrão do modal de informações de macro/micronutrientes acima
+// (NUTRIENT_INFO/nutrientInfoModalTemplate()), só que com conteúdo sobre os próprios exames em vez de
+// nutrientes: um título (nome do exame), uma seção fixa "o que é este exame" e, por último, uma seção
+// específica com os dados PESSOAIS do usuário comparados ao que seria esperado pras características
+// dele -- ver exameInfoModalTemplate()/exameInfoBioimpedanciaSecaoTemplate()/
+// exameInfoCalorimetriaSecaoTemplate().
+const EXAME_INFO = {
+  bioimpedancia: {
+    titulo: "Bioimpedância",
+    icone: "ruler",
+    cor: "#5b8ab2",
+    corSuave: "#e9f1f7",
+    secaoTitulo: "Seus dados comparados ao esperado",
+    oQue: [
+      "Estima a composição do seu corpo (peso, % de gordura, massa muscular, água corporal etc.) passando uma corrente elétrica de baixíssima intensidade, imperceptível, entre eletrodos em contato com a pele.",
+      "Tecidos com mais água (como o músculo) oferecem menos resistência a essa corrente (impedância) do que tecidos com menos água (como a gordura) -- é dessa diferença de resistência que o aparelho calcula os percentuais.",
+      "É um método prático e não invasivo, mas é uma ESTIMATIVA: hidratação, alimentação recente, exercício físico e até a hora do dia podem alterar o resultado -- o ideal é medir sempre em condições parecidas (ex.: em jejum, pela manhã, antes de treinar).",
+    ],
+    fonte: "Kyle UG, Bosaeus I, et al. — Bioelectrical impedance analysis — part I: review of principles and methods, Clinical Nutrition (2004).",
+  },
+  calorimetria: {
+    titulo: "Calorimetria",
+    icone: "flame",
+    cor: "#eb7a55",
+    corSuave: "#fff0e9",
+    secaoTitulo: "Idade metabólica estimada",
+    oQue: [
+      "Mede (calorimetria indireta, feita em clínicas/laboratórios) ou estima (fórmulas preditivas, como a usada neste app) sua Taxa Metabólica Basal (TMB) -- a energia mínima que seu corpo gasta em repouso completo só pra manter as funções vitais (respiração, batimentos cardíacos, temperatura).",
+      "O Gasto Energético Total (GET) soma a essa TMB a energia gasta com atividade física, digestão e demais movimentos do dia -- é a partir dele que se calcula quantas calorias comer pra manter, perder ou ganhar peso.",
+      "É a partir da TMB registrada aqui que este app estima sua \"idade metabólica\" (ver seção abaixo) e sugere sua meta diária de calorias.",
+    ],
+    fonte: "Mifflin MD, St Jeor ST, et al. — A new predictive equation for resting energy expenditure in healthy individuals, The American Journal of Clinical Nutrition (1990).",
+  },
+};
 function ultimoRegistroMedida(tipo) {
   const registros = state.medidas.filter((m) => m.tipo === tipo).sort((a, b) => b.id - a.id);
   return registros.length ? registros[0] : null;
@@ -3151,6 +3224,10 @@ function acaoTrocarAbaNutrientes(aba) { state.nutrientAba = aba; render(); }
 // micronutriente -- ver nutrientInfoModalTemplate()/NUTRIENT_INFO.
 function acaoAbrirInfoNutriente(chave) { state.infoNutrienteAberto = chave; render(); }
 function acaoFecharInfoNutriente() { state.infoNutrienteAberto = null; render(); }
+// Abre/fecha o modal de informações de um exame (Bioimpedância ou Calorimetria) -- ver
+// exameInfoModalTemplate()/EXAME_INFO. Mesmo padrão de acaoAbrirInfoNutriente() acima.
+function acaoAbrirInfoExame(tipo) { state.infoExameAberto = tipo; render(); }
+function acaoFecharInfoExame() { state.infoExameAberto = null; render(); }
 function acaoAbrirDetalheRefeicao(id) { state.mealDetalheId = id; state.mealDetalheEditandoData = false; render(); }
 function acaoFecharDetalheRefeicao() { state.mealDetalheId = null; state.mealDetalheEditandoData = false; render(); }
 function acaoAbrirEdicaoDataRefeicao() { state.mealDetalheEditandoData = true; render(); }
@@ -3710,6 +3787,11 @@ function lockedTemplate() {
 // é o caso, mas mantém o padrão já usado nos outros botões dentro de linhas clicáveis do app.
 function nutrientInfoBtnTemplate(key, label) {
   return '<button class="nutrient-info-btn" aria-label="Informações sobre ' + esc(label) + '" onclick="event.stopPropagation(); acaoAbrirInfoNutriente(\'' + key + '\')">' + icon("info") + "</button>";
+}
+// Mesmo botão acima, só que abre o modal de informações de um exame (Bioimpedância ou Calorimetria) --
+// ver exameInfoModalTemplate()/EXAME_INFO/acaoAbrirInfoExame().
+function exameInfoBtnTemplate(tipo, label) {
+  return '<button class="nutrient-info-btn" aria-label="Informações sobre ' + esc(label) + '" onclick="event.stopPropagation(); acaoAbrirInfoExame(\'' + tipo + '\')">' + icon("info") + "</button>";
 }
 // Cards da aba "Macronutrientes" -- calorias NÃO entra aqui: calorias é a unidade de energia, não um
 // macronutriente (proteína, carboidrato, gordura e fibra são os macronutrientes de fato). O consumo/
@@ -4781,6 +4863,90 @@ function nutrientInfoModalTemplate() {
     "</div></div>";
 }
 
+// Seção específica do modal de informações da Bioimpedância (ver exameInfoModalTemplate()) -- pedido
+// do usuário: Peso, IMC, massa muscular e % de gordura do último registro, cada um comparado ao valor
+// que seria esperado/desejado pras características (idade, sexo, altura) do usuário. Peso/IMC usa a
+// classificação de IMC da OMS (ver faixaPesoSaudavel()); gordura e massa muscular reaproveitam as
+// mesmas referências e textos já usados na conclusão de idade metabólica (ver
+// comparacaoGorduraEsperadaTexto()/comparacaoMassaMuscularLimiarTexto()).
+function exameInfoBioimpedanciaSecaoTemplate() {
+  const ultimoBio = ultimaBioimpedancia();
+  if (!ultimoBio) {
+    return '<p class="calo-conclusao-dica">' + icon("help") + " Cadastre um registro de Bioimpedância para ver a comparação com os valores esperados para suas características." + "</p>";
+  }
+  const idadeRealInfo = state.usuario && state.usuario.dataNascimento ? calcularIdadeExata(state.usuario.dataNascimento) : null;
+  const sexoUsuario = state.usuario && state.usuario.sexo;
+  const partes = [];
+  if (ultimoBio.altura != null && ultimoBio.peso != null) {
+    const faixaPeso = faixaPesoSaudavel(ultimoBio.altura);
+    const peso = Number(ultimoBio.peso);
+    const alturaM = Number(ultimoBio.altura) / 100;
+    const imc = peso / (alturaM * alturaM);
+    if (faixaPeso) {
+      const dentroFaixa = peso >= faixaPeso.min && peso <= faixaPeso.max;
+      partes.push('<p class="calo-conclusao-razao"><strong>Peso e IMC:</strong> para sua altura (' + formatNumber(ultimoBio.altura, 1) + ' cm), a Organização Mundial da Saúde considera saudável o peso entre ' + formatNumber(faixaPeso.min, 1) + ' kg e ' + formatNumber(faixaPeso.max, 1) + ' kg (IMC entre 18,5 e 24,9). Seu peso medido (' + formatNumber(peso, 1) + ' kg, IMC ' + formatNumber(imc, 1) + ") está " +
+        (dentroFaixa
+          ? "dentro dessa faixa"
+          : (peso > faixaPeso.max
+            ? formatNumber(peso - faixaPeso.max, 1) + " kg acima dela"
+            : formatNumber(faixaPeso.min - peso, 1) + " kg abaixo dela")) + ".</p>");
+    }
+  }
+  if (ultimoBio.gordura != null) {
+    const textoGordura = idadeRealInfo && sexoUsuario ? comparacaoGorduraEsperadaTexto(ultimoBio.gordura, idadeRealInfo.anos, sexoUsuario) : null;
+    partes.push('<p class="calo-conclusao-razao"><strong>Percentual de gordura:</strong> ' + (textoGordura || ("seu valor medido foi de " + formatNumber(ultimoBio.gordura, 1) + "%; informe sua data de nascimento e sexo no perfil para comparar com a faixa esperada para suas características.")) + "</p>");
+  }
+  if (ultimoBio.massaMuscular != null) {
+    const textoMassaMuscular = sexoUsuario ? comparacaoMassaMuscularLimiarTexto(ultimoBio.massaMuscular, sexoUsuario) : null;
+    partes.push('<p class="calo-conclusao-razao"><strong>Massa muscular:</strong> ' + (textoMassaMuscular || ("seu valor medido foi de " + formatNumber(ultimoBio.massaMuscular, 1) + " kg; informe seu sexo no perfil para comparar com o limiar de referência.")) + "</p>");
+  }
+  if (!partes.length) {
+    return '<p class="calo-conclusao-dica">' + icon("help") + " Cadastre seu peso, altura, % de gordura e massa muscular na Bioimpedância para ver essa comparação." + "</p>";
+  }
+  return '<p class="calo-conclusao-titulo">Exame de ' + dataCurta(ultimoBio.date) + "</p>" + partes.join("");
+}
+// Seção específica do modal de informações da Calorimetria (ver exameInfoModalTemplate()) -- pedido
+// do usuário: "replicando exatamente a conclusão do cálculo e as causas prováveis", ou seja, reusa a
+// MESMA função já usada no campo de idade metabólica da Calorimetria (conclusaoIdadeMetabolicaHtml()),
+// com os valores do último registro salvo, em vez de reconstruir essa lógica aqui.
+function exameInfoCalorimetriaSecaoTemplate() {
+  const ultimoCalo = ultimaCalorimetria();
+  if (!ultimoCalo || ultimoCalo.idadeMetabolica == null) {
+    return '<p class="calo-conclusao-dica">' + icon("help") + " Calcule sua idade metabólica estimada em Bioimpedância e Calorimetria para ver a conclusão aqui." + "</p>";
+  }
+  return conclusaoIdadeMetabolicaHtml(ultimoCalo.idadeMetabolica, ultimoCalo.tmb);
+}
+// Modal de informações de um exame (Bioimpedância ou Calorimetria), aberto pelo botão "i" ao lado do
+// título de cada um na tela de Bioimpedância e Calorimetria -- ver exameInfoBtnTemplate()/EXAME_INFO/
+// acaoAbrirInfoExame(). Pedido explícito do usuário: DOIS modais separados (não um só combinando os
+// dois exames), cada um com seu próprio título (o nome do exame), uma seção fixa explicando o que é o
+// exame e, por último, a seção específica com os dados pessoais do usuário (ver
+// exameInfoBioimpedanciaSecaoTemplate()/exameInfoCalorimetriaSecaoTemplate() acima) -- mesmo formato
+// visual do modal de informações de macro/micronutrientes (nutrientInfoModalTemplate() acima).
+function exameInfoModalTemplate() {
+  const tipo = state.infoExameAberto;
+  if (!tipo) return "";
+  const info = EXAME_INFO[tipo];
+  if (!info) return "";
+  const secaoEspecificaHtml = tipo === "bioimpedancia" ? exameInfoBioimpedanciaSecaoTemplate() : exameInfoCalorimetriaSecaoTemplate();
+  return '' +
+    '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharInfoExame();}">' +
+    '<div class="modal-card nutrient-info-modal">' +
+      '<div class="meal-detalhe-head"><div class="nutrient-info-modal-title">' +
+        '<div class="nutrient-icon" style="background:' + info.corSuave + ";color:" + info.cor + '">' + icon(info.icone) + "</div>" +
+        "<h2>" + esc(info.titulo) + "</h2>" +
+      "</div>" +
+      '<button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharInfoExame()">' + icon("x") + "</button></div>" +
+      '<div class="nutrient-info-secao"><h3>O que é este exame</h3>' +
+        '<ul class="nutrient-info-lista">' + info.oQue.map((f) => "<li>" + esc(f) + "</li>").join("") + "</ul>" +
+      "</div>" +
+      '<div class="nutrient-info-secao"><h3>' + esc(info.secaoTitulo) + "</h3>" +
+        secaoEspecificaHtml +
+      "</div>" +
+      '<p class="nutrient-info-fonte">' + icon("help") + " Fonte: " + esc(info.fonte) + "</p>" +
+    "</div></div>";
+}
+
 // Modal "Cadastrar produto no cardápio" -- acionado por um botão independente do seletor de tipo de
 // refeição (ver nutricaoTabTemplate()); reaproveita o MESMO campo de texto livre + detectFoods() já
 // usado pra refeições normais (ver acaoAnalisarIngredientesProduto()), e o peso total do produto é
@@ -5162,25 +5328,12 @@ function conclusaoIdadeMetabolicaHtml(idadeMetabolicaValor, tmbValor) {
     // população de validação (idosos) -- ver GORDURA_ESPERADA_FAIXAS/MASSA_MUSCULAR_BAIXA_LIMIAR_KG.
     let comparacaoComposicaoHtml = "";
     if (ultimaBio.gordura != null) {
-      const faixaGordura = faixaGorduraEsperada(idadeRealInfo.anos, sexoUsuario);
-      if (faixaGordura) {
-        const gordura = Number(ultimaBio.gordura);
-        const dentroFaixa = gordura >= faixaGordura.min && gordura <= faixaGordura.max;
-        comparacaoComposicaoHtml += " Para seu sexo e faixa etária, a gordura corporal esperada fica entre " + faixaGordura.min + "% e " + faixaGordura.max + "% (Gallagher et al., 2000); seu valor medido (" + formatNumber(gordura, 1) + "%) está " +
-          (dentroFaixa
-            ? "dentro dessa faixa"
-            : (gordura > faixaGordura.max
-              ? formatNumber(gordura - faixaGordura.max, 1) + " pontos percentuais acima dela"
-              : formatNumber(faixaGordura.min - gordura, 1) + " pontos percentuais abaixo dela")) + ".";
-      }
+      const textoGordura = comparacaoGorduraEsperadaTexto(ultimaBio.gordura, idadeRealInfo.anos, sexoUsuario);
+      if (textoGordura) comparacaoComposicaoHtml += " " + textoGordura;
     }
     if (ultimaBio.massaMuscular != null) {
-      const limiarMassaMuscular = MASSA_MUSCULAR_BAIXA_LIMIAR_KG[sexoUsuario];
-      if (limiarMassaMuscular != null) {
-        const massaMuscular = Number(ultimaBio.massaMuscular);
-        const acimaLimiar = massaMuscular >= limiarMassaMuscular;
-        comparacaoComposicaoHtml += " Sua massa muscular medida foi de " + formatNumber(massaMuscular, 1) + " kg — " + (acimaLimiar ? "acima" : "abaixo") + " do limiar de " + limiarMassaMuscular + " kg que o consenso clínico europeu de sarcopenia (EWGSOP2, 2019) considera massa muscular apendicular baixa " + (sexoUsuario === "masculino" ? "em homens" : "em mulheres") + "; esse limiar é medido por DXA (exame hospitalar, só braços e pernas) e validado principalmente em idosos, então não é diretamente comparável ao valor de corpo inteiro de uma balança de bioimpedância — usamos aqui só como referência aproximada, não como diagnóstico.";
-      }
+      const textoMassaMuscular = comparacaoMassaMuscularLimiarTexto(ultimaBio.massaMuscular, sexoUsuario);
+      if (textoMassaMuscular) comparacaoComposicaoHtml += " " + textoMassaMuscular;
     }
     razoes.push("<strong>Composição corporal:</strong> seu último registro de Bioimpedância (" + dataCurta(ultimaBio.date) + ") mostra " + partes.join(" e ") + "." + comparacaoComposicaoHtml +
       " A fórmula usada na estimativa não enxerga esses dados — só peso, altura e sexo — e " +
@@ -5584,8 +5737,11 @@ function bioimpedanciaSectionTemplate() {
   // campo, com a data do último exame logo abaixo -- a pedido do usuário, substitui a legenda única
   // que ficava solta no rodapé do card (ver antigo .bioimpedancia-atualizado), já que agora cada
   // coluna mostra sua própria data.
-  const cabecalhoColuna = (texto, ultimoRegistro) => '<div class="bioimpedancia-resumo-coluna-head">' +
-    '<span class="bioimpedancia-resumo-coluna-legenda">' + texto + "</span>" +
+  // tipoInfo: "bioimpedancia" | "calorimetria" -- identifica qual dos dois modais de informação do
+  // exame o botão "i" ao lado do texto deve abrir (ver exameInfoBtnTemplate()/EXAME_INFO, pedido do
+  // usuário: ícone de informação ao lado dos campos de Bioimpedância e Calorimetria).
+  const cabecalhoColuna = (texto, ultimoRegistro, tipoInfo) => '<div class="bioimpedancia-resumo-coluna-head">' +
+    '<span style="display:flex;align-items:center;gap:2px"><span class="bioimpedancia-resumo-coluna-legenda">' + texto + "</span>" + exameInfoBtnTemplate(tipoInfo, texto) + "</span>" +
     '<span class="bioimpedancia-resumo-coluna-data">' + (ultimoRegistro ? "Exame realizado em " + dateLabelComAno(ultimoRegistro.date) + "." : "Sem registro ainda.") + "</span>" +
   "</div>";
   return '<section class="medidas-section">' +
@@ -5597,13 +5753,13 @@ function bioimpedanciaSectionTemplate() {
     '<div class="bioimpedancia-resumo">' +
       '<div class="bioimpedancia-resumo-item"><span class="bioimpedancia-resumo-valor">' + (ultimoBio && ultimoBio.altura ? formatNumber(ultimoBio.altura, 1) : "—") + '</span><span class="bioimpedancia-resumo-label">Altura (cm)</span></div>' +
       '<div class="bioimpedancia-resumo-item bioimpedancia-resumo-item-multi">' +
-        cabecalhoColuna("Bioimpedância", ultimoBio) +
+        cabecalhoColuna("Bioimpedância", ultimoBio, "bioimpedancia") +
         linha(ultimoBio && ultimoBio.peso ? formatNumber(ultimoBio.peso, 1) : "—", "Peso (kg)") +
         linha(ultimoBio && ultimoBio.massaMuscular ? formatNumber(ultimoBio.massaMuscular, 1) : "—", "Massa musc. (kg)") +
         linha(ultimoBio && ultimoBio.gordura ? formatNumber(ultimoBio.gordura, 1) : "—", "Gordura (%)") +
       "</div>" +
       '<div class="bioimpedancia-resumo-item bioimpedancia-resumo-item-multi">' +
-        cabecalhoColuna("Calorimetria", ultimoCalo) +
+        cabecalhoColuna("Calorimetria", ultimoCalo, "calorimetria") +
         linha(ultimoCalo && ultimoCalo.tmb ? formatNumber(ultimoCalo.tmb) : "—", "TMB (kcal)") +
         linha(ultimoCalo && ultimoCalo.get ? formatNumber(ultimoCalo.get) : "—", "GET (kcal)") +
         linha(ultimoCalo && ultimoCalo.idadeMetabolica != null ? formatNumber(ultimoCalo.idadeMetabolica, 1) : "—", "Idade metab. (anos)") +
@@ -6439,7 +6595,7 @@ function homeTemplate() {
   return '' +
     '<div class="app-shell">' +
     '<button class="hamburger-btn" onclick="acaoAbrirSidebar()" aria-label="Abrir menu"><span></span></button>' +
-    sidebarTemplate() + editarPerfilTemplate() + mealDetalheModalTemplate() + nutrientInfoModalTemplate() + cadastrarProdutoModalTemplate() +
+    sidebarTemplate() + editarPerfilTemplate() + mealDetalheModalTemplate() + nutrientInfoModalTemplate() + exameInfoModalTemplate() + cadastrarProdutoModalTemplate() +
     '<div class="home-content"><div class="home-inner">' +
     (state.account ? fullHomeTemplate() : lockedTemplate()) +
     "</div></div></div>";
