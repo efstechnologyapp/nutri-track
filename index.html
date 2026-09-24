@@ -491,17 +491,7 @@ svg{ display: block; }
 .idade-metabolica-campo{ grid-column:1 / -1; }
 .idade-metabolica-calcular-btn{ margin-top:8px; display:inline-flex; align-items:center; gap:8px; border-radius:999px; border:none; background:var(--primary); padding:8px 16px; font-size:13px; font-weight:600; color:#fff; transition:opacity .15s; }
 .idade-metabolica-calcular-btn:hover{ opacity:.9; }
-.idade-metabolica-detalhes{ margin-top:10px; }
-.idade-metabolica-detalhes summary{ cursor:pointer; font-size:12px; font-weight:600; color:#4b7048; list-style:none; }
-.idade-metabolica-detalhes summary::-webkit-details-marker{ display:none; }
-.idade-metabolica-detalhes summary::before{ content:"▸ "; }
-.idade-metabolica-detalhes[open] summary::before{ content:"▾ "; }
-.idade-metabolica-detalhes-corpo{ margin-top:10px; border-radius:14px; background:#f7f9f5; padding:14px 16px; font-size:12px; line-height:1.7; color:#5c6b62; }
-.idade-metabolica-detalhes-corpo p{ margin:0 0 8px; }
-.idade-metabolica-detalhes-corpo p:last-child{ margin-bottom:0; }
-.idade-metabolica-detalhes-corpo a{ color:#4b7048; text-decoration:underline; text-underline-offset:2px; }
-.idade-metabolica-aviso{ color:#8a5a3a; }
-.idade-metabolica-fonte{ font-style:italic; color:#8a9c93; }
+.idade-metabolica-fonte-nota{ margin-top:10px; }
 .calo-conclusao-dica{ margin:10px 0 0; display:flex; align-items:flex-start; gap:8px; border-radius:12px; padding:10px 12px; font-size:12px; line-height:1.6; background:#f7f9f5; color:#5c6b62; }
 .calo-conclusao-dica .icon{ margin-top:1px; flex-shrink:0; width:15px; height:15px; color:#8a9c93; }
 .calo-conclusao-idade-metabolica{ margin:10px 0 0; border-radius:14px; background:#f7f9f5; padding:14px 16px; }
@@ -509,6 +499,7 @@ svg{ display: block; }
 .calo-conclusao-resultado .icon{ margin-top:1px; flex-shrink:0; width:16px; height:16px; color:#6c8d68; }
 .calo-conclusao-resultado-aviso{ color:#8a5a3a; }
 .calo-conclusao-resultado-aviso .icon{ color:#c9762f; }
+.calo-conclusao-tmb-comparacao{ margin:0 0 10px; font-size:12.5px; line-height:1.6; color:#4d5b52; }
 .calo-conclusao-titulo{ margin:0 0 4px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#9aa9a1; }
 .calo-conclusao-razao{ margin:0 0 8px; font-size:12px; line-height:1.6; color:#5c6b62; }
 .calo-conclusao-razao:last-of-type{ margin-bottom:0; }
@@ -2178,6 +2169,18 @@ function estimarIdadeMetabolica(tmb, pesoKg, alturaCm, sexo) {
 // estimada em 20 anos. Como a fórmula não enxerga composição corporal (massa muscular, % de gordura),
 // uma TMB medida que fuja bastante dessa média (comum em quem tem mais ou menos músculo que a média)
 // pode gerar uma idade pouco plausível mesmo com a conta certa. Quando isso acontece, avisamos.
+// TMB "esperada" pela fórmula de Mifflin-St Jeor (Mifflin et al., 1990) na direção normal -- a partir
+// da idade REAL (não da idade metabólica) e do peso/altura/sexo, calcula a TMB média esperada pra
+// alguém com essas características. É o inverso de estimarIdadeMetabolica() acima: aqui se parte da
+// idade real pra chegar numa TMB; lá se parte de uma TMB medida pra chegar numa idade. Usada pra
+// comparar contra a TMB do exame de calorimetria na conclusão (ver conclusaoIdadeMetabolicaHtml()).
+function calcularTmbEsperada(idadeAnos, pesoKg, alturaCm, sexo) {
+  idadeAnos = Number(idadeAnos); pesoKg = Number(pesoKg); alturaCm = Number(alturaCm);
+  if (isNaN(idadeAnos) || !pesoKg || !alturaCm) return null;
+  if (sexo !== "masculino" && sexo !== "feminino") return null;
+  const constanteSexo = sexo === "masculino" ? 5 : -161;
+  return Math.round(10 * pesoKg + 6.25 * alturaCm - 5 * idadeAnos + constanteSexo);
+}
 const LIMIAR_DIFERENCA_IDADE_METABOLICA_ANOS = 15;
 function ultimoRegistroMedida(tipo) {
   const registros = state.medidas.filter((m) => m.tipo === tipo).sort((a, b) => b.id - a.id);
@@ -5097,6 +5100,26 @@ function conclusaoIdadeMetabolicaHtml(idadeMetabolicaValor, tmbValor) {
   const razoes = [];
 
   const ultimaBio = ultimaBioimpedancia();
+  const tmb = Number(String(tmbValor == null ? "" : tmbValor).trim().replace(",", "."));
+  // TMB "esperada" pra alguém com a idade REAL, sexo, altura e peso do usuário (calcularTmbEsperada()
+  // acima) -- comparada com a TMB que ele efetivamente registrou no exame de calorimetria. Pedido do
+  // usuário: mostrar esses dois números antes das prováveis razões, em vez de só um aviso genérico de
+  // "estimativa pouco confiável". Sem peso/altura (Bioimpedância) ou sexo cadastrados, não dá pra
+  // calcular -- omite esse trecho em vez de inventar um número.
+  const sexoUsuario = state.usuario && state.usuario.sexo;
+  const tmbEsperada = ultimaBio && ultimaBio.peso != null && ultimaBio.altura != null
+    ? calcularTmbEsperada(idadeRealInfo.anos, ultimaBio.peso, ultimaBio.altura, sexoUsuario)
+    : null;
+  let comparacaoTmbHtml = "";
+  if (tmbEsperada != null) {
+    comparacaoTmbHtml = "Para sua idade, sexo, altura e peso a TMB esperada é de " + formatNumber(tmbEsperada) + " kcal/dia.";
+    if (tmb) {
+      const diffTmb = tmb - tmbEsperada;
+      comparacaoTmbHtml += " No último exame sua TMB resultou " + formatNumber(tmb) + " kcal/dia, o que indica uma diferença de " +
+        formatNumber(Math.abs(diffTmb)) + " kcal/dia " + (diffTmb < 0 ? "abaixo" : "acima") + " da TMB de alguém com suas características.";
+    }
+  }
+
   if (ultimaBio && (ultimaBio.massaMuscular != null || ultimaBio.gordura != null)) {
     const partes = [];
     if (ultimaBio.massaMuscular != null) partes.push(formatNumber(ultimaBio.massaMuscular, 1) + " kg de massa muscular");
@@ -5108,7 +5131,6 @@ function conclusaoIdadeMetabolicaHtml(idadeMetabolicaValor, tmbValor) {
         : "menos massa muscular ou mais gordura corporal em relação à média costuma reduzir a TMB real abaixo do previsto, o que pode explicar uma idade metabólica estimada mais alta que a real."));
   }
 
-  const tmb = Number(String(tmbValor == null ? "" : tmbValor).trim().replace(",", "."));
   if (tmb) {
     const tendenciaKcal = tendenciaKcalUltimasSemanas(JANELA_TENDENCIA_IDADE_METABOLICA_DIAS, tmb);
     const tendenciaPeso = tendenciaPesoUltimasSemanas(JANELA_TENDENCIA_IDADE_METABOLICA_DIAS);
@@ -5135,8 +5157,8 @@ function conclusaoIdadeMetabolicaHtml(idadeMetabolicaValor, tmbValor) {
   return '<div class="calo-conclusao-idade-metabolica">' +
     '<p class="calo-conclusao-resultado' + (naoConfiavel ? " calo-conclusao-resultado-aviso" : "") + '">' + icon(naoConfiavel ? "info" : "sparkles") +
       " Sua idade metabólica estimada (" + formatNumber(idadeMetabolica, 1) + " anos) está " + formatNumber(diffAbs, 1) + " anos " + (maisJovem ? "mais jovem" : "mais velha") + " que sua idade real (" + idadeRealInfo.anos + " anos)." +
-      (naoConfiavel ? " Essa diferença é grande o bastante pra tornar a estimativa pouco confiável — prefira o valor do seu aparelho, se disponível." : "") +
     "</p>" +
+    (comparacaoTmbHtml ? '<p class="calo-conclusao-tmb-comparacao">' + comparacaoTmbHtml + "</p>" : "") +
     '<p class="calo-conclusao-titulo">Prováveis razões</p>' +
     razoes.map((r) => '<p class="calo-conclusao-razao">' + r + "</p>").join("") +
     '<p class="calo-conclusao-aviso">Essas são correlações especulativas com os dados que você já registrou no app, não um diagnóstico. Se a diferença persistir ou for muito grande, vale conversar com um profissional (endocrinologista ou nutricionista).</p>' +
@@ -5344,15 +5366,14 @@ function idadeMetabolicaCampoTemplate() {
     '<label class="field-label">Idade metabólica (anos)</label>' +
     '<input id="calo-idadeMetabolica" type="number" min="0" step="0.1" class="field-input" value="' + esc(valores.idadeMetabolica != null ? valores.idadeMetabolica : "") + '" placeholder="Ex.: 30 (ou deixe em branco e calcule abaixo)" oninput="acaoAtualizarConclusaoIdadeMetabolica()"/>' +
     '<button type="button" class="idade-metabolica-calcular-btn" onclick="acaoEstimarIdadeMetabolica()">' + icon("sparkles") + " Calcular estimativa</button>" +
-    '<details class="idade-metabolica-detalhes">' +
-      "<summary>Como essa estimativa é calculada</summary>" +
-      '<div class="idade-metabolica-detalhes-corpo">' +
-        "<p>Se o resultado do seu exame de calorimetria não trouxer a idade metabólica, o botão acima estima um valor de referência: usamos a fórmula de Mifflin-St Jeor \"ao contrário\" — em vez de calcular sua TMB a partir da sua idade real, calculamos qual idade, pra alguém do seu peso, altura e sexo, resultaria exatamente na TMB que você informou acima.</p>" +
-        "<p class=\"idade-metabolica-aviso\"><strong>Não é um valor oficial.</strong> \"Idade metabólica\" não é uma métrica clínica padronizada — cada fabricante de aparelho (Tanita, InBody, Omron etc.) usa sua própria base de referência populacional proprietária, que não é pública. Por isso esse número normalmente é diferente do que aparece no seu aparelho; é só uma aproximação de referência. Sempre prefira o valor do seu próprio exame quando ele estiver disponível.</p>" +
-        "<p class=\"idade-metabolica-aviso\">Essa fórmula considera só peso, altura e sexo — não leva em conta massa muscular nem percentual de gordura. Se sua TMB informada fugir bastante da média prevista pra esses dados (comum em quem tem mais ou menos músculo que a média), a estimativa pode sair pouco plausível; nesse caso avisamos ao calcular.</p>" +
-        "<p class=\"idade-metabolica-fonte\">Referência: <a href=\"https://ajcn.nutrition.org/article/S0002-9165(23)16698-6/fulltext\" target=\"_blank\" rel=\"noopener\">Mifflin MD, St Jeor ST, et al. — <em>A new predictive equation for resting energy expenditure in healthy individuals</em>, The American Journal of Clinical Nutrition (1990)</a>.</p>" +
-      "</div>" +
-    "</details>" +
+    // Legenda fixa (sempre visível, sem precisar clicar em nada) -- mesmo formato/estilo já usado nas
+    // legendas de fonte/fórmula abaixo dos cards de Macro e Micronutrientes (ver
+    // macroFonteNotaTemplate()/.micro-fonte-nota). Pedido do usuário: antes ficava escondida dentro de
+    // um <details> recolhido, com um "quadro" (fundo/borda) grande e desproporcional pra uma legenda.
+    '<p class="micro-fonte-nota idade-metabolica-fonte-nota">' + icon("help") +
+      " Estimativa de referência (não é o valor oficial do seu aparelho): fórmula de Mifflin-St Jeor \"ao contrário\" — calcula qual idade, pra alguém do seu peso, altura e sexo, resultaria exatamente na TMB informada acima. Considera só esses três fatores, não leva em conta massa muscular nem % de gordura, por isso pode fugir do valor do seu próprio exame; prefira sempre esse último quando disponível." +
+      " Fonte: Mifflin MD, St Jeor ST, et al. — A new predictive equation for resting energy expenditure in healthy individuals, The American Journal of Clinical Nutrition (1990)." +
+    "</p>" +
     '<div id="calo-conclusao-idade-metabolica-wrap">' + conclusaoIdadeMetabolicaHtml(valores.idadeMetabolica, valores.tmb) + "</div>" +
   "</div>";
 }
