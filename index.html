@@ -6298,12 +6298,17 @@ function nutricaoTabTemplate() {
         '<div class="progress-track-light"><div class="progress-fill-light" style="width:' + pct(consumed.calories, state.goals.calories) + '%"></div></div>' +
       "</div></div>" +
     "</section>" +
+    // O formulário de edição de metas (goalsPanelTemplate(), aberto pelo lápis no card de resumo do
+    // dia acima) fica logo abaixo desse card -- antes das abas "Registros do Dia"/"Diário de Kcal" --
+    // em vez de só depois delas, a pedido do usuário. A própria função já se protege com
+    // "if (!state.showGoals) return \"\";", então dá pra chamar aqui incondicionalmente: não aparece
+    // nada quando o formulário está fechado, nas duas abas.
+    goalsPanelTemplate() +
     '<div class="nutricao-modo-tabs">' +
-      '<button class="nutricao-modo-tab' + (state.nutricaoAba !== "diario" ? " active" : "") + '" onclick="acaoTrocarAbaNutricao(\'registrar\')">' + icon("utensils") + " Registrar refeição</button>" +
+      '<button class="nutricao-modo-tab' + (state.nutricaoAba !== "diario" ? " active" : "") + '" onclick="acaoTrocarAbaNutricao(\'registrar\')">' + icon("utensils") + " Registros do Dia</button>" +
       '<button class="nutricao-modo-tab' + (state.nutricaoAba === "diario" ? " active" : "") + '" onclick="acaoTrocarAbaNutricao(\'diario\')">' + icon("calendar") + " Diário de Kcal</button>" +
     "</div>" +
     (state.nutricaoAba === "diario" ? diarioKcalTabTemplate() : '' +
-      goalsPanelTemplate() +
       '<div class="nutrient-tabs">' +
         '<button class="nutrient-tab' + (state.nutrientAba !== "micro" ? " active" : "") + '" onclick="acaoTrocarAbaNutrientes(\'macro\')">Macronutrientes</button>' +
         '<button class="nutrient-tab' + (state.nutrientAba === "micro" ? " active" : "") + '" onclick="acaoTrocarAbaNutrientes(\'micro\')">Micronutrientes</button>' +
