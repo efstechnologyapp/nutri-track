@@ -1944,52 +1944,53 @@ function today() { return todayKey(); }
 // Lista "Refeições de hoje": simplesmente as refeições com a data de hoje -- não é afetada por
 // "Encerrar dia" (que não apaga nem esconde refeição nenhuma, só reseta os CARDS -- ver mais abaixo).
 function todayMeals() { const t = today(); return state.meals.filter((m) => m.date === t); }
-// Corte usado pelos CARDS de consumo (kcal/macro/micronutrientes -- consumedToday()) e pelo resumo
-// salvo em "Encerrar dia": o maior id de refeição já incluído no último fechamento de dia (em qualquer
-// aparelho da mesma conta, já que state.diarioKcal sincroniza) -- ver r.corteId. Um fechamento pode ser
-// MANUAL (clique em "Encerrar dia", ver acaoEncerrarDia()) ou AUTOMÁTICO (virada de meia-noite, ver
-// fecharDiaAutomaticamente()/processarViradaDeDia()) -- os cards reiniciam sozinhos na virada do dia,
-// e quem quiser fechar mais cedo (ex.: antes de dormir) pode clicar em "Encerrar dia" a qualquer
-// momento. Por isso o corte usa o maior corteId entre TODOS os registros do Diário (não só um de hoje)
-// e é aplicado sobre TODAS as refeições (não só as de hoje): enquanto o app não processar a virada
-// (nenhum "hoje" verificado desde então -- ver processarViradaDeDia()), uma refeição registrada depois
-// da meia-noite continua contando nos cards normalmente, mesmo já sendo, no calendário, um dia
-// diferente das anteriores. IMPORTANTE: usa r.corteId (o id das refeições realmente incluídas), NUNCA
-// r.id (que é só o timestamp do clique/fechamento, e pode ficar maior que ids de refeições futuras
-// registradas num aparelho com o relógio certo, se o aparelho que fechou tinha o relógio adiantado --
-// isso travava os cards em zero mesmo com refeições de hoje na lista). r.corteId != null trata
-// registros salvos antes dessa coluna existir (caem pro próprio r.id, mesmo comportamento de antes, só
-// pra não quebrar).
+// Corte usado pelos CARDS de consumo (kcal/macro/micronutrientes -- consumedToday()): o maior id de
+// refeição de HOJE já incluído num "Encerrar dia" feito mais cedo hoje (em qualquer aparelho da mesma
+// conta, já que state.diarioKcal sincroniza) -- ver r.corteId. Olha SÓ o registro de HOJE (se existir),
+// nunca o de outra data -- ver mealsDesdeUltimoEncerramento(): os cards são sempre só de hoje, então só
+// o corte de HOJE importa aqui. IMPORTANTE: usa r.corteId (o id das refeições realmente incluídas),
+// NUNCA r.id (que é só o timestamp do clique/fechamento, e pode ficar maior que ids de refeições
+// futuras registradas num aparelho com o relógio certo, se o aparelho que fechou tinha o relógio
+// adiantado -- isso travava os cards em zero mesmo com refeições de hoje na lista). r.corteId != null
+// trata registros salvos antes dessa coluna existir (cai pro próprio r.id, mesmo comportamento de
+// antes, só pra não quebrar).
+// BUG CORRIGIDO (relatado pelo usuário: registrar retroativamente a refeição de um dia que tinha
+// ficado totalmente em branco zerava os cards de HOJE de todas as refeições, não só deixava de fora a
+// retroativa). Causa: antes o corte pegava o MAIOR corteId entre TODOS os registros do Diário, de
+// qualquer data -- e o registro criado pra um dia passado (ver fecharDiaAutomaticamente(), chamado por
+// sincronizarDiarioKcalDoDia()) usa como corteId o id da própria refeição retroativa, que é um
+// Date.now() de AGORA (hoje), mesmo a refeição sendo de ONTEM -- um número gigante, maior que o id de
+// qualquer refeição de hoje. Isso "vazava" pro corte de hoje e derrubava mealsDesdeUltimoEncerramento()
+// pra zero. Corrigido olhando só o registro de HOJE, que é o único relevante agora que os cards nunca
+// somam refeição de outra data.
 function corteDiaAberto() {
-  return state.diarioKcal.reduce((maior, r) => Math.max(maior, r.corteId != null ? r.corteId : r.id), 0);
+  const hoje = today();
+  const registro = state.diarioKcal.find((r) => r.date === hoje);
+  if (!registro) return 0;
+  return registro.corteId != null ? registro.corteId : registro.id;
 }
-// Refeições ainda não incluídas em nenhum "Encerrar dia" -- é o que os CARDS somam e o que um novo
-// "Encerrar dia" vai salvar/resetar. Pode incluir refeições de mais de uma data logo depois da meia-
-// noite, antes da virada processar (ex.: a pessoa não encerrou o dia antes da virada) -- de propósito,
-// pra o corte por id só depender do clique em "Encerrar dia"/da virada, nunca da data (ver
-// test_dia_aberto_sem_virada.py/test_recalcular_diario_kcal.py: um dia anterior NUNCA encerrado deve
-// continuar somando nos cards de hoje até alguém clicar em "Encerrar dia", mesmo que isso junte vários
-// dias atrasados num resumo só -- comportamento combinado com o usuário, "bug já relatado" mas mantido
-// de propósito).
-// BUG CORRIGIDO (relatado pelo usuário: registrar uma refeição RETROATIVA de um dia que JÁ FOI
-// ENCERRADO (manual ou automaticamente pela virada -- já existe um registro pra essa data em
-// state.diarioKcal) -- ver campo #meal-data em acaoSalvarRefeicao() -- fazia os CARDS de HOJE somarem
-// essa refeição também, além do dia antigo já ter sido corretamente ressincronizado por
-// sincronizarDiarioKcalDoDia()). Causa: o filtro era só por id (m.id > corte) -- uma refeição nova
-// sempre ganha um id novo (Date.now()) maior que qualquer corte já registrado, INDEPENDENTE da data
-// escolhida pra ela. Antes do campo de data retroativa existir isso nunca dava problema (toda refeição
-// nova era sempre de hoje mesmo), mas passou a contar errado assim que refeições puderam ser registradas
-// pra dias passados. CORRIGIDO excluindo especificamente as refeições cuja DATA já tem um registro
-// fechado no Diário de Kcal (exceto o de hoje -- ver comentário em acaoEncerrarDia(): uma refeição
-// registrada depois de um "Encerrar dia" feito mais cedo NO MESMO dia deve voltar a contar normalmente
-// nos cards, então o registro de hoje no Diário não pode, sozinho, excluir refeições novas de hoje --
-// quem cuida disso é o corte por id mesmo). Um dia anterior SEM registro fechado (nunca encerrado)
-// continua contando normalmente, preservando o comportamento "de propósito" descrito acima.
+// Refeições de HOJE ainda não incluídas num "Encerrar dia" feito mais cedo hoje -- é o que os CARDS
+// somam e o que um novo "Encerrar dia" vai salvar/resetar. SEMPRE só do dia de hoje (m.date === hoje) --
+// decisão combinada com o usuário: os cards zeram sozinhos na virada da meia-noite, mesmo que a pessoa
+// esqueça de clicar em "Encerrar dia" (antes, o corte era só por id, então um dia esquecido continuava
+// somando nos cards de hoje indefinidamente -- e, como efeito colateral, isso também resolve de vez o
+// "bug já relatado" de vários dias atrasados se juntarem no mesmo resumo ao clicar em "Encerrar dia",
+// ver comentário em acaoEncerrarDia()/recalcularDiarioKcalRegistro()). O corte por id (m.id > corte)
+// continua necessário à parte, só pra não contar de novo uma refeição de HOJE que já entrou num
+// "Encerrar dia" anterior no mesmo dia.
+// BUG CORRIGIDO (relatado pelo usuário duas vezes: registrar uma refeição RETROATIVA de um dia passado
+// -- ver campo #meal-data em acaoSalvarRefeicao() -- fazia os CARDS de HOJE somarem essa refeição
+// também, mesmo o dia antigo já tendo sido corretamente ressincronizado/criado no Diário de Kcal por
+// sincronizarDiarioKcalDoDia()). Causa original: o corte era só por id (m.id > corte) -- uma refeição
+// nova sempre ganha um id novo (Date.now()) maior que qualquer corte já registrado, INDEPENDENTE da
+// data escolhida pra ela. Uma primeira correção (exigir que a DATA já tivesse um registro fechado no
+// Diário) deixava passar o caso de um dia totalmente em branco (sem nenhum registro fechado ainda,
+// porque nunca teve nada registrado pra fechar sozinho) -- corrigido de vez exigindo direto m.date ===
+// hoje, sem depender de nenhum registro já existir.
 function mealsDesdeUltimoEncerramento() {
   const corte = corteDiaAberto();
   const hoje = today();
-  const diasJaEncerrados = new Set(state.diarioKcal.filter((r) => r.date !== hoje).map((r) => r.date));
-  return state.meals.filter((m) => m.id > corte && !diasJaEncerrados.has(m.date));
+  return state.meals.filter((m) => m.date === hoje && m.id > corte);
 }
 function consumedToday() {
   return mealsDesdeUltimoEncerramento().reduce((sum, m) => addNutrients(sum, m), emptyNutrients);
@@ -3097,10 +3098,9 @@ function acaoTrocarAbaNutricao(aba) { state.nutricaoAba = aba; render(); }
 // diarioKcalRefeicaoTemplate()). Só existe um registro por data: clicar de novo no mesmo dia substitui o
 // registro anterior (ex.: a pessoa lembrou de registrar mais uma refeição e quer atualizar o resumo).
 function acaoEncerrarDia() {
-  // Usa o MESMO conjunto que os cards (consumedToday()) somam -- ver mealsDesdeUltimoEncerramento() --
-  // não só as refeições de hoje: assim o resumo salvo aqui sempre bate exatamente com o que os cards
-  // mostravam no instante do clique, mesmo que a pessoa tenha deixado o dia em aberto passando da meia-
-  // noite (sem clicar em "Encerrar dia") antes disso.
+  // Usa o MESMO conjunto que os cards (consumedToday()) somam -- ver mealsDesdeUltimoEncerramento(),
+  // sempre só as refeições de HOJE -- assim o resumo salvo aqui sempre bate exatamente com o que os
+  // cards mostravam no instante do clique.
   const meals = mealsDesdeUltimoEncerramento();
   if (!meals.length) { toastError("Registre ao menos uma refeição antes de encerrar o dia."); return; }
   const t = today();
@@ -3242,15 +3242,14 @@ function verificarViradaDeDia() {
   if (processarViradaDeDia()) render();
 }
 // Corrige um registro já fechado no Diário de Kcal pra refletir só as refeições REALMENTE daquele dia
-// (comparando por DATA), em vez da janela "desde o último Encerrar dia" usada no momento do fechamento
-// (ver acaoEncerrarDia()/mealsDesdeUltimoEncerramento()). Esse corte é por id de propósito (pra nenhuma
-// refeição ficar de fora dos cards se a pessoa esquecer de encerrar o dia antes da meia-noite) -- mas
-// isso significa que, se a pessoa passar VÁRIOS dias sem clicar em "Encerrar dia", o resumo salvo no
-// próximo fechamento acaba incluindo refeições de dias anteriores também (relatado pelo usuário: um
-// fechamento em 17/09 trouxe junto refeições registradas em 11/09 e 13/09). Recalcula os totais, a lista
-// de refeições exibida e as calorias queimadas usando só state.meals/state.treinos daquela DATA
-// específica. NÃO mexe no corteId (os cards de consumo continuam sem recontar essas refeições antigas) —
-// só corrige o que fica exibido/guardado nesse registro.
+// (comparando por DATA). Hoje em dia (mealsDesdeUltimoEncerramento() já filtra só refeições de HOJE) um
+// "Encerrar dia" novo nunca mais junta refeições de datas diferentes -- mas essa função continua útil
+// pra corrigir registros ANTIGOS que já tinham ficado "poluídos" antes dessa correção existir (relatado
+// pelo usuário: um fechamento em 17/09 trouxe junto refeições registradas em 11/09 e 13/09, porque o
+// corte era só por id, sem checar a data -- ver histórico de mealsDesdeUltimoEncerramento()), e também
+// depois de editar/mover a data de uma refeição ou treino de um dia já encerrado (ver
+// sincronizarDiarioKcalDoDia()). Recalcula os totais, a lista de refeições exibida e as calorias
+// queimadas usando só state.meals/state.treinos daquela DATA específica. NÃO mexe no corteId.
 // Recalcula totais/refeições/calorias queimadas de um registro do Diário de Kcal a partir de
 // state.meals/state.treinos DAQUELA DATA (registro.date) -- usado tanto pelo botão "Recalcular" quanto,
 // automaticamente, depois de corrigir a data do registro (ver acaoEditarDataDiarioKcal()), já que nos
@@ -3267,12 +3266,22 @@ function recalcularDiarioKcalRegistro(registro) {
   const caloriasQueimadas = state.treinos.filter((tr) => tr.date === registro.date).reduce((soma, tr) => soma + (tr.caloriasQueimadas || 0), 0);
   return Object.assign({}, registro, totais, { refeicoes, caloriasQueimadas });
 }
-// Se já existe um dia encerrado no Diário de Kcal para essa data, recalcula e ressincroniza esse
-// registro (ver recalcularDiarioKcalRegistro()) -- usado depois de editar um treino (ver
-// acaoSalvarTreino()), já que a edição pode mudar as calorias queimadas somadas num dia já fechado
-// (ex.: corrigir a duração ou o esporte de um treino cujo dia já foi encerrado). Sem registro fechado
-// pra essa data, não faz nada -- nada pra ressincronizar.
+// Ressincroniza o Diário de Kcal de uma data específica depois de criar/editar/remover uma refeição ou
+// treino daquele dia (ver acaoSalvarRefeicao()/acaoSalvarTreino()/etc.) -- pra ele sempre refletir o que
+// realmente está registrado naquela data, mesmo quando a alteração foi feita bem depois (ex.: campo de
+// data retroativa em #meal-data).
+// Dia PASSADO (antes de hoje): usa fecharDiaAutomaticamente(), que cria o registro do zero se ainda não
+// existir nenhum (ex.: um dia que ficou totalmente em branco, sem nada registrado, nunca chegou a ser
+// fechado sozinho pela virada -- ver fecharDiaAutomaticamente()) ou atualiza o que já existir. BUG
+// CORRIGIDO (relatado pelo usuário: registrar retroativamente a refeição de um dia que tinha ficado
+// totalmente em branco fazia o Diário de Kcal daquele dia nunca aparecer, porque essa função só sabia
+// ATUALIZAR um registro já existente, nunca criar um novo).
+// Dia de HOJE: hoje ainda está "aberto" -- só corrige um registro que a pessoa já tinha fechado
+// manualmente mais cedo hoje (ver acaoEncerrarDia()); nunca cria um registro novo sozinho pra hoje, já
+// que isso só deve acontecer quando o dia realmente virar (fecharDiaAutomaticamente(), via
+// processarViradaDeDia()) ou a pessoa clicar em "Encerrar dia".
 function sincronizarDiarioKcalDoDia(date) {
+  if (date !== today()) { fecharDiaAutomaticamente(date); return; }
   const registro = state.diarioKcal.find((r) => r.date === date);
   if (!registro) return;
   const corrigido = recalcularDiarioKcalRegistro(registro);
