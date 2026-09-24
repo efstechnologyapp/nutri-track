@@ -1827,6 +1827,14 @@ const state = {
   produtoNome: "",
   produtoIngredientes: "",
   produtoPreview: [], // ingredientes já identificados (mesmo formato de state.preview) -- ver acaoAnalisarIngredientesProduto()
+  // "ingredientes" | "manual" -- pedido do usuário: produtos industrializados já vêm com a tabela
+  // nutricional impressa (valores exatos), então em vez de descrever ingredientes pro app estimar, dá
+  // pra digitar (ou ler automaticamente por foto, ver acaoLerRotuloOCR()) os valores exatos do rótulo.
+  // Ver cadastrarProdutoModalTemplate()/acaoCadastrarProdutoManual().
+  produtoModoCadastro: "ingredientes",
+  produtoManualValores: {}, // valores digitados/lidos do rótulo, por chave de nutriente (string, como em bioFormValores)
+  produtoManualPorcao: "", // peso/volume da porção (g ou ml) a que os valores acima se referem
+  produtoRotuloLendo: false, // true enquanto a leitura automática (OCR) do rótulo está rodando
   showGoals: false,
   showHistory: false,
   // Data do dia expandido no histórico de refeições (accordion: um dia de cada vez, ou nenhum) -- ver
@@ -3050,9 +3058,17 @@ function acaoAbrirCadastrarProduto() {
   state.produtoNome = "";
   state.produtoIngredientes = "";
   state.produtoPreview = [];
+  state.produtoModoCadastro = "ingredientes";
+  state.produtoManualValores = {};
+  state.produtoManualPorcao = "";
+  state.produtoRotuloLendo = false;
+  produtoRotuloArquivo = null;
   render();
 }
 function acaoFecharCadastrarProduto() { state.showCadastrarProduto = false; render(); }
+// Alterna entre descrever ingredientes (estimativa via detectFoods(), como já existia) e digitar/ler os
+// valores exatos de um rótulo impresso (ver cadastrarProdutoModalTemplate()) -- pedido do usuário.
+function acaoTrocarModoCadastroProduto(modo) { state.produtoModoCadastro = modo === "manual" ? "manual" : "ingredientes"; render(); }
 function acaoAnalisarIngredientesProduto() {
   const el = document.getElementById("produto-ingredientes");
   const descricao = el ? el.value : "";
@@ -3092,6 +3108,149 @@ function acaoRemoverProdutoCustomizado(index) {
   state.produtosCustomizados = state.produtosCustomizados.filter((_, i) => i !== index);
   persistProdutosCustomizados();
   toastSuccess("Produto removido do cardápio.");
+  render();
+}
+
+/* ===================== cadastro manual/OCR de produto (a partir do rótulo) ===================== */
+function onRotuloProdutoSelecionado(event) {
+  produtoRotuloArquivo = (event.target.files && event.target.files[0]) || null;
+  render();
+}
+function acaoRemoverRotuloProdutoSelecionado() { produtoRotuloArquivo = null; render(); }
+// Carrega a biblioteca de leitura de imagem (Tesseract.js, OCR que roda no próprio navegador, sem
+// enviar a foto pra nenhum servidor e sem custo -- opção escolhida pelo usuário) só quando ela for
+// realmente usada pela primeira vez (nunca no carregamento inicial do app, pra não pesar a maioria das
+// pessoas que nunca vai usar essa função). Promessa cacheada: cliques repetidos não recarregam o script.
+let promessaTesseractCarregado = null;
+function carregarTesseract() {
+  if (window.Tesseract) return Promise.resolve();
+  if (promessaTesseractCarregado) return promessaTesseractCarregado;
+  promessaTesseractCarregado = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+    script.onload = () => resolve();
+    script.onerror = () => { promessaTesseractCarregado = null; reject(new Error("Não foi possível carregar a biblioteca de leitura de imagem.")); };
+    document.head.appendChild(script);
+  });
+  return promessaTesseractCarregado;
+}
+// Palavras-chave (já sem acento/minúsculas -- comparadas com normalizeText()) que identificam cada
+// nutriente numa linha do texto reconhecido pelo OCR num rótulo brasileiro. Cobre só os nutrientes que
+// esse app já rastreia E que normalmente aparecem impressos (calorias, carboidratos, proteínas,
+// gorduras totais, fibras, sódio, cálcio, ferro) -- vitaminas e os demais minerais (magnésio, potássio,
+// zinco) quase nunca vêm no rótulo, então ficam de fora do formulário manual e entram como 0.
+const ROTULO_NUTRIENTES_OCR = [
+  { chave: "calories", aliases: ["valor energetico", "valor calorico"] },
+  { chave: "carbs", aliases: ["carboidratos"] },
+  { chave: "protein", aliases: ["proteinas"] },
+  { chave: "fat", aliases: ["gorduras totais", "gordura total"] },
+  { chave: "fiber", aliases: ["fibras alimentares", "fibra alimentar"] },
+  { chave: "sodio", aliases: ["sodio"] },
+  { chave: "calcio", aliases: ["calcio"] },
+  { chave: "ferro", aliases: ["ferro"] },
+];
+// A tabela nutricional brasileira costuma trazer, em cada linha, até 3 números: valor por 100 g/ml,
+// valor pela PORÇÃO (a mesma base do campo "Porção" do formulário -- é esse que interessa) e o %VD.
+// Com 3 números, o do meio é o da porção; com 2 (algumas linhas não têm %VD, ex.: açúcares
+// adicionados), o segundo também é o da porção; com 1 só, o rótulo tem uma única coluna e já é esse
+// valor. Isso é só uma aproximação -- o texto reconhecido pelo OCR não preserva colunas, por isso a
+// pessoa sempre precisa conferir os valores antes de salvar (ver aviso em cadastrarProdutoModalTemplate()).
+function escolherValorDaLinhaRotulo(numeros) {
+  if (numeros.length >= 2) return numeros[1];
+  if (numeros.length === 1) return numeros[0];
+  return null;
+}
+function extrairValoresRotulo(textoOcr) {
+  const linhas = String(textoOcr || "").split(/\n+/);
+  const nutrientes = {};
+  for (const linha of linhas) {
+    const linhaNormalizada = normalizeText(linha);
+    for (const config of ROTULO_NUTRIENTES_OCR) {
+      if (nutrientes[config.chave] != null) continue; // já achado numa linha anterior (não sobrescreve)
+      if (!config.aliases.some((a) => linhaNormalizada.indexOf(a) !== -1)) continue;
+      const numeros = (linha.match(/\d+(?:[.,]\d+)?/g) || []).map((n) => Number(n.replace(",", ".")));
+      const valor = escolherValorDaLinhaRotulo(numeros);
+      if (valor != null && !isNaN(valor)) nutrientes[config.chave] = valor;
+    }
+  }
+  // "Porção: 250 ml (1 unidade)" -- pega o número logo antes de "g"/"ml" na linha da porção.
+  let porcao = null;
+  const linhaPorcao = linhas.find((l) => normalizeText(l).indexOf("porcao") !== -1);
+  if (linhaPorcao) {
+    const m = linhaPorcao.match(/(\d+(?:[.,]\d+)?)\s*(g|ml)\b/i);
+    if (m) porcao = m[1].replace(",", ".");
+  }
+  return { nutrientes, porcao };
+}
+// IMPORTANTE: não chama render() em nenhum momento -- mesmo motivo de
+// acaoAtualizarConclusaoIdadeMetabolica() (ver comentário lá): a leitura do rótulo é assíncrona e pode
+// levar alguns segundos, e um render() no meio reconstruiria o HTML do formulário inteiro a partir de
+// "state" -- como captureFormState() roda no INÍCIO de todo render() pra preservar o que já estava
+// digitado, ele capturaria os campos ainda em branco (a leitura ainda não tinha terminado) e apagaria
+// esse resultado assim que ele chegasse. Por isso os valores lidos são escritos DIRETO nos campos do
+// DOM (e em "state", só pra acompanhar um possível render() futuro por outro motivo).
+async function acaoLerRotuloOCR() {
+  if (!produtoRotuloArquivo) { toastError("Escolha uma foto do rótulo primeiro."); return; }
+  const botao = document.getElementById("produto-rotulo-ler-btn");
+  state.produtoRotuloLendo = true;
+  if (botao) { botao.disabled = true; botao.innerHTML = icon("sparkles") + " Lendo rótulo..."; }
+  try {
+    await carregarTesseract();
+    const resultado = await Tesseract.recognize(produtoRotuloArquivo, "por");
+    const extraido = extrairValoresRotulo(resultado.data.text);
+    if (!Object.keys(extraido.nutrientes).length) {
+      toastError("Não consegui identificar valores nutricionais nessa foto. Tente uma foto mais nítida, bem enquadrada, ou digite os valores manualmente.");
+    } else {
+      state.produtoManualValores = Object.assign({}, state.produtoManualValores, extraido.nutrientes);
+      if (extraido.porcao) state.produtoManualPorcao = extraido.porcao;
+      Object.keys(extraido.nutrientes).forEach((chave) => {
+        const el = document.getElementById("produto-manual-" + chave);
+        if (el) el.value = extraido.nutrientes[chave];
+      });
+      if (extraido.porcao) {
+        const porcaoEl = document.getElementById("produto-manual-porcao");
+        if (porcaoEl) porcaoEl.value = extraido.porcao;
+      }
+      toastSuccess("Leitura concluída — confira os valores abaixo antes de salvar, a leitura automática pode errar.");
+    }
+  } catch (e) {
+    toastError("Não foi possível ler o rótulo automaticamente agora. Digite os valores manualmente.");
+  }
+  state.produtoRotuloLendo = false;
+  if (botao) { botao.disabled = false; botao.innerHTML = icon("sparkles") + " Ler rótulo automaticamente"; }
+}
+// Cadastra o produto a partir de valores digitados (ou lidos automaticamente do rótulo, ver
+// acaoLerRotuloOCR() acima) em vez de estimados a partir de uma descrição de ingredientes -- pro caso
+// comum de produtos industrializados, que já vêm com a tabela nutricional impressa (valores exatos, sem
+// precisar de estimativa). Mesmo formato final de produto customizado que acaoCadastrarProduto() já usa
+// (terms/label/baseAmount/values/grams), pra participar do reconhecimento em detectFoods() do mesmo jeito.
+function acaoCadastrarProdutoManual() {
+  const nomeEl = document.getElementById("produto-nome");
+  const nome = nomeEl ? nomeEl.value.trim() : "";
+  if (!nome) { toastError("Informe o nome do produto."); return; }
+  const termoNormalizado = normalizeText(nome);
+  if (state.produtosCustomizados.some((p) => normalizeText(p.label) === termoNormalizado)) {
+    toastError("Já existe um produto cadastrado com esse nome."); return;
+  }
+  const porcaoEl = document.getElementById("produto-manual-porcao");
+  const porcao = porcaoEl ? Number(String(porcaoEl.value).trim().replace(",", ".")) : 0;
+  if (!porcao) { toastError("Informe o peso ou volume da porção (em g ou ml), igual aparece no rótulo."); return; }
+  const campo = (id) => {
+    const el = document.getElementById("produto-manual-" + id);
+    if (!el || !el.value.trim()) return 0;
+    const valor = Number(String(el.value).trim().replace(",", "."));
+    return isNaN(valor) ? 0 : valor;
+  };
+  const values = Object.assign({}, emptyNutrients, {
+    calories: campo("calories"), protein: campo("protein"), carbs: campo("carbs"), fat: campo("fat"), fiber: campo("fiber"),
+    sodio: campo("sodio"), calcio: campo("calcio"), ferro: campo("ferro"),
+  });
+  if (!values.calories) { toastError("Informe pelo menos as calorias do produto."); return; }
+  const novoProduto = { terms: [termoNormalizado], label: nome, baseAmount: formatNumber(porcao, 0) + " g", values, grams: porcao };
+  state.produtosCustomizados = state.produtosCustomizados.concat([novoProduto]);
+  persistProdutosCustomizados();
+  toastSuccess('Produto "' + nome + '" cadastrado no cardápio! Agora você pode usá-lo em qualquer refeição.');
+  state.showCadastrarProduto = false;
   render();
 }
 function acaoSelecionarTipoRefeicao(tipo) {
@@ -4960,19 +5119,69 @@ function exameInfoModalTemplate() {
 // (.modal-card) tem fundo CLARO (branco), igual o campo "Nome do produto" ao lado, que já usa
 // corretamente .field-input (texto escuro sobre fundo claro). Trocado pra .field-input também, mesma
 // classe do campo vizinho, pra manter o texto digitado visível e os dois campos consistentes entre si.
+// Campos do formulário de cadastro manual (valores digitados ou lidos do rótulo por OCR, ver
+// acaoLerRotuloOCR()/acaoCadastrarProdutoManual()) -- só os nutrientes que normalmente vêm impressos
+// num rótulo brasileiro (ver comentário de ROTULO_NUTRIENTES_OCR).
+const PRODUTO_MANUAL_CAMPOS = [
+  { id: "calories", label: "Calorias", unidade: "kcal" },
+  { id: "carbs", label: "Carboidratos", unidade: "g" },
+  { id: "protein", label: "Proteínas", unidade: "g" },
+  { id: "fat", label: "Gorduras totais", unidade: "g" },
+  { id: "fiber", label: "Fibras alimentares", unidade: "g" },
+  { id: "sodio", label: "Sódio", unidade: "mg" },
+  { id: "calcio", label: "Cálcio", unidade: "mg" },
+  { id: "ferro", label: "Ferro", unidade: "mg" },
+];
+// Bloco do cadastro manual/OCR dentro do modal de cadastro de produto (ver cadastrarProdutoModalTemplate()
+// abaixo) -- pedido do usuário: produtos que já vêm com tabela nutricional impressa (ex.: uma caixinha
+// de leite com whey) podem ser cadastrados com os valores EXATOS do rótulo, em vez de estimados a
+// partir de uma descrição de ingredientes. A leitura automática (OCR, via Tesseract.js, rodando no
+// próprio navegador) é uma AJUDA pra preencher os campos mais rápido -- nunca garantida: o texto
+// reconhecido numa foto de embalagem curva/com brilho pode sair errado, por isso os campos continuam
+// editáveis e o aviso pede pra sempre conferir antes de salvar (opção escolhida pelo usuário, ciente
+// dessa limitação, em vez de uma IA de visão paga e mais confiável).
+function produtoCadastroManualTemplate() {
+  const valores = state.produtoManualValores || {};
+  return '' +
+    '<div><label class="field-label">Foto do rótulo (opcional -- ajuda a preencher os campos abaixo)</label>' +
+      (produtoRotuloArquivo
+        ? '<div class="bioimpedancia-anexo-preview">' + icon("file") + "<span>" + esc(produtoRotuloArquivo.name) + "</span>" +
+          '<button type="button" class="bioimpedancia-anexo-remover" aria-label="Remover foto selecionada" onclick="acaoRemoverRotuloProdutoSelecionado()">' + icon("x") + "</button></div>"
+        : '<label class="bioimpedancia-anexo-btn" for="produto-rotulo-input">' + icon("paperclip") + " Escolher foto do rótulo" +
+          '<input id="produto-rotulo-input" type="file" accept="image/*" style="display:none" onchange="onRotuloProdutoSelecionado(event)"/></label>') +
+    "</div>" +
+    '<button id="produto-rotulo-ler-btn" class="btn-ghost-light" ' + (state.produtoRotuloLendo ? "disabled" : "") + ' onclick="acaoLerRotuloOCR()">' + icon("sparkles") + " " + (state.produtoRotuloLendo ? "Lendo rótulo..." : "Ler rótulo automaticamente") + "</button>" +
+    '<p class="calo-conclusao-dica">' + icon("help") + " A leitura automática pode errar (foto torta, embalagem curva, brilho) -- sempre confira os valores abaixo antes de salvar. Se preferir, digite direto." + "</p>" +
+    '<div><label class="field-label">Porção (o mesmo que está no rótulo, em g ou ml)</label>' +
+      '<input id="produto-manual-porcao" type="number" min="0" step="0.1" class="field-input" value="' + esc(state.produtoManualPorcao) + '" placeholder="Ex.: 250"/></div>' +
+    '<div class="bioimpedancia-form-grid">' +
+      PRODUTO_MANUAL_CAMPOS.map((c) =>
+        '<div><label class="field-label">' + c.label + " (" + c.unidade + ")</label>" +
+        '<input id="produto-manual-' + c.id + '" type="number" min="0" step="0.1" class="field-input" value="' + esc(valores[c.id] != null ? valores[c.id] : "") + '" placeholder="0"/></div>'
+      ).join("") +
+    "</div>";
+}
 function cadastrarProdutoModalTemplate() {
   if (!state.showCadastrarProduto) return "";
   const preview = state.produtoPreview;
   const totalValues = preview.reduce((sum, item) => addNutrients(sum, item.values), emptyNutrients);
   const pesoTotal = Math.round(preview.reduce((soma, item) => soma + (item.gramsEstimados || 0), 0));
+  const modo = state.produtoModoCadastro;
   return '' +
     '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharCadastrarProduto();}">' +
     '<div class="modal-card">' +
       '<div class="meal-detalhe-head"><h2>Cadastrar produto no cardápio</h2>' +
       '<button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharCadastrarProduto()">' + icon("x") + "</button></div>" +
-      '<p class="sub">Descreva os ingredientes que compõem o produto (ex.: “100g de camarão, 50g de trigo, 10g de molho de tomate”) e calculamos os nutrientes e o peso total automaticamente, como fazemos com uma refeição comum.</p>' +
+      '<div class="bioimpedancia-form-tabs">' +
+        '<button class="bioimpedancia-form-tab' + (modo === "ingredientes" ? " active" : "") + '" onclick="acaoTrocarModoCadastroProduto(\'ingredientes\')">Descrever ingredientes</button>' +
+        '<button class="bioimpedancia-form-tab' + (modo === "manual" ? " active" : "") + '" onclick="acaoTrocarModoCadastroProduto(\'manual\')">Digitar valores do rótulo</button>' +
+      "</div>" +
+      (modo === "manual"
+        ? '<p class="sub">Pra produtos que já vêm com a tabela nutricional impressa: informe o nome, a porção e os valores do rótulo (ou tire uma foto e deixe o app tentar preencher os campos).</p>'
+        : '<p class="sub">Descreva os ingredientes que compõem o produto (ex.: “100g de camarão, 50g de trigo, 10g de molho de tomate”) e calculamos os nutrientes e o peso total automaticamente, como fazemos com uma refeição comum.</p>') +
       '<div class="modal-body">' +
         '<div><label class="field-label">Nome do produto</label><input id="produto-nome" class="field-input" placeholder="Ex.: Pastel de Camarão" value="' + esc(state.produtoNome) + '"/></div>' +
+        (modo === "manual" ? produtoCadastroManualTemplate() : '' +
         '<div><label class="field-label">Ingredientes</label>' +
           '<textarea id="produto-ingredientes" class="field-input" style="resize:none;line-height:1.5" placeholder="Descreva os ingredientes e quantidades..." rows="3">' + esc(state.produtoIngredientes) + "</textarea>" +
         "</div>" +
@@ -4986,7 +5195,7 @@ function cadastrarProdutoModalTemplate() {
           '<div class="meal-preview-total"><div class="meal-preview-total-row"><span class="label">Total do produto</span><span class="value">' + formatNumber(totalValues.calories) + " kcal</span></div>" +
           '<div class="meal-preview-macros">Peso estimado: ' + formatNumber(pesoTotal, 0) + " g · P " + formatNumber(totalValues.protein, 1) + " · C " + formatNumber(totalValues.carbs, 1) + " · G " + formatNumber(totalValues.fat, 1) + " · F " + formatNumber(totalValues.fiber, 1) + "</div></div>"
           + "</div>"
-          : "") +
+          : "")) +
         (state.produtosCustomizados.length ?
           '<div class="meal-preview-head" style="margin-top:18px"><span>Produtos já cadastrados</span></div>' +
           '<div class="meal-list">' + state.produtosCustomizados.map((p, i) =>
@@ -4995,7 +5204,7 @@ function cadastrarProdutoModalTemplate() {
           ).join("") + "</div>"
           : "") +
       "</div>" +
-      '<div class="modal-footer"><button class="btn-primary" onclick="acaoCadastrarProduto()">' + icon("check") + " Cadastrar produto</button></div>" +
+      '<div class="modal-footer"><button class="btn-primary" onclick="' + (modo === "manual" ? "acaoCadastrarProdutoManual" : "acaoCadastrarProduto") + '()">' + icon("check") + " Cadastrar produto</button></div>" +
     "</div></div>";
 }
 
@@ -5095,6 +5304,9 @@ function imcCardTemplate() {
 // se a pessoa recarregar a página no meio do cadastro, é razoável que precise escolher o arquivo de novo.
 let anexoSelecionadoBio = null;
 let anexoSelecionadoCalo = null;
+// Foto do rótulo escolhida pra leitura automática (OCR) no cadastro manual de produto -- mesmo motivo
+// dos dois acima (File não é serializável), ver acaoLerRotuloOCR()/cadastrarProdutoModalTemplate().
+let produtoRotuloArquivo = null;
 // Mesma lógica acima, para a foto do treino. treinoFotoPreviewUrl é a URL local (blob:) gerada pra
 // mostrar a miniatura antes de enviar — precisa ser revogada explicitamente quando trocada/removida,
 // senão o navegador mantém o blob na memória para sempre.
@@ -6621,6 +6833,19 @@ function captureFormState() {
   if (produtoNomeEl) state.produtoNome = produtoNomeEl.value;
   const produtoIngredientesEl = document.getElementById("produto-ingredientes");
   if (produtoIngredientesEl) state.produtoIngredientes = produtoIngredientesEl.value;
+  // Mesmo motivo do comentário abaixo (bioimpedância/calorimetria): o cadastro manual de produto
+  // também dispara render() no meio do preenchimento (ex.: ao trocar de aba, ou ao terminar a leitura
+  // automática do rótulo) -- sem capturar aqui, o que a pessoa já tinha digitado nos campos se perderia.
+  const produtoManualPorcaoEl = document.getElementById("produto-manual-porcao");
+  if (produtoManualPorcaoEl) {
+    state.produtoManualPorcao = produtoManualPorcaoEl.value;
+    const valores = {};
+    PRODUTO_MANUAL_CAMPOS.forEach((c) => {
+      const el = document.getElementById("produto-manual-" + c.id);
+      if (el) valores[c.id] = el.value;
+    });
+    state.produtoManualValores = valores;
+  }
 
   // O formulário de bioimpedância/calorimetria também precisa sobreviver a um render() no meio do
   // preenchimento (ex.: ao escolher um anexo, que atualiza a prévia do arquivo chamando render()) —
