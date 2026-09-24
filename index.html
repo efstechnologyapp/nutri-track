@@ -3214,24 +3214,46 @@ function fecharDiaAutomaticamente(date) {
 // ou seja, fecharDiaAutomaticamente() nunca era chamada no dia a dia normal, só quando o app ficava
 // fechado 2+ dias corridos (gap maior que um dia entre checagens). É por isso que os testes antigos
 // (que sempre simulavam "app fechado vários dias") passavam sem pegar esse bug.
+// Rede de segurança: fecha (cria o registro do zero) qualquer dia PASSADO que tenha refeição/treino
+// registrado mas ainda não tenha nenhum registro no Diário de Kcal -- não só os dias no intervalo entre
+// a última checagem e hoje (isso já é coberto pelo laço de processarViradaDeDia() logo abaixo), mas
+// QUALQUER data passada "órfã", de qualquer origem: um dia que ficou assim por causa de uma versão
+// antiga do app com bug (ex.: antes desta correção, uma refeição retroativa pra um dia em branco não
+// chegava a criar o registro do Diário -- ver sincronizarDiarioKcalDoDia()), um dado importado/restaurado
+// de outro lugar, ou qualquer outra causa que a gente ainda não previu. Roda toda vez que o app checa a
+// virada de dia (não só quando um dia realmente vira), então mesmo quem já tinha ficado com um "buraco"
+// no Diário de Kcal de antes dessa correção existir tem ele preenchido sozinho na próxima vez que abrir
+// o app -- sem precisar refazer nada manualmente. Devolve true se corrigiu algum dia (pra quem chamou
+// saber se precisa re-renderizar).
+function reconciliarDiasPassadosSemRegistro() {
+  const hoje = today();
+  const datasComRegistro = new Set(state.diarioKcal.map((r) => r.date));
+  const datasOrfas = new Set(
+    state.meals.filter((m) => m.date < hoje && !datasComRegistro.has(m.date)).map((m) => m.date)
+  );
+  datasOrfas.forEach((date) => fecharDiaAutomaticamente(date));
+  return datasOrfas.size > 0;
+}
 function processarViradaDeDia() {
   const hoje = today();
   const ultimo = state.ultimoDiaProcessado || hoje;
-  if (ultimo >= hoje) { state.ultimoDiaProcessado = hoje; return false; }
-  let cursor = ultimo; // começa no próprio "ultimo" (o primeiro dia ainda não fechado), não no dia seguinte
   let processouAlgum = false;
-  // Guarda de segurança: nunca deveria rodar mais que uns poucos milhares de iterações (isso
-  // representaria anos de app fechado), mas evita loop infinito caso proximoDia() devolva null por
-  // algum motivo inesperado (data corrompida no storage, por exemplo).
-  let seguranca = 0;
-  while (cursor && cursor < hoje && seguranca < 3650) {
-    fecharDiaAutomaticamente(cursor);
-    processouAlgum = true;
-    cursor = proximoDia(cursor);
-    seguranca++;
+  if (ultimo < hoje) {
+    let cursor = ultimo; // começa no próprio "ultimo" (o primeiro dia ainda não fechado), não no dia seguinte
+    // Guarda de segurança: nunca deveria rodar mais que uns poucos milhares de iterações (isso
+    // representaria anos de app fechado), mas evita loop infinito caso proximoDia() devolva null por
+    // algum motivo inesperado (data corrompida no storage, por exemplo).
+    let seguranca = 0;
+    while (cursor && cursor < hoje && seguranca < 3650) {
+      fecharDiaAutomaticamente(cursor);
+      processouAlgum = true;
+      cursor = proximoDia(cursor);
+      seguranca++;
+    }
+    state.ultimoDiaProcessado = hoje;
+    writeStorage(CHAVE_ULTIMO_DIA_PROCESSADO, hoje);
   }
-  state.ultimoDiaProcessado = hoje;
-  writeStorage(CHAVE_ULTIMO_DIA_PROCESSADO, hoje);
+  if (reconciliarDiasPassadosSemRegistro()) processouAlgum = true;
   return processouAlgum;
 }
 // Chamada ao abrir o app, ao voltar pra aba/foco (visibilitychange/focus) e periodicamente enquanto o
