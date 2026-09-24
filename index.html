@@ -5201,19 +5201,54 @@ function dataCurta(dateStr) {
   return partes[2] + "/" + partes[1] + "/" + partes[0];
 }
 
-function historicoListaTemplate(registros, tipoLabel, acaoRemover, acaoEditar) {
+// Legenda com os valores do exame de um registro de Bioimpedância -- mostrada logo abaixo do link "Ver
+// exame" (ou do aviso "Sem exame anexado") no histórico, a pedido do usuário: os números do próprio
+// exame ficam visíveis ali mesmo, sem precisar abrir o anexo (quando ele existe) ou entrar no modo de
+// edição só pra conferir o que foi registrado. Só entram os campos que a pessoa realmente preencheu
+// (BIOIMPEDANCIA_CAMPOS permite deixar em branco) -- um registro sem nenhum valor preenchido (nunca
+// deveria acontecer, já que altura é obrigatória, mas por segurança) não mostra legenda nenhuma.
+function valoresBioimpedanciaLegenda(r) {
+  const partes = [];
+  if (r.altura != null) partes.push("Altura: " + formatNumber(r.altura, 1) + " cm");
+  if (r.peso != null) partes.push("Peso: " + formatNumber(r.peso, 1) + " kg");
+  if (r.gordura != null) partes.push("Gordura: " + formatNumber(r.gordura, 1) + "%");
+  if (r.massaMagra != null) partes.push("Massa magra: " + formatNumber(r.massaMagra, 1) + " kg");
+  if (r.massaMuscular != null) partes.push("Massa muscular: " + formatNumber(r.massaMuscular, 1) + " kg");
+  if (r.aguaCorporal != null) partes.push("Água corporal: " + formatNumber(r.aguaCorporal, 1) + "%");
+  if (r.gorduraVisceral != null) partes.push("Gordura visceral: nível " + formatNumber(r.gorduraVisceral, 1));
+  if (r.idadeMetabolica != null) partes.push("Idade metabólica: " + formatNumber(r.idadeMetabolica, 1) + " anos");
+  return partes.length ? partes.join(" · ") : null;
+}
+// Mesma ideia acima, só que pros dois valores de um registro de Calorimetria (TMB/GET).
+function valoresCalorimetriaLegenda(r) {
+  const partes = [];
+  if (r.tmb != null) partes.push("TMB: " + formatNumber(r.tmb) + " kcal");
+  if (r.get != null) partes.push("GET: " + formatNumber(r.get) + " kcal");
+  return partes.length ? partes.join(" · ") : null;
+}
+// valoresLegenda: função que devolve o texto da legenda de valores de UM registro (ou null/"" pra não
+// mostrar nenhuma) -- diferente pra Bioimpedância e Calorimetria, já que cada uma tem seus próprios
+// campos (ver valoresBioimpedanciaLegenda()/valoresCalorimetriaLegenda() acima), então quem chama essa
+// função passa a função certa pro tipo de registro sendo listado.
+function historicoListaTemplate(registros, tipoLabel, acaoRemover, acaoEditar, valoresLegenda) {
   if (!registros.length) return '<p class="imc-empty" style="margin-top:14px">Nenhum registro de ' + tipoLabel.toLowerCase() + " ainda.</p>";
-  return '<div class="medidas-history-list" style="margin-top:14px">' + registros.map((r) =>
-    '<div class="medida-history-row"><div class="medida-history-left"><span class="medida-history-tipo">' + tipoLabel + " registrada em " + dataCurta(r.date) + "</span>" +
-    (r.anexoUrl
-      ? '<a class="bioimpedancia-anexo-link" href="' + esc(r.anexoUrl) + '" target="_blank" rel="noopener">' + icon("file") + " Ver exame</a>"
-      : '<span class="medida-history-meta">Sem exame anexado</span>') +
-    "</div>" +
-    '<div class="medida-history-right">' +
-      '<button class="meal-row-delete" aria-label="Editar registro" onclick="' + acaoEditar + "(" + r.id + ')">' + icon("edit") + "</button>" +
-      '<button class="meal-row-delete" aria-label="Remover registro" onclick="' + acaoRemover + "(" + r.id + ')">' + icon("trash") + "</button>" +
-    "</div></div>"
-  ).join("") + "</div>";
+  return '<div class="medidas-history-list" style="margin-top:14px">' + registros.map((r) => {
+    const legenda = valoresLegenda ? valoresLegenda(r) : null;
+    return '<div class="medida-history-item">' +
+      '<div class="medida-history-row"><div class="medida-history-left"><span class="medida-history-tipo">' + tipoLabel + " registrada em " + dataCurta(r.date) + "</span>" +
+      (r.anexoUrl
+        ? '<a class="bioimpedancia-anexo-link" href="' + esc(r.anexoUrl) + '" target="_blank" rel="noopener">' + icon("file") + " Ver exame</a>"
+        : '<span class="medida-history-meta">Sem exame anexado</span>') +
+      "</div>" +
+      '<div class="medida-history-right">' +
+        '<button class="meal-row-delete" aria-label="Editar registro" onclick="' + acaoEditar + "(" + r.id + ')">' + icon("edit") + "</button>" +
+        '<button class="meal-row-delete" aria-label="Remover registro" onclick="' + acaoRemover + "(" + r.id + ')">' + icon("trash") + "</button>" +
+      "</div></div>" +
+      // Legenda logo ABAIXO do link do exame (mesmo padrão visual da legenda de referência do histórico
+      // de Medidas e Aferições, ver medidaHistoryRowTemplate()/legendaMedida()).
+      (legenda ? '<p class="medida-history-legenda">' + icon("help") + " " + esc(legenda) + "</p>" : "") +
+    "</div>";
+  }).join("") + "</div>";
 }
 
 function historicoBioimpedanciaTemplate() {
@@ -5228,8 +5263,8 @@ function historicoBioimpedanciaTemplate() {
         '<button class="bioimpedancia-form-tab' + (aba === "calorimetria" ? " active" : "") + '" onclick="acaoTrocarAbaHistoricoBioimpedancia(\'calorimetria\')">Calorimetria</button>' +
       "</div>" +
       (aba === "calorimetria"
-        ? historicoListaTemplate(registrosCalo, "Calorimetria", "acaoRemoverCalorimetria", "acaoEditarCalorimetria")
-        : historicoListaTemplate(registrosBio, "Bioimpedância", "acaoRemoverBioimpedancia", "acaoEditarBioimpedancia")) +
+        ? historicoListaTemplate(registrosCalo, "Calorimetria", "acaoRemoverCalorimetria", "acaoEditarCalorimetria", valoresCalorimetriaLegenda)
+        : historicoListaTemplate(registrosBio, "Bioimpedância", "acaoRemoverBioimpedancia", "acaoEditarBioimpedancia", valoresBioimpedanciaLegenda)) +
       '<div class="bioimpedancia-form-acoes"><button class="bioimpedancia-btn-secundario" onclick="acaoFecharHistoricoBioimpedancia()">Voltar</button></div>' +
     "</section>";
 }
