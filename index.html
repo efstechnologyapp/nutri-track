@@ -2182,6 +2182,36 @@ function calcularTmbEsperada(idadeAnos, pesoKg, alturaCm, sexo) {
   return Math.round(10 * pesoKg + 6.25 * alturaCm - 5 * idadeAnos + constanteSexo);
 }
 const LIMIAR_DIFERENCA_IDADE_METABOLICA_ANOS = 15;
+// Referências de composição corporal usadas na razão "Composição corporal" da conclusão de idade
+// metabólica (ver conclusaoIdadeMetabolicaHtml()) -- mesma lógica da comparação "TMB esperada vs TMB do
+// exame" acima: dar um número de referência pra comparar, em vez de só dizer "mais" ou "menos" massa
+// muscular/gordura sem contexto nenhum (pedido do usuário).
+//
+// Gordura corporal esperada por sexo e faixa etária: Gallagher et al. (2000), "Healthy percentage body
+// fat ranges: an approach for developing guidelines based on body mass index", The American Journal of
+// Clinical Nutrition (mesmo periódico do Mifflin-St Jeor usado acima). É o valor médio previsto pelo
+// modelo do estudo nos limites de IMC 18,5 (abaixo do peso) e 25 (sobrepeso) -- não um percentil
+// observado numa população saudável --, mas é a referência mais aceita e citada pra esse fim. O estudo
+// cobre só 20–79 anos; fora dessa faixa, usamos a banda etária publicada mais próxima como aproximação.
+const GORDURA_ESPERADA_FAIXAS = {
+  masculino: [{ ateAnos: 40, min: 8, max: 20 }, { ateAnos: 60, min: 11, max: 22 }, { ateAnos: Infinity, min: 13, max: 25 }],
+  feminino: [{ ateAnos: 40, min: 21, max: 33 }, { ateAnos: 60, min: 23, max: 34 }, { ateAnos: Infinity, min: 24, max: 36 }],
+};
+function faixaGorduraEsperada(idadeAnos, sexo) {
+  const faixas = GORDURA_ESPERADA_FAIXAS[sexo];
+  if (!faixas || isNaN(Number(idadeAnos))) return null;
+  return faixas.find((f) => Number(idadeAnos) < f.ateAnos) || faixas[faixas.length - 1];
+}
+// Massa muscular: NÃO existe um equivalente confiável ao Gallagher acima (uma "faixa esperada" por
+// idade/sexo cientificamente estabelecida) -- por isso usamos, só como referência (nunca como
+// diagnóstico), o limiar clínico de massa muscular BAIXA do consenso europeu de sarcopenia EWGSOP2
+// (Cruz-Jentoft et al., 2019, "Sarcopenia: revised European consensus on definition and diagnosis", Age
+// and Ageing). Duas ressalvas importantes que sempre acompanham esse número no texto: (1) é medido por
+// DXA (exame hospitalar) e só considera massa apendicular (braços + pernas), enquanto a Bioimpedância
+// deste app mede o corpo inteiro por bioimpedância elétrica -- métodos e medidas diferentes, não
+// diretamente comparáveis; (2) foi validado principalmente em estudos com idosos (65+), não é uma
+// "faixa saudável" pra qualquer idade adulta.
+const MASSA_MUSCULAR_BAIXA_LIMIAR_KG = { masculino: 20, feminino: 15 };
 function ultimoRegistroMedida(tipo) {
   const registros = state.medidas.filter((m) => m.tipo === tipo).sort((a, b) => b.id - a.id);
   return registros.length ? registros[0] : null;
@@ -5124,8 +5154,36 @@ function conclusaoIdadeMetabolicaHtml(idadeMetabolicaValor, tmbValor) {
     const partes = [];
     if (ultimaBio.massaMuscular != null) partes.push(formatNumber(ultimaBio.massaMuscular, 1) + " kg de massa muscular");
     if (ultimaBio.gordura != null) partes.push(formatNumber(ultimaBio.gordura, 1) + "% de gordura corporal");
-    razoes.push("<strong>Composição corporal:</strong> seu último registro de Bioimpedância (" + dataCurta(ultimaBio.date) + ") mostra " + partes.join(" e ") +
-      ". A fórmula usada na estimativa não enxerga esses dados — só peso, altura e sexo — e " +
+    // Comparação com valores de referência (pedido do usuário -- mesma lógica da "TMB esperada" acima:
+    // não basta dizer "mais" ou "menos" sem mostrar contra o quê). Gordura tem uma faixa esperada
+    // cientificamente estabelecida (Gallagher et al., 2000); massa muscular não tem um equivalente
+    // confiável, então usamos o limiar clínico de massa BAIXA (EWGSOP2) só como referência aproximada,
+    // sempre com a ressalva do método (DXA/apendicular vs. bioimpedância de corpo inteiro) e da
+    // população de validação (idosos) -- ver GORDURA_ESPERADA_FAIXAS/MASSA_MUSCULAR_BAIXA_LIMIAR_KG.
+    let comparacaoComposicaoHtml = "";
+    if (ultimaBio.gordura != null) {
+      const faixaGordura = faixaGorduraEsperada(idadeRealInfo.anos, sexoUsuario);
+      if (faixaGordura) {
+        const gordura = Number(ultimaBio.gordura);
+        const dentroFaixa = gordura >= faixaGordura.min && gordura <= faixaGordura.max;
+        comparacaoComposicaoHtml += " Para seu sexo e faixa etária, a gordura corporal esperada fica entre " + faixaGordura.min + "% e " + faixaGordura.max + "% (Gallagher et al., 2000); seu valor medido (" + formatNumber(gordura, 1) + "%) está " +
+          (dentroFaixa
+            ? "dentro dessa faixa"
+            : (gordura > faixaGordura.max
+              ? formatNumber(gordura - faixaGordura.max, 1) + " pontos percentuais acima dela"
+              : formatNumber(faixaGordura.min - gordura, 1) + " pontos percentuais abaixo dela")) + ".";
+      }
+    }
+    if (ultimaBio.massaMuscular != null) {
+      const limiarMassaMuscular = MASSA_MUSCULAR_BAIXA_LIMIAR_KG[sexoUsuario];
+      if (limiarMassaMuscular != null) {
+        const massaMuscular = Number(ultimaBio.massaMuscular);
+        const acimaLimiar = massaMuscular >= limiarMassaMuscular;
+        comparacaoComposicaoHtml += " Sua massa muscular medida foi de " + formatNumber(massaMuscular, 1) + " kg — " + (acimaLimiar ? "acima" : "abaixo") + " do limiar de " + limiarMassaMuscular + " kg que o consenso clínico europeu de sarcopenia (EWGSOP2, 2019) considera massa muscular apendicular baixa " + (sexoUsuario === "masculino" ? "em homens" : "em mulheres") + "; esse limiar é medido por DXA (exame hospitalar, só braços e pernas) e validado principalmente em idosos, então não é diretamente comparável ao valor de corpo inteiro de uma balança de bioimpedância — usamos aqui só como referência aproximada, não como diagnóstico.";
+      }
+    }
+    razoes.push("<strong>Composição corporal:</strong> seu último registro de Bioimpedância (" + dataCurta(ultimaBio.date) + ") mostra " + partes.join(" e ") + "." + comparacaoComposicaoHtml +
+      " A fórmula usada na estimativa não enxerga esses dados — só peso, altura e sexo — e " +
       (maisJovem
         ? "mais massa muscular (que consome mais energia em repouso que gordura) costuma elevar a TMB real acima do previsto, o que pode explicar uma idade metabólica estimada mais baixa que a real."
         : "menos massa muscular ou mais gordura corporal em relação à média costuma reduzir a TMB real abaixo do previsto, o que pode explicar uma idade metabólica estimada mais alta que a real."));
