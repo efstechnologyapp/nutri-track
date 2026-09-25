@@ -5116,6 +5116,11 @@ function exameInfoCalorimetriaSecaoTemplate() {
   if (!ultimoCalo || ultimoCalo.idadeMetabolica == null) {
     return '<p class="calo-conclusao-dica">' + icon("help") + " Calcule sua idade metabólica estimada em Bioimpedância e Calorimetria para ver a conclusão aqui." + "</p>";
   }
+  // ultimoCalo.tmb já é o valor FINAL salvo (com o desconto de 10% aplicado, se a fonte foi balança de
+  // bioimpedância -- ver TMB_DESCONTO_BIOIMPEDANCIA/tmbComDesconto()) -- é a MESMA TMB (já com desconto)
+  // usada pra calcular a idade metabólica em si (ver acaoEstimarIdadeMetabolica()), então usa direto,
+  // sem desfazer o desconto: pedido do usuário, a idade metabólica estimada, quando a TMB vier de
+  // balança, deve ser calculada em cima do valor JÁ COM o desconto, não do bruto.
   return conclusaoIdadeMetabolicaHtml(ultimoCalo.idadeMetabolica, ultimoCalo.tmb);
 }
 // Modal de informações de um exame (Bioimpedância ou Calorimetria), aberto pelo botão "i" ao lado do
@@ -5612,8 +5617,15 @@ function acaoAtualizarDescontoTmbBioimpedancia() {
 // conclusaoIdadeMetabolicaHtml()), que já cobre com mais detalhe a comparação com a idade real.
 function acaoEstimarIdadeMetabolica() {
   const inputTmb = document.getElementById("calo-tmb");
-  const tmb = inputTmb ? Number(inputTmb.value.trim().replace(",", ".")) : NaN;
-  if (!tmb) { toastError("Informe a Taxa Metabólica Basal (TMB) acima antes de calcular a estimativa."); return; }
+  const tmbBruto = inputTmb ? Number(inputTmb.value.trim().replace(",", ".")) : NaN;
+  if (!tmbBruto) { toastError("Informe a Taxa Metabólica Basal (TMB) acima antes de calcular a estimativa."); return; }
+  // Usa a TMB JÁ COM o desconto de balança de bioimpedância (ver tmbCampoTemplate()/tmbComDesconto()) --
+  // pedido do usuário: a idade metabólica estimada deve ser calculada em cima do valor COM o desconto
+  // quando a origem for balança, não do valor bruto digitado (mesma TMB que efetivamente será salva no
+  // registro, ver acaoSalvarCalorimetria()).
+  const fonteEl = document.querySelector('input[name="calo-tmb-fonte"]:checked');
+  const fonte = fonteEl ? fonteEl.value : "";
+  const tmb = tmbComDesconto(tmbBruto, fonte);
   const ultimaBio = ultimaBioimpedancia();
   if (!ultimaBio || !ultimaBio.peso || !ultimaBio.altura) { toastError("Registre peso e altura em Bioimpedância antes de calcular a estimativa de idade metabólica."); return; }
   const sexo = state.usuario && state.usuario.sexo;
@@ -5622,7 +5634,7 @@ function acaoEstimarIdadeMetabolica() {
   if (estimativa == null) { toastError("Não foi possível calcular a estimativa com os dados informados."); return; }
   const inputIdade = document.getElementById("calo-idadeMetabolica");
   if (inputIdade) inputIdade.value = estimativa;
-  toastSuccess("Idade metabólica estimada em " + estimativa + " anos, com base na TMB informada acima e no peso/altura do registro de Bioimpedância de " + dataCurta(ultimaBio.date) + " e no sexo do perfil. Não é o valor oficial do seu aparelho — veja como calculamos na legenda abaixo. Você ainda pode ajustar manualmente antes de salvar.");
+  toastSuccess("Idade metabólica estimada em " + estimativa + " anos, com base na TMB informada acima" + (fonte === "bioimpedancia" ? " (já com o desconto de 10% da balança: " + formatNumber(tmb, 1) + " kcal)" : "") + " e no peso/altura do registro de Bioimpedância de " + dataCurta(ultimaBio.date) + " e no sexo do perfil. Não é o valor oficial do seu aparelho — veja como calculamos na legenda abaixo. Você ainda pode ajustar manualmente antes de salvar.");
   acaoAtualizarConclusaoIdadeMetabolica();
 }
 
@@ -5791,7 +5803,13 @@ function acaoAtualizarConclusaoIdadeMetabolica() {
   const inputIdade = document.getElementById("calo-idadeMetabolica");
   const inputTmb = document.getElementById("calo-tmb");
   if (!container || !inputIdade) return;
-  container.innerHTML = conclusaoIdadeMetabolicaHtml(inputIdade.value, inputTmb ? inputTmb.value : "");
+  // Mesma TMB (já com o desconto de balança, quando for o caso -- ver acaoEstimarIdadeMetabolica()) usada
+  // pra calcular a idade metabólica também é a usada aqui na conclusão, pra as duas baterem entre si.
+  const fonteEl = document.querySelector('input[name="calo-tmb-fonte"]:checked');
+  const fonte = fonteEl ? fonteEl.value : "";
+  const tmbBruto = inputTmb ? Number(inputTmb.value.trim().replace(",", ".")) : NaN;
+  const tmb = tmbBruto ? tmbComDesconto(tmbBruto, fonte) : (inputTmb ? inputTmb.value : "");
+  container.innerHTML = conclusaoIdadeMetabolicaHtml(inputIdade.value, tmb);
 }
 
 function acaoSalvarBioimpedancia() {
