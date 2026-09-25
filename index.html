@@ -492,6 +492,10 @@ svg{ display: block; }
 .idade-metabolica-calcular-btn{ margin-top:8px; display:inline-flex; align-items:center; gap:8px; border-radius:999px; border:none; background:var(--primary); padding:8px 16px; font-size:13px; font-weight:600; color:#fff; transition:opacity .15s; }
 .idade-metabolica-calcular-btn:hover{ opacity:.9; }
 .idade-metabolica-fonte-nota{ margin-top:10px; }
+.get-campo{ grid-column:1 / -1; }
+.get-perfil-calculo{ margin-top:12px; display:flex; flex-direction:column; gap:8px; border-radius:14px; background:#f7f9f5; padding:14px 16px; }
+.get-perfil-pergunta{ margin:0 0 2px; color:#5c6b62; font-weight:600; text-transform:none; letter-spacing:normal; font-size:13px; line-height:1.5; }
+.get-perfil-fonte-nota{ margin-top:10px; }
 .calo-conclusao-dica{ margin:10px 0 0; display:flex; align-items:flex-start; gap:8px; border-radius:12px; padding:10px 12px; font-size:12px; line-height:1.6; background:#f7f9f5; color:#5c6b62; }
 .calo-conclusao-dica .icon{ margin-top:1px; flex-shrink:0; width:15px; height:15px; color:#8a9c93; }
 .calo-conclusao-idade-metabolica{ margin:10px 0 0; border-radius:14px; background:#f7f9f5; padding:14px 16px; }
@@ -5437,6 +5441,101 @@ const BIOIMPEDANCIA_CAMPOS = ["altura", "peso", "gordura", "massaMagra", "massaM
 // acaoEstimarIdadeMetabolica() logo abaixo). Continua opcional, igual antes.
 const CALORIMETRIA_CAMPOS = ["tmb", "get", "idadeMetabolica"];
 
+// Perfis de Nível de Atividade Física (NAF) usados pra ESTIMAR o GET a partir da TMB quando a pessoa não
+// sabe/não tem o valor do próprio exame (ver getCampoTemplate()/acaoCalcularGetPerfil() logo abaixo).
+// Fórmula: GET = TMB x fator de atividade -- os fatores são a tabela clássica de atividade física
+// (adaptada do conceito de PAL da FAO/OMS/UNU, "Human Energy Requirements", 2001, e amplamente usada por
+// calculadoras de nutrição esportiva, ex. Legion Athletics). O jeito preferido/mais objetivo de
+// identificar o perfil é pela média de passos/dia (faixas do índice de sedentarismo por contagem de
+// passos -- Tudor-Locke C, et al., "A step-defined sedentary lifestyle index: <5000 steps/day", Applied
+// Physiology, Nutrition, and Metabolism, 2013); quando a pessoa não sabe os passos, cai pro heurístico
+// por pontuação de 3 perguntas de apoio sobre a rotina (tempo em pé fora do trabalho, frequência de
+// caminhadas pra resolver coisas, uso de escadas) -- uma estimativa mais grosseira, por isso não alcança
+// os dois perfis mais ativos (ver perfilPorPontuacaoFallback()).
+const PERFIS_NAF = [
+  { chave: "sedentario", label: "Sedentário", fator: 1.2, passosTexto: "menos de 5.000 passos/dia", descricao: "pouca ou nenhuma movimentação no dia a dia, sem exercício regular" },
+  { chave: "pouco_ativo", label: "Pouco ativo", fator: 1.375, passosTexto: "5.000 a 7.499 passos/dia", descricao: "alguma caminhada e movimentação no dia a dia (resolver coisas a pé, escadas), sem exercício estruturado" },
+  { chave: "moderadamente_ativo", label: "Moderadamente ativo", fator: 1.55, passosTexto: "7.500 a 9.999 passos/dia", descricao: "rotina com movimentação constante ao longo do dia" },
+  { chave: "muito_ativo", label: "Muito ativo", fator: 1.725, passosTexto: "10.000 a 12.499 passos/dia", descricao: "rotina com bastante movimentação diária" },
+  { chave: "extremamente_ativo", label: "Extremamente ativo", fator: 1.9, passosTexto: "12.500 passos/dia ou mais", descricao: "rotina com movimentação muito intensa no dia a dia" },
+];
+function perfilNaf(chave) { return PERFIS_NAF.find((p) => p.chave === chave) || null; }
+function perfilPorFaixaPassos(faixa) {
+  const mapa = { menos5000: "sedentario", "5000a7499": "pouco_ativo", "7500a9999": "moderadamente_ativo", "10000a12499": "muito_ativo", mais12500: "extremamente_ativo" };
+  return mapa[faixa] || null;
+}
+// Heurístico de apoio (só usado quando a pessoa não sabe a média de passos/dia): soma pontos das 3
+// perguntas (0 a 3 cada, exceto escadas que vai só até 2) e mapeia a soma pra um perfil -- uma
+// aproximação qualitativa, por isso não chega aos perfis "Muito ativo"/"Extremamente ativo" (esses só
+// saem do caminho objetivo, por passos).
+function perfilPorPontuacaoFallback(empe, caminhadas, escadas) {
+  const pontos = {
+    empe: { menos30: 0, "30a60": 1, "60a120": 2, mais120: 3 },
+    caminhadas: { quase_nunca: 0, "1a2": 1, "3a5": 2, quase_todo_dia: 3 },
+    escadas: { raramente: 0, ocasional: 1, frequente: 2 },
+  };
+  if (!(empe in pontos.empe) || !(caminhadas in pontos.caminhadas) || !(escadas in pontos.escadas)) return null;
+  const soma = pontos.empe[empe] + pontos.caminhadas[caminhadas] + pontos.escadas[escadas];
+  if (soma <= 1) return "sedentario";
+  if (soma <= 4) return "pouco_ativo";
+  if (soma <= 6) return "moderadamente_ativo";
+  return "muito_ativo";
+}
+
+// Botão "Calcular GET a partir do perfil" (ver getCampoTemplate()) -- mesmo padrão dos outros botões de
+// estimativa deste formulário (acaoEstimarIdadeMetabolica() logo abaixo, acaoLerRotuloOCR() no cadastro
+// de produto): lê a TMB e as respostas do mini-questionário direto do DOM, sem chamar render() no meio
+// (pra não arriscar apagar outros campos deste formulário ainda não sincronizados em
+// state.caloFormValores -- ver comentário em idadeMetabolicaCampoTemplate()). Caminho preferido:
+// identificar o perfil pela faixa de passos/dia selecionada (objetivo, ver PERFIS_NAF); só cai pro
+// heurístico das 3 perguntas de apoio (perfilPorPontuacaoFallback()) quando a pessoa marca "não sei" nos
+// passos. Calcula GET = TMB x fator do perfil identificado, escreve direto no campo #calo-get e mostra o
+// resultado (perfil, fórmula e valor) na legenda logo abaixo -- a pessoa ainda pode ajustar manualmente
+// antes de salvar.
+function acaoCalcularGetPerfil() {
+  const inputTmb = document.getElementById("calo-tmb");
+  const tmb = inputTmb ? Number(inputTmb.value.trim().replace(",", ".")) : NaN;
+  if (!tmb) { toastError("Informe a Taxa Metabólica Basal (TMB) acima antes de calcular o GET."); return; }
+
+  const passosEl = document.getElementById("calo-perfil-passos");
+  const passos = passosEl ? passosEl.value : "";
+  let chavePerfil = null;
+  if (!passos) { toastError("Selecione sua média de passos por dia (ou \"Não sei / não meço\") pra calcular o GET."); return; }
+  if (passos === "nao_sei") {
+    const empeEl = document.getElementById("calo-perfil-empe");
+    const caminhadasEl = document.getElementById("calo-perfil-caminhadas");
+    const escadasEl = document.getElementById("calo-perfil-escadas");
+    chavePerfil = perfilPorPontuacaoFallback(empeEl ? empeEl.value : "", caminhadasEl ? caminhadasEl.value : "", escadasEl ? escadasEl.value : "");
+    if (!chavePerfil) { toastError("Responda as 3 perguntas abaixo pra eu conseguir estimar seu perfil sem os passos."); return; }
+  } else {
+    chavePerfil = perfilPorFaixaPassos(passos);
+  }
+
+  const perfil = perfilNaf(chavePerfil);
+  if (!perfil) { toastError("Não foi possível identificar o perfil com essas respostas."); return; }
+  const get = Math.round(tmb * perfil.fator);
+  const inputGet = document.getElementById("calo-get");
+  if (inputGet) inputGet.value = get;
+
+  const resultadoEl = document.getElementById("calo-perfil-resultado");
+  if (resultadoEl) {
+    resultadoEl.innerHTML = '<p class="calo-conclusao-resultado">' + icon("sparkles") +
+      " Perfil identificado: <strong>" + esc(perfil.label) + "</strong> (fator " + formatNumber(perfil.fator, 3) + "×) — " + esc(perfil.descricao) + "." +
+      " GET = " + formatNumber(tmb) + " × " + formatNumber(perfil.fator, 3) + " = <strong>" + formatNumber(get) + " kcal</strong>." +
+    "</p>";
+  }
+  toastSuccess("GET calculado em " + formatNumber(get) + " kcal, a partir do perfil " + perfil.label + ". Esse valor exclui os treinos (que entram à parte no Diário) -- confira antes de salvar.");
+}
+// Mostra/esconde as 3 perguntas de apoio (ver perfilPorPontuacaoFallback()) conforme a pessoa escolhe
+// "Não sei / não meço" na média de passos -- só alterna o display direto no elemento (sem render()),
+// mesmo motivo das outras ações deste formulário.
+function acaoAlternarFallbackPerfilNaf() {
+  const passosEl = document.getElementById("calo-perfil-passos");
+  const fallbackEl = document.getElementById("calo-perfil-fallback");
+  if (!passosEl || !fallbackEl) return;
+  fallbackEl.style.display = passosEl.value === "nao_sei" ? "" : "none";
+}
+
 // Campo movido de Bioimpedância pra Calorimetria a pedido do usuário -- faz mais sentido junto da TMB,
 // já que é a partir dela que a estimativa é calculada. Lê a TMB direto do DOM (o formulário não
 // sincroniza esse campo com o state a cada tecla -- só na hora de salvar, ver acaoSalvarCalorimetria),
@@ -5828,6 +5927,56 @@ function idadeMetabolicaCampoTemplate() {
     '<div id="calo-conclusao-idade-metabolica-wrap">' + conclusaoIdadeMetabolicaHtml(valores.idadeMetabolica, valores.tmb) + "</div>" +
   "</div>";
 }
+// Campo de GET com uma calculadora embutida (ver PERFIS_NAF/acaoCalcularGetPerfil() acima) -- a pessoa
+// digita o valor do próprio exame normalmente, igual antes; quem não sabe o GET de cor pode responder o
+// mini-questionário de perfil de atividade (passos/dia, ou as 3 perguntas de apoio quando não sabe os
+// passos) e clicar em "Calcular GET a partir do perfil", que preenche o campo acima sozinho. Mesmo
+// padrão de idadeMetabolicaCampoTemplate(): não chama render() em nenhuma das ações, só escreve direto
+// no DOM, pra não apagar outros campos deste formulário ainda não sincronizados em
+// state.caloFormValores. As respostas do questionário não são persistidas no registro (só o GET
+// resultante) -- é só uma calculadora de apoio, por isso os campos calo-perfil-* ficam de fora de
+// CALORIMETRIA_CAMPOS/captureFormState().
+function getCampoTemplate() {
+  const valores = state.caloFormValores || {};
+  const opcao = (valor, texto) => '<option value="' + valor + '">' + texto + "</option>";
+  return '<div class="get-campo">' +
+    '<label class="field-label">Gasto Energético Total (GET) (kcal)</label>' +
+    '<input id="calo-get" type="number" min="0" step="0.1" class="field-input" value="' + esc(valores.get != null ? valores.get : "") + '" placeholder="Ex.: 2400"/>' +
+    '<div class="get-perfil-calculo">' +
+      '<p class="field-label get-perfil-pergunta">Não sabe o GET de cor? Calcule a partir do seu perfil de atividade do dia a dia (isso NÃO inclui treinos -- treinos entram separadamente no Diário):</p>' +
+      '<label class="field-label">Sua média de passos por dia</label>' +
+      '<select id="calo-perfil-passos" class="field-input" onchange="acaoAlternarFallbackPerfilNaf()">' +
+        opcao("", "Selecione...") +
+        opcao("menos5000", "Menos de 5.000 (Sedentário)") +
+        opcao("5000a7499", "5.000 a 7.499 (Pouco ativo)") +
+        opcao("7500a9999", "7.500 a 9.999 (Moderadamente ativo)") +
+        opcao("10000a12499", "10.000 a 12.499 (Muito ativo)") +
+        opcao("mais12500", "12.500 ou mais (Extremamente ativo)") +
+        opcao("nao_sei", "Não sei / não meço") +
+      "</select>" +
+      '<div id="calo-perfil-fallback" style="display:none">' +
+        '<label class="field-label">Fora o trabalho, quanto tempo por dia você passa em pé ou se movimentando?</label>' +
+        '<select id="calo-perfil-empe" class="field-input">' +
+          opcao("", "Selecione...") + opcao("menos30", "Menos de 30 minutos") + opcao("30a60", "30 minutos a 1 hora") + opcao("60a120", "1 a 2 horas") + opcao("mais120", "Mais de 2 horas") +
+        "</select>" +
+        '<label class="field-label">Quantas vezes por semana você caminha pra resolver algo (padaria, farmácia, mercado etc.)?</label>' +
+        '<select id="calo-perfil-caminhadas" class="field-input">' +
+          opcao("", "Selecione...") + opcao("quase_nunca", "Quase nunca") + opcao("1a2", "1 a 2 vezes por semana") + opcao("3a5", "3 a 5 vezes por semana") + opcao("quase_todo_dia", "Quase todo dia") +
+        "</select>" +
+        '<label class="field-label">Como é seu uso de escadas no dia a dia?</label>' +
+        '<select id="calo-perfil-escadas" class="field-input">' +
+          opcao("", "Selecione...") + opcao("raramente", "Raramente uso escada") + opcao("ocasional", "Uso ocasionalmente (1-2x/dia)") + opcao("frequente", "Uso com frequência (várias vezes/dia)") +
+        "</select>" +
+      "</div>" +
+      '<button type="button" class="idade-metabolica-calcular-btn" onclick="acaoCalcularGetPerfil()">' + icon("sparkles") + " Calcular GET a partir do perfil</button>" +
+      '<div id="calo-perfil-resultado"></div>' +
+    "</div>" +
+    '<p class="micro-fonte-nota get-perfil-fonte-nota">' + icon("help") +
+      " Fórmula: GET = TMB × fator de atividade. Perfis e fatores -- Sedentário: 1,2× (menos de 5.000 passos/dia); Pouco ativo: 1,375× (5.000–7.499 passos/dia); Moderadamente ativo: 1,55× (7.500–9.999 passos/dia); Muito ativo: 1,725× (10.000–12.499 passos/dia); Extremamente ativo: 1,9× (12.500+ passos/dia). É uma estimativa de referência que considera só a rotina do dia a dia (treinos entram à parte, no Diário) -- prefira sempre o valor do seu próprio exame de calorimetria quando disponível." +
+      " Fontes: conceito de Nível de Atividade Física (PAL) -- FAO/OMS/UNU, \"Human Energy Requirements\" (2001); fatores de atividade adaptados de tabelas amplamente usadas em nutrição esportiva; faixas de passos/dia -- Tudor-Locke C, et al., \"A step-defined sedentary lifestyle index: <5000 steps/day\", Applied Physiology, Nutrition, and Metabolism (2013)." +
+    "</p>" +
+  "</div>";
+}
 function bioimpedanciaFormCamposTemplate() {
   const valores = state.bioFormValores || {};
   const campo = (id, label, unidade, placeholder) =>
@@ -5860,7 +6009,7 @@ function calorimetriaFormCamposTemplate() {
       '<div><label class="field-label">Data do exame</label><input id="calo-data" type="date" class="field-input" value="' + esc(valores.data != null ? valores.data : today()) + '"/></div>' +
       '<div><label class="field-label">Taxa Metabólica Basal (TMB) (kcal)</label>' +
         '<input id="calo-tmb" type="number" min="0" step="0.1" class="field-input" value="' + esc(valores.tmb != null ? valores.tmb : "") + '" placeholder="Ex.: 1650" oninput="acaoAtualizarConclusaoIdadeMetabolica()"/></div>' +
-      campo("get", "Gasto Energético Total (GET)", "kcal", "Ex.: 2400") +
+      getCampoTemplate() +
       idadeMetabolicaCampoTemplate() +
     "</div>" +
     anexoCampoTemplate("calo-anexo-input", anexoSelecionadoCalo, "onAnexoCaloSelecionado", "acaoRemoverAnexoSelecionadoCalo") +
@@ -6554,7 +6703,7 @@ function diarioKcalMicrosTemplate(r) {
     return '<span class="diario-kcal-nutriente' + classe + '">' + texto + "</span>";
   }).join(" · ");
 }
-// Seção "Kcal gastos no dia:" -- gasto em repouso (GET, da Calorimetria mais recente já registrada em
+// Seção "Kcal gastos no dia:" -- gasto em repouso (TMB, da Calorimetria mais recente já registrada em
 // Medidas e Aferições) + gasto em atividades/treinos/esportes do dia (r.caloriasQueimadas -- já existia
 // antes, só mudou de lugar pra cá). O GET é um valor MEDIDO/fisiológico, não uma meta pessoal editável
 // (igual TMB e os micronutrientes) -- por isso não é congelado no registro: busca sempre a calorimetria
@@ -6562,6 +6711,11 @@ function diarioKcalMicrosTemplate(r) {
 // atividades pra estimar o gasto total do dia e o saldo (consumido − gasto total): superávit (sobrou
 // energia) ou déficit (gastou mais do que consumiu), informações complementares pertinentes pro
 // acompanhamento nutricional.
+// NOTA -- GET x TMB: chegamos a trocar essa base pra TMB por um tempo, com receio de que o GET do exame
+// (TMB x fator de "estilo de vida") já embutisse os treinos e o app contasse o exercício duas vezes.
+// Voltamos pro GET a pedido do usuário: com a calculadora de perfil de atividade adicionada ao campo de
+// GET (ver getCampoTemplate()/PERFIS_NAF), a pessoa consegue calcular um GET que reflete só a rotina do
+// dia a dia (SEM treino), então somar os treinos do dia em cima dele deixa de ser dupla contagem.
 // GET (repouso, sempre buscado ao vivo da calorimetria mais recente -- ver diarioKcalGastosTemplate()) +
 // atividades/treinos do dia (r.caloriasQueimadas) + gasto total = GET + atividades. Função compartilhada
 // entre diarioKcalGastosTemplate() e diarioKcalAnaliseObjetivoTemplate() pra não calcular duas vezes.
