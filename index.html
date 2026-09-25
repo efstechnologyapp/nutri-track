@@ -1185,6 +1185,16 @@ const foodLibrary = [
   { terms: ["sardinha grelhada", "sardinha assada", "sardinha"], label: "Sardinha grelhada", baseAmount: "100 g", values: { calories: 185, protein: 24.6, carbs: 0, fat: 9.5, fiber: 0, vitA: 32, vitC: 0, vitD: 4.8, calcio: 30, ferro: 1.4, magnesio: 31, potassio: 380, zinco: 1.3, sodio: 100, vitB12: 8.9 }, grams: 100 },
   { terms: ["file de dourado", "dourado grelhado", "dourado"], label: "Filé de dourado grelhado", baseAmount: "100 g", values: { calories: 109, protein: 24, carbs: 0, fat: 1, fiber: 0, vitA: 15, vitC: 0, vitD: 2, calcio: 20, ferro: 1, magnesio: 30, potassio: 380, zinco: 0.6, sodio: 70, vitB12: 1.6 }, grams: 100 },
   { terms: ["file de pescada amarela", "peixe pescada amarela", "pescada amarela", "pescada"], label: "Pescada amarela grelhada", baseAmount: "100 g", values: { calories: 108, protein: 21, carbs: 0, fat: 2, fiber: 0, vitA: 5, vitC: 0, vitD: 1, calcio: 15, ferro: 0.5, magnesio: 28, potassio: 320, zinco: 0.5, sodio: 70, vitB12: 1.4 }, grams: 100 },
+  // Pedido do usuário. No Brasil "bacalhau" quase sempre significa o peixe salgado e seco, dessalgado
+  // (de molho) e cozido antes de comer -- não o peixe fresco (que é raro por aqui e chamado de "bacalhau
+  // fresco"). Calorias/proteína/gordura/cálcio/ferro daqui vêm de uma fonte verificada (Yazio, bacalhau
+  // cozido, https://www.yazio.com/pt/alimentos/bacalhau-cozido.html) e batem com a referência
+  // internacional (USDA, bacalhau do Atlântico cozido). O SÓDIO é a exceção: essa fonte mede peixe
+  // fresco/pouco salgado (56 mg/100g), mas o bacalhau tradicional dessalgado retém bem mais sal residual
+  // mesmo depois de bem dessalgado -- não consegui confirmar o valor exato da tabela brasileira TACO/TBCA
+  // pra essa preparação específica (os sites ficaram fora do ar nas buscas), então uso aqui uma estimativa
+  // intermediária (300 mg/100g) só como aproximação -- pode ajustar se tiver o valor exato do rótulo/embalagem.
+  { terms: ["bacalhau", "bacalhau cozido", "bacalhau dessalgado", "file de bacalhau"], label: "Bacalhau cozido (dessalgado)", baseAmount: "100 g", values: { calories: 105, protein: 22.8, carbs: 0, fat: 0.8, fiber: 0, vitA: 0, vitC: 0, vitD: 1, calcio: 14, ferro: 0.5, magnesio: 28, potassio: 300, zinco: 0.5, sodio: 300, vitB12: 1.5 }, grams: 100 },
   { terms: ["marisco cozido", "mariscos", "marisco"], label: "Marisco cozido", baseAmount: "100 g", values: { calories: 172, protein: 24, carbs: 7, fat: 4.5, fiber: 0, vitA: 12, vitC: 8, vitD: 0, calcio: 26, ferro: 6, magnesio: 30, potassio: 320, zinco: 2.2, sodio: 250, vitB12: 12 }, grams: 100 },
   { terms: ["caranguejo cozido", "carne de caranguejo", "caranguejo"], label: "Caranguejo cozido", baseAmount: "100 g", values: { calories: 97, protein: 19, carbs: 0, fat: 1.5, fiber: 0, vitA: 2, vitC: 0, vitD: 0, calcio: 50, ferro: 0.7, magnesio: 40, potassio: 300, zinco: 4, sodio: 300, vitB12: 9 }, grams: 100 },
   { terms: ["lombo suino", "carne de porco", "lombo assado"], label: "Lombo suíno assado", baseAmount: "100 g", values: { calories: 211, protein: 27, carbs: 0, fat: 11, fiber: 0, vitA: 2, vitC: 0, vitD: 0.5, calcio: 8, ferro: 0.9, magnesio: 22, potassio: 320, zinco: 1.9, sodio: 75, vitB12: 0.6 }, grams: 100 },
