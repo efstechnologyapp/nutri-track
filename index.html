@@ -3502,10 +3502,15 @@ function acaoEncerrarDia() {
   // resumo em vez de recalcular sempre a partir de state.goals (que reflete só o valor ATUAL). Os
   // micronutrientes não entram aqui porque a referência deles (MICRO_GOALS) é fixa, não uma meta
   // pessoal editável -- não muda com o tempo, então não precisa congelar.
+  // Mesmo raciocínio pro GET: congela o GET (repouso) da calorimetria mais recente NESTE momento -- outro
+  // pedido do usuário, pra um TMB/GET novo, informado depois numa calorimetria, não alterar o que já
+  // ficou salvo/registrado aqui (ver diarioKcalGastoTotalInfo()).
+  const ultimoCaloAoEncerrar = ultimaCalorimetria();
   const registro = Object.assign({
     id: Date.now(), date: t, refeicoes: refeicoes, caloriasQueimadas: caloriasQueimadas, corteId: corteId,
     metaCalorias: state.goals.calories, metaProtein: state.goals.protein, metaCarbs: state.goals.carbs,
     metaFat: state.goals.fat, metaFiber: state.goals.fiber, objetivo: state.goals.objetivo || "",
+    get: ultimoCaloAoEncerrar && ultimoCaloAoEncerrar.get ? Number(ultimoCaloAoEncerrar.get) : null,
   }, totais);
   state.diarioKcal = state.diarioKcal.filter((r) => r.date !== t).concat([registro]);
   persistDiarioKcal();
@@ -3548,6 +3553,11 @@ function fecharDiaAutomaticamente(date) {
   });
   const caloriasQueimadas = treinosDoDia.reduce((soma, tr) => soma + (tr.caloriasQueimadas || 0), 0);
   const corteId = mealsDoDia.reduce((maior, m) => Math.max(maior, m.id), existente && existente.corteId != null ? existente.corteId : 0);
+  // get: mesmo padrão de "congelar no momento do fechamento" já usado pra meta/objetivo acima -- um dia
+  // que já tinha sido fechado (existente) preserva o GET que já estava congelado nele (mesmo que essa
+  // coluna ainda não existisse quando esse registro foi criado, ver diarioKcalGastoTotalInfo()); só um
+  // dia novo (sem existente) busca o GET vigente agora, no momento deste fechamento.
+  const ultimoCaloAoFechar = existente ? null : ultimaCalorimetria();
   const registro = Object.assign({
     id: existente ? existente.id : Date.now(), date: date, refeicoes: refeicoes, caloriasQueimadas: caloriasQueimadas, corteId: corteId,
     metaCalorias: existente ? existente.metaCalorias : state.goals.calories,
@@ -3556,6 +3566,7 @@ function fecharDiaAutomaticamente(date) {
     metaFat: existente ? existente.metaFat : state.goals.fat,
     metaFiber: existente ? existente.metaFiber : state.goals.fiber,
     objetivo: existente ? existente.objetivo : (state.goals.objetivo || ""),
+    get: existente ? existente.get : (ultimoCaloAoFechar && ultimoCaloAoFechar.get ? Number(ultimoCaloAoFechar.get) : null),
   }, totais);
   state.diarioKcal = state.diarioKcal.filter((r) => r.date !== date).concat([registro]);
   persistDiarioKcal();
@@ -5508,8 +5519,15 @@ function perfilPorPontuacaoFallback(empe, caminhadas, escadas) {
 // antes de salvar.
 function acaoCalcularGetPerfil() {
   const inputTmb = document.getElementById("calo-tmb");
-  const tmb = inputTmb ? Number(inputTmb.value.trim().replace(",", ".")) : NaN;
-  if (!tmb) { toastError("Informe a Taxa Metabólica Basal (TMB) acima antes de calcular o GET."); return; }
+  const tmbBruto = inputTmb ? Number(inputTmb.value.trim().replace(",", ".")) : NaN;
+  if (!tmbBruto) { toastError("Informe a Taxa Metabólica Basal (TMB) acima antes de calcular o GET."); return; }
+  // Usa a TMB JÁ COM o desconto de balança de bioimpedância (ver tmbCampoTemplate()/tmbComDesconto()),
+  // não o valor bruto digitado -- o campo #calo-tmb sempre guarda o que a pessoa digitou, sem desconto
+  // (o desconto só é aplicado na hora de salvar, em acaoSalvarCalorimetria()); calcular o GET aqui a
+  // partir do bruto inflava o GET quando a fonte era balança (bug relatado pelo usuário).
+  const fonteEl = document.querySelector('input[name="calo-tmb-fonte"]:checked');
+  const fonte = fonteEl ? fonteEl.value : "";
+  const tmb = tmbComDesconto(tmbBruto, fonte);
 
   const passosEl = document.getElementById("calo-perfil-passos");
   const passos = passosEl ? passosEl.value : "";
@@ -5536,6 +5554,7 @@ function acaoCalcularGetPerfil() {
     resultadoEl.innerHTML = '<p class="calo-conclusao-resultado">' + icon("sparkles") +
       " Perfil identificado: <strong>" + esc(perfil.label) + "</strong> (fator " + formatNumber(perfil.fator, 3) + "×) — " + esc(perfil.descricao) + "." +
       " GET = " + formatNumber(tmb) + " × " + formatNumber(perfil.fator, 3) + " = <strong>" + formatNumber(get) + " kcal</strong>." +
+      (fonte === "bioimpedancia" ? " (TMB já com o desconto de 10% da balança: " + formatNumber(tmbBruto, 1) + " × 0,90 = " + formatNumber(tmb, 1) + " kcal.)" : "") +
     "</p>";
   }
   toastSuccess("GET calculado em " + formatNumber(get) + " kcal, a partir do perfil " + perfil.label + ". Esse valor exclui os treinos (que entram à parte no Diário) -- confira antes de salvar.");
@@ -6030,7 +6049,7 @@ function getCampoTemplate() {
     '<input id="calo-get" type="number" min="0" step="0.1" class="field-input" value="' + esc(valores.get != null ? valores.get : "") + '" placeholder="Ex.: 2400"/>' +
     '<div class="get-perfil-calculo">' +
       '<p class="field-label get-perfil-pergunta">Não sabe o GET de cor? Calcule a partir do seu perfil de atividade do dia a dia (isso NÃO inclui treinos -- treinos entram separadamente no Diário):</p>' +
-      '<label class="field-label">Sua média de passos por dia</label>' +
+      '<label class="field-label">Sua média de passos por dia (rotina, sem contar treino/exercício)</label>' +
       '<select id="calo-perfil-passos" class="field-input" onchange="acaoAlternarFallbackPerfilNaf()">' +
         opcao("", "Selecione...") +
         opcao("menos5000", "Menos de 5.000 (Sedentário)") +
@@ -6801,12 +6820,21 @@ function diarioKcalMicrosTemplate(r) {
 // Voltamos pro GET a pedido do usuário: com a calculadora de perfil de atividade adicionada ao campo de
 // GET (ver getCampoTemplate()/PERFIS_NAF), a pessoa consegue calcular um GET que reflete só a rotina do
 // dia a dia (SEM treino), então somar os treinos do dia em cima dele deixa de ser dupla contagem.
-// GET (repouso, sempre buscado ao vivo da calorimetria mais recente -- ver diarioKcalGastosTemplate()) +
-// atividades/treinos do dia (r.caloriasQueimadas) + gasto total = GET + atividades. Função compartilhada
-// entre diarioKcalGastosTemplate() e diarioKcalAnaliseObjetivoTemplate() pra não calcular duas vezes.
+// GET (repouso) + atividades/treinos do dia (r.caloriasQueimadas) + gasto total = GET + atividades.
+// Função compartilhada entre diarioKcalGastosTemplate() e diarioKcalAnaliseObjetivoTemplate() pra não
+// calcular duas vezes.
+// GET: usa o valor CONGELADO no próprio registro (r.get), salvo no momento em que aquele dia foi fechado
+// -- ver acaoEncerrarDia()/fecharDiaAutomaticamente(). Pedido do usuário: informar um novo TMB/GET numa
+// calorimetria depois não pode alterar o que já ficou salvo/registrado aqui -- por isso não busca mais
+// ao vivo da calorimetria mais recente a cada render. Só cai pro valor ao vivo (ultimaCalorimetria()) em
+// registros de antes dessa coluna existir (r.get null) -- mesmo padrão de degradação usado pra
+// metaCalorias/objetivo (ver diarioKcalMetaAtingida()).
 function diarioKcalGastoTotalInfo(r) {
-  const ultimoCalo = ultimaCalorimetria();
-  const get = ultimoCalo && ultimoCalo.get ? Number(ultimoCalo.get) : null;
+  let get = r.get;
+  if (get == null) {
+    const ultimoCalo = ultimaCalorimetria();
+    get = ultimoCalo && ultimoCalo.get ? Number(ultimoCalo.get) : null;
+  }
   const atividades = r.caloriasQueimadas || 0;
   return { get: get, atividades: atividades, gastoTotal: get != null ? get + atividades : null };
 }
