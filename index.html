@@ -496,6 +496,9 @@ svg{ display: block; }
 .get-perfil-calculo{ margin-top:12px; display:flex; flex-direction:column; gap:8px; border-radius:14px; background:#f7f9f5; padding:14px 16px; }
 .get-perfil-pergunta{ margin:0 0 2px; color:#5c6b62; font-weight:600; text-transform:none; letter-spacing:normal; font-size:13px; line-height:1.5; }
 .get-perfil-fonte-nota{ margin-top:10px; }
+.calo-tmb-fonte-opcoes{ display:flex; flex-direction:column; gap:8px; }
+.calo-tmb-fonte-opcao{ display:flex; align-items:center; gap:8px; font-size:13.5px; color:#3d5c33; font-weight:500; cursor:pointer; }
+.calo-tmb-fonte-opcao input[type="radio"]{ width:16px; height:16px; accent-color:var(--primary); flex-shrink:0; cursor:pointer; }
 .calo-conclusao-dica{ margin:10px 0 0; display:flex; align-items:flex-start; gap:8px; border-radius:12px; padding:10px 12px; font-size:12px; line-height:1.6; background:#f7f9f5; color:#5c6b62; }
 .calo-conclusao-dica .icon{ margin-top:1px; flex-shrink:0; width:15px; height:15px; color:#8a9c93; }
 .calo-conclusao-idade-metabolica{ margin:10px 0 0; border-radius:14px; background:#f7f9f5; padding:14px 16px; }
@@ -5410,6 +5413,17 @@ function acaoEditarCalorimetria(id) {
   anexoSelecionadoCalo = null;
   const valores = { data: registro.date };
   CALORIMETRIA_CAMPOS.forEach((c) => { valores[c] = registro[c] != null ? String(registro[c]) : ""; });
+  // Fonte da TMB (ver tmbCampoTemplate()/TMB_DESCONTO_BIOIMPEDANCIA): registro.tmb já é o valor FINAL
+  // (com o desconto de 10% já aplicado, se a fonte foi bioimpedância) -- pra reabrir o campo mostrando o
+  // valor que a pessoa originalmente digitou (não o já descontado), desfaz o desconto aqui. Reaplicar o
+  // desconto na hora de salvar de novo (acaoSalvarCalorimetria()) dá de volta o mesmo valor final.
+  // Registro antigo (salvo antes dessa funcionalidade existir) não tem tmbFonte -- assume "calorimetria"
+  // (exame, sem desconto) como padrão, já que era o único jeito de preencher TMB antes. Isso evita que um
+  // registro antigo fique bloqueado pra edição/salvamento só por faltar essa escolha.
+  valores.tmbFonte = registro.tmbFonte || (registro.tmb != null ? "calorimetria" : "");
+  if (registro.tmbFonte === "bioimpedancia" && registro.tmb != null) {
+    valores.tmb = String(Math.round((registro.tmb / TMB_DESCONTO_BIOIMPEDANCIA) * 10) / 10);
+  }
   state.caloFormValores = valores;
   state.bioFormValores = {};
   state.calorimetriaEditandoId = id;
@@ -5534,6 +5548,39 @@ function acaoAlternarFallbackPerfilNaf() {
   const fallbackEl = document.getElementById("calo-perfil-fallback");
   if (!passosEl || !fallbackEl) return;
   fallbackEl.style.display = passosEl.value === "nao_sei" ? "" : "none";
+}
+
+// Fator de desconto aplicado à TMB quando a pessoa marca que o valor veio de uma balança de
+// bioimpedância doméstica, em vez de um exame de calorimetria indireta -- balanças de bioimpedância são
+// notoriamente menos precisas que a calorimetria indireta pra medir taxa metabólica (usam fórmulas de
+// estimativa a partir de bioimpedância elétrica, não medição direta de troca gasosa), a pedido do usuário
+// pra compensar esse erro típico. Ver tmbCampoTemplate()/acaoSalvarCalorimetria().
+const TMB_DESCONTO_BIOIMPEDANCIA = 0.9;
+function tmbComDesconto(bruto, fonte) {
+  const valor = fonte === "bioimpedancia" ? bruto * TMB_DESCONTO_BIOIMPEDANCIA : bruto;
+  return Math.round(valor * 10) / 10;
+}
+// Mostra/esconde o campo de TMB conforme a pessoa escolhe a fonte do valor (ver tmbCampoTemplate()) --
+// só alterna o display e atualiza o aviso de desconto/a conclusão de idade metabólica direto nos
+// elementos (sem render()), mesmo motivo das outras ações deste formulário.
+function acaoTrocarFonteTmb() {
+  const wrapEl = document.getElementById("calo-tmb-campo-wrap");
+  const fonteEl = document.querySelector('input[name="calo-tmb-fonte"]:checked');
+  if (wrapEl) wrapEl.style.display = fonteEl ? "" : "none";
+  acaoAtualizarDescontoTmbBioimpedancia();
+  acaoAtualizarConclusaoIdadeMetabolica(); // idade metabólica também depende da TMB -- mantém em sincronia
+}
+// Legenda ao vivo (oninput na TMB, onchange na fonte) mostrando o valor final que será salvo quando a
+// fonte é "bioimpedancia" -- só aparece nesse caso; com "calorimetria" (ou sem fonte escolhida ainda) o
+// valor digitado é usado sem nenhum ajuste, não precisa de aviso.
+function acaoAtualizarDescontoTmbBioimpedancia() {
+  const avisoEl = document.getElementById("calo-tmb-desconto-aviso");
+  if (!avisoEl) return;
+  const fonteEl = document.querySelector('input[name="calo-tmb-fonte"]:checked');
+  const fonte = fonteEl ? fonteEl.value : "";
+  const inputTmb = document.getElementById("calo-tmb");
+  const bruto = inputTmb ? Number(inputTmb.value.trim().replace(",", ".")) : NaN;
+  avisoEl.innerHTML = (fonte === "bioimpedancia" && bruto) ? tmbDescontoAvisoHtml(bruto) : "";
 }
 
 // Campo movido de Bioimpedância pra Calorimetria a pedido do usuário -- faz mais sentido junto da TMB,
@@ -5820,9 +5867,15 @@ function acaoSalvarCalorimetria() {
     const el = document.getElementById("calo-" + c);
     valores[c] = el ? el.value.trim().replace(",", ".") : "";
   });
+  const fonteEl = document.querySelector('input[name="calo-tmb-fonte"]:checked');
+  const tmbFonte = fonteEl ? fonteEl.value : "";
+  if (!tmbFonte) { toastError("Selecione de onde veio o valor da TMB (exame de calorimetria indireta ou balança de bioimpedância)."); return; }
   if (!valores.tmb || isNaN(Number(valores.tmb))) { toastError("Informe a Taxa Metabólica Basal (TMB)."); return; }
   if (!valores.get || isNaN(Number(valores.get))) { toastError("Informe o Gasto Energético Total (GET)."); return; }
   if (anexoSelecionadoCalo && !state.account) { toastError("Conecte sua conta do Google para anexar arquivos."); return; }
+  // TMB final: com desconto de 10% quando a fonte é balança de bioimpedância (ver
+  // TMB_DESCONTO_BIOIMPEDANCIA/tmbComDesconto()); usada como digitada quando é exame de calorimetria.
+  const tmbFinal = tmbComDesconto(Number(valores.tmb), tmbFonte);
 
   const arquivoAnexo = anexoSelecionadoCalo;
   const editandoId = state.calorimetriaEditandoId;
@@ -5832,7 +5885,8 @@ function acaoSalvarCalorimetria() {
     const registro = state.calorimetria.find((r) => r.id === editandoId);
     if (!registro) { toastError("Registro não encontrado."); return; }
     registro.date = data;
-    registro.tmb = Number(valores.tmb);
+    registro.tmb = tmbFinal;
+    registro.tmbFonte = tmbFonte;
     registro.get = Number(valores.get);
     registro.idadeMetabolica = valores.idadeMetabolica ? Number(valores.idadeMetabolica) : null;
     if (arquivoAnexo) registro.anexoUrl = "";
@@ -5853,7 +5907,7 @@ function acaoSalvarCalorimetria() {
   const now = new Date();
   const novoRegistro = {
     id: Date.now(), date: data, time: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-    tmb: Number(valores.tmb), get: Number(valores.get), idadeMetabolica: valores.idadeMetabolica ? Number(valores.idadeMetabolica) : null, anexoUrl: "",
+    tmb: tmbFinal, tmbFonte: tmbFonte, get: Number(valores.get), idadeMetabolica: valores.idadeMetabolica ? Number(valores.idadeMetabolica) : null, anexoUrl: "",
   };
   state.calorimetria = state.calorimetria.concat([novoRegistro]);
   persistCalorimetria();
@@ -5936,6 +5990,38 @@ function idadeMetabolicaCampoTemplate() {
 // state.caloFormValores. As respostas do questionário não são persistidas no registro (só o GET
 // resultante) -- é só uma calculadora de apoio, por isso os campos calo-perfil-* ficam de fora de
 // CALORIMETRIA_CAMPOS/captureFormState().
+// Campo de TMB com seletor de fonte (ver TMB_DESCONTO_BIOIMPEDANCIA/acaoTrocarFonteTmb() acima) -- antes
+// de mostrar o campo pra digitar o valor, a pessoa marca de onde ele veio: exame de calorimetria
+// indireta (valor usado como digitado) ou balança de bioimpedância (desconto de 10% aplicado, ver
+// tmbComDesconto()). O campo de valor só aparece depois de escolher uma das duas opções -- começa
+// escondido. Mesmo padrão das outras calculadoras deste formulário: nenhuma ação chama render(), só
+// escreve direto no DOM, pra não apagar outros campos ainda não sincronizados em state.caloFormValores.
+function tmbCampoTemplate() {
+  const valores = state.caloFormValores || {};
+  const fonte = valores.tmbFonte || "";
+  const opcaoFonte = (valor, texto) =>
+    '<label class="calo-tmb-fonte-opcao"><input type="radio" name="calo-tmb-fonte" value="' + valor + '"' +
+    (fonte === valor ? " checked" : "") + ' onchange="acaoTrocarFonteTmb()"/> ' + texto + "</label>";
+  return '<div class="get-campo">' +
+    '<label class="field-label">De onde veio o valor da TMB?</label>' +
+    '<div class="calo-tmb-fonte-opcoes">' +
+      opcaoFonte("calorimetria", "Exame de calorimetria indireta") +
+      opcaoFonte("bioimpedancia", "Balança de bioimpedância") +
+    "</div>" +
+    '<div id="calo-tmb-campo-wrap" style="margin-top:10px;' + (fonte ? "" : "display:none") + '">' +
+      '<label class="field-label">Taxa Metabólica Basal (TMB) (kcal)</label>' +
+      '<input id="calo-tmb" type="number" min="0" step="0.1" class="field-input" value="' + esc(valores.tmb != null ? valores.tmb : "") + '" placeholder="Ex.: 1650" oninput="acaoAtualizarConclusaoIdadeMetabolica(); acaoAtualizarDescontoTmbBioimpedancia();"/>' +
+      '<div id="calo-tmb-desconto-aviso">' + (fonte === "bioimpedancia" && valores.tmb ? tmbDescontoAvisoHtml(Number(valores.tmb)) : "") + "</div>" +
+    "</div>" +
+  "</div>";
+}
+function tmbDescontoAvisoHtml(bruto) {
+  const final = tmbComDesconto(bruto, "bioimpedancia");
+  return '<p class="calo-conclusao-dica">' + icon("info") +
+    " Balanças de bioimpedância costumam superestimar a TMB -- por isso aplicamos um desconto de 10%: " +
+    formatNumber(bruto, 1) + " × 0,90 = <strong>" + formatNumber(final, 1) + " kcal</strong>. É esse valor ajustado que será salvo e usado no restante do app." +
+  "</p>";
+}
 function getCampoTemplate() {
   const valores = state.caloFormValores || {};
   const opcao = (valor, texto) => '<option value="' + valor + '">' + texto + "</option>";
@@ -6007,8 +6093,7 @@ function calorimetriaFormCamposTemplate() {
   return '' +
     '<div class="bioimpedancia-form-grid">' +
       '<div><label class="field-label">Data do exame</label><input id="calo-data" type="date" class="field-input" value="' + esc(valores.data != null ? valores.data : today()) + '"/></div>' +
-      '<div><label class="field-label">Taxa Metabólica Basal (TMB) (kcal)</label>' +
-        '<input id="calo-tmb" type="number" min="0" step="0.1" class="field-input" value="' + esc(valores.tmb != null ? valores.tmb : "") + '" placeholder="Ex.: 1650" oninput="acaoAtualizarConclusaoIdadeMetabolica()"/></div>' +
+      tmbCampoTemplate() +
       getCampoTemplate() +
       idadeMetabolicaCampoTemplate() +
     "</div>" +
@@ -6062,7 +6147,7 @@ function valoresBioimpedanciaLegenda(r) {
 // esse último migrou de Bioimpedância pra cá a pedido do usuário, ver CALORIMETRIA_CAMPOS).
 function valoresCalorimetriaLegenda(r) {
   const partes = [];
-  if (r.tmb != null) partes.push("TMB: " + formatNumber(r.tmb) + " kcal");
+  if (r.tmb != null) partes.push("TMB: " + formatNumber(r.tmb) + " kcal" + (r.tmbFonte === "bioimpedancia" ? " (balança, -10%)" : ""));
   if (r.get != null) partes.push("GET: " + formatNumber(r.get) + " kcal");
   if (r.idadeMetabolica != null) partes.push("Idade metabólica: " + formatNumber(r.idadeMetabolica, 1) + " anos");
   return partes.length ? partes.join(" · ") : null;
@@ -7048,6 +7133,10 @@ function captureFormState() {
       const el = document.getElementById("calo-" + c);
       if (el) valores[c] = el.value;
     });
+    // Fonte da TMB (ver tmbCampoTemplate()) -- não é um campo de CALORIMETRIA_CAMPOS porque é um grupo
+    // de rádio (sem um único id), não um input avulso.
+    const fonteEl = document.querySelector('input[name="calo-tmb-fonte"]:checked');
+    if (fonteEl) valores.tmbFonte = fonteEl.value;
     state.caloFormValores = valores;
   }
 
