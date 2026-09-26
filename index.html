@@ -662,6 +662,32 @@ svg{ display: block; }
 .install-close{ border-radius:999px; padding:6px; color:#7b9187; }
 .install-close:hover{ background:#e7f0e2; }
 
+/* ---------- aba Evolução ---------- */
+.evolucao-periodo-chips{ display:flex; gap:8px; flex-wrap:wrap; margin:14px 0 0; }
+.evolucao-periodo-chip{ border-radius:999px; border:1px solid #dce5db; background:#fff; padding:7px 14px; font-size:12.5px; font-weight:600; color:#6e8d69; transition:background .15s, color .15s, border-color .15s; }
+.evolucao-periodo-chip:hover{ border-color:#8fbf78; }
+.evolucao-periodo-chip.active{ background:var(--primary); border-color:var(--primary); color:#fff; }
+.evolucao-chart{ display:block; width:100%; height:150px; margin-top:16px; overflow:visible; }
+.evolucao-chart-grid{ stroke:#edf0eb; stroke-width:1; }
+.evolucao-chart-grid-zero{ stroke:#c7d2c9; stroke-width:1.2; }
+.evolucao-chart-axis-label{ font-size:8px; fill:#9aa9a1; font-family:'DM Sans', sans-serif; }
+.evolucao-stats-row{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:16px; }
+@media (min-width:520px){ .evolucao-stats-row{ grid-template-columns:repeat(4,1fr); } }
+.evolucao-stat{ display:flex; flex-direction:column; gap:2px; border-radius:14px; background:#f7f9f5; padding:10px 12px; }
+.evolucao-stat-label{ font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:#9aa9a1; }
+.evolucao-stat-value{ font-size:15px; font-weight:700; color:#1b3f34; }
+.evolucao-nota{ display:flex; align-items:center; gap:8px; margin-top:14px; border-radius:14px; padding:10px 14px; font-size:13px; font-weight:500; }
+.evolucao-nota .icon{ flex-shrink:0; }
+.evolucao-nota-positiva{ background:#eaf4ee; color:#2a6b4b; }
+.evolucao-nota-negativa{ background:#fdf3e2; color:#8a5a12; }
+.evolucao-comparacao-list{ margin-top:14px; display:flex; flex-direction:column; gap:8px; }
+.evolucao-comparacao-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; border-radius:12px; background:#f7f9f5; padding:10px 12px; flex-wrap:wrap; }
+.evolucao-comparacao-label{ font-size:13px; font-weight:600; color:#3d6355; flex:1 1 140px; }
+.evolucao-comparacao-valores{ font-size:12.5px; color:#71857e; }
+.evolucao-comparacao-delta{ font-size:13px; font-weight:700; color:#5c7369; min-width:56px; text-align:right; }
+.evolucao-delta-positivo{ color:#1e88e5; }
+.evolucao-delta-negativo{ color:#c35e4b; }
+
 .hidden{ display:none !important; }
 </style>
 </head>
@@ -716,6 +742,7 @@ const ICON_PATHS = {
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
   image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',
   filter: '<path d="M4 5h16l-6.5 8v6l-3-1.5v-4.5L4 5Z"/>',
+  trend: '<path d="M3 17l6-6 4 4 8-8"/><path d="M17 6h4v4"/>',
 };
 function icon(name, cls) {
   const p = ICON_PATHS[name] || "";
@@ -1178,6 +1205,13 @@ const foodLibrary = [
   { terms: ["ovo de codorna", "ovos de codorna", "codorna"], label: "Ovo de codorna", baseAmount: "1 unidade", values: { calories: 14, protein: 1.2, carbs: 0.1, fat: 1, fiber: 0, vitA: 14, vitC: 0, vitD: 0.1, calcio: 6, ferro: 0.3, magnesio: 1, potassio: 12, zinco: 0.1, sodio: 13, vitB12: 0.15 }, count: 1 },
   { terms: ["omelete"], label: "Omelete", baseAmount: "2 ovos", values: { calories: 190, protein: 13, carbs: 1.5, fat: 15, fiber: 0, vitA: 160, vitC: 0, vitD: 2, calcio: 50, ferro: 1.8, magnesio: 10, potassio: 130, zinco: 1.2, sodio: 180, vitB12: 1.1 }, count: 2 },
   { terms: ["peito de frango", "frango grelhado", "frango"], label: "Peito de frango", baseAmount: "100 g", values: { calories: 165, protein: 31, carbs: 0, fat: 3.6, fiber: 0, vitA: 5, vitC: 0, vitD: 0.1, calcio: 6, ferro: 0.4, magnesio: 25, potassio: 220, zinco: 0.7, sodio: 75, vitB12: 0.36 }, grams: 100 },
+  // Pedido do usuário. Sobrecoxa sem pele, assada -- valores cruzados entre USDA/nutritionvalue.org
+  // (chicken thigh, meat only, roasted) e fatsecret/USDA. Naturalmente mais calórica/gordurosa que o peito
+  // (acima) por ser carne escura, mas ainda uma carne magra.
+  { terms: ["sobrecoxa de frango", "sobrecoxa assada", "sobrecoxa"], label: "Sobrecoxa de frango assada", baseAmount: "100 g", values: { calories: 209, protein: 26, carbs: 0, fat: 10.9, fiber: 0, vitA: 9, vitC: 0, vitD: 0.3, calcio: 12, ferro: 1.3, magnesio: 26, potassio: 256, zinco: 2.6, sodio: 90, vitB12: 0.4 }, grams: 100 },
+  // Pedido do usuário. Asa de frango com pele, assada -- valores cruzados entre Yazio e fatsecret/USDA
+  // (chicken wing, meat and skin, roasted), ambos convergindo pra ~290 kcal/26,8g proteína/19,5g gordura.
+  { terms: ["asa de frango", "asinha de frango", "asinha", "asa"], label: "Asa de frango assada", baseAmount: "100 g", values: { calories: 290, protein: 26.9, carbs: 0, fat: 19.5, fiber: 0, vitA: 12, vitC: 0, vitD: 0.2, calcio: 15, ferro: 1, magnesio: 20, potassio: 195, zinco: 1.8, sodio: 82, vitB12: 0.3 }, grams: 100 },
   { terms: ["picanha", "picanha bovina"], label: "Picanha", baseAmount: "100 g", values: { calories: 289, protein: 26, carbs: 0, fat: 20, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 10, ferro: 2.1, magnesio: 20, potassio: 260, zinco: 4.5, sodio: 65, vitB12: 2.6 }, grams: 100 },
   { terms: ["carne moida refogada", "carne moida"], label: "Carne moída refogada", baseAmount: "100 g", values: { calories: 212, protein: 26, carbs: 0, fat: 11, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 12, ferro: 2.3, magnesio: 18, potassio: 250, zinco: 4, sodio: 90, vitB12: 2.5 }, grams: 100 },
   { terms: ["bife de patinho", "carne bovina magra", "patinho"], label: "Bife de patinho grelhado", baseAmount: "100 g", values: { calories: 205, protein: 32, carbs: 0, fat: 8, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 8, ferro: 2.5, magnesio: 22, potassio: 300, zinco: 4.2, sodio: 70, vitB12: 2.5 }, grams: 100 },
@@ -1205,6 +1239,15 @@ const foodLibrary = [
   { terms: ["marisco cozido", "mariscos", "marisco"], label: "Marisco cozido", baseAmount: "100 g", values: { calories: 172, protein: 24, carbs: 7, fat: 4.5, fiber: 0, vitA: 12, vitC: 8, vitD: 0, calcio: 26, ferro: 6, magnesio: 30, potassio: 320, zinco: 2.2, sodio: 250, vitB12: 12 }, grams: 100 },
   { terms: ["caranguejo cozido", "carne de caranguejo", "caranguejo"], label: "Caranguejo cozido", baseAmount: "100 g", values: { calories: 97, protein: 19, carbs: 0, fat: 1.5, fiber: 0, vitA: 2, vitC: 0, vitD: 0, calcio: 50, ferro: 0.7, magnesio: 40, potassio: 300, zinco: 4, sodio: 300, vitB12: 9 }, grams: 100 },
   { terms: ["lombo suino", "carne de porco", "lombo assado"], label: "Lombo suíno assado", baseAmount: "100 g", values: { calories: 211, protein: 27, carbs: 0, fat: 11, fiber: 0, vitA: 2, vitC: 0, vitD: 0.5, calcio: 8, ferro: 0.9, magnesio: 22, potassio: 320, zinco: 1.9, sodio: 75, vitB12: 0.6 }, grams: 100 },
+  // Pedido do usuário. Cordeiro moído assado -- fonte nutritionvalue.org/USDA (lamb, ground, broiled),
+  // conferido contra fatsecret (cordeiro assado, valores próximos). Rico em vitamina B12 e zinco, típico de
+  // carnes vermelhas.
+  { terms: ["carne de cordeiro", "cordeiro assado", "perna de cordeiro", "cordeiro"], label: "Carne de cordeiro assada", baseAmount: "100 g", values: { calories: 283, protein: 24.8, carbs: 0, fat: 19.6, fiber: 0, vitA: 0, vitC: 0, vitD: 0.12, calcio: 22, ferro: 1.8, magnesio: 24, potassio: 339, zinco: 4.7, sodio: 81, vitB12: 2.6 }, grams: 100 },
+  // Pedido do usuário. Carne de bode assada -- valores cruzados entre informacoesnutricionais.com.br e
+  // nutritionvalue.org/USDA (game meat, goat, roasted), praticamente idênticos entre as duas fontes. Carne
+  // magra (bem menos gordura que cordeiro/carne bovina), rica em ferro, zinco e vitamina B12. "Cabrito" e
+  // "carne de cabra" tratados como sinônimos culinários equivalentes por aqui.
+  { terms: ["carne de bode assada", "carne de bode", "carne de cabra", "cabrito", "bode"], label: "Carne de bode assada", baseAmount: "100 g", values: { calories: 143, protein: 27.1, carbs: 0, fat: 3.03, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 17, ferro: 3.73, magnesio: 22, potassio: 405, zinco: 5.27, sodio: 86, vitB12: 1.19 }, grams: 100 },
   { terms: ["linguica"], label: "Linguiça", baseAmount: "100 g", values: { calories: 300, protein: 13, carbs: 2, fat: 27, fiber: 0, vitA: 0, vitC: 0, vitD: 0.2, calcio: 10, ferro: 1, magnesio: 15, potassio: 200, zinco: 2, sodio: 950, vitB12: 1 }, grams: 100 },
   // Termos mais específicos que "linguica" (o termo mais longo sempre vence -- ver comentário sobre isso
   // em detectFoods()), então "linguiça bovina/de porco/de frango" caem nesses itens em vez de sempre
@@ -1910,7 +1953,11 @@ const state = {
   showEditarPerfil: false,
   showNovaSenha: false,
   sidebarOpen: false,
-  activeTab: "nutricao", // "nutricao" | "medidas" | "treinos"
+  activeTab: "nutricao", // "nutricao" | "medidas" | "treinos" | "evolucao"
+  // Período selecionado na aba Evolução (ver evolucaoCorteData()/evolucaoTabTemplate()) -- "7"/"30"/"90"
+  // (dias) ou "tudo" (sem corte). Fica só na memória (não precisa persistir entre sessões, mesmo espírito
+  // de historyDiaExpandidoMedidas/showHistoricoMedidas acima).
+  evolucaoPeriodo: "30",
   altura: readStorage(CHAVE_ALTURA, null), // cm
   medidas: readStorage(CHAVE_MEDIDAS, []),
   medidaTipo: "",
@@ -5298,6 +5345,7 @@ function homeTabsTemplate() {
     '<button class="home-tab' + (state.activeTab === "nutricao" ? " active" : "") + '" onclick="acaoTrocarAba(\'nutricao\')">' + icon("utensils") + " Nutrição</button>" +
     '<button class="home-tab' + (state.activeTab === "treinos" ? " active" : "") + '" onclick="acaoTrocarAba(\'treinos\')">' + icon("flame") + " Treinos/Esportes</button>" +
     '<button class="home-tab' + (state.activeTab === "medidas" ? " active" : "") + '" onclick="acaoTrocarAba(\'medidas\')">' + icon("activity") + " Medidas e Aferições</button>" +
+    '<button class="home-tab' + (state.activeTab === "evolucao" ? " active" : "") + '" onclick="acaoTrocarAba(\'evolucao\')">' + icon("trend") + " Evolução</button>" +
     "</div>";
 }
 
@@ -6744,6 +6792,7 @@ function treinosTabTemplate() {
 function fullHomeTemplate() {
   if (state.activeTab === "medidas") return homeTabsTemplate() + medidasTabTemplate();
   if (state.activeTab === "treinos") return homeTabsTemplate() + treinosTabTemplate();
+  if (state.activeTab === "evolucao") return homeTabsTemplate() + evolucaoTabTemplate();
   return homeTabsTemplate() + nutricaoTabTemplate();
 }
 
@@ -6984,6 +7033,290 @@ function diarioKcalAnaliseObjetivoTemplate(r) {
   }
   return '<div class="diario-kcal-gastos"><p class="diario-kcal-dia-subtitulo">Análise do objetivo:</p>' + linhas.join("") + "</div>";
 }
+
+/* ===================== aba Evolução (progresso ao longo do tempo x objetivo) ===================== */
+// Pedido do usuário: uma tela que junte o histórico já registrado (peso, bioimpedância, diário de kcal)
+// pra mostrar a evolução em relação ao objetivo escolhido, em vez de só o dia a dia. Reaproveita ao
+// máximo as contas que já existem pro Diário de Kcal (diarioKcalGastoTotalInfo()/diarioKcalMetaAtingida()
+// /OBJETIVOS_META) em vez de inventar uma lógica nova, pra manter os números sempre consistentes com o
+// que já aparece na "Análise do objetivo:" de cada dia.
+const EVOLUCAO_PERIODOS = [
+  { valor: "7", label: "7 dias" },
+  { valor: "30", label: "30 dias" },
+  { valor: "90", label: "90 dias" },
+  { valor: "tudo", label: "Tudo" },
+];
+function acaoSelecionarPeriodoEvolucao(valor) { state.evolucaoPeriodo = valor; render(); }
+
+// Data de corte (AAAA-MM-DD) do período selecionado na aba Evolução, ou null pra "tudo" (sem corte).
+function evolucaoCorteData() {
+  if (state.evolucaoPeriodo === "tudo") return null;
+  const dias = Number(state.evolucaoPeriodo) || 30;
+  const d = new Date();
+  d.setDate(d.getDate() - dias);
+  const ano = d.getFullYear();
+  const mes = String(d.getMonth() + 1).padStart(2, "0");
+  const dia = String(d.getDate()).padStart(2, "0");
+  return ano + "-" + mes + "-" + dia;
+}
+
+// Série de peso (kg) dentro do período selecionado, a partir dos registros de Medidas e Aferições (tipo
+// "peso") -- é a fonte mais granular de peso do app (pode ter vários registros por dia), diferente do
+// peso "de bioimpedância" (mais esparso, ver evolucaoBioimpedanciaSerie() abaixo). Ordenado do mais
+// antigo pro mais recente, ordem natural de leitura de um gráfico de linha do tempo.
+function evolucaoPesoSerie() {
+  const corte = evolucaoCorteData();
+  return state.medidas
+    .filter((m) => m.tipo === "peso" && (!corte || m.date >= corte))
+    .map((m) => ({ date: m.date, valor: Number(m.valor), id: m.id }))
+    .filter((p) => !isNaN(p.valor))
+    .sort((a, b) => (a.date === b.date ? a.id - b.id : a.date < b.date ? -1 : 1));
+}
+
+// Resumo da tendência de peso no período: peso inicial/atual, variação total e um ritmo médio (kg por
+// semana) -- calculado de forma simples (variação total dividida pelas semanas decorridas entre o
+// primeiro e o último registro), não uma regressão estatística. É só uma média do período, o suficiente
+// pra dar uma noção de ritmo sem parecer mais precisa do que realmente é.
+function evolucaoTendenciaPeso(serie) {
+  if (serie.length < 2) return null;
+  const inicial = serie[0].valor;
+  const atual = serie[serie.length - 1].valor;
+  const dataInicial = new Date(serie[0].date + "T12:00:00");
+  const dataFinal = new Date(serie[serie.length - 1].date + "T12:00:00");
+  const dias = Math.max(1, Math.round((dataFinal - dataInicial) / 86400000));
+  const variacaoTotal = atual - inicial;
+  return { inicial: inicial, atual: atual, variacaoTotal: variacaoTotal, kgPorSemana: variacaoTotal / (dias / 7) };
+}
+
+// Nota logo abaixo dos números de peso: diz se a tendência do período bate com a direção que o objetivo
+// ATUAL busca (mesmo agrupamento de objetivos usado em diferencaPesoIcone()/diarioKcalMetaAtingida(),
+// aplicado aqui à tendência agregada do período em vez de dia a dia). Usa o objetivo atual (não um
+// congelado por registro, já que a tendência cruza vários dias/registros de uma vez).
+function evolucaoPesoObjetivoNotaTemplate(tendencia) {
+  const chave = state.goals.objetivo;
+  if (!chave || !OBJETIVOS_META[chave]) return "";
+  const LIMITE_ESTAVEL = 0.05; // kg/semana -- abaixo disso considera "estável" pra fins de comparação com objetivos de equilíbrio
+  let bate;
+  if (chave === "emagrecimento" || chave === "definicao") bate = tendencia.kgPorSemana < -LIMITE_ESTAVEL;
+  else if (chave === "ganho_massa") bate = tendencia.kgPorSemana > LIMITE_ESTAVEL;
+  else bate = Math.abs(tendencia.kgPorSemana) <= LIMITE_ESTAVEL * 3; // manutenção/performance/saúde geral: tolera um pouco mais de oscilação natural da balança
+  return '<p class="evolucao-nota ' + (bate ? "evolucao-nota-positiva" : "evolucao-nota-negativa") + '">' +
+    icon(bate ? "check" : "help") + " Tendência " + (bate ? "consistente" : "ainda não consistente") + " com o objetivo atual (" + esc(OBJETIVOS_META[chave].label) + ").</p>";
+}
+
+// Registros de Bioimpedância dentro do período selecionado, ordenados do mais antigo pro mais recente.
+function evolucaoBioimpedanciaSerie() {
+  const corte = evolucaoCorteData();
+  return state.bioimpedancia.slice().filter((b) => !corte || b.date >= corte).sort((a, b) => (a.date === b.date ? a.id - b.id : a.date < b.date ? -1 : 1));
+}
+// Métricas de composição corporal comparadas início x fim do período -- diferente do peso (acima), a
+// Bioimpedância costuma ter bem menos registros no período, então em vez de um gráfico de linha (que
+// ficaria com poucos pontos) mostra só a comparação direta "no primeiro registro vs no último".
+const EVOLUCAO_METRICAS_BIOIMPEDANCIA = [
+  { chave: "gordura", label: "Gordura corporal", unidade: "%", digits: 1 },
+  { chave: "massaMuscular", label: "Massa muscular", unidade: "kg", digits: 1 },
+  { chave: "massaMagra", label: "Massa magra", unidade: "kg", digits: 1 },
+  { chave: "aguaCorporal", label: "Água corporal", unidade: "%", digits: 1 },
+  { chave: "gorduraVisceral", label: "Gordura visceral", unidade: "", digits: 1 },
+];
+function evolucaoBioimpedanciaComparacao() {
+  const serie = evolucaoBioimpedanciaSerie();
+  if (serie.length < 2) return [];
+  return EVOLUCAO_METRICAS_BIOIMPEDANCIA.map((m) => {
+    const comValor = serie.filter((r) => r[m.chave] != null && r[m.chave] !== "");
+    if (comValor.length < 2) return null;
+    const inicial = Number(comValor[0][m.chave]);
+    const atual = Number(comValor[comValor.length - 1][m.chave]);
+    return Object.assign({ inicial: inicial, atual: atual, delta: atual - inicial }, m);
+  }).filter(Boolean);
+}
+
+// Série diária de saldo calórico (consumido − gasto total) dentro do período, reaproveitando
+// diarioKcalGastoTotalInfo()/diarioKcalMetaAtingida() -- as MESMAS contas já usadas na "Análise do
+// objetivo:" de cada dia (diarioKcalAnaliseObjetivoTemplate() acima), só que aqui juntando vários dias
+// pra enxergar a tendência de aderência, em vez de olhar dia por dia. Descarta dias sem calorimetria
+// registrada (sem gasto total pra calcular o saldo), igual à análise de um dia isolado já faz.
+function evolucaoAderenciaSerie() {
+  const corte = evolucaoCorteData();
+  return state.diarioKcal
+    .filter((r) => !corte || r.date >= corte)
+    .map((r) => {
+      const info = diarioKcalGastoTotalInfo(r);
+      if (info.gastoTotal == null) return null;
+      const objetivoChave = r.metaCalorias != null ? r.objetivo : state.goals.objetivo;
+      const saldo = r.calories - info.gastoTotal;
+      return { date: r.date, saldo: saldo, atingida: diarioKcalMetaAtingida(saldo, objetivoChave) };
+    })
+    .filter(Boolean)
+    .sort((a, b) => (a.date < b.date ? -1 : 1));
+}
+function evolucaoAderenciaResumo(serie) {
+  if (!serie.length) return null;
+  const comStatus = serie.filter((s) => s.atingida != null);
+  const atingidos = comStatus.filter((s) => s.atingida).length;
+  const saldoMedio = serie.reduce((acc, s) => acc + s.saldo, 0) / serie.length;
+  return { totalDias: serie.length, comStatus: comStatus.length, atingidos: atingidos, percentual: comStatus.length ? Math.round((atingidos / comStatus.length) * 100) : null, saldoMedio: saldoMedio };
+}
+
+// Gráfico de linha em SVG simples (sem biblioteca externa) pra uma série temporal de um único valor --
+// usado pro peso. O SVG usa viewBox fixo e preserveAspectRatio="none" pra esticar/encolher pro espaço
+// disponível via CSS (.evolucao-chart), técnica comum pra gráfico responsivo sem JS de redimensionamento.
+// Eixo Y mostra só 3 marcações (mínimo/meio/máximo, já com uma folga de 10% pra não cortar o traço no
+// topo/base); eixo X só mostra a data do primeiro e do último ponto, pra não poluir com muitas datas. Cada
+// ponto tem um <title> nativo do SVG (tooltip do navegador ao passar o mouse ou tocar) com a data e o
+// valor exato -- não é um crosshair interativo customizado, mas cobre a mesma necessidade (ver o valor
+// exato de um ponto) com bem menos código, na mesma linha de simplicidade do resto do app.
+function evolucaoLineChartSvg(pontos, opts) {
+  opts = opts || {};
+  const W = 320, H = 150, PAD_L = 32, PAD_R = 10, PAD_T = 12, PAD_B = 20;
+  const innerW = W - PAD_L - PAD_R, innerH = H - PAD_T - PAD_B;
+  const digits = opts.digits != null ? opts.digits : 1;
+  const unidade = opts.unidade || "";
+  const cor = opts.cor || "#1c4d3e";
+  const valores = pontos.map((p) => p.valor);
+  let min = Math.min.apply(null, valores), max = Math.max.apply(null, valores);
+  if (min === max) { min -= 1; max += 1; } // evita divisão por zero quando todos os valores do período são iguais
+  const folga = (max - min) * 0.1;
+  min -= folga; max += folga;
+  const x = (i) => PAD_L + (pontos.length === 1 ? innerW / 2 : (i / (pontos.length - 1)) * innerW);
+  const y = (v) => PAD_T + innerH - ((v - min) / (max - min)) * innerH;
+  const coords = pontos.map((p, i) => [x(i), y(p.valor)]);
+  const pathD = coords.map((c, i) => (i === 0 ? "M" : "L") + c[0].toFixed(1) + "," + c[1].toFixed(1)).join(" ");
+  const areaD = pathD + " L" + coords[coords.length - 1][0].toFixed(1) + "," + (PAD_T + innerH) + " L" + coords[0][0].toFixed(1) + "," + (PAD_T + innerH) + " Z";
+  const ticksY = [max, (max + min) / 2, min];
+  const pontosSvg = coords.map((c, i) => {
+    const p = pontos[i];
+    return '<circle cx="' + c[0].toFixed(1) + '" cy="' + c[1].toFixed(1) + '" r="3.5" fill="' + cor + '" stroke="#fff" stroke-width="1.5"><title>' + esc(dataCurta(p.date)) + ": " + formatNumber(p.valor, digits) + unidade + "</title></circle>";
+  }).join("");
+  return '' +
+    '<svg class="evolucao-chart" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="' + esc(opts.ariaLabel || "") + '">' +
+      ticksY.map((v) => '<line x1="' + PAD_L + '" x2="' + (W - PAD_R) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '" class="evolucao-chart-grid"/>' +
+        '<text x="1" y="' + (y(v) + 3).toFixed(1) + '" class="evolucao-chart-axis-label">' + formatNumber(v, digits) + "</text>").join("") +
+      '<path d="' + areaD + '" fill="' + cor + '" opacity="0.08" stroke="none"/>' +
+      '<path d="' + pathD + '" fill="none" stroke="' + cor + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+      pontosSvg +
+      '<text x="' + PAD_L + '" y="' + (H - 4) + '" class="evolucao-chart-axis-label">' + esc(dataCurta(pontos[0].date)) + "</text>" +
+      '<text x="' + (W - PAD_R) + '" y="' + (H - 4) + '" text-anchor="end" class="evolucao-chart-axis-label">' + esc(dataCurta(pontos[pontos.length - 1].date)) + "</text>" +
+    "</svg>";
+}
+// Gráfico de barras divergente (SVG) do saldo calórico diário -- barra pra cima (superávit) ou pra baixo
+// (déficit) a partir da linha de zero, colorida pelo status da meta daquele dia: MESMAS cores já usadas
+// em diario-kcal-meta-atingida/diario-kcal-meta-nao-atingida (azul/terracota), pra manter a mesma
+// linguagem visual do Diário de Kcal aqui também. Cinza quando não dá pra avaliar (sem objetivo definido
+// naquele dia). Mostra no máximo os últimos N dias (ver EVOLUCAO_ADERENCIA_MAX_BARRAS) pra não espremer
+// demais as barras num período muito longo.
+const EVOLUCAO_ADERENCIA_MAX_BARRAS = 60;
+function evolucaoAderenciaChartSvg(serieCompleta) {
+  const dias = serieCompleta.slice(-EVOLUCAO_ADERENCIA_MAX_BARRAS);
+  const W = 320, H = 150, PAD_L = 32, PAD_R = 8, PAD_T = 10, PAD_B = 20;
+  const innerW = W - PAD_L - PAD_R, innerH = H - PAD_T - PAD_B;
+  const maiorSaldo = Math.max.apply(null, dias.map((d) => Math.abs(d.saldo)).concat([100]));
+  const maxAbs = maiorSaldo * 1.1;
+  const zeroY = PAD_T + innerH / 2;
+  const escala = (innerH / 2) / maxAbs;
+  const larguraBarra = Math.max(2, innerW / dias.length - 2);
+  const cor = (d) => d.atingida == null ? "#b7c2ba" : d.atingida ? "#1e88e5" : "#c35e4b";
+  const barras = dias.map((d, i) => {
+    const cx = PAD_L + (i + 0.5) * (innerW / dias.length);
+    const alt = Math.max(1, Math.abs(d.saldo) * escala);
+    const yTopo = d.saldo >= 0 ? zeroY - alt : zeroY;
+    const rotulo = (d.saldo > 0 ? "Superávit de " : d.saldo < 0 ? "Déficit de " : "Equilíbrio: ") + formatNumber(Math.abs(d.saldo)) + " kcal em " + dataCurta(d.date) + (d.atingida == null ? "" : d.atingida ? " (meta atingida)" : " (meta não atingida)");
+    return '<rect x="' + (cx - larguraBarra / 2).toFixed(1) + '" y="' + yTopo.toFixed(1) + '" width="' + larguraBarra.toFixed(1) + '" height="' + alt.toFixed(1) + '" rx="1.5" fill="' + cor(d) + '"><title>' + esc(rotulo) + "</title></rect>";
+  }).join("");
+  return '' +
+    '<svg class="evolucao-chart" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="Saldo calórico diário no período">' +
+      '<line x1="' + PAD_L + '" x2="' + (W - PAD_R) + '" y1="' + zeroY.toFixed(1) + '" y2="' + zeroY.toFixed(1) + '" class="evolucao-chart-grid evolucao-chart-grid-zero"/>' +
+      '<text x="1" y="' + (zeroY + 3).toFixed(1) + '" class="evolucao-chart-axis-label">0</text>' +
+      barras +
+      '<text x="' + PAD_L + '" y="' + (H - 4) + '" class="evolucao-chart-axis-label">' + esc(dataCurta(dias[0].date)) + "</text>" +
+      '<text x="' + (W - PAD_R) + '" y="' + (H - 4) + '" text-anchor="end" class="evolucao-chart-axis-label">' + esc(dataCurta(dias[dias.length - 1].date)) + "</text>" +
+    "</svg>";
+}
+
+function evolucaoPeriodoFiltroTemplate() {
+  return '<div class="evolucao-periodo-chips">' +
+    EVOLUCAO_PERIODOS.map((p) => '<button type="button" class="evolucao-periodo-chip' + (state.evolucaoPeriodo === p.valor ? " active" : "") + '" onclick="acaoSelecionarPeriodoEvolucao(\'' + p.valor + '\')">' + p.label + "</button>").join("") +
+  "</div>";
+}
+function evolucaoPesoCardTemplate() {
+  const serie = evolucaoPesoSerie();
+  const tendencia = evolucaoTendenciaPeso(serie);
+  return '' +
+    '<div class="medidas-section">' +
+      '<h2 class="medidas-section-title">' + icon("trend") + " Peso</h2>" +
+      (tendencia ?
+        evolucaoLineChartSvg(serie, { cor: "#1c4d3e", unidade: " kg", digits: 1, ariaLabel: "Peso ao longo do período" }) +
+        '<div class="evolucao-stats-row">' +
+          '<div class="evolucao-stat"><span class="evolucao-stat-label">Inicial</span><span class="evolucao-stat-value">' + formatNumber(tendencia.inicial, 1) + " kg</span></div>" +
+          '<div class="evolucao-stat"><span class="evolucao-stat-label">Atual</span><span class="evolucao-stat-value">' + formatNumber(tendencia.atual, 1) + " kg</span></div>" +
+          '<div class="evolucao-stat"><span class="evolucao-stat-label">Variação</span><span class="evolucao-stat-value">' + (tendencia.variacaoTotal > 0 ? "+" : "") + formatNumber(tendencia.variacaoTotal, 1) + " kg</span></div>" +
+          '<div class="evolucao-stat"><span class="evolucao-stat-label">Ritmo</span><span class="evolucao-stat-value">' + (tendencia.kgPorSemana > 0 ? "+" : "") + formatNumber(tendencia.kgPorSemana, 2) + " kg/semana</span></div>" +
+        "</div>" +
+        evolucaoPesoObjetivoNotaTemplate(tendencia)
+        :
+        '<p class="imc-empty">Registre pelo menos 2 pesagens (em Medidas e Aferições) dentro do período selecionado para ver o gráfico de evolução do peso.</p>'
+      ) +
+    "</div>";
+}
+function evolucaoComposicaoCardTemplate() {
+  const comparacao = evolucaoBioimpedanciaComparacao();
+  if (!comparacao.length) return ""; // sem pelo menos 2 registros de bioimpedância com a mesma métrica no período -- omite o card inteiro em vez de mostrar vazio
+  return '' +
+    '<div class="medidas-section">' +
+      '<h2 class="medidas-section-title">' + icon("activity") + " Composição corporal</h2>" +
+      '<p class="imc-empty">Comparação entre o primeiro e o último registro de Bioimpedância do período selecionado.</p>' +
+      '<div class="evolucao-comparacao-list">' +
+        comparacao.map((c) => {
+          const melhorSeDiminui = c.chave === "gordura" || c.chave === "gorduraVisceral";
+          const neutro = c.delta === 0;
+          const positivo = !neutro && (melhorSeDiminui ? c.delta < 0 : c.delta > 0);
+          return '<div class="evolucao-comparacao-row">' +
+            '<span class="evolucao-comparacao-label">' + esc(c.label) + "</span>" +
+            '<span class="evolucao-comparacao-valores">' + formatNumber(c.inicial, c.digits) + c.unidade + " → " + formatNumber(c.atual, c.digits) + c.unidade + "</span>" +
+            '<span class="evolucao-comparacao-delta ' + (neutro ? "" : positivo ? "evolucao-delta-positivo" : "evolucao-delta-negativo") + '">' + (c.delta > 0 ? "+" : "") + formatNumber(c.delta, c.digits) + c.unidade + "</span>" +
+          "</div>";
+        }).join("") +
+      "</div>" +
+    "</div>";
+}
+function evolucaoAderenciaCardTemplate() {
+  const serie = evolucaoAderenciaSerie();
+  const resumo = evolucaoAderenciaResumo(serie);
+  return '' +
+    '<div class="medidas-section">' +
+      '<h2 class="medidas-section-title">' + icon("flame") + " Aderência à meta calórica</h2>" +
+      (resumo ?
+        evolucaoAderenciaChartSvg(serie) +
+        '<div class="evolucao-stats-row">' +
+          '<div class="evolucao-stat"><span class="evolucao-stat-label">Dias registrados</span><span class="evolucao-stat-value">' + resumo.totalDias + "</span></div>" +
+          (resumo.percentual != null ? '<div class="evolucao-stat"><span class="evolucao-stat-label">Meta atingida</span><span class="evolucao-stat-value">' + resumo.percentual + "% (" + resumo.atingidos + "/" + resumo.comStatus + ")</span></div>" : "") +
+          '<div class="evolucao-stat"><span class="evolucao-stat-label">Saldo médio</span><span class="evolucao-stat-value">' + (resumo.saldoMedio > 0 ? "+" : "") + formatNumber(resumo.saldoMedio) + " kcal/dia</span></div>" +
+        "</div>" +
+        '<p class="imc-empty" style="margin-top:10px">' + icon("info") + ' Barras para cima = superávit, para baixo = déficit. <span class="diario-kcal-meta-atingida">Azul</span> = meta do dia atingida, <span class="diario-kcal-meta-nao-atingida">terracota</span> = não atingida, cinza = sem objetivo definido naquele dia.</p>'
+        :
+        '<p class="imc-empty">Feche pelo menos um dia no Diário de Kcal (com uma calorimetria registrada) dentro do período selecionado para ver sua aderência à meta calórica.</p>'
+      ) +
+    "</div>";
+}
+// Aba "Evolução" -- ver homeTabsTemplate()/fullHomeTemplate(). Junta os três cards acima (peso,
+// composição corporal e aderência à meta calórica) com um filtro de período compartilhado entre eles.
+function evolucaoTabTemplate() {
+  const temAlgumDado = state.medidas.some((m) => m.tipo === "peso") || state.diarioKcal.length > 0 || state.bioimpedancia.length > 0;
+  if (!temAlgumDado) {
+    return '<main><div class="medidas-section">' +
+      '<h2 class="medidas-section-title">' + icon("trend") + " Evolução</h2>" +
+      '<div class="meal-empty"><div class="meal-empty-icon">' + icon("trend") + "</div><p>Ainda não há dados suficientes</p><p>Registre seu peso, feche alguns dias no Diário de Kcal e cadastre uma Bioimpedância para começar a ver sua evolução aqui.</p></div>" +
+    "</div></main>";
+  }
+  return '<main>' +
+    '<div class="medidas-section-title-row" style="margin:24px 0 0"><h2 class="medidas-section-title" style="margin:0">' + icon("trend") + " Evolução</h2></div>" +
+    evolucaoPeriodoFiltroTemplate() +
+    evolucaoPesoCardTemplate() +
+    evolucaoComposicaoCardTemplate() +
+    evolucaoAderenciaCardTemplate() +
+  "</main>";
+}
+
 // Abre/fecha o detalhamento de um registro do Diário de Kcal -- cada dia expande/recolhe
 // independentemente (não é accordion de "só um por vez", diferente do histórico de refeições/treinos/
 // medidas -- ver comentário do state.diarioKcalDiasExpandidos).
