@@ -663,10 +663,7 @@ svg{ display: block; }
 .install-close:hover{ background:#e7f0e2; }
 
 /* ---------- aba Evolução ---------- */
-.evolucao-periodo-chips{ display:flex; gap:8px; flex-wrap:wrap; margin:14px 0 0; }
-.evolucao-periodo-chip{ border-radius:999px; border:1px solid #dce5db; background:#fff; padding:7px 14px; font-size:12.5px; font-weight:600; color:#6e8d69; transition:background .15s, color .15s, border-color .15s; }
-.evolucao-periodo-chip:hover{ border-color:#8fbf78; }
-.evolucao-periodo-chip.active{ background:var(--primary); border-color:var(--primary); color:#fff; }
+.evolucao-periodo-filtro{ margin:14px 0 0; }
 .evolucao-chart{ display:block; width:100%; height:150px; margin-top:16px; overflow:visible; }
 .evolucao-chart-grid{ stroke:#edf0eb; stroke-width:1; }
 .evolucao-chart-grid-zero{ stroke:#c7d2c9; stroke-width:1.2; }
@@ -1954,10 +1951,14 @@ const state = {
   showNovaSenha: false,
   sidebarOpen: false,
   activeTab: "nutricao", // "nutricao" | "medidas" | "treinos" | "evolucao"
-  // Período selecionado na aba Evolução (ver evolucaoCorteData()/evolucaoTabTemplate()) -- "7"/"30"/"90"
-  // (dias) ou "tudo" (sem corte). Fica só na memória (não precisa persistir entre sessões, mesmo espírito
-  // de historyDiaExpandidoMedidas/showHistoricoMedidas acima).
-  evolucaoPeriodo: "30",
+  // Filtro de período (data "de"/"até") da aba Evolução -- ver evolucaoDataNoFiltro()/
+  // evolucaoPeriodoFiltroTemplate(). "" = sem limite (mesmo padrão de medidasFiltroDe/medidasFiltroAte
+  // acima). Só afeta os cards de Peso e Aderência à meta calórica -- o card de Composição corporal é
+  // fixo (sempre compara o primeiro com o último registro de TODA a história, não só do período
+  // filtrado -- ver evolucaoBioimpedanciaComparacao()). Fica só na memória, mesmo espírito de
+  // historyDiaExpandidoMedidas/showHistoricoMedidas acima.
+  evolucaoFiltroDe: "",
+  evolucaoFiltroAte: "",
   altura: readStorage(CHAVE_ALTURA, null), // cm
   medidas: readStorage(CHAVE_MEDIDAS, []),
   medidaTipo: "",
@@ -7040,34 +7041,26 @@ function diarioKcalAnaliseObjetivoTemplate(r) {
 // máximo as contas que já existem pro Diário de Kcal (diarioKcalGastoTotalInfo()/diarioKcalMetaAtingida()
 // /OBJETIVOS_META) em vez de inventar uma lógica nova, pra manter os números sempre consistentes com o
 // que já aparece na "Análise do objetivo:" de cada dia.
-const EVOLUCAO_PERIODOS = [
-  { valor: "7", label: "7 dias" },
-  { valor: "30", label: "30 dias" },
-  { valor: "90", label: "90 dias" },
-  { valor: "tudo", label: "Tudo" },
-];
-function acaoSelecionarPeriodoEvolucao(valor) { state.evolucaoPeriodo = valor; render(); }
-
-// Data de corte (AAAA-MM-DD) do período selecionado na aba Evolução, ou null pra "tudo" (sem corte).
-function evolucaoCorteData() {
-  if (state.evolucaoPeriodo === "tudo") return null;
-  const dias = Number(state.evolucaoPeriodo) || 30;
-  const d = new Date();
-  d.setDate(d.getDate() - dias);
-  const ano = d.getFullYear();
-  const mes = String(d.getMonth() + 1).padStart(2, "0");
-  const dia = String(d.getDate()).padStart(2, "0");
-  return ano + "-" + mes + "-" + dia;
+// Filtro de período por data "de"/"até" (mesmo padrão de medidasFiltroDe/medidasFiltroAte/
+// medidaPassaFiltro() já usado no histórico de Medidas e Aferições) -- substitui os botões fixos de
+// 7/30/90 dias/Tudo da versão anterior, a pedido do usuário.
+function acaoFiltrarEvolucaoPorData(campo, valor) {
+  if (campo === "de") state.evolucaoFiltroDe = valor; else state.evolucaoFiltroAte = valor;
+  render();
+}
+function evolucaoDataNoFiltro(date) {
+  if (state.evolucaoFiltroDe && date < state.evolucaoFiltroDe) return false;
+  if (state.evolucaoFiltroAte && date > state.evolucaoFiltroAte) return false;
+  return true;
 }
 
-// Série de peso (kg) dentro do período selecionado, a partir dos registros de Medidas e Aferições (tipo
+// Série de peso (kg) dentro do período filtrado, a partir dos registros de Medidas e Aferições (tipo
 // "peso") -- é a fonte mais granular de peso do app (pode ter vários registros por dia), diferente do
 // peso "de bioimpedância" (mais esparso, ver evolucaoBioimpedanciaSerie() abaixo). Ordenado do mais
 // antigo pro mais recente, ordem natural de leitura de um gráfico de linha do tempo.
 function evolucaoPesoSerie() {
-  const corte = evolucaoCorteData();
   return state.medidas
-    .filter((m) => m.tipo === "peso" && (!corte || m.date >= corte))
+    .filter((m) => m.tipo === "peso" && evolucaoDataNoFiltro(m.date))
     .map((m) => ({ date: m.date, valor: Number(m.valor), id: m.id }))
     .filter((p) => !isNaN(p.valor))
     .sort((a, b) => (a.date === b.date ? a.id - b.id : a.date < b.date ? -1 : 1));
@@ -7104,14 +7097,21 @@ function evolucaoPesoObjetivoNotaTemplate(tendencia) {
     icon(bate ? "check" : "help") + " Tendência " + (bate ? "consistente" : "ainda não consistente") + " com o objetivo atual (" + esc(OBJETIVOS_META[chave].label) + ").</p>";
 }
 
-// Registros de Bioimpedância dentro do período selecionado, ordenados do mais antigo pro mais recente.
+// TODOS os registros de Bioimpedância (histórico completo, sem filtro de período), ordenados do mais
+// antigo pro mais recente. Pedido do usuário: o card de Composição corporal é FIXO -- diferente do peso
+// (que tem registro quase todo dia e faz sentido filtrar por período), a Bioimpedância é medida com
+// muito menos frequência, então filtrar por um período curto (7/30/90 dias) quase sempre deixava o card
+// sem os 2 registros necessários pra comparar, e ele só aparecia escolhendo "Tudo". Por isso, ao
+// contrário de evolucaoPesoSerie()/evolucaoAderenciaSerie(), esta função IGNORA
+// evolucaoDataNoFiltro()/o filtro de data de propósito -- sempre compara o primeiro com o último
+// registro de toda a história.
 function evolucaoBioimpedanciaSerie() {
-  const corte = evolucaoCorteData();
-  return state.bioimpedancia.slice().filter((b) => !corte || b.date >= corte).sort((a, b) => (a.date === b.date ? a.id - b.id : a.date < b.date ? -1 : 1));
+  return state.bioimpedancia.slice().sort((a, b) => (a.date === b.date ? a.id - b.id : a.date < b.date ? -1 : 1));
 }
-// Métricas de composição corporal comparadas início x fim do período -- diferente do peso (acima), a
-// Bioimpedância costuma ter bem menos registros no período, então em vez de um gráfico de linha (que
-// ficaria com poucos pontos) mostra só a comparação direta "no primeiro registro vs no último".
+// Métricas de composição corporal comparadas primeiro x último registro de TODA a história (ver nota
+// acima) -- diferente do peso, a Bioimpedância costuma ter poucos registros no total, então em vez de um
+// gráfico de linha (que ficaria com poucos pontos) mostra só a comparação direta "no primeiro registro vs
+// no último".
 const EVOLUCAO_METRICAS_BIOIMPEDANCIA = [
   { chave: "gordura", label: "Gordura corporal", unidade: "%", digits: 1 },
   { chave: "massaMuscular", label: "Massa muscular", unidade: "kg", digits: 1 },
@@ -7137,9 +7137,8 @@ function evolucaoBioimpedanciaComparacao() {
 // pra enxergar a tendência de aderência, em vez de olhar dia por dia. Descarta dias sem calorimetria
 // registrada (sem gasto total pra calcular o saldo), igual à análise de um dia isolado já faz.
 function evolucaoAderenciaSerie() {
-  const corte = evolucaoCorteData();
   return state.diarioKcal
-    .filter((r) => !corte || r.date >= corte)
+    .filter((r) => evolucaoDataNoFiltro(r.date))
     .map((r) => {
       const info = diarioKcalGastoTotalInfo(r);
       if (info.gastoTotal == null) return null;
@@ -7233,10 +7232,17 @@ function evolucaoAderenciaChartSvg(serieCompleta) {
     "</svg>";
 }
 
+// Filtro "de"/"até" que afeta os cards de Peso e Aderência à meta calórica (não afeta o card de
+// Composição corporal, que é fixo -- ver evolucaoBioimpedanciaSerie()). Mesmo layout de dois campos de
+// data lado a lado do filtro de período do histórico de Medidas e Aferições (medidaFiltroTemplate()),
+// pra manter a mesma linguagem visual.
 function evolucaoPeriodoFiltroTemplate() {
-  return '<div class="evolucao-periodo-chips">' +
-    EVOLUCAO_PERIODOS.map((p) => '<button type="button" class="evolucao-periodo-chip' + (state.evolucaoPeriodo === p.valor ? " active" : "") + '" onclick="acaoSelecionarPeriodoEvolucao(\'' + p.valor + '\')">' + p.label + "</button>").join("") +
-  "</div>";
+  return '' +
+    '<div class="evolucao-periodo-filtro medida-filtro-periodo">' +
+      '<div><label class="field-label">De</label><input type="date" class="field-input" max="' + esc(today()) + '" value="' + esc(state.evolucaoFiltroDe) + '" onchange="acaoFiltrarEvolucaoPorData(\'de\', this.value)"/></div>' +
+      '<div><label class="field-label">Até</label><input type="date" class="field-input" max="' + esc(today()) + '" value="' + esc(state.evolucaoFiltroAte) + '" onchange="acaoFiltrarEvolucaoPorData(\'ate\', this.value)"/></div>' +
+    "</div>" +
+    '<p class="imc-empty" style="margin-top:8px">Esse período afeta os cards de Peso e Aderência à meta calórica logo abaixo. O card de Composição corporal é fixo e sempre mostra o histórico completo.</p>';
 }
 function evolucaoPesoCardTemplate() {
   const serie = evolucaoPesoSerie();
@@ -7258,25 +7264,31 @@ function evolucaoPesoCardTemplate() {
       ) +
     "</div>";
 }
+// Card fixo (ver comentário de evolucaoBioimpedanciaSerie()) -- ao contrário dos cards de Peso e
+// Aderência, SEMPRE aparece na mesma posição da aba Evolução, com o filtro de período ou não, mesmo sem
+// dados suficientes ainda (mostra uma mensagem no lugar do gráfico, igual aos outros dois cards já fazem).
 function evolucaoComposicaoCardTemplate() {
   const comparacao = evolucaoBioimpedanciaComparacao();
-  if (!comparacao.length) return ""; // sem pelo menos 2 registros de bioimpedância com a mesma métrica no período -- omite o card inteiro em vez de mostrar vazio
   return '' +
     '<div class="medidas-section">' +
       '<h2 class="medidas-section-title">' + icon("activity") + " Composição corporal</h2>" +
-      '<p class="imc-empty">Comparação entre o primeiro e o último registro de Bioimpedância do período selecionado.</p>' +
-      '<div class="evolucao-comparacao-list">' +
-        comparacao.map((c) => {
-          const melhorSeDiminui = c.chave === "gordura" || c.chave === "gorduraVisceral";
-          const neutro = c.delta === 0;
-          const positivo = !neutro && (melhorSeDiminui ? c.delta < 0 : c.delta > 0);
-          return '<div class="evolucao-comparacao-row">' +
-            '<span class="evolucao-comparacao-label">' + esc(c.label) + "</span>" +
-            '<span class="evolucao-comparacao-valores">' + formatNumber(c.inicial, c.digits) + c.unidade + " → " + formatNumber(c.atual, c.digits) + c.unidade + "</span>" +
-            '<span class="evolucao-comparacao-delta ' + (neutro ? "" : positivo ? "evolucao-delta-positivo" : "evolucao-delta-negativo") + '">' + (c.delta > 0 ? "+" : "") + formatNumber(c.delta, c.digits) + c.unidade + "</span>" +
-          "</div>";
-        }).join("") +
-      "</div>" +
+      (comparacao.length ?
+        '<p class="imc-empty">Comparação entre o primeiro e o último registro de Bioimpedância de todo o histórico (não é afetado pelo filtro de período acima).</p>' +
+        '<div class="evolucao-comparacao-list">' +
+          comparacao.map((c) => {
+            const melhorSeDiminui = c.chave === "gordura" || c.chave === "gorduraVisceral";
+            const neutro = c.delta === 0;
+            const positivo = !neutro && (melhorSeDiminui ? c.delta < 0 : c.delta > 0);
+            return '<div class="evolucao-comparacao-row">' +
+              '<span class="evolucao-comparacao-label">' + esc(c.label) + "</span>" +
+              '<span class="evolucao-comparacao-valores">' + formatNumber(c.inicial, c.digits) + c.unidade + " → " + formatNumber(c.atual, c.digits) + c.unidade + "</span>" +
+              '<span class="evolucao-comparacao-delta ' + (neutro ? "" : positivo ? "evolucao-delta-positivo" : "evolucao-delta-negativo") + '">' + (c.delta > 0 ? "+" : "") + formatNumber(c.delta, c.digits) + c.unidade + "</span>" +
+            "</div>";
+          }).join("") +
+        "</div>"
+        :
+        '<p class="imc-empty">Cadastre pelo menos 2 registros de Bioimpedância (com a mesma métrica preenchida nos dois) para ver a comparação entre o primeiro e o último aqui.</p>'
+      ) +
     "</div>";
 }
 function evolucaoAderenciaCardTemplate() {
