@@ -470,6 +470,36 @@ svg{ display: block; }
 .diario-kcal-refeicao-nome{ display:flex; align-items:center; gap:5px; font-weight:600; }
 .diario-kcal-refeicao-nome .icon{ width:13px; height:13px; color:#9aa9a1; flex-shrink:0; }
 .diario-kcal-refeicao-valores{ color:#8a9c93; }
+/* Card "hoje, em andamento" no topo do Diário de Kcal (ver diarioKcalRegistroParcialHoje()/
+   diarioKcalRegistroParcialTemplate()) -- visual parecido com um dia já fechado (.diario-kcal-dia), mas
+   com classes CSS próprias de propósito (ver comentário de diarioKcalHojeMacrosTemplate() no JS): esse
+   card nunca é um registro salvo, é recalculado do zero a cada render e aparece sempre, mesmo sem nenhum
+   dia fechado ainda -- reaproveitar as mesmas classes faria esse card ser contado/selecionado junto de
+   dias já fechados em qualquer busca pelo documento inteiro. Fundo/borda levemente diferentes (creme com
+   borda tracejada âmbar) reforçam visualmente que esse dia ainda não fechou.*/
+.diario-kcal-hoje{ margin-bottom:16px; border-radius:16px; border:1px dashed #e7d9a8; background:#fbf8ee; padding:16px 18px; }
+.diario-kcal-hoje-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.diario-kcal-hoje-head-direita{ display:flex; align-items:center; gap:4px; }
+.diario-kcal-hoje-data{ display:flex; align-items:center; gap:6px; font-size:14px; font-weight:600; color:#31564a; text-transform:capitalize; }
+.diario-kcal-hoje-data .icon{ width:16px; height:16px; color:#8a9c93; flex-shrink:0; }
+.diario-kcal-hoje-badge{ display:inline-flex; align-items:center; padding:2px 8px; border-radius:999px; background:#f3e3ae; color:#8a6d1a; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.03em; }
+.diario-kcal-hoje-kcal{ font-size:15px; font-weight:700; color:#3d6355; }
+.diario-kcal-hoje-meta{ margin-top:4px; font-size:13px; font-weight:600; color:#4a6b58; }
+.diario-kcal-hoje-macros{ margin-top:6px; font-size:12.5px; color:#6e8d69; }
+.diario-kcal-hoje-micros{ margin-top:4px; font-size:11.5px; color:#9aa9a1; }
+.diario-kcal-hoje-nutriente-abaixo{ color:#c35e4b; }
+.diario-kcal-hoje-nutriente-acima{ color:#29b6f6; text-shadow:0 0 6px rgba(41,182,246,0.45); }
+.diario-kcal-hoje-subtitulo{ margin:0 0 6px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.03em; color:#8a9c93; }
+.diario-kcal-hoje-refeicoes{ margin-top:12px; display:flex; flex-direction:column; gap:6px; border-top:1px solid #ede2bb; padding-top:10px; }
+.diario-kcal-hoje-refeicao{ display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:12px; color:#557268; flex-wrap:wrap; }
+.diario-kcal-hoje-refeicao-nome{ display:flex; align-items:center; gap:5px; font-weight:600; }
+.diario-kcal-hoje-refeicao-nome .icon{ width:13px; height:13px; color:#9aa9a1; flex-shrink:0; }
+.diario-kcal-hoje-refeicao-valores{ color:#8a9c93; }
+.diario-kcal-hoje-gastos{ margin-top:12px; display:flex; flex-direction:column; gap:5px; border-top:1px solid #ede2bb; padding-top:10px; font-size:12px; color:#c9762f; }
+.diario-kcal-hoje-linha{ display:flex; align-items:center; gap:5px; }
+.diario-kcal-hoje-linha .icon{ width:14px; height:14px; flex-shrink:0; }
+.diario-kcal-hoje-nota{ margin:8px 0 0; display:flex; align-items:flex-start; gap:6px; font-size:11px; line-height:1.4; color:#92a099; }
+.diario-kcal-hoje-nota .icon{ margin-top:1px; width:13px; height:13px; color:#9db69a; flex-shrink:0; }
 .history-day-meal span:last-child{ display:inline-flex; align-items:center; gap:4px; }
 .history-day-meal-foto-link{ display:inline-flex; color:#6c8d68; }
 .history-day-meal-foto-link:hover{ color:#3d6355; }
@@ -2043,6 +2073,12 @@ const state = {
   // diarioKcalRegistroTemplate()/acaoAbrirEdicaoDataDiarioKcal(). Só um por vez (abrir outro fecha o
   // anterior automaticamente, por ser o mesmo state).
   diarioKcalEditandoDataId: null,
+  // Se o card "hoje, em andamento" (topo da aba Diário de Kcal -- ver
+  // diarioKcalRegistroParcialTemplate()/acaoAlternarParcialDiarioKcal()) está expandido. Fica só na
+  // memória (mesmo espírito de historyDiaExpandido), reseta ao recarregar a página. Independente de
+  // diarioKcalDiasExpandidos porque esse card não tem um id de registro salvo (não é um state.diarioKcal
+  // de verdade, é recalculado do zero a cada render -- ver diarioKcalRegistroParcialHoje()).
+  diarioKcalParcialExpandido: false,
   showEditarPerfil: false,
   showNovaSenha: false,
   sidebarOpen: false,
@@ -7742,6 +7778,135 @@ function evolucaoTabTemplate() {
   "</main>";
 }
 
+// Registro "virtual" do dia de HOJE, ainda em andamento -- NUNCA salvo em state.diarioKcal, recalculado
+// do zero a cada render a partir de TODAS as refeições/treinos de hoje (state.meals/state.treinos com
+// date === today()), igual fecharDiaAutomaticamente()/recalcularDiarioKcalRegistro() já fazem pros dias
+// já encerrados -- ou seja, sempre reflete o DIA INTEIRO até agora, mesmo que "Encerrar dia" já tenha
+// sido clicado mais cedo hoje (esse clique só afeta o corte dos CARDS de consumo do topo da aba -- ver
+// corteDiaAberto()/mealsDesdeUltimoEncerramento() -- nunca este resumo). Usa a meta/objetivo/GET ATUAIS
+// (nunca congelados, ao contrário de um dia já fechado -- ver acaoEncerrarDia()): faz sentido esse resumo
+// refletir na hora qualquer mudança de meta feita durante o próprio dia, já que ele não fechou de
+// verdade ainda. Pedido do usuário: mostrar sempre um resumo parcial de hoje aqui, junto dos dias já
+// fechados -- consolida sozinho, virando um registro definitivo de verdade, na próxima virada de meia-
+// noite (ver diarioKcalRegistroParcialTemplate()/fecharDiaAutomaticamente()/processarViradaDeDia()).
+function diarioKcalRegistroParcialHoje() {
+  const hoje = today();
+  const mealsDoDia = ordenarPorTipoDeRefeicao(todayMeals());
+  const totais = mealsDoDia.reduce((sum, m) => addNutrients(sum, m), emptyNutrients);
+  const refeicoes = mealsDoDia.map((m) => {
+    const r = { name: m.name, time: m.time, alimentos: m.detected || [] };
+    NUTRIENT_KEYS.forEach((k) => { r[k] = m[k] || 0; });
+    return r;
+  });
+  const caloriasQueimadas = todayTreinos().reduce((soma, tr) => soma + (tr.caloriasQueimadas || 0), 0);
+  const ultimoCalo = ultimaCalorimetria();
+  return Object.assign({
+    date: hoje, refeicoes: refeicoes, caloriasQueimadas: caloriasQueimadas,
+    metaCalorias: state.goals.calories, metaProtein: state.goals.protein, metaCarbs: state.goals.carbs,
+    metaFat: state.goals.fat, metaFiber: state.goals.fiber, objetivo: state.goals.objetivo || "",
+    get: ultimoCalo && ultimoCalo.get ? Number(ultimoCalo.get) : null,
+  }, totais);
+}
+function acaoAlternarParcialDiarioKcal() {
+  state.diarioKcalParcialExpandido = !state.diarioKcalParcialExpandido;
+  render();
+}
+// Equivalentes de diarioKcalMacrosTemplate()/diarioKcalMicrosTemplate()/diarioKcalRefeicaoTemplate()/
+// diarioKcalGastosTemplate()/diarioKcalAnaliseObjetivoTemplate(), só pro card de hoje -- com classes CSS
+// PRÓPRIAS (".diario-kcal-hoje-*", nunca ".diario-kcal-dia-*"/".diario-kcal-gastos-linha"/
+// ".diario-kcal-dia-subtitulo"/".diario-kcal-equivalencia-nota"/etc.) de propósito: esse card aparece
+// SEMPRE (mesmo sem nenhum dia fechado ainda) e é recalculado a cada render -- reaproveitar as mesmas
+// classes dos dias já fechados faria esse card "parcial" ser contado/selecionado junto por engano em
+// qualquer lugar do app (ou teste) que busque essas classes pelo documento inteiro assumindo que só
+// existem dias JÁ FECHADOS. As classes ".diario-kcal-nutriente-abaixo/-acima" e ".diario-kcal-meta-
+// atingida/-nao-atingida" continuam reaproveitadas como estão (só de cor, sem contagem/seleção em lugar
+// nenhum que dependa de existirem só em dias fechados).
+function diarioKcalHojeMacrosTemplate(r) {
+  const metas = { protein: state.goals.protein, carbs: state.goals.carbs, fat: state.goals.fat, fiber: state.goals.fiber };
+  return ["protein", "carbs", "fat", "fiber"].map((k) => {
+    const meta = metas[k];
+    const classe = diarioKcalCompararMetaClasse(r[k] || 0, meta).replace("diario-kcal-nutriente", "diario-kcal-hoje-nutriente");
+    return '<span class="diario-kcal-hoje-nutriente' + classe + '">' + diarioKcalNutrienteTexto(nutrientMeta[k].label, r[k] || 0, meta, nutrientMeta[k].unit) + "</span>";
+  }).join(" · ");
+}
+function diarioKcalHojeMicrosTemplate(r) {
+  return Object.keys(micronutrientMeta).map((k) => {
+    const meta = MICRO_GOALS[k];
+    const classe = diarioKcalCompararMetaClasse(r[k] || 0, meta).replace("diario-kcal-nutriente", "diario-kcal-hoje-nutriente");
+    const texto = k === "vitD"
+      ? diarioKcalNutrienteTextoVitaminaD(micronutrientMeta[k].label, r[k] || 0, meta)
+      : diarioKcalNutrienteTexto(micronutrientMeta[k].label, r[k] || 0, meta, micronutrientMeta[k].unit);
+    return '<span class="diario-kcal-hoje-nutriente' + classe + '">' + texto + "</span>";
+  }).join(" · ");
+}
+function diarioKcalHojeRefeicaoTemplate(ref) {
+  const alimentos = ref.alimentos && ref.alimentos.length ? " (" + ref.alimentos.map(esc).join(", ") + ")" : "";
+  return '<div class="diario-kcal-hoje-refeicao">' +
+    '<span class="diario-kcal-hoje-refeicao-nome">' + icon("clock") + " " + esc(ref.time) + " · " + esc(ref.name) + alimentos + "</span>" +
+    '<span class="diario-kcal-hoje-refeicao-valores">' + formatNumber(ref.calories) + " kcal · P " + formatNumber(ref.protein, 1) + " · C " + formatNumber(ref.carbs, 1) + " · G " + formatNumber(ref.fat, 1) + "</span>" +
+  "</div>";
+}
+function diarioKcalHojeGastosTemplate(r) {
+  const info = diarioKcalGastoTotalInfo(r);
+  const linhas = [
+    '<div class="diario-kcal-hoje-linha">' + icon("flame") + " Em repouso (GET): " + (info.get != null ? formatNumber(info.get) + " kcal" : "sem calorimetria registrada") + "</div>",
+    '<div class="diario-kcal-hoje-linha">' + icon("flame") + " Atividades/treinos/esportes: " + formatNumber(info.atividades) + " kcal" + (info.atividades > 0 ? " (estimativa)" : "") + "</div>",
+  ];
+  if (info.gastoTotal != null) {
+    linhas.push('<div class="diario-kcal-hoje-linha">' + icon("flame") + " Gasto total estimado até agora: " + formatNumber(info.gastoTotal) + " kcal</div>");
+  }
+  return '<div class="diario-kcal-hoje-gastos"><p class="diario-kcal-hoje-subtitulo">Kcal gastos até agora:</p>' + linhas.join("") + "</div>";
+}
+// Mesma ideia de diarioKcalAnaliseObjetivoTemplate(), só que "até agora": sem a comparação de peso em
+// jejum dia-a-dia-seguinte (não faz sentido ainda pro dia de hoje, que não tem "dia seguinte") nem a nota
+// de equivalência do Wishnofsky (fica só na nota final do card, ver diarioKcalRegistroParcialTemplate()).
+function diarioKcalHojeAnaliseTemplate(r) {
+  const info = diarioKcalGastoTotalInfo(r);
+  const objetivoChave = r.objetivo;
+  const kgEquiv = (kcal) => formatNumber(Math.abs(kcal) / KCAL_POR_KG_GORDURA, 2) + " kg";
+  const linhas = ['<div class="diario-kcal-hoje-linha">' + icon("utensils") + " Kcal consumidos até agora: " + formatNumber(r.calories) + " kcal / " + kgEquiv(r.calories) + "</div>"];
+  if (info.gastoTotal == null) {
+    linhas.push('<div class="diario-kcal-hoje-linha">' + icon("flame") + " Kcal gastos até agora: sem calorimetria registrada</div>");
+  } else {
+    const saldo = r.calories - info.gastoTotal;
+    const saldoTexto = (saldo > 0 ? "superávit de " : saldo < 0 ? "déficit de " : "") + formatNumber(Math.abs(saldo)) + " kcal / " + kgEquiv(saldo);
+    const atingida = diarioKcalMetaAtingida(saldo, objetivoChave);
+    const objetivoLabel = objetivoChave && OBJETIVOS_META[objetivoChave] ? OBJETIVOS_META[objetivoChave].label : "";
+    const status = atingida == null ? "" :
+      ' — <strong class="' + (atingida ? "diario-kcal-meta-atingida" : "diario-kcal-meta-nao-atingida") + '">meta (' + esc(objetivoLabel) + ") - " + (atingida ? "atingida até agora ✅" : "não atingida até agora ❌") + "</strong>";
+    linhas.push('<div class="diario-kcal-hoje-linha">' + icon("flame") + " Kcal gastos até agora: " + formatNumber(info.gastoTotal) + " kcal / " + kgEquiv(info.gastoTotal) + treinoIconeGastos(info) + "</div>");
+    linhas.push('<div class="diario-kcal-hoje-linha">' + icon("flame") + " Saldo de kcal até agora: " + saldoTexto + status + "</div>");
+  }
+  return '<div class="diario-kcal-hoje-gastos"><p class="diario-kcal-hoje-subtitulo">Análise do objetivo (parcial):</p>' + linhas.join("") + "</div>";
+}
+// Card "hoje, em andamento" -- SEMPRE o primeiro item da aba Diário de Kcal, antes dos dias já fechados
+// (ver diarioKcalTabTemplate()). Mesmo layout/comportamento de expandir-recolher de um dia já fechado
+// (diarioKcalRegistroTemplate()), mas sem os botões de recalcular/corrigir data/excluir (não fazem
+// sentido pra um dia que ainda nem fechou -- não existe registro nenhum salvo pra recalcular/corrigir/
+// excluir) e com uma nota ao final avisando que os números aqui são parciais.
+function diarioKcalRegistroParcialTemplate() {
+  const r = diarioKcalRegistroParcialHoje();
+  const expandido = !!state.diarioKcalParcialExpandido;
+  return '<div class="diario-kcal-hoje' + (expandido ? " history-day-expandido" : "") + '">' +
+    '<div class="diario-kcal-hoje-head history-day-head-btn" onclick="acaoAlternarParcialDiarioKcal()">' +
+      '<span class="diario-kcal-hoje-data">' + icon("calendar") + " " + dateLabel(r.date) + ' <span class="diario-kcal-hoje-badge">Em andamento</span></span>' +
+      '<span class="diario-kcal-hoje-head-direita"><span class="diario-kcal-hoje-kcal">' + formatNumber(r.calories) + " kcal</span>" +
+      icon("chevron", "history-day-chevron") + "</span>" +
+    "</div>" +
+    '<div class="diario-kcal-hoje-meta">' + diarioKcalMetaTexto(r) + "</div>" +
+    (expandido ? '' +
+      '<div class="diario-kcal-hoje-macros">' + diarioKcalHojeMacrosTemplate(r) + "</div>" +
+      '<div class="diario-kcal-hoje-micros">' + diarioKcalHojeMicrosTemplate(r) + "</div>" +
+      (r.refeicoes.length
+        ? '<div class="diario-kcal-hoje-refeicoes"><p class="diario-kcal-hoje-subtitulo">Refeições de hoje (até agora):</p>' + r.refeicoes.map(diarioKcalHojeRefeicaoTemplate).join("") + "</div>"
+        : "") +
+      diarioKcalHojeGastosTemplate(r)
+      : ""
+    ) +
+    diarioKcalHojeAnaliseTemplate(r) +
+    '<p class="diario-kcal-hoje-nota">' + icon("help") + " Resumo parcial de hoje: muda a cada refeição/treino novo e consolida sozinho, virando um registro definitivo, na virada da meia-noite.</p>" +
+  "</div>";
+}
 // Abre/fecha o detalhamento de um registro do Diário de Kcal -- cada dia expande/recolhe
 // independentemente (não é accordion de "só um por vez", diferente do histórico de refeições/treinos/
 // medidas -- ver comentário do state.diarioKcalDiasExpandidos).
@@ -7784,14 +7949,17 @@ function diarioKcalRegistroTemplate(r) {
   "</div>";
 }
 // Aba "Diário de Kcal" da página de Nutrição -- ver acaoTrocarAbaNutricao(). O botão "Encerrar dia" fica
-// sempre no topo, imediatamente acima dos registros já guardados (mais recente primeiro).
+// sempre no topo, seguido do resumo parcial de hoje (diarioKcalRegistroParcialTemplate(), sempre visível,
+// mesmo sem nenhum dia fechado ainda -- pedido do usuário) e, por fim, os dias já fechados (mais recente
+// primeiro).
 function diarioKcalTabTemplate() {
   const registros = state.diarioKcal.slice().sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
   return '<section class="diario-kcal-section">' +
     '<button class="btn-primary-pill-lg diario-kcal-encerrar-btn" onclick="acaoEncerrarDia()">' + icon("check") + ' <span class="label">Encerrar dia</span></button>' +
+    diarioKcalRegistroParcialTemplate() +
     (registros.length
       ? '<div class="diario-kcal-lista">' + registros.map(diarioKcalRegistroTemplate).join("") + "</div>"
-      : '<div class="meal-empty"><div class="meal-empty-icon">' + icon("calendar") + '</div><p>Nenhum dia encerrado ainda</p><p>Ao final do dia, clique em "Encerrar dia" para guardar aqui o resumo de calorias, macro e micronutrientes consumidos, com as refeições e horários.</p></div>'
+      : '<div class="meal-empty"><div class="meal-empty-icon">' + icon("calendar") + '</div><p>Nenhum dia consolidado ainda</p><p>Os dias anteriores aparecem aqui sozinhos, na virada da meia-noite -- ou clique em "Encerrar dia" pra fechar o dia atual mais cedo.</p></div>'
     ) +
   "</section>";
 }
