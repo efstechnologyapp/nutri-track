@@ -237,6 +237,28 @@ svg{ display: block; }
 .progress-track{ margin-top:12px; height:6px; overflow:hidden; border-radius:999px; background:#edf1ec; }
 .progress-fill{ height:100%; border-radius:999px; transition:width .3s; }
 .nutrient-delta{ margin-top:8px; display:flex; align-items:center; gap:4px; font-size:12px; font-weight:500; }
+/* Card "virável" de macro/micronutriente (arrastar pra esquerda mostra o gráfico de consumo médio no
+   verso) -- ver nutrienteCardFlipWrapperTemplate()/acaoNutrienteCardPointerDown(). A frente continua
+   sendo exatamente o .nutrient-card de sempre (não muda em nada); só o wrapper por fora é novo. */
+.nutrient-card-flip{ position:relative; perspective:1400px; touch-action:pan-y; }
+.nutrient-card-flip-inner{ position:relative; width:100%; transform-style:preserve-3d; transition:transform .4s cubic-bezier(.4,.05,.2,1); }
+.nutrient-card-face-front{ position:relative; backface-visibility:hidden; -webkit-backface-visibility:hidden; cursor:grab; }
+.nutrient-card-face-back{ position:absolute; inset:0; display:flex; flex-direction:column; gap:4px; backface-visibility:hidden; -webkit-backface-visibility:hidden; transform:rotateY(180deg); border-radius:22px; border:1px solid #e5e9e1; background:#fff; padding:16px; box-shadow:0 10px 28px rgba(43,73,53,0.045); overflow:auto; cursor:grab; }
+.nutriente-comparacao-chart{ display:block; width:100%; height:82px; overflow:visible; }
+.nutrient-card-drag-hint{ position:absolute; right:8px; bottom:14px; display:flex; color:#d3dbd2; pointer-events:none; }
+.nutrient-card-drag-hint .icon{ width:15px; height:15px; }
+.nutrient-card-back-head{ display:flex; align-items:center; justify-content:space-between; }
+.nutrient-card-back-left{ display:flex; align-items:center; gap:10px; }
+.nutrient-card-back-icon{ display:flex; height:28px; width:28px; align-items:center; justify-content:center; border-radius:10px; font-size:14px; flex-shrink:0; }
+.nutrient-card-back-icon .icon{ width:15px; height:15px; }
+.nutrient-card-back-name{ font-size:14px; font-weight:600; color:#31564a; }
+.nutrient-card-voltar{ display:flex; align-items:center; font-size:11px; font-weight:600; color:#6c8d68; background:none; border:none; padding:4px 6px; margin:-4px -6px 0 0; border-radius:8px; cursor:pointer; flex-shrink:0; }
+.nutrient-card-voltar:hover{ background:#f2f6ef; }
+.nutrient-card-voltar .icon{ width:14px; height:14px; }
+.nutriente-comparacao-legenda{ display:flex; gap:14px; font-size:11px; color:#5c6b62; }
+.nutriente-comparacao-legenda-item{ display:flex; align-items:center; gap:5px; }
+.nutriente-comparacao-swatch{ width:10px; height:10px; border-radius:3px; display:inline-block; }
+.nutriente-comparacao-nota{ margin-top:auto; font-size:11px; line-height:1.35; }
 
 .dashboard-grid{ display:grid; gap:24px; grid-template-columns:1fr; }
 @media (min-width: 1280px){ .dashboard-grid{ grid-template-columns:minmax(0,1fr) 410px; } }
@@ -735,6 +757,7 @@ const ICON_PATHS = {
   play: '<path d="M6 3.5v17l15-8.5Z"/>',
   pause: '<path d="M7 3h4v18H7Z"/><path d="M13 3h4v18h-4Z"/>',
   chevron: '<path d="M6 9l6 6 6-6"/>',
+  chevronleft: '<path d="M15 6l-6 6 6 6"/>',
   salt: '<path d="M9 3h6l2 4v12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V7Z"/><path d="M9 7h6"/><circle cx="10.5" cy="11" r=".5"/><circle cx="13.5" cy="11" r=".5"/><circle cx="12" cy="14" r=".5"/><circle cx="10.5" cy="17" r=".5"/><circle cx="13.5" cy="17" r=".5"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
   image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',
@@ -1583,6 +1606,39 @@ async function buscarIndiceUVAtual(lat, lon) {
   if (!dados || !dados.hourly || !Array.isArray(dados.hourly.uv_index)) throw new Error("Resposta inesperada da API de \u00edndice UV");
   return { horarios: dados.hourly.time, uv: dados.hourly.uv_index, nuvens: Array.isArray(dados.hourly.cloud_cover) ? dados.hourly.cloud_cover : [] };
 }
+// Pedido do usu\u00e1rio: o registro de Exposi\u00e7\u00e3o Solar deve dizer qual cidade, estado E PA\u00cdS foi a
+// localiza\u00e7\u00e3o usada no c\u00e1lculo, n\u00e3o s\u00f3 "\u00edndice UV real da sua localiza\u00e7\u00e3o" de forma gen\u00e9rica. Consulta a
+// API p\u00fablica e gratuita BigDataCloud (sem chave de acesso, sem cadastro -- feita justamente pra chamada
+// direto do navegador a partir de coordenadas de geolocaliza\u00e7\u00e3o, mesmo esp\u00edrito da Open-Meteo acima). S\u00f3
+// serve pra EXIBIR de onde veio a exposi\u00e7\u00e3o -- n\u00e3o entra em nenhum c\u00e1lculo de vitamina D -- ent\u00e3o quem
+// chama trata uma falha aqui separadamente do \u00edndice UV (ver acaoObterLocalizacaoExposicao()), sem
+// travar o c\u00e1lculo principal por causa disso.
+async function buscarLocalizacaoTexto(lat, lon) {
+  const url = "https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=" + encodeURIComponent(lat) + "&longitude=" + encodeURIComponent(lon) + "&localityLanguage=pt";
+  const resposta = await fetch(url);
+  if (!resposta.ok) throw new Error("Falha ao consultar cidade/estado/pa\u00eds (HTTP " + resposta.status + ")");
+  const dados = await resposta.json();
+  const cidade = (dados && (dados.city || dados.locality)) || "";
+  // Prefere a sigla (ex.: "PB") extra\u00edda de principalSubdivisionCode ("BR-PB") -- mais compacta e mais
+  // natural pro formato "Cidade, UF" que qualquer brasileiro reconhece de cara; cai pro nome por extenso
+  // (principalSubdivision, ex.: "Para\u00edba") s\u00f3 se a sigla n\u00e3o vier na resposta.
+  const codigoSubdivisao = dados && dados.principalSubdivisionCode ? String(dados.principalSubdivisionCode).split("-").pop() : "";
+  const estado = codigoSubdivisao || (dados && dados.principalSubdivision) || "";
+  const pais = (dados && dados.countryName) || "";
+  if (!cidade && !estado && !pais) throw new Error("Resposta sem cidade/estado/pa\u00eds reconhec\u00edveis");
+  return { cidade: cidade, estado: estado, pais: pais };
+}
+// Formata "Cidade, UF, Pa\u00eds" a partir de state.exposicaoLocalizacaoTexto -- usado no aviso de
+// localiza\u00e7\u00e3o (exposicaoSolarCamposTemplate()) e no texto salvo no registro
+// (acaoCalcularExposicaoSolar()). Junta s\u00f3 as partes que vieram preenchidas (ex.: sem o pa\u00eds, ou s\u00f3 com o
+// estado, quando o geocoding n\u00e3o reconhece tudo -- comum em zona rural), e "" quando n\u00e3o tem NENHUMA das
+// tr\u00eas -- quem chama trata esse caso com um texto gen\u00e9rico ("sua localiza\u00e7\u00e3o"), j\u00e1 que a busca pode n\u00e3o
+// ter terminado ainda ou ter falhado.
+function localizacaoTextoFormatada() {
+  const loc = state.exposicaoLocalizacaoTexto;
+  if (!loc) return "";
+  return [loc.cidade, loc.estado, loc.pais].filter(Boolean).join(", ");
+}
 
 // Em ordem alfab\u00e9tica.
 const ESPORTE_TIPOS = ["Boxe", "Caminhada", "Ciclismo", "Corrida", "Futebol", "Jiu-jitsu", "Muay Thai", "Muscula\u00e7\u00e3o", "Nata\u00e7\u00e3o", "T\u00eanis"];
@@ -1892,6 +1948,12 @@ const state = {
   // dispositivo); "erro" (falha de rede/API); "manual" (usuário optou por informar o céu à mao).
   exposicaoLocalizacaoStatus: "idle",
   exposicaoUVHorario: null,
+  // Cidade/estado/país da localização usada no cálculo (ver buscarLocalizacaoTexto()/
+  // localizacaoTextoFormatada()) -- só pra EXIBIR de onde veio a exposição solar (no aviso da tela e no
+  // registro salvo), não entra em nenhuma conta. { cidade, estado, pais } ou null (ainda não obtido, ou a
+  // busca falhou -- nesse caso o texto salvo cai pra um genérico "sua localização", sem travar o cálculo
+  // do índice UV, que é a parte que realmente importa).
+  exposicaoLocalizacaoTexto: null,
   // Produtos/receitas cadastrados pela própria pessoa -- ver comentário em CHAVE_PRODUTOS_CUSTOMIZADOS.
   produtosCustomizados: readStorage(CHAVE_PRODUTOS_CUSTOMIZADOS, []),
   // Modal "Cadastrar produto no cardápio" -- ver cadastrarProdutoModalTemplate()/acaoAbrirCadastrarProduto().
@@ -1916,6 +1978,11 @@ const state = {
   // Chave do nutriente (nutrientMeta/micronutrientMeta) com o modal de informações aberto, ou null --
   // ver nutrientInfoModalTemplate()/acaoAbrirInfoNutriente().
   infoNutrienteAberto: null,
+  // Mapa { [chave]: true } dos cards de macro/micronutriente virados (mostrando o verso, com o gráfico
+  // de consumo médio -- ver nutrienteCardFlipWrapperTemplate()/acaoNutrienteCardPointerDown()). Pedido do
+  // usuário: arrastar o card pra esquerda "vira" ele, mostrando diário/semanal/mensal real x esperado.
+  // Fica só na memória (mesmo espírito de historyDiaExpandidoMedidas), reseta ao recarregar a página.
+  nutrientCardsFlipped: {},
   // "bioimpedancia" | "calorimetria" | null -- qual dos dois modais de informação do exame (mesmo
   // padrão do de cima, só que pros campos de Bioimpedância e Calorimetria) está aberto -- ver
   // exameInfoModalTemplate()/acaoAbrirInfoExame().
@@ -3358,10 +3425,17 @@ function acaoSelecionarTipoRefeicao(tipo) {
 function acaoObterLocalizacaoExposicao() {
   if (!navigator.geolocation) { state.exposicaoLocalizacaoStatus = "indisponivel"; render(); return; }
   state.exposicaoLocalizacaoStatus = "buscando";
+  state.exposicaoLocalizacaoTexto = null;
   render();
   navigator.geolocation.getCurrentPosition(
     (pos) => {
-      buscarIndiceUVAtual(pos.coords.latitude, pos.coords.longitude).then((dados) => {
+      const lat = pos.coords.latitude, lon = pos.coords.longitude;
+      // Busca a cidade/estado em paralelo ao índice UV, mas trata o resultado separadamente: é só pra
+      // EXIBIR de onde veio a exposição (ver buscarLocalizacaoTexto()), então uma falha aqui (ex.: API de
+      // geocoding fora do ar) não pode travar o cálculo do índice UV, que é a parte que realmente importa
+      // pro resultado -- por isso não usa Promise.all (que rejeitaria os dois se só este falhasse).
+      buscarLocalizacaoTexto(lat, lon).then((loc) => { state.exposicaoLocalizacaoTexto = loc; render(); }).catch(() => {});
+      buscarIndiceUVAtual(lat, lon).then((dados) => {
         state.exposicaoUVHorario = dados;
         state.exposicaoLocalizacaoStatus = "ok";
         render();
@@ -3395,8 +3469,12 @@ function acaoCalcularExposicaoSolar() {
   if (usandoUV) {
     resultado = calcularVitaminaDSolPorUV(inicio, fim, state.exposicaoUVHorario, tipoPele);
     // O sistema informa sozinho a condição do tempo detectada (a partir da cobertura de nuvens do
-    // mesmo local/horário) -- não precisa perguntar pro usuário como estava o céu.
-    detalheFonte = "índice UV real da sua localização" + (resultado && resultado.condicaoTempo ? " · " + resultado.condicaoTempo : "");
+    // mesmo local/horário) -- não precisa perguntar pro usuário como estava o céu. Pedido do usuário:
+    // também informa a cidade/estado da localização usada (ver localizacaoTextoFormatada()) -- cai pro
+    // texto genérico "sua localização" se a busca de cidade/estado ainda não terminou ou falhou (não
+    // trava o cálculo do índice UV por causa disso, ver acaoObterLocalizacaoExposicao()).
+    const localTexto = localizacaoTextoFormatada();
+    detalheFonte = (localTexto ? "índice UV real de " + localTexto : "índice UV real da sua localização") + (resultado && resultado.condicaoTempo ? " · " + resultado.condicaoTempo : "");
   } else {
     const ceuEl = document.getElementById("exposicao-ceu");
     const ceu = ceuEl ? ceuEl.value : "";
@@ -3447,7 +3525,7 @@ function acaoSalvarRefeicao() {
   state.preview = [];
   state.mealTipo = ""; state.mealNomeCustom = ""; state.mealDescription = ""; state.mealData = "";
   state.exposicaoInicio = ""; state.exposicaoFim = ""; state.exposicaoCeu = "";
-  state.exposicaoLocalizacaoStatus = "idle"; state.exposicaoUVHorario = null;
+  state.exposicaoLocalizacaoStatus = "idle"; state.exposicaoUVHorario = null; state.exposicaoLocalizacaoTexto = null;
   if (descInput) descInput.value = "";
   if (dataEl) dataEl.value = "";
   toastSuccess(dataRefeicao === today() ? "Refeição registrada no histórico." : "Refeição registrada em " + dateLabel(dataRefeicao) + ".");
@@ -4043,6 +4121,202 @@ function nutrientInfoBtnTemplate(key, label) {
 function exameInfoBtnTemplate(tipo, label) {
   return '<button class="nutrient-info-btn" aria-label="Informações sobre ' + esc(label) + '" onclick="event.stopPropagation(); acaoAbrirInfoExame(\'' + tipo + '\')">' + icon("info") + "</button>";
 }
+
+/* ===================== Verso dos cards de macro/micronutriente: consumo médio x esperado =====================
+   Pedido do usuário: em cada card de macro/micronutriente, arrastar pra esquerda "vira" o card (como uma
+   carta), mostrando um gráfico com o consumo médio diário/semanal/mensal e, atrás de cada barra, o valor
+   esperado (meta/referência) daquele mesmo período, pra comparação visual. Janela de tempo escolhida
+   explicitamente pelo usuário: TODO o histórico (sem cortar em 30/90 dias), então as médias abaixo usam
+   todos os dias já encerrados no Diário de Kcal (state.diarioKcal), sem nenhum filtro de data. */
+
+// Mapeia cada macronutriente pra chave da meta CONGELADA no registro do Diário de Kcal (mesmo campo usado
+// por diarioKcalMacrosTemplate()) -- assim a média "esperada" usa a meta que estava valendo em cada dia
+// (com o mesmo fallback pra state.goals atual em registros antigos sem meta congelada), em vez da meta
+// atual aplicada retroativamente a todo o histórico. Chaves ausentes daqui (as de micronutriente) usam
+// MICRO_GOALS, que é fixo (mesma referência todo dia, não precisa congelar nada).
+const NUTRIENT_META_CONGELADA_CHAVE = { protein: "metaProtein", carbs: "metaCarbs", fat: "metaFat", fiber: "metaFiber" };
+// Consumo médio diário/semanal/mensal (real x esperado) de um nutriente (macro ou micronutriente), usando
+// todo o histórico de dias encerrados no Diário de Kcal. Semanal/mensal são o valor diário × 7/× 30 (não
+// uma soma real de calendário) -- simplificação deliberada: o pedido foi comparar ordens de grandeza
+// diário/semanal/mensal a partir da média de todo o histórico, não reconstruir semanas/meses exatos do
+// calendário. Sódio é o único caso "às avessas" (o esperado é um TETO, não um piso -- ver comentário de
+// micronutrientMeta) -- essa função só calcula os números; quem exibe é que adapta o texto.
+function nutrienteMediaHistorico(key) {
+  const registros = state.diarioKcal;
+  if (!registros.length) return { temDados: false };
+  const chaveMetaMacro = NUTRIENT_META_CONGELADA_CHAVE[key];
+  let somaReal = 0, somaEsperado = 0;
+  registros.forEach((r) => {
+    somaReal += r[key] || 0;
+    if (chaveMetaMacro) {
+      const temMetaPropria = r.metaCalorias != null;
+      somaEsperado += temMetaPropria && r[chaveMetaMacro] != null ? r[chaveMetaMacro] : state.goals[key];
+    } else {
+      somaEsperado += MICRO_GOALS[key];
+    }
+  });
+  const realDiario = somaReal / registros.length;
+  const esperadoDiario = somaEsperado / registros.length;
+  return {
+    temDados: true,
+    real: { diario: realDiario, semanal: realDiario * 7, mensal: realDiario * 30 },
+    esperado: { diario: esperadoDiario, semanal: esperadoDiario * 7, mensal: esperadoDiario * 30 },
+  };
+}
+// Gráfico (SVG) de consumo médio real x esperado, em 3 grupos (Diário/Semanal/Mensal) -- ver
+// nutrienteMediaHistorico(). Em cada grupo, a barra clara e mais larga (esperado) fica atrás, e a barra
+// sólida mais estreita (consumido) fica na frente, sobreposta -- pedido explícito do usuário ("por trás
+// de cada um...o consumo médio esperado"). Mesma cor do nutriente (meta.color) nas duas barras, só
+// variando a opacidade/largura pra diferenciar real x esperado sem introduzir uma segunda cor concorrente
+// (identidade = cor do próprio nutriente, não uma paleta nova por gráfico).
+function nutrienteComparacaoChartSvg(comparacao, meta, digits) {
+  const grupos = [
+    { label: "Diário", real: comparacao.real.diario, esperado: comparacao.esperado.diario },
+    { label: "Semanal", real: comparacao.real.semanal, esperado: comparacao.esperado.semanal },
+    { label: "Mensal", real: comparacao.real.mensal, esperado: comparacao.esperado.mensal },
+  ];
+  // Altura bem mais compacta que os outros gráficos da aba Evolução (evolucao-chart, 150px) de propósito:
+  // esse gráfico mora no VERSO de um card que precisa continuar do mesmo tamanho da frente (ver
+  // nutrienteCardFlipWrapperTemplate()/.nutrient-card-face-back), então precisa caber num espaço bem
+  // menor. Os valores exatos de cada barra continuam disponíveis ao passar o mouse/tocar (elemento
+  // <title>), então a leitura fina não se perde por causa do tamanho reduzido.
+  const W = 320, H = 82, PAD_L = 10, PAD_R = 10, PAD_T = 5, PAD_B = 15;
+  const innerW = W - PAD_L - PAD_R, innerH = H - PAD_T - PAD_B;
+  const maiorValor = Math.max.apply(null, grupos.map((g) => Math.max(g.real, g.esperado)).concat([1]));
+  const maxEscala = maiorValor * 1.15;
+  const larguraGrupo = innerW / grupos.length;
+  const larguraEsperado = Math.min(56, larguraGrupo * 0.62);
+  const larguraReal = larguraEsperado * 0.5;
+  const baseY = PAD_T + innerH;
+  const alturaDe = (v) => Math.max(1, (v / maxEscala) * innerH);
+  const barras = grupos.map((g, i) => {
+    const cx = PAD_L + (i + 0.5) * larguraGrupo;
+    const altEsperado = alturaDe(g.esperado);
+    const altReal = alturaDe(g.real);
+    return '' +
+      '<rect x="' + (cx - larguraEsperado / 2).toFixed(1) + '" y="' + (baseY - altEsperado).toFixed(1) + '" width="' + larguraEsperado.toFixed(1) + '" height="' + altEsperado.toFixed(1) + '" rx="3" fill="' + meta.color + '" opacity="0.22"><title>' + esc(g.label) + " esperado: " + formatNumber(g.esperado, digits) + " " + meta.unit + "</title></rect>" +
+      '<rect x="' + (cx - larguraReal / 2).toFixed(1) + '" y="' + (baseY - altReal).toFixed(1) + '" width="' + larguraReal.toFixed(1) + '" height="' + altReal.toFixed(1) + '" rx="2.5" fill="' + meta.color + '"><title>' + esc(g.label) + " consumido: " + formatNumber(g.real, digits) + " " + meta.unit + "</title></rect>" +
+      '<text x="' + cx.toFixed(1) + '" y="' + (H - 3) + '" text-anchor="middle" class="evolucao-chart-axis-label">' + g.label + "</text>";
+  }).join("");
+  return '' +
+    '<svg class="nutriente-comparacao-chart" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="Consumo médio diário, semanal e mensal de ' + esc(meta.label) + ' comparado ao esperado">' +
+      '<line x1="' + PAD_L + '" x2="' + (W - PAD_R) + '" y1="' + baseY + '" y2="' + baseY + '" class="evolucao-chart-grid"/>' +
+      barras +
+    "</svg>";
+}
+function nutrienteComparacaoLegendaTemplate(meta) {
+  return '' +
+    '<div class="nutriente-comparacao-legenda">' +
+      '<span class="nutriente-comparacao-legenda-item"><span class="nutriente-comparacao-swatch" style="background:' + meta.color + '"></span>Consumido</span>' +
+      '<span class="nutriente-comparacao-legenda-item"><span class="nutriente-comparacao-swatch" style="background:' + meta.color + ';opacity:.22"></span>Esperado</span>' +
+    "</div>";
+}
+// Verso do card (aparece ao arrastar pra esquerda -- ver nutrienteCardFlipWrapperTemplate()): gráfico
+// comparando consumo real x esperado nas 3 janelas, mais um botão "Voltar" (alternativa ao gesto de
+// arrastar de volta, pra quem preferir/precisar de um clique). Sódio ganha uma nota extra porque o
+// "esperado" ali é um teto, não uma meta a alcançar (ver comentário de micronutrientMeta).
+function nutrienteComparacaoCardTemplate(key, meta, digits) {
+  const comparacao = nutrienteMediaHistorico(key);
+  // Classes próprias (nutrient-card-back-*) em vez de reaproveitar nutrient-card-head/nutrient-card-left/
+  // nutrient-icon/nutrient-name da frente -- vários testes existentes contam esses elementos com um
+  // seletor descendente do grid inteiro (ex.: ".nutrient-grid .nutrient-name"), então repetir essas
+  // classes aqui dobraria a contagem/quebraria a ordem esperada. Visual idêntico, via CSS própria.
+  // Sem uma lista numérica separada por período (como a da aba Evolução) de propósito -- o verso precisa
+  // continuar do mesmo tamanho da frente (ver .nutrient-card-face-back), então o valor exato de cada
+  // barra fica disponível ao passar o mouse/tocar (elemento <title> do SVG) em vez de duplicar em texto.
+  return '' +
+    '<div class="nutrient-card-back-head">' +
+      '<div class="nutrient-card-back-left"><div class="nutrient-card-back-icon" style="background:' + meta.soft + ";color:" + meta.color + '">' + icon(meta.icon) + "</div>" +
+      '<span class="nutrient-card-back-name">' + meta.label + "</span></div>" +
+      '<button class="nutrient-card-voltar" aria-label="Voltar pra frente do card" onclick="event.stopPropagation(); acaoAlternarFlipNutriente(\'' + key + "', false)\">" + icon("chevronleft") + " Voltar</button>" +
+    "</div>" +
+    (comparacao.temDados ?
+      '' +
+      nutrienteComparacaoChartSvg(comparacao, meta, digits) +
+      nutrienteComparacaoLegendaTemplate(meta) +
+      (key === "sodio" ?
+        '<p class="imc-empty nutriente-comparacao-nota">Aqui, o esperado é um limite — não uma meta a bater.</p>'
+        :
+        '<p class="imc-empty nutriente-comparacao-nota">Média de todo o histórico do Diário de Kcal.</p>'
+      )
+      :
+      '<p class="imc-empty nutriente-comparacao-nota">Encerre pelo menos um dia no Diário de Kcal para ver sua média de consumo aqui.</p>'
+    );
+}
+// Envolve a frente já pronta de um card (frenteHtml, sem NENHUMA alteração -- continua sendo exatamente o
+// <div class="nutrient-card"> de sempre, preservando toda a estrutura que os testes existentes verificam)
+// num container que permite "virar" o card arrastando pra esquerda -- ver acaoNutrienteCardPointerDown().
+// A rotação é aplicada via transform inline (refletindo sempre o state.nutrientCardsFlipped[key] atual),
+// nunca via classe CSS, porque quem efetivamente ANIMA o gesto é o próprio handler de pointer, mutando o
+// DOM diretamente enquanto arrasta -- esse transform aqui só garante que, após um render() (ex.: outra
+// parte da tela mudou), o card continue mostrando o lado certo.
+function nutrienteCardFlipWrapperTemplate(key, frenteHtml, meta, digits) {
+  const virado = !!state.nutrientCardsFlipped[key];
+  return '' +
+    '<div class="nutrient-card-flip" data-nutrient-key="' + key + '" onpointerdown="acaoNutrienteCardPointerDown(event, \'' + key + '\')">' +
+      '<div class="nutrient-card-flip-inner" style="transform:rotateY(' + (virado ? 180 : 0) + 'deg)">' +
+        '<div class="nutrient-card-face-front">' + frenteHtml + '<span class="nutrient-card-drag-hint" aria-hidden="true">' + icon("chevronleft") + "</span></div>" +
+        '<div class="nutrient-card-face-back">' + nutrienteComparacaoCardTemplate(key, meta, digits) + "</div>" +
+      "</div>" +
+    "</div>";
+}
+// Gesto de arrastar/virar um card de macro/micronutriente (ver nutrienteCardFlipWrapperTemplate()).
+// Arrastar pra esquerda vira o card (mostra o verso, com o gráfico de consumo médio); arrastar de volta
+// pra direita desvira. A rotação é aplicada diretamente no DOM (style.transform) durante todo o gesto --
+// NUNCA chamando render() no meio do arraste, senão a tela inteira seria substituída (ver render()) e a
+// animação quebraria. Só ao soltar o dedo/mouse é que o ângulo final é decidido, animado no MESMO nó (pra
+// terminar suave) e, então, um único render() confirma state.nutrientCardsFlipped -- só depois da
+// animação já ter terminado, senão o card "pularia" de volta por um instante entre o gesto e o render().
+let nutrienteCardArraste = null;
+function acaoNutrienteCardPointerDown(event, key) {
+  if (nutrienteCardArraste) return; // ignora um segundo dedo/clique enquanto já há um arraste em andamento
+  if (event.pointerType === "mouse" && event.button !== 0) return;
+  if (event.target.closest(".nutrient-info-btn, .nutrient-card-voltar")) return; // deixa esses botões agirem normalmente
+  const flip = event.currentTarget;
+  const inner = flip.querySelector(".nutrient-card-flip-inner");
+  if (!inner) return;
+  flip.setPointerCapture(event.pointerId);
+  const jaVirado = !!state.nutrientCardsFlipped[key];
+  const g = { pointerId: event.pointerId, startX: event.clientX, largura: Math.max(1, flip.getBoundingClientRect().width), jaVirado: jaVirado, ultimoAngulo: jaVirado ? 180 : 0, moveu: false };
+  nutrienteCardArraste = g;
+  inner.style.transition = "none";
+  const finalizar = (virado) => {
+    nutrienteCardArraste = null;
+    flip.onpointermove = null; flip.onpointerup = null; flip.onpointercancel = null;
+    inner.style.transition = "";
+    inner.style.transform = "rotateY(" + (virado ? 180 : 0) + "deg)";
+    let comitado = false;
+    const commit = () => { if (comitado) return; comitado = true; state.nutrientCardsFlipped[key] = virado; render(); };
+    inner.addEventListener("transitionend", commit, { once: true });
+    setTimeout(commit, 450); // salvaguarda: sem isso, se o ângulo final já era o inicial (nenhuma transição dispara), o commit nunca aconteceria
+  };
+  flip.onpointermove = (ev) => {
+    if (ev.pointerId !== g.pointerId) return;
+    const deltaX = ev.clientX - g.startX;
+    if (Math.abs(deltaX) > 4) g.moveu = true;
+    const anguloInicial = g.jaVirado ? 180 : 0;
+    const limite = g.largura * 0.6; // arrastar ~60% da largura do card já vira/desvira completamente
+    const angulo = Math.min(180, Math.max(0, anguloInicial - (deltaX / limite) * 180));
+    g.ultimoAngulo = angulo;
+    inner.style.transform = "rotateY(" + angulo.toFixed(1) + "deg)";
+  };
+  flip.onpointerup = (ev) => {
+    if (ev.pointerId !== g.pointerId) return;
+    try { flip.releasePointerCapture(ev.pointerId); } catch (e) {}
+    finalizar(g.moveu ? g.ultimoAngulo >= 90 : g.jaVirado);
+  };
+  flip.onpointercancel = (ev) => {
+    if (ev.pointerId !== g.pointerId) return;
+    try { flip.releasePointerCapture(ev.pointerId); } catch (e) {}
+    finalizar(g.jaVirado);
+  };
+}
+// Alternativa ao gesto de arrastar (botão "Voltar" no verso -- ver nutrienteComparacaoCardTemplate()).
+function acaoAlternarFlipNutriente(key, virado) {
+  state.nutrientCardsFlipped[key] = virado;
+  render();
+}
+
 // Cards da aba "Macronutrientes" -- calorias NÃO entra aqui: calorias é a unidade de energia, não um
 // macronutriente (proteína, carboidrato, gordura e fibra são os macronutrientes de fato). O consumo/
 // meta de calorias já aparece no card "Seu resumo de hoje", no topo da aba Nutrição -- a pedido do
@@ -4054,7 +4328,7 @@ function nutrientCardsTemplate() {
     const meta = nutrientMeta[key];
     const over = consumed[key] > state.goals[key];
     const digits = 1;
-    return '' +
+    const frente = '' +
       '<div class="nutrient-card"><div class="nutrient-card-head">' +
         '<div class="nutrient-card-left"><div class="nutrient-icon" style="background:' + meta.soft + ";color:" + meta.color + '">' + icon(meta.icon) + "</div>" +
         '<span class="nutrient-name">' + meta.label + "</span>" + nutrientInfoBtnTemplate(key, meta.label) + "</div>" +
@@ -4066,6 +4340,7 @@ function nutrientCardsTemplate() {
       '<div class="nutrient-delta" style="color:' + (over ? "#c35e4b" : "#789087") + '">' + icon(over ? "arrowup" : "arrowdown") + " " +
       (over ? formatNumber(consumed[key] - state.goals[key], digits) + " " + meta.unit + " acima da meta" : formatNumber(Math.max(0, remainingToday()[key]), digits) + " " + meta.unit + " restantes") +
       "</div></div>";
+    return nutrienteCardFlipWrapperTemplate(key, frente, meta, digits);
   }).join("");
 }
 
@@ -4085,7 +4360,7 @@ function micronutrientCardsTemplate() {
     const textoDelta = over
       ? (ehVitD ? formatVitaminaDComUI(valor - goal, digits) : formatNumber(valor - goal, digits) + " " + meta.unit) + " acima da referência"
       : (ehVitD ? formatVitaminaDComUI(Math.max(0, goal - valor), digits) : formatNumber(Math.max(0, goal - valor), digits) + " " + meta.unit) + " restantes";
-    return '' +
+    const frente = '' +
       '<div class="nutrient-card"><div class="nutrient-card-head">' +
         '<div class="nutrient-card-left"><div class="nutrient-icon" style="background:' + meta.soft + ";color:" + meta.color + '">' + icon(meta.icon) + "</div>" +
         '<span class="nutrient-name">' + meta.label + "</span>" + nutrientInfoBtnTemplate(key, meta.label) + "</div>" +
@@ -4098,6 +4373,7 @@ function micronutrientCardsTemplate() {
       '<div class="progress-track"><div class="progress-fill" style="width:' + pct(valor, goal) + "%;background:" + (over ? "#d76c54" : meta.color) + '"></div></div>' +
       '<div class="nutrient-delta" style="color:' + (over ? "#c35e4b" : "#789087") + '">' + icon(over ? "arrowup" : "arrowdown") + " " + textoDelta +
       "</div></div>";
+    return nutrienteCardFlipWrapperTemplate(key, frente, meta, digits);
   }).join("");
 }
 
@@ -4220,7 +4496,8 @@ function exposicaoSolarCamposTemplate() {
   if (buscando) {
     blocoLocalizacao = '<p class="exposicao-solar-localizacao exposicao-solar-localizacao-buscando">' + icon("sun") + " Obtendo sua localização e o índice UV de hoje...</p>";
   } else if (usandoUV) {
-    blocoLocalizacao = '<p class="exposicao-solar-localizacao exposicao-solar-localizacao-ok">' + icon("check") + ' Usando o índice UV real e a condição do tempo (nuvens) da sua localização de hoje -- detectados automaticamente. <button type="button" class="exposicao-solar-link" onclick="acaoUsarCeuManual()">Prefiro informar o céu manualmente</button></p>';
+    const localTexto = localizacaoTextoFormatada();
+    blocoLocalizacao = '<p class="exposicao-solar-localizacao exposicao-solar-localizacao-ok">' + icon("check") + ' Usando o índice UV real e a condição do tempo (nuvens)' + (localTexto ? " de " + esc(localTexto) : " da sua localização") + ' de hoje -- detectados automaticamente. <button type="button" class="exposicao-solar-link" onclick="acaoUsarCeuManual()">Prefiro informar o céu manualmente</button></p>';
   } else {
     const avisos = { negado: "Localização não autorizada.", indisponivel: "Localização indisponível neste dispositivo.", erro: "Não consegui buscar o índice UV agora (sem internet?)." };
     const aviso = avisos[status] || "";
