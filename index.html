@@ -253,24 +253,25 @@ svg{ display: block; }
 .progress-track{ margin-top:12px; height:6px; overflow:hidden; border-radius:999px; background:#edf1ec; }
 .progress-fill{ height:100%; border-radius:999px; transition:width .3s; }
 .nutrient-delta{ margin-top:8px; display:flex; align-items:center; gap:4px; font-size:12px; font-weight:500; }
-/* Card "virável" de macro/micronutriente (arrastar pra esquerda mostra o gráfico de consumo médio no
-   verso) -- ver nutrienteCardFlipWrapperTemplate()/acaoNutrienteCardPointerDown(). A frente continua
-   sendo exatamente o .nutrient-card de sempre (não muda em nada); só o wrapper por fora é novo. */
-.nutrient-card-flip{ position:relative; perspective:1400px; touch-action:pan-y; }
+/* Card "virável" de macro/micronutriente (um TOQUE no card mostra o gráfico de consumo médio no verso) --
+   ver nutrienteCardFlipWrapperTemplate()/acaoAlternarFlipNutriente(). Mesma técnica de flip 3D e mesmos
+   dois tracinhos indicadores abaixo do card já usados no card "Seu resumo de hoje" (.summary-card-flip).
+   A frente continua sendo exatamente o .nutrient-card de sempre (não muda em nada); só o wrapper por fora
+   é novo. */
+.nutrient-card-flip-wrap{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+.nutrient-card-flip{ position:relative; width:100%; perspective:1400px; cursor:pointer; }
 .nutrient-card-flip-inner{ position:relative; width:100%; transform-style:preserve-3d; transition:transform .4s cubic-bezier(.4,.05,.2,1); }
-.nutrient-card-face-front{ position:relative; backface-visibility:hidden; -webkit-backface-visibility:hidden; cursor:grab; }
-.nutrient-card-face-back{ position:absolute; inset:0; display:flex; flex-direction:column; gap:4px; backface-visibility:hidden; -webkit-backface-visibility:hidden; transform:rotateY(180deg); border-radius:22px; border:1px solid #e5e9e1; background:#fff; padding:16px; box-shadow:0 10px 28px rgba(43,73,53,0.045); overflow:auto; cursor:grab; }
+.nutrient-card-face-front{ position:relative; backface-visibility:hidden; -webkit-backface-visibility:hidden; }
+.nutrient-card-face-back{ position:absolute; inset:0; display:flex; flex-direction:column; gap:4px; backface-visibility:hidden; -webkit-backface-visibility:hidden; transform:rotateY(180deg); border-radius:22px; border:1px solid #e5e9e1; background:#fff; padding:16px; box-shadow:0 10px 28px rgba(43,73,53,0.045); overflow:auto; }
 .nutriente-comparacao-chart{ display:block; width:100%; height:82px; overflow:visible; }
-.nutrient-card-drag-hint{ position:absolute; right:8px; bottom:14px; display:flex; color:#d3dbd2; pointer-events:none; }
-.nutrient-card-drag-hint .icon{ width:15px; height:15px; }
 .nutrient-card-back-head{ display:flex; align-items:center; justify-content:space-between; }
 .nutrient-card-back-left{ display:flex; align-items:center; gap:10px; }
 .nutrient-card-back-icon{ display:flex; height:28px; width:28px; align-items:center; justify-content:center; border-radius:10px; font-size:14px; flex-shrink:0; }
 .nutrient-card-back-icon .icon{ width:15px; height:15px; }
 .nutrient-card-back-name{ font-size:14px; font-weight:600; color:#31564a; }
-.nutrient-card-voltar{ display:flex; align-items:center; font-size:11px; font-weight:600; color:#6c8d68; background:none; border:none; padding:4px 6px; margin:-4px -6px 0 0; border-radius:8px; cursor:pointer; flex-shrink:0; }
-.nutrient-card-voltar:hover{ background:#f2f6ef; }
-.nutrient-card-voltar .icon{ width:14px; height:14px; }
+.nutrient-card-dots{ display:flex; gap:5px; }
+.nutrient-card-dot{ height:3px; width:14px; border-radius:999px; background:#d5ddd0; padding:0; border:none; cursor:pointer; transition:background .15s, width .15s; }
+.nutrient-card-dot.active{ width:20px; background:#4b7048; }
 .nutriente-comparacao-legenda{ display:flex; gap:14px; font-size:11px; color:#5c6b62; }
 .nutriente-comparacao-legenda-item{ display:flex; align-items:center; gap:5px; }
 .nutriente-comparacao-swatch{ width:10px; height:10px; border-radius:3px; display:inline-block; }
@@ -1995,8 +1996,9 @@ const state = {
   // ver nutrientInfoModalTemplate()/acaoAbrirInfoNutriente().
   infoNutrienteAberto: null,
   // Mapa { [chave]: true } dos cards de macro/micronutriente virados (mostrando o verso, com o gráfico
-  // de consumo médio -- ver nutrienteCardFlipWrapperTemplate()/acaoNutrienteCardPointerDown()). Pedido do
-  // usuário: arrastar o card pra esquerda "vira" ele, mostrando diário/semanal/mensal real x esperado.
+  // de consumo médio -- ver nutrienteCardFlipWrapperTemplate()/acaoAlternarFlipNutriente()). Pedido do
+  // usuário: um TOQUE no card "vira" ele, mostrando diário/semanal/mensal real x esperado (mesmo mecanismo
+  // do card "Seu resumo de hoje" -- ver resumoCardVirado logo abaixo).
   // Fica só na memória (mesmo espírito de historyDiaExpandidoMedidas), reseta ao recarregar a página.
   nutrientCardsFlipped: {},
   // Card "Seu resumo de hoje" virado (mostrando o verso, com Aderência à meta calórica) ou não -- ver
@@ -4251,11 +4253,12 @@ function nutrienteComparacaoCardTemplate(key, meta, digits) {
   // Sem uma lista numérica separada por período (como a da aba Evolução) de propósito -- o verso precisa
   // continuar do mesmo tamanho da frente (ver .nutrient-card-face-back), então o valor exato de cada
   // barra fica disponível ao passar o mouse/tocar (elemento <title> do SVG) em vez de duplicar em texto.
+  // Sem botão "Voltar" -- tocar em qualquer lugar do card (ou os dois tracinhos abaixo dele, ver
+  // nutrienteCardFlipWrapperTemplate()) já desvira, mesmo padrão do card "Seu resumo de hoje".
   return '' +
     '<div class="nutrient-card-back-head">' +
       '<div class="nutrient-card-back-left"><div class="nutrient-card-back-icon" style="background:' + meta.soft + ";color:" + meta.color + '">' + icon(meta.icon) + "</div>" +
       '<span class="nutrient-card-back-name">' + meta.label + "</span></div>" +
-      '<button class="nutrient-card-voltar" aria-label="Voltar pra frente do card" onclick="event.stopPropagation(); acaoAlternarFlipNutriente(\'' + key + "', false)\">" + icon("chevronleft") + " Voltar</button>" +
     "</div>" +
     (comparacao.temDados ?
       '' +
@@ -4272,76 +4275,49 @@ function nutrienteComparacaoCardTemplate(key, meta, digits) {
 }
 // Envolve a frente já pronta de um card (frenteHtml, sem NENHUMA alteração -- continua sendo exatamente o
 // <div class="nutrient-card"> de sempre, preservando toda a estrutura que os testes existentes verificam)
-// num container que permite "virar" o card arrastando pra esquerda -- ver acaoNutrienteCardPointerDown().
-// A rotação é aplicada via transform inline (refletindo sempre o state.nutrientCardsFlipped[key] atual),
-// nunca via classe CSS, porque quem efetivamente ANIMA o gesto é o próprio handler de pointer, mutando o
-// DOM diretamente enquanto arrasta -- esse transform aqui só garante que, após um render() (ex.: outra
-// parte da tela mudou), o card continue mostrando o lado certo.
+// num container que "vira" com um TOQUE simples em qualquer lugar do card -- pedido explícito do usuário,
+// mesmo mecanismo (e mesmos dois tracinhos indicadores abaixo) já usado no card "Seu resumo de hoje" (ver
+// summaryCardFlipWrapperTemplate()/acaoAlternarResumoCard()), no lugar do gesto de arrastar usado antes
+// aqui. A rotação é aplicada via transform inline (refletindo sempre o state.nutrientCardsFlipped[key]
+// atual) -- quem efetivamente ANIMA a virada é acaoAlternarFlipNutriente(), mutando o DOM diretamente
+// antes de confirmar o state com um único render().
 function nutrienteCardFlipWrapperTemplate(key, frenteHtml, meta, digits) {
   const virado = !!state.nutrientCardsFlipped[key];
   return '' +
-    '<div class="nutrient-card-flip" data-nutrient-key="' + key + '" onpointerdown="acaoNutrienteCardPointerDown(event, \'' + key + '\')">' +
-      '<div class="nutrient-card-flip-inner" style="transform:rotateY(' + (virado ? 180 : 0) + 'deg)">' +
-        '<div class="nutrient-card-face-front">' + frenteHtml + '<span class="nutrient-card-drag-hint" aria-hidden="true">' + icon("chevronleft") + "</span></div>" +
-        '<div class="nutrient-card-face-back">' + nutrienteComparacaoCardTemplate(key, meta, digits) + "</div>" +
+    '<div class="nutrient-card-flip-wrap">' +
+      '<div class="nutrient-card-flip" data-nutrient-key="' + key + '" onclick="acaoCliqueNutrienteCard(event, \'' + key + '\')">' +
+        '<div class="nutrient-card-flip-inner" style="transform:rotateY(' + (virado ? 180 : 0) + 'deg)">' +
+          '<div class="nutrient-card-face-front">' + frenteHtml + "</div>" +
+          '<div class="nutrient-card-face-back">' + nutrienteComparacaoCardTemplate(key, meta, digits) + "</div>" +
+        "</div>" +
+      "</div>" +
+      '<div class="nutrient-card-dots">' +
+        '<button class="nutrient-card-dot' + (!virado ? " active" : "") + '" aria-label="Ver ' + esc(meta.label) + '" onclick="event.stopPropagation(); acaoAlternarFlipNutriente(\'' + key + "', false)\"></button>" +
+        '<button class="nutrient-card-dot' + (virado ? " active" : "") + '" aria-label="Ver consumo médio de ' + esc(meta.label) + '" onclick="event.stopPropagation(); acaoAlternarFlipNutriente(\'' + key + "', true)\"></button>" +
       "</div>" +
     "</div>";
 }
-// Gesto de arrastar/virar um card de macro/micronutriente (ver nutrienteCardFlipWrapperTemplate()).
-// Arrastar pra esquerda vira o card (mostra o verso, com o gráfico de consumo médio); arrastar de volta
-// pra direita desvira. A rotação é aplicada diretamente no DOM (style.transform) durante todo o gesto --
-// NUNCA chamando render() no meio do arraste, senão a tela inteira seria substituída (ver render()) e a
-// animação quebraria. Só ao soltar o dedo/mouse é que o ângulo final é decidido, animado no MESMO nó (pra
-// terminar suave) e, então, um único render() confirma state.nutrientCardsFlipped -- só depois da
-// animação já ter terminado, senão o card "pularia" de volta por um instante entre o gesto e o render().
-let nutrienteCardArraste = null;
-function acaoNutrienteCardPointerDown(event, key) {
-  if (nutrienteCardArraste) return; // ignora um segundo dedo/clique enquanto já há um arraste em andamento
-  if (event.pointerType === "mouse" && event.button !== 0) return;
-  if (event.target.closest(".nutrient-info-btn, .nutrient-card-voltar")) return; // deixa esses botões agirem normalmente
-  const flip = event.currentTarget;
-  const inner = flip.querySelector(".nutrient-card-flip-inner");
-  if (!inner) return;
-  flip.setPointerCapture(event.pointerId);
-  const jaVirado = !!state.nutrientCardsFlipped[key];
-  const g = { pointerId: event.pointerId, startX: event.clientX, largura: Math.max(1, flip.getBoundingClientRect().width), jaVirado: jaVirado, ultimoAngulo: jaVirado ? 180 : 0, moveu: false };
-  nutrienteCardArraste = g;
-  inner.style.transition = "none";
-  const finalizar = (virado) => {
-    nutrienteCardArraste = null;
-    flip.onpointermove = null; flip.onpointerup = null; flip.onpointercancel = null;
-    inner.style.transition = "";
-    inner.style.transform = "rotateY(" + (virado ? 180 : 0) + "deg)";
-    let comitado = false;
-    const commit = () => { if (comitado) return; comitado = true; state.nutrientCardsFlipped[key] = virado; render(); };
-    inner.addEventListener("transitionend", commit, { once: true });
-    setTimeout(commit, 450); // salvaguarda: sem isso, se o ângulo final já era o inicial (nenhuma transição dispara), o commit nunca aconteceria
-  };
-  flip.onpointermove = (ev) => {
-    if (ev.pointerId !== g.pointerId) return;
-    const deltaX = ev.clientX - g.startX;
-    if (Math.abs(deltaX) > 4) g.moveu = true;
-    const anguloInicial = g.jaVirado ? 180 : 0;
-    const limite = g.largura * 0.6; // arrastar ~60% da largura do card já vira/desvira completamente
-    const angulo = Math.min(180, Math.max(0, anguloInicial - (deltaX / limite) * 180));
-    g.ultimoAngulo = angulo;
-    inner.style.transform = "rotateY(" + angulo.toFixed(1) + "deg)";
-  };
-  flip.onpointerup = (ev) => {
-    if (ev.pointerId !== g.pointerId) return;
-    try { flip.releasePointerCapture(ev.pointerId); } catch (e) {}
-    finalizar(g.moveu ? g.ultimoAngulo >= 90 : g.jaVirado);
-  };
-  flip.onpointercancel = (ev) => {
-    if (ev.pointerId !== g.pointerId) return;
-    try { flip.releasePointerCapture(ev.pointerId); } catch (e) {}
-    finalizar(g.jaVirado);
-  };
+// Toque em qualquer lugar do card (fora do botão de informação, que já se protege com stopPropagation())
+// alterna frente/verso -- mesmo padrão de acaoCliqueResumoCard().
+function acaoCliqueNutrienteCard(event, key) {
+  if (event.target.closest(".nutrient-info-btn")) return;
+  acaoAlternarFlipNutriente(key, !state.nutrientCardsFlipped[key]);
 }
-// Alternativa ao gesto de arrastar (botão "Voltar" no verso -- ver nutrienteComparacaoCardTemplate()).
+// Vira/desvira um card de macro/micronutriente pra um lado específico -- usado pelo toque no card
+// (acaoCliqueNutrienteCard()) e pelos tracinhos indicadores (nutrienteCardFlipWrapperTemplate()). Anima no
+// MESMO nó (via transform direto) e só then confirma o state com um único render() -- necessário porque
+// render() substitui a tela inteira (innerHTML), o que quebraria uma transição CSS em andamento (mesmo
+// padrão de acaoAlternarResumoCard()).
 function acaoAlternarFlipNutriente(key, virado) {
-  state.nutrientCardsFlipped[key] = virado;
-  render();
+  if (!!state.nutrientCardsFlipped[key] === virado) return; // já está do lado pedido, nada a fazer
+  const flip = document.querySelector('.nutrient-card-flip[data-nutrient-key="' + key + '"]');
+  const inner = flip ? flip.querySelector(".nutrient-card-flip-inner") : null;
+  if (!inner) { state.nutrientCardsFlipped[key] = virado; render(); return; }
+  inner.style.transform = "rotateY(" + (virado ? 180 : 0) + "deg)";
+  let comitado = false;
+  const commit = () => { if (comitado) return; comitado = true; state.nutrientCardsFlipped[key] = virado; render(); };
+  inner.addEventListener("transitionend", commit, { once: true });
+  setTimeout(commit, 450); // salvaguarda (mesmo motivo do análogo em acaoAlternarResumoCard())
 }
 
 // Cards da aba "Macronutrientes" -- calorias NÃO entra aqui: calorias é a unidade de energia, não um
@@ -7671,7 +7647,7 @@ function acaoCliqueResumoCard(event) {
 // Vira/desvira o card "Seu resumo de hoje" pra um lado específico -- usado pelos tracinhos indicadores
 // (summaryCardFlipWrapperTemplate()) e pelo toque no card (acaoCliqueResumoCard()). Mesmo truque de
 // animar no MESMO nó (via transform direto) e só then confirmar o state com um único render() já usado
-// nos cards de macro/micronutriente (ver acaoNutrienteCardPointerDown()) -- necessário porque render()
+// nos cards de macro/micronutriente (ver acaoAlternarFlipNutriente()) -- necessário porque render()
 // substitui a tela inteira (innerHTML), o que quebraria uma transição CSS em andamento.
 function acaoAlternarResumoCard(virado) {
   if (!!state.resumoCardVirado === virado) return; // já está do lado pedido, nada a fazer
@@ -7682,7 +7658,7 @@ function acaoAlternarResumoCard(virado) {
   let comitado = false;
   const commit = () => { if (comitado) return; comitado = true; state.resumoCardVirado = virado; render(); };
   inner.addEventListener("transitionend", commit, { once: true });
-  setTimeout(commit, 450); // salvaguarda (mesmo motivo do análogo em acaoNutrienteCardPointerDown())
+  setTimeout(commit, 450); // salvaguarda (mesmo motivo do análogo em acaoAlternarFlipNutriente())
 }
 
 // Filtro "de"/"até" que afeta o card de Peso (não afeta o card de Composição corporal, que é fixo -- ver
