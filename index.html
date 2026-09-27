@@ -165,6 +165,22 @@ svg{ display: block; }
 .summary-consumed-label{ margin-top:4px; font-size:14px; color:#6f8d67; }
 .progress-track-light{ margin-top:20px; height:8px; overflow:hidden; border-radius:999px; background:rgba(255,255,255,.7); }
 .progress-fill-light{ height:100%; border-radius:999px; background:#6f9b59; transition:width .3s; }
+/* Card "Seu resumo de hoje" virável -- toque no card mostra o verso, com Aderência à meta calórica (ver
+   summaryCardFlipWrapperTemplate()/acaoAlternarResumoCard()). Mesma técnica de flip 3D dos cards de
+   macro/micronutriente (.nutrient-card-flip), só que aqui o gesto é um toque simples, não um arraste. */
+.summary-card-flip-wrap{ display:flex; flex-direction:column; align-items:center; gap:10px; }
+.summary-card-flip{ position:relative; width:100%; perspective:1400px; cursor:pointer; }
+.summary-card-flip-inner{ position:relative; width:100%; transform-style:preserve-3d; transition:transform .45s cubic-bezier(.4,.05,.2,1); }
+.summary-card-face-front{ position:relative; backface-visibility:hidden; -webkit-backface-visibility:hidden; }
+.summary-card-face-back{ position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden; transform:rotateY(180deg); border-radius:28px; background:#e6f1dc; padding:20px; overflow:auto; }
+@media (min-width: 640px){ .summary-card-face-back{ padding:24px; } }
+.resumo-aderencia-periodo-tabs{ margin-top:12px; display:flex; gap:6px; }
+.resumo-aderencia-periodo-btn{ flex:1; border-radius:8px; border:1px solid rgba(76,110,66,.18); background:rgba(255,255,255,.55); padding:5px 4px; font-size:11px; font-weight:600; color:#4b7048; transition:background .15s, color .15s; }
+.resumo-aderencia-periodo-btn.active{ background:#1d4b3d; border-color:#1d4b3d; color:#fff; }
+.resumo-aderencia-nota{ margin-top:6px; font-size:11.5px; line-height:1.4; color:#587a50; }
+.summary-card-dots{ display:flex; gap:6px; }
+.summary-card-dot{ height:4px; width:20px; border-radius:999px; background:#d5ddd0; padding:0; border:none; cursor:pointer; transition:background .15s, width .15s; }
+.summary-card-dot.active{ width:28px; background:#1d4b3d; }
 
 .goals-panel{ margin-bottom:28px; border-radius:24px; border:1px solid #dce8dc; background:#fff; padding:20px; box-shadow:0 12px 35px rgba(43,73,53,0.06); }
 .goals-panel-head{ margin-bottom:16px; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
@@ -1983,6 +1999,17 @@ const state = {
   // usuário: arrastar o card pra esquerda "vira" ele, mostrando diário/semanal/mensal real x esperado.
   // Fica só na memória (mesmo espírito de historyDiaExpandidoMedidas), reseta ao recarregar a página.
   nutrientCardsFlipped: {},
+  // Card "Seu resumo de hoje" virado (mostrando o verso, com Aderência à meta calórica) ou não -- ver
+  // summaryCardFlipWrapperTemplate()/acaoAlternarResumoCard(). Diferente do gesto de arrastar dos cards de
+  // macro/micronutriente (nutrientCardsFlipped acima), esse card vira com um toque simples no card (ou nos
+  // dois tracinhos indicadores abaixo dele) -- pedido explícito do usuário. Fica só na memória, reseta ao
+  // recarregar a página.
+  resumoCardVirado: false,
+  // Agrupamento do gráfico de Aderência à meta calórica no verso do card acima -- "diaria" (1 barra por
+  // dia), "semanal"/"mensal"/"anual" (1 barra por semana/mês/ano, com a média do saldo calórico diário
+  // daquele período) -- ver resumoAderenciaAgrupar(). Sempre considera TODO o histórico do Diário de Kcal,
+  // sem filtro de data (mesmo espírito de "todo o histórico" já adotado nos cards de macro/micronutriente).
+  resumoAderenciaPeriodo: "diaria",
   // "bioimpedancia" | "calorimetria" | null -- qual dos dois modais de informação do exame (mesmo
   // padrão do de cima, só que pros campos de Bioimpedância e Calorimetria) está aberto -- ver
   // exameInfoModalTemplate()/acaoAbrirInfoExame().
@@ -7408,30 +7435,90 @@ function evolucaoBioimpedanciaComparacao() {
   }).filter(Boolean);
 }
 
-// Série diária de saldo calórico (consumido − gasto total) dentro do período, reaproveitando
-// diarioKcalGastoTotalInfo()/diarioKcalMetaAtingida() -- as MESMAS contas já usadas na "Análise do
-// objetivo:" de cada dia (diarioKcalAnaliseObjetivoTemplate() acima), só que aqui juntando vários dias
-// pra enxergar a tendência de aderência, em vez de olhar dia por dia. Descarta dias sem calorimetria
-// registrada (sem gasto total pra calcular o saldo), igual à análise de um dia isolado já faz.
-function evolucaoAderenciaSerie() {
+// Série diária de saldo calórico (consumido − gasto total) de TODO o histórico do Diário de Kcal,
+// reaproveitando diarioKcalGastoTotalInfo()/diarioKcalMetaAtingida() -- as MESMAS contas já usadas na
+// "Análise do objetivo:" de cada dia (diarioKcalAnaliseObjetivoTemplate() acima), só que aqui juntando
+// vários dias pra enxergar a tendência de aderência, em vez de olhar dia por dia. Descarta dias sem
+// calorimetria registrada (sem gasto total pra calcular o saldo), igual à análise de um dia isolado já
+// faz. Pedido do usuário: esse card "mudou de casa" (era da aba Evolução, agora é o verso do card "Seu
+// resumo de hoje" -- ver resumoAderenciaCardTemplate()/summaryCardFlipWrapperTemplate()) e passou a usar
+// sempre TODO o histórico (sem filtro de data), com o agrupamento em dia/semana/mês/ano escolhido no
+// verso decidindo como esses dias são agrupados em barras (ver resumoAderenciaAgrupar()).
+function resumoAderenciaSerieDiaria() {
   return state.diarioKcal
-    .filter((r) => evolucaoDataNoFiltro(r.date))
     .map((r) => {
       const info = diarioKcalGastoTotalInfo(r);
       if (info.gastoTotal == null) return null;
       const objetivoChave = r.metaCalorias != null ? r.objetivo : state.goals.objetivo;
       const saldo = r.calories - info.gastoTotal;
-      return { date: r.date, saldo: saldo, atingida: diarioKcalMetaAtingida(saldo, objetivoChave) };
+      return { date: r.date, saldo: saldo, objetivoChave: objetivoChave, atingida: diarioKcalMetaAtingida(saldo, objetivoChave) };
     })
     .filter(Boolean)
     .sort((a, b) => (a.date < b.date ? -1 : 1));
 }
-function evolucaoAderenciaResumo(serie) {
-  if (!serie.length) return null;
-  const comStatus = serie.filter((s) => s.atingida != null);
-  const atingidos = comStatus.filter((s) => s.atingida).length;
-  const saldoMedio = serie.reduce((acc, s) => acc + s.saldo, 0) / serie.length;
-  return { totalDias: serie.length, comStatus: comStatus.length, atingidos: atingidos, percentual: comStatus.length ? Math.round((atingidos / comStatus.length) * 100) : null, saldoMedio: saldoMedio };
+// Nomes abreviados de mês em português, pra rotular barras mensais (ver resumoAderenciaRotuloBucket()) --
+// mais compacto que formatar com Intl/toLocaleDateString e sem depender do locale do navegador.
+const RESUMO_ADERENCIA_MESES_ABREV = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+// Chave de agrupamento de um dia (AAAA-MM-DD) conforme o período escolhido (ver
+// state.resumoAderenciaPeriodo) -- "diaria" não agrupa nada (1 balde por dia); "mensal"/"anual" agrupam
+// por mês/ano de calendário; "semanal" agrupa em blocos consecutivos de 7 dias (não necessariamente
+// segunda-domingo -- é só uma forma simples e consistente de juntar os dias em "semanas", o rótulo exibido
+// no gráfico mostra o intervalo real coberto por cada bloco, então não há ambiguidade de calendário).
+function resumoAderenciaChaveBucket(dateStr, periodo) {
+  if (periodo === "anual") return dateStr.slice(0, 4);
+  if (periodo === "mensal") return dateStr.slice(0, 7);
+  if (periodo === "semanal") {
+    const diasDesdeEpoch = Math.floor(Date.parse(dateStr + "T00:00:00Z") / 86400000);
+    return "S" + Math.floor(diasDesdeEpoch / 7);
+  }
+  return dateStr;
+}
+// Rótulo exibido no eixo/tooltip de um "balde" de dias -- diária mostra a data curta de sempre; mensal/
+// anual mostram o mês/ano por extenso curto (ex.: "set/26", "2026"); semanal mostra o intervalo real
+// coberto pelos dias daquele balde (ex.: "10/09–16/09"), calculado a partir dos próprios registros (evita
+// qualquer ambiguidade sobre onde a "semana" começa).
+function resumoAderenciaRotuloBucket(chave, periodo, diasDoBucket) {
+  if (periodo === "diaria") return dataCurta(diasDoBucket[0].date);
+  if (periodo === "anual") return chave;
+  if (periodo === "mensal") {
+    const partes = chave.split("-");
+    return RESUMO_ADERENCIA_MESES_ABREV[Number(partes[1]) - 1] + "/" + partes[0].slice(2);
+  }
+  const datas = diasDoBucket.map((d) => d.date).sort();
+  return dataCurta(datas[0]) + "–" + dataCurta(datas[datas.length - 1]);
+}
+// Agrupa a série diária em "baldes" conforme o período escolhido -- cada balde vira 1 barra no gráfico
+// (ver resumoAderenciaChartSvg()), com o saldo médio dos dias daquele balde e o status de meta atingida
+// reavaliado sobre essa média (usando o objetivo do último dia do balde, mesmo espírito do "objetivo
+// congelado no registro" já usado em diarioKcalMetaTexto()/diarioKcalMacrosTemplate()).
+function resumoAderenciaAgrupar(serieDiaria, periodo) {
+  if (periodo === "diaria") {
+    return serieDiaria.map((d) => ({ chave: d.date, rotulo: dataCurta(d.date), saldoMedio: d.saldo, atingida: d.atingida, dias: 1 }));
+  }
+  const grupos = {};
+  const ordemChaves = [];
+  serieDiaria.forEach((d) => {
+    const chave = resumoAderenciaChaveBucket(d.date, periodo);
+    if (!grupos[chave]) { grupos[chave] = []; ordemChaves.push(chave); }
+    grupos[chave].push(d);
+  });
+  return ordemChaves.map((chave) => {
+    const diasDoBucket = grupos[chave];
+    const saldoMedio = diasDoBucket.reduce((acc, d) => acc + d.saldo, 0) / diasDoBucket.length;
+    const ultimoObjetivo = diasDoBucket[diasDoBucket.length - 1].objetivoChave;
+    return { chave: chave, rotulo: resumoAderenciaRotuloBucket(chave, periodo, diasDoBucket), saldoMedio: saldoMedio, atingida: diarioKcalMetaAtingida(saldoMedio, ultimoObjetivo), dias: diasDoBucket.length };
+  });
+}
+// Resumo (dias registrados/meta atingida/saldo médio) -- "meta atingida" é calculada em cima dos BALDES
+// do período escolhido (ex.: em "Semanal", é a % de semanas que bateram a meta em média), já que é isso
+// que o gráfico está mostrando; "saldo médio" é sempre a média diária de TODO o histórico (não muda com o
+// período escolhido, matematicamente é a mesma conta agrupada ou não).
+function resumoAderenciaResumo(serieDiaria, grupos) {
+  if (!serieDiaria.length) return null;
+  const comStatus = grupos.filter((g) => g.atingida != null);
+  const atingidos = comStatus.filter((g) => g.atingida).length;
+  const saldoMedio = serieDiaria.reduce((acc, d) => acc + d.saldo, 0) / serieDiaria.length;
+  return { totalDias: serieDiaria.length, totalBaldes: grupos.length, comStatus: comStatus.length, atingidos: atingidos, percentual: comStatus.length ? Math.round((atingidos / comStatus.length) * 100) : null, saldoMedio: saldoMedio };
 }
 
 // Gráfico de linha em SVG simples (sem biblioteca externa) pra uma série temporal de um único valor --
@@ -7475,51 +7562,142 @@ function evolucaoLineChartSvg(pontos, opts) {
       '<text x="' + (W - PAD_R) + '" y="' + (H - 4) + '" text-anchor="end" class="evolucao-chart-axis-label">' + esc(dataCurta(pontos[pontos.length - 1].date)) + "</text>" +
     "</svg>";
 }
-// Gráfico de barras divergente (SVG) do saldo calórico diário -- barra pra cima (superávit) ou pra baixo
-// (déficit) a partir da linha de zero, colorida pelo status da meta daquele dia: MESMAS cores já usadas
-// em diario-kcal-meta-atingida/diario-kcal-meta-nao-atingida (azul/terracota), pra manter a mesma
-// linguagem visual do Diário de Kcal aqui também. Cinza quando não dá pra avaliar (sem objetivo definido
-// naquele dia). Mostra no máximo os últimos N dias (ver EVOLUCAO_ADERENCIA_MAX_BARRAS) pra não espremer
-// demais as barras num período muito longo.
-const EVOLUCAO_ADERENCIA_MAX_BARRAS = 60;
-function evolucaoAderenciaChartSvg(serieCompleta) {
-  const dias = serieCompleta.slice(-EVOLUCAO_ADERENCIA_MAX_BARRAS);
-  const W = 320, H = 150, PAD_L = 32, PAD_R = 8, PAD_T = 10, PAD_B = 20;
+// Gráfico de barras divergente (SVG) do saldo calórico médio por "balde" (dia/semana/mês/ano, ver
+// resumoAderenciaAgrupar()) -- barra pra cima (superávit) ou pra baixo (déficit) a partir da linha de
+// zero, colorida pelo status da meta daquele balde: MESMAS cores já usadas em diario-kcal-meta-atingida/
+// diario-kcal-meta-nao-atingida (azul/terracota), pra manter a mesma linguagem visual do Diário de Kcal
+// aqui também. Cinza quando não dá pra avaliar (sem objetivo definido). Mostra no máximo os últimos N
+// baldes (ver RESUMO_ADERENCIA_MAX_BARRAS) pra não espremer demais as barras num histórico muito longo.
+// Compacto (menor que os outros gráficos da aba Evolução) porque mora no verso do card "Seu resumo de
+// hoje" -- ver resumoAderenciaCardTemplate()/.summary-card-face-back.
+const RESUMO_ADERENCIA_MAX_BARRAS = 60;
+function resumoAderenciaChartSvg(grupos) {
+  const baldes = grupos.slice(-RESUMO_ADERENCIA_MAX_BARRAS);
+  const W = 320, H = 96, PAD_L = 30, PAD_R = 8, PAD_T = 8, PAD_B = 16;
   const innerW = W - PAD_L - PAD_R, innerH = H - PAD_T - PAD_B;
-  const maiorSaldo = Math.max.apply(null, dias.map((d) => Math.abs(d.saldo)).concat([100]));
+  const maiorSaldo = Math.max.apply(null, baldes.map((b) => Math.abs(b.saldoMedio)).concat([100]));
   const maxAbs = maiorSaldo * 1.1;
   const zeroY = PAD_T + innerH / 2;
   const escala = (innerH / 2) / maxAbs;
-  const larguraBarra = Math.max(2, innerW / dias.length - 2);
-  const cor = (d) => d.atingida == null ? "#b7c2ba" : d.atingida ? "#1e88e5" : "#c35e4b";
-  const barras = dias.map((d, i) => {
-    const cx = PAD_L + (i + 0.5) * (innerW / dias.length);
-    const alt = Math.max(1, Math.abs(d.saldo) * escala);
-    const yTopo = d.saldo >= 0 ? zeroY - alt : zeroY;
-    const rotulo = (d.saldo > 0 ? "Superávit de " : d.saldo < 0 ? "Déficit de " : "Equilíbrio: ") + formatNumber(Math.abs(d.saldo)) + " kcal em " + dataCurta(d.date) + (d.atingida == null ? "" : d.atingida ? " (meta atingida)" : " (meta não atingida)");
-    return '<rect x="' + (cx - larguraBarra / 2).toFixed(1) + '" y="' + yTopo.toFixed(1) + '" width="' + larguraBarra.toFixed(1) + '" height="' + alt.toFixed(1) + '" rx="1.5" fill="' + cor(d) + '"><title>' + esc(rotulo) + "</title></rect>";
+  const larguraBarra = Math.max(2, innerW / baldes.length - 2);
+  const cor = (b) => b.atingida == null ? "#b7c2ba" : b.atingida ? "#1e88e5" : "#c35e4b";
+  const barras = baldes.map((b, i) => {
+    const cx = PAD_L + (i + 0.5) * (innerW / baldes.length);
+    const alt = Math.max(1, Math.abs(b.saldoMedio) * escala);
+    const yTopo = b.saldoMedio >= 0 ? zeroY - alt : zeroY;
+    const rotulo = (b.saldoMedio > 0 ? "Superávit médio de " : b.saldoMedio < 0 ? "Déficit médio de " : "Equilíbrio: ") + formatNumber(Math.abs(b.saldoMedio)) + " kcal/dia em " + b.rotulo + (b.dias > 1 ? " (" + b.dias + " dias)" : "") + (b.atingida == null ? "" : b.atingida ? " (meta atingida)" : " (meta não atingida)");
+    return '<rect x="' + (cx - larguraBarra / 2).toFixed(1) + '" y="' + yTopo.toFixed(1) + '" width="' + larguraBarra.toFixed(1) + '" height="' + alt.toFixed(1) + '" rx="1.5" fill="' + cor(b) + '"><title>' + esc(rotulo) + "</title></rect>";
   }).join("");
   return '' +
-    '<svg class="evolucao-chart" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="Saldo calórico diário no período">' +
+    '<svg class="nutriente-comparacao-chart" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="Saldo calórico médio por período">' +
       '<line x1="' + PAD_L + '" x2="' + (W - PAD_R) + '" y1="' + zeroY.toFixed(1) + '" y2="' + zeroY.toFixed(1) + '" class="evolucao-chart-grid evolucao-chart-grid-zero"/>' +
       '<text x="1" y="' + (zeroY + 3).toFixed(1) + '" class="evolucao-chart-axis-label">0</text>' +
       barras +
-      '<text x="' + PAD_L + '" y="' + (H - 4) + '" class="evolucao-chart-axis-label">' + esc(dataCurta(dias[0].date)) + "</text>" +
-      '<text x="' + (W - PAD_R) + '" y="' + (H - 4) + '" text-anchor="end" class="evolucao-chart-axis-label">' + esc(dataCurta(dias[dias.length - 1].date)) + "</text>" +
+      '<text x="' + PAD_L + '" y="' + (H - 4) + '" class="evolucao-chart-axis-label">' + esc(baldes[0].rotulo) + "</text>" +
+      '<text x="' + (W - PAD_R) + '" y="' + (H - 4) + '" text-anchor="end" class="evolucao-chart-axis-label">' + esc(baldes[baldes.length - 1].rotulo) + "</text>" +
     "</svg>";
 }
+// Seletor de período do gráfico de Aderência (dia/semana/mês/ano) -- 4 botões curtos (cabem numa linha só
+// mesmo no verso estreito do card "Seu resumo de hoje"). Clicar troca state.resumoAderenciaPeriodo e só
+// re-renderiza o conteúdo do verso -- stopPropagation() pra não também virar o card de volta pra frente
+// (o card inteiro vira ao tocar em qualquer lugar dele -- ver summaryCardFlipWrapperTemplate()).
+const RESUMO_ADERENCIA_PERIODOS = [{ chave: "diaria", label: "Dia", artigo: "das", plural: "vezes" }, { chave: "semanal", label: "Semana", artigo: "das", plural: "semanas" }, { chave: "mensal", label: "Mês", artigo: "dos", plural: "meses" }, { chave: "anual", label: "Ano", artigo: "dos", plural: "anos" }];
+function resumoAderenciaPeriodoSeletorTemplate() {
+  return '<div class="resumo-aderencia-periodo-tabs">' +
+    RESUMO_ADERENCIA_PERIODOS.map((p) =>
+      '<button class="resumo-aderencia-periodo-btn' + (state.resumoAderenciaPeriodo === p.chave ? " active" : "") + '" onclick="event.stopPropagation(); acaoDefinirPeriodoAderencia(\'' + p.chave + '\')">' + p.label + "</button>"
+    ).join("") +
+  "</div>";
+}
+function acaoDefinirPeriodoAderencia(periodo) {
+  state.resumoAderenciaPeriodo = periodo;
+  render();
+}
+// Verso do card "Seu resumo de hoje" (ver summaryCardFlipWrapperTemplate()) -- gráfico de Aderência à
+// meta calórica que antes vivia na aba Evolução, agora agrupável por dia/semana/mês/ano (pedido do
+// usuário) e sempre considerando todo o histórico do Diário de Kcal (sem o filtro de data que a aba
+// Evolução usava, já que esse card não está mais lá).
+function resumoAderenciaCardTemplate() {
+  const serieDiaria = resumoAderenciaSerieDiaria();
+  const grupos = resumoAderenciaAgrupar(serieDiaria, state.resumoAderenciaPeriodo);
+  const resumo = resumoAderenciaResumo(serieDiaria, grupos);
+  return '' +
+    '<div class="summary-label">' + icon("flame") + " Aderência à meta calórica</div>" +
+    resumoAderenciaPeriodoSeletorTemplate() +
+    (resumo ?
+      '' +
+      resumoAderenciaChartSvg(grupos) +
+      '<p class="resumo-aderencia-nota">' +
+        (resumo.percentual != null ? (() => { const p = RESUMO_ADERENCIA_PERIODOS.find((p) => p.chave === state.resumoAderenciaPeriodo); return resumo.percentual + "% " + p.artigo + " " + p.plural + " na meta · "; })() : "") +
+        "saldo médio " + (resumo.saldoMedio > 0 ? "+" : "") + formatNumber(resumo.saldoMedio) + " kcal/dia" +
+      "</p>"
+      :
+      // Texto deliberadamente sem a frase exata "Diário de Kcal" (nome da aba/aba-botão) -- vários testes
+      // de outras telas usam um locator por texto (page.click("text=Diário de Kcal")) pra clicar no botão
+      // daquela aba, e esse card fica visível (ainda que virado pro lado de trás) antes desse botão no
+      // DOM, o que faria esses testes clicarem aqui por engano. "Encerrar dia" é o nome do botão que
+      // efetivamente gera esses registros (ver acaoEncerrarDia()), então continua claro sem repetir o
+      // nome da aba.
+      '<p class="resumo-aderencia-nota">Use "Encerrar dia" (com uma calorimetria registrada) para começar a ver sua aderência à meta calórica aqui.</p>'
+    );
+}
+// Envolve o card "Seu resumo de hoje" (frenteHtml, sem NENHUMA alteração -- continua sendo exatamente o
+// <div class="summary-card"> de sempre) num container que vira ao TOCAR/CLICAR em qualquer lugar do card
+// -- diferente do gesto de arrastar dos cards de macro/micronutriente, esse é um toque simples (pedido
+// explícito do usuário). Os dois tracinhos abaixo do card (ver .resumo-card-dots) indicam em qual lado o
+// card está e também podem ser clicados pra pular direto pra frente/verso.
+function summaryCardFlipWrapperTemplate(frenteHtml) {
+  const virado = !!state.resumoCardVirado;
+  return '' +
+    '<div class="summary-card-flip-wrap">' +
+      '<div class="summary-card-flip" onclick="acaoCliqueResumoCard(event)">' +
+        '<div class="summary-card-flip-inner" style="transform:rotateY(' + (virado ? 180 : 0) + 'deg)">' +
+          '<div class="summary-card-face-front">' + frenteHtml + "</div>" +
+          '<div class="summary-card-face-back">' + resumoAderenciaCardTemplate() + "</div>" +
+        "</div>" +
+      "</div>" +
+      '<div class="summary-card-dots">' +
+        '<button class="summary-card-dot' + (!virado ? " active" : "") + '" aria-label="Ver resumo de hoje" onclick="acaoAlternarResumoCard(false)"></button>' +
+        '<button class="summary-card-dot' + (virado ? " active" : "") + '" aria-label="Ver aderência à meta calórica" onclick="acaoAlternarResumoCard(true)"></button>' +
+      "</div>" +
+    "</div>";
+}
+// Toque em qualquer lugar do card (fora do lápis de metas e do seletor de período, que já se protegem
+// com stopPropagation) alterna frente/verso.
+function acaoCliqueResumoCard(event) {
+  if (event.target.closest(".summary-edit-btn, .resumo-aderencia-periodo-btn")) return;
+  acaoAlternarResumoCard(!state.resumoCardVirado);
+}
+// Vira/desvira o card "Seu resumo de hoje" pra um lado específico -- usado pelos tracinhos indicadores
+// (summaryCardFlipWrapperTemplate()) e pelo toque no card (acaoCliqueResumoCard()). Mesmo truque de
+// animar no MESMO nó (via transform direto) e só then confirmar o state com um único render() já usado
+// nos cards de macro/micronutriente (ver acaoNutrienteCardPointerDown()) -- necessário porque render()
+// substitui a tela inteira (innerHTML), o que quebraria uma transição CSS em andamento.
+function acaoAlternarResumoCard(virado) {
+  if (!!state.resumoCardVirado === virado) return; // já está do lado pedido, nada a fazer
+  const flip = document.querySelector(".summary-card-flip");
+  const inner = flip ? flip.querySelector(".summary-card-flip-inner") : null;
+  if (!inner) { state.resumoCardVirado = virado; render(); return; }
+  inner.style.transform = "rotateY(" + (virado ? 180 : 0) + "deg)";
+  let comitado = false;
+  const commit = () => { if (comitado) return; comitado = true; state.resumoCardVirado = virado; render(); };
+  inner.addEventListener("transitionend", commit, { once: true });
+  setTimeout(commit, 450); // salvaguarda (mesmo motivo do análogo em acaoNutrienteCardPointerDown())
+}
 
-// Filtro "de"/"até" que afeta os cards de Peso e Aderência à meta calórica (não afeta o card de
-// Composição corporal, que é fixo -- ver evolucaoBioimpedanciaSerie()). Mesmo layout de dois campos de
-// data lado a lado do filtro de período do histórico de Medidas e Aferições (medidaFiltroTemplate()),
-// pra manter a mesma linguagem visual.
+// Filtro "de"/"até" que afeta o card de Peso (não afeta o card de Composição corporal, que é fixo -- ver
+// evolucaoBioimpedanciaSerie()). Mesmo layout de dois campos de data lado a lado do filtro de período do
+// histórico de Medidas e Aferições (medidaFiltroTemplate()), pra manter a mesma linguagem visual. O card
+// de Aderência à meta calórica que ficava aqui "mudou de casa" -- agora é o verso do card "Seu resumo de
+// hoje", na aba Nutrição (ver resumoAderenciaCardTemplate()), com o próprio seletor de período dele
+// (dia/semana/mês/ano) em vez desse filtro de data.
 function evolucaoPeriodoFiltroTemplate() {
   return '' +
     '<div class="evolucao-periodo-filtro medida-filtro-periodo">' +
       '<div><label class="field-label">De</label><input type="date" class="field-input" max="' + esc(today()) + '" value="' + esc(state.evolucaoFiltroDe) + '" onchange="acaoFiltrarEvolucaoPorData(\'de\', this.value)"/></div>' +
       '<div><label class="field-label">Até</label><input type="date" class="field-input" max="' + esc(today()) + '" value="' + esc(state.evolucaoFiltroAte) + '" onchange="acaoFiltrarEvolucaoPorData(\'ate\', this.value)"/></div>' +
     "</div>" +
-    '<p class="imc-empty" style="margin-top:8px">Esse período afeta os cards de Peso e Aderência à meta calórica logo abaixo. O card de Composição corporal é fixo e sempre mostra o histórico completo.</p>';
+    '<p class="imc-empty" style="margin-top:8px">Esse período afeta o card de Peso logo abaixo. O card de Composição corporal é fixo e sempre mostra o histórico completo.</p>';
 }
 function evolucaoPesoCardTemplate() {
   const serie = evolucaoPesoSerie();
@@ -7568,33 +7746,16 @@ function evolucaoComposicaoCardTemplate() {
       ) +
     "</div>";
 }
-function evolucaoAderenciaCardTemplate() {
-  const serie = evolucaoAderenciaSerie();
-  const resumo = evolucaoAderenciaResumo(serie);
-  return '' +
-    '<div class="medidas-section">' +
-      '<h2 class="medidas-section-title">' + icon("flame") + " Aderência à meta calórica</h2>" +
-      (resumo ?
-        evolucaoAderenciaChartSvg(serie) +
-        '<div class="evolucao-stats-row">' +
-          '<div class="evolucao-stat"><span class="evolucao-stat-label">Dias registrados</span><span class="evolucao-stat-value">' + resumo.totalDias + "</span></div>" +
-          (resumo.percentual != null ? '<div class="evolucao-stat"><span class="evolucao-stat-label">Meta atingida</span><span class="evolucao-stat-value">' + resumo.percentual + "% (" + resumo.atingidos + "/" + resumo.comStatus + ")</span></div>" : "") +
-          '<div class="evolucao-stat"><span class="evolucao-stat-label">Saldo médio</span><span class="evolucao-stat-value">' + (resumo.saldoMedio > 0 ? "+" : "") + formatNumber(resumo.saldoMedio) + " kcal/dia</span></div>" +
-        "</div>" +
-        '<p class="imc-empty" style="margin-top:10px">' + icon("info") + ' Barras para cima = superávit, para baixo = déficit. <span class="diario-kcal-meta-atingida">Azul</span> = meta do dia atingida, <span class="diario-kcal-meta-nao-atingida">terracota</span> = não atingida, cinza = sem objetivo definido naquele dia.</p>'
-        :
-        '<p class="imc-empty">Feche pelo menos um dia no Diário de Kcal (com uma calorimetria registrada) dentro do período selecionado para ver sua aderência à meta calórica.</p>'
-      ) +
-    "</div>";
-}
-// Aba "Evolução" -- ver homeTabsTemplate()/fullHomeTemplate(). Junta os três cards acima (peso,
-// composição corporal e aderência à meta calórica) com um filtro de período compartilhado entre eles.
+// Aba "Evolução" -- ver homeTabsTemplate()/fullHomeTemplate(). Junta os dois cards acima (peso e
+// composição corporal) com um filtro de período compartilhado entre eles. O card de Aderência à meta
+// calórica que ficava aqui foi movido pro verso do card "Seu resumo de hoje" -- ver
+// resumoAderenciaCardTemplate()/summaryCardFlipWrapperTemplate().
 function evolucaoTabTemplate() {
-  const temAlgumDado = state.medidas.some((m) => m.tipo === "peso") || state.diarioKcal.length > 0 || state.bioimpedancia.length > 0;
+  const temAlgumDado = state.medidas.some((m) => m.tipo === "peso") || state.bioimpedancia.length > 0;
   if (!temAlgumDado) {
     return '<main><div class="medidas-section">' +
       '<h2 class="medidas-section-title">' + icon("trend") + " Evolução</h2>" +
-      '<div class="meal-empty"><div class="meal-empty-icon">' + icon("trend") + "</div><p>Ainda não há dados suficientes</p><p>Registre seu peso, feche alguns dias no Diário de Kcal e cadastre uma Bioimpedância para começar a ver sua evolução aqui.</p></div>" +
+      '<div class="meal-empty"><div class="meal-empty-icon">' + icon("trend") + "</div><p>Ainda não há dados suficientes</p><p>Registre seu peso e cadastre uma Bioimpedância para começar a ver sua evolução aqui.</p></div>" +
     "</div></main>";
   }
   return '<main>' +
@@ -7602,7 +7763,6 @@ function evolucaoTabTemplate() {
     evolucaoPeriodoFiltroTemplate() +
     evolucaoPesoCardTemplate() +
     evolucaoComposicaoCardTemplate() +
-    evolucaoAderenciaCardTemplate() +
   "</main>";
 }
 
@@ -7668,8 +7828,9 @@ function nutricaoTabTemplate() {
       '<div><div class="hero-date">' + icon("calendar") + " " + dateLabel(today()) + "</div>" +
       '<h1 class="hero-title">Alimente o que <em>importa.</em></h1>' +
       '<p class="hero-sub">Descreva sua refeição do jeito que você fala. Nós estimamos os nutrientes, registramos e mostramos quanto ainda cabe no seu dia.</p></div>' +
-      '<div class="summary-card"><div class="summary-ring"></div>' +
-        '<button class="summary-edit-btn" aria-label="Editar metas diárias" onclick="state.showGoals=!state.showGoals;render()">' + icon("edit") + "</button>" +
+      summaryCardFlipWrapperTemplate(
+        '<div class="summary-card"><div class="summary-ring"></div>' +
+        '<button class="summary-edit-btn" aria-label="Editar metas diárias" onclick="event.stopPropagation(); state.showGoals=!state.showGoals;render()">' + icon("edit") + "</button>" +
         '<div class="summary-inner">' +
         '<div class="summary-label">' + icon("sparkles") + " Seu resumo de hoje</div>" +
         (state.goals.objetivo && OBJETIVOS_META[state.goals.objetivo]
@@ -7678,7 +7839,8 @@ function nutricaoTabTemplate() {
         '<div class="summary-stats"><div><div class="summary-remaining-value">' + formatNumber(Math.max(0, remaining.calories)) + '</div><div class="summary-remaining-label">kcal restantes</div></div>' +
         '<div class="summary-consumed"><div class="summary-consumed-value">' + formatNumber(consumed.calories) + '</div><div class="summary-consumed-label">de ' + formatNumber(state.goals.calories) + " kcal</div></div></div>" +
         '<div class="progress-track-light"><div class="progress-fill-light" style="width:' + pct(consumed.calories, state.goals.calories) + '%"></div></div>' +
-      "</div></div>" +
+        "</div></div>"
+      ) +
     "</section>" +
     // O formulário de edição de metas (goalsPanelTemplate(), aberto pelo lápis no card de resumo do
     // dia acima) fica logo abaixo desse card -- antes das abas "Registros do Dia"/"Diário de Kcal" --
