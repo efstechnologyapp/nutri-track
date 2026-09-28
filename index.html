@@ -225,8 +225,8 @@ svg{ display: block; }
 .goal-objetivo-field select.goal-field-input{ font-family:inherit; font-size:15px; font-weight:600; cursor:pointer; }
 .goal-objetivo-nota{ margin:8px 0 0; font-size:12px; line-height:1.6; color:#8a9c93; }
 
-.nutrient-tabs{ margin-bottom:16px; display:flex; gap:8px; border-bottom:1px solid #e5e9e1; }
-.nutrient-tab{ padding:10px 4px; margin-bottom:-1px; border-bottom:2px solid transparent; font-size:14px; font-weight:600; color:#9aa9a1; }
+.nutrient-tabs{ margin-bottom:16px; display:flex; gap:14px; border-bottom:1px solid #e5e9e1; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.nutrient-tab{ padding:10px 2px; margin-bottom:-1px; border-bottom:2px solid transparent; font-size:12.5px; font-weight:600; color:#9aa9a1; flex-shrink:0; white-space:nowrap; }
 .nutrient-tab.active{ color:#1b3f34; border-bottom-color:var(--primary); }
 .nutrient-grid{ margin-bottom:32px; display:grid; gap:16px; grid-template-columns:1fr; }
 @media (min-width: 640px){ .nutrient-grid{ grid-template-columns:repeat(2,1fr); } }
@@ -285,6 +285,25 @@ svg{ display: block; }
 .nutriente-comparacao-legenda-item{ display:flex; align-items:center; gap:5px; }
 .nutriente-comparacao-swatch{ width:10px; height:10px; border-radius:3px; display:inline-block; }
 .nutriente-comparacao-nota{ margin-top:auto; font-size:11px; line-height:1.35; }
+
+/* Aba "Análise de Consumo" (analiseConsumoTabTemplate(), ao lado de Macronutrientes/Micronutrientes) --
+   reaproveita .field-label/.field-input, .evolucao-periodo-filtro/.medida-filtro-periodo e
+   .medidas-section/.medidas-section-title/.imc-empty já usados em outras abas (mesma linguagem visual,
+   sem duplicar CSS); só o que é específico daqui (seletor, botão, badge de faixa, notas) ganha classe
+   própria abaixo. */
+.analise-consumo-select{ margin-bottom:14px; }
+.analise-consumo-gerar-btn{ margin-top:14px; border:none; cursor:pointer; }
+.analise-consumo-gerar-btn:disabled{ opacity:.5; cursor:not-allowed; }
+.analise-consumo-gerar-btn .label{ display:inline; }
+.analise-consumo-erro{ color:#c35e4b; margin-top:8px; }
+.analise-consumo-resultado{ line-height:1.55; font-size:14px; color:#31564a; }
+.analise-consumo-resultado p{ margin:10px 0 0; }
+.analise-consumo-badge{ display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:6px 14px; font-size:13px; font-weight:700; }
+.analise-consumo-badge .icon{ width:14px; height:14px; }
+.analise-consumo-badge-boa{ background:#e3f1e6; color:#2f7d4f; }
+.analise-consumo-badge-atencao{ background:#fbe9e4; color:#b6503d; }
+.analise-consumo-disclaimer{ margin-top:16px; padding-top:12px; border-top:1px solid #eef1ec; }
+.analise-consumo-fonte{ margin-top:4px; }
 
 .dashboard-grid{ display:grid; gap:24px; grid-template-columns:1fr; }
 @media (min-width: 1280px){ .dashboard-grid{ grid-template-columns:minmax(0,1fr) 410px; } }
@@ -1255,6 +1274,103 @@ const NUTRIENT_INFO = {
   },
 };
 
+// Motor de análise embutido/offline da aba "Análise de Consumo" (ver analiseConsumoTabTemplate()/
+// calcularAnaliseConsumo()) -- pedido do usuário: reproduzir, sob demanda e pra qualquer nutriente/
+// período, o mesmo tipo de análise que foi dada conversacionalmente (vitamina C e vitamina A), com base
+// em fontes médicas/nutricionais de alto renome. Escolhido rodar 100% local (sem chamada de IA/rede) --
+// os textos abaixo já refletem essas fontes; NUTRIENT_INFO acima é reaproveitado pras "fontes
+// alimentares" e pra citação, pra não duplicar conteúdo.
+// - ulTolerado: Upper Intake Level (UL) das Dietary Reference Intakes -- o teto tolerável de ingestão
+//   TOTAL (dieta + suplemento) pra população em geral, quando existe um valor estabelecido. null quando
+//   não há UL definido (ex.: potássio e vitamina B12 -- o excesso é eliminado pelos rins/não absorvido
+//   em excesso, sem toxicidade conhecida por via alimentar/oral em pessoa saudável). Não se aplica a
+//   sódio, que já usa MICRO_GOALS como teto (ver comentário de micronutrientMeta) -- por isso sódio nem
+//   entra aqui como UL.
+// - abaixo/acima: notas curtas específicas do nutriente sobre o que uma ingestão baixa/alta prolongada
+//   pode significar -- SEMPRE distinguindo "abaixo da meta/referência" (comum, geralmente sem gravidade)
+//   de "carência clínica" (rara, exige tempo prolongado e/ou um valor bem mais baixo). Sem um "acima"
+//   específico, usa-se um texto genérico a partir do ulTolerado (ver calcularAnaliseConsumo()).
+const NUTRIENTE_ANALISE_REF = {
+  protein: {
+    ulTolerado: null,
+    abaixo: "Ingestão insuficiente de proteína por tempo prolongado pode levar à perda de massa muscular (mais relevante em quem está em déficit calórico, como no seu caso), cicatrização mais lenta e queda de imunidade.",
+    acima: "Para quem tem função renal normal, ingestões mais altas de proteína (até a faixa de ~2g/kg/dia) são geralmente consideradas seguras pelas Dietary Guidelines for Americans 2025-2030. Quem tem doença renal deve seguir orientação médica específica.",
+  },
+  carbs: {
+    ulTolerado: null,
+    abaixo: "Carboidrato é a principal fonte de energia do corpo e do cérebro -- ficar cronicamente muito abaixo da meta (sobretudo perto ou abaixo do piso de 130g/dia recomendado pelas DRIs, baseado no uso mínimo de glicose pelo cérebro) pode causar fadiga e dificuldade de concentração.",
+    acima: "Como essa é uma meta pessoal (ligada ao seu objetivo de calorias), ficar acima dela não é um problema de saúde por si só -- só indica que sobrou menos espaço calórico pros outros macronutrientes, ou que a meta de calorias do dia passou.",
+  },
+  fat: {
+    ulTolerado: null,
+    abaixo: "Gordura é necessária para absorver as vitaminas lipossolúveis (A, D, E, K) e para a produção de hormônios -- as DRIs recomendam nunca ficar abaixo de 20% das calorias do dia.",
+    acima: "Como essa é uma meta pessoal, ficar acima dela não é automaticamente um problema de saúde -- vale atenção principalmente à qualidade (priorizar gorduras insaturadas de azeite, castanhas e peixes em vez de gordura saturada em excesso).",
+  },
+  fiber: {
+    ulTolerado: null,
+    abaixo: "Fibra insuficiente de forma prolongada está associada a constipação, pior controle de glicemia/colesterol e menos saciedade -- a Ingestão Adequada usada aqui é 14g a cada 1.000 kcal.",
+    acima: "Não há um teto tolerável estabelecido para fibra de alimentos -- o principal efeito de um aumento rápido é desconforto digestivo (gases, distensão), que costuma passar com o corpo se adaptando aos poucos.",
+  },
+  vitA: {
+    ulTolerado: 3000, // mcg RAE/dia (adultos) -- aplica-se sobretudo à vitamina A pré-formada (retinol, de
+    // origem animal e suplementos), não aos carotenoides provitamina A de vegetais (cenoura, abóbora,
+    // manga) -- ver nota específica abaixo.
+    abaixo: "Carência prolongada e importante de vitamina A pode causar cegueira noturna e, em casos graves, xeroftalmia -- mas isso normalmente exige uma ingestão cronicamente muito baixa por um bom tempo, bem diferente de só ficar abaixo da referência diária em alguns dias.",
+    acima: "O risco de excesso (toxicidade) se concentra na vitamina A PRÉ-FORMADA (retinol) de fígado, suplementos e alimentos fortificados -- os carotenoides provitamina A de vegetais como cenoura, abóbora e manga não causam esse tipo de toxicidade, apenas, em excesso extremo, uma coloração amarelada e inofensiva na pele. Se boa parte do seu consumo vier de fontes vegetais, o risco real é menor do que esse número isolado sugere.",
+  },
+  vitC: {
+    ulTolerado: 2000, // mg/dia (adultos)
+    abaixo: "Abaixo de cerca de 10mg/dia por aproximadamente um mês pode causar escorbuto -- mas isso é raro e bem diferente de só ficar abaixo da meta diária de referência em alguns dias.",
+    acima: "Vitamina C tem baixa toxicidade -- o principal efeito de doses muito altas (geralmente só via suplemento, é difícil chegar lá só com alimento) é desconforto gastrointestinal, e há um possível aumento do risco de cálculo renal em pessoas predispostas.",
+  },
+  vitD: {
+    ulTolerado: 100, // mcg/dia (adultos) = 4.000 UI/dia
+    abaixo: "Carência prolongada de vitamina D está associada a ossos mais fracos (osteomalácia/maior risco de fratura) -- exposição solar regular também contribui bastante pra síntese, não só a alimentação.",
+    acima: "Excesso de vitamina D (quase sempre por suplementação em dose alta, não por alimento ou sol) pode causar acúmulo de cálcio no sangue (hipercalcemia), com náusea, fraqueza e, em casos graves, problemas nos rins.",
+  },
+  vitB12: {
+    ulTolerado: null,
+    abaixo: "Carência de B12 (mais comum em dietas vegetarianas/veganas estritas, já que ela só existe naturalmente em alimentos de origem animal, ou em quem tem problema de absorção) pode causar anemia e, se prolongada, sintomas neurológicos -- vale considerar suplementação nesses casos, com orientação médica/nutricional.",
+    acima: "Não há toxicidade conhecida por excesso de vitamina B12 via alimentação ou suplementação oral em pessoas saudáveis -- o excesso que não é usado é simplesmente eliminado.",
+  },
+  calcio: {
+    ulTolerado: 2500, // mg/dia (adultos até 50 anos)
+    abaixo: "Carência prolongada de cálcio (geralmente combinada com pouca vitamina D) está associada a menor densidade óssea a longo prazo e maior risco de osteoporose.",
+    acima: "Ingestão excessiva de cálcio (mais comum por suplemento do que por alimento) tem sido associada a maior risco de cálculo renal e, em alguns estudos, a outros efeitos cardiovasculares -- ainda um tema em debate na literatura.",
+  },
+  ferro: {
+    ulTolerado: 45, // mg/dia (adultos)
+    abaixo: "Carência prolongada de ferro pode levar à anemia ferropriva (fadiga, palidez, falta de ar) -- mulheres em idade fértil têm necessidade proporcionalmente maior por causa da menstruação.",
+    acima: "Excesso de ferro (mais comum por suplementação inadequada do que por alimento) pode causar desconforto gastrointestinal e, em uso crônico excessivo, acúmulo tóxico no fígado e outros órgãos -- pessoas com hemocromatose (condição genética) precisam de cuidado redobrado.",
+  },
+  magnesio: {
+    ulTolerado: null, // o UL de 350mg/dia das DRIs vale só pra magnésio de SUPLEMENTO/medicamento, não pra
+    // magnésio de alimento -- não é comparável ao total de dieta+suplemento calculado aqui, então não é
+    // usado como teto genérico (ver acima/abaixo).
+    abaixo: "Carência prolongada de magnésio pode contribuir para cãibras, fadiga e arritmias, mas costuma ser incomum em quem tem uma dieta variada.",
+    acima: "Não há um teto de toxicidade estabelecido para magnésio de ALIMENTO -- o rim saudável elimina o excesso. O único risco de excesso relevante é por suplemento/medicamento em dose alta (diarreia é o efeito mais comum), não pela dieta.",
+  },
+  potassio: {
+    ulTolerado: null, // sem UL estabelecido pra pessoa saudável -- rim saudável regula bem o excesso
+    // vindo de alimento; o risco de excesso relevante é em quem já tem doença renal ou usa certos
+    // medicamentos, não uma questão de dose alimentar isolada pra população geral.
+    abaixo: "Ingestão cronicamente baixa de potássio está associada a pressão arterial mais alta e maior risco cardiovascular -- é um dos poucos nutrientes em que a maior parte da população come menos do que o recomendado.",
+    acima: "Para quem tem função renal normal, não há risco relevante de excesso de potássio via alimento -- o cuidado com excesso é principalmente pra quem tem doença renal ou usa certos medicamentos (ex.: alguns diuréticos), caso em que vale orientação médica específica.",
+  },
+  zinco: {
+    ulTolerado: 40, // mg/dia (adultos)
+    abaixo: "Carência de zinco pode afetar a imunidade, a cicatrização de feridas e o paladar/olfato.",
+    acima: "Excesso de zinco (mais comum por suplementação do que por alimento) pode causar náusea e, em uso prolongado, interferir na absorção de cobre, levando a uma carência secundária desse mineral.",
+  },
+  sodio: {
+    ulTolerado: null, // sódio já usa MICRO_GOALS[key] como TETO em si (não um piso com UL acima -- ver
+    // comentário de micronutrientMeta), então a comparação de excesso é feita direto em
+    // calcularAnaliseConsumo() (ramo ehSodio), sem precisar de um ulTolerado separado aqui.
+    abaixo: "Ingestão cronicamente alta de sódio está associada a pressão alta e maior risco cardiovascular -- reduzir passa principalmente por cortar sal de cozinha, alimentos industrializados/ultraprocessados, embutidos e temperos prontos, as maiores fontes do dia a dia.",
+    acima: "",
+  },
+};
+
 const foodLibrary = [
   { terms: ["pao frances", "pao de sal", "pao frances comum"], label: "Pão francês", baseAmount: "1 unidade (50 g)", values: { calories: 135, protein: 4.5, carbs: 28, fat: 1.5, fiber: 1.2, vitA: 0, vitC: 0, vitD: 0, calcio: 10, ferro: 1.2, magnesio: 8, potassio: 50, zinco: 0.4, sodio: 290, vitB12: 0 }, grams: 50 },
   // "Pão de caixa" é como o pão de forma tradicional é chamado em boa parte do Nordeste (inclusive na
@@ -2034,7 +2150,17 @@ const state = {
   // Data do dia expandido no histórico de refeições (accordion: um dia de cada vez, ou nenhum) -- ver
   // historyPanelTemplate()/acaoAlternarDiaHistorico(). null = nenhum dia expandido (só a lista de dias).
   historyDiaExpandido: null,
-  nutrientAba: "macro", // "macro" | "micro"
+  nutrientAba: "macro", // "macro" | "micro" | "analise" -- ver nutricaoTabTemplate()
+  // Aba "Análise de Consumo" (ver analiseConsumoTabTemplate()): nutriente selecionado no seletor e
+  // período "de"/"até" escolhidos. analiseGerada só é preenchido ao clicar em "Gerar análise"
+  // (acaoGerarAnaliseConsumo()) -- os campos acima podem mudar livremente sem afetar o resultado já
+  // mostrado, até a pessoa clicar de novo. O resultado em si não fica guardado à parte: é recalculado a
+  // cada render a partir de analiseGerada (função pura, calcularAnaliseConsumo()), então reflete
+  // automaticamente qualquer dia encerrado/editado depois de gerado.
+  analiseNutrienteSelecionado: "vitC",
+  analiseFiltroDe: "",
+  analiseFiltroAte: "",
+  analiseGerada: null, // { key, de, ate } | null
   // Chave do nutriente (nutrientMeta/micronutrientMeta) com o modal de informações aberto, ou null --
   // ver nutrientInfoModalTemplate()/acaoAbrirInfoNutriente().
   infoNutrienteAberto: null,
@@ -4330,6 +4456,201 @@ function nutrienteComparacaoCardTemplate(key, meta, digits) {
       '<p class="imc-empty nutriente-comparacao-nota">Encerre pelo menos um dia no Diário de Kcal para ver sua média de consumo aqui.</p>'
     );
 }
+
+/* ===================== Análise de Consumo ===================== */
+// Aba "Análise de Consumo" (ver nutricaoTabTemplate()/analiseConsumoTabTemplate()) -- pedido do
+// usuário: reproduzir sob demanda, pra qualquer nutriente e qualquer período escolhido, o mesmo tipo de
+// análise dada conversacionalmente (vitamina C e vitamina A), com base nas mesmas fontes. Rodando 100%
+// local/offline (motor embutido, sem chamada de IA a cada análise -- opção escolhida pelo usuário) --
+// ver NUTRIENTE_ANALISE_REF acima. Só considera dias ENCERRADOS no Diário de Kcal (mesmo universo de
+// dados de nutrienteMediaHistorico(), só que filtrado por um período escolhido em vez de todo o
+// histórico).
+function calcularAnaliseConsumo(key, de, ate) {
+  const registros = state.diarioKcal.filter((r) => r.date >= de && r.date <= ate);
+  if (!registros.length) return { temDados: false, dias: 0 };
+  const chaveMetaMacro = NUTRIENT_META_CONGELADA_CHAVE[key];
+  let somaReal = 0, somaEsperado = 0;
+  registros.forEach((r) => {
+    somaReal += r[key] || 0;
+    if (chaveMetaMacro) {
+      const temMetaPropria = r.metaCalorias != null;
+      somaEsperado += temMetaPropria && r[chaveMetaMacro] != null ? r[chaveMetaMacro] : state.goals[key];
+    } else {
+      somaEsperado += MICRO_GOALS[key];
+    }
+  });
+  const real = somaReal / registros.length;
+  const esperado = somaEsperado / registros.length;
+  const percentual = esperado > 0 ? (real / esperado) * 100 : 0;
+  const ehSodio = key === "sodio";
+  const ref = NUTRIENTE_ANALISE_REF[key] || {};
+  // Faixa de classificação -- pra sódio, o "esperado" é um TETO (mais é pior); pros demais, um PISO
+  // (mais é melhor, até o limite superior tolerável, quando existe um definido -- ver ulTolerado).
+  let faixa;
+  if (ehSodio) {
+    faixa = percentual <= 100 ? "adequado" : percentual <= 150 ? "acima" : "bem_acima";
+  } else if (ref.ulTolerado && real > ref.ulTolerado) {
+    faixa = "acima_limite";
+  } else if (percentual >= 100) {
+    faixa = "adequado";
+  } else if (percentual >= 70) {
+    faixa = "levemente_abaixo";
+  } else if (percentual >= 40) {
+    faixa = "abaixo";
+  } else {
+    faixa = "bem_abaixo";
+  }
+  return { temDados: true, dias: registros.length, real, esperado, percentual, faixa, ehSodio, ref };
+}
+// Mesma regra de casas decimais já usada nos cards (nutrientCardsTemplate()/micronutrientCardsTemplate()).
+function nutrienteAnaliseDigits(key) {
+  if (nutrientMeta[key]) return 1;
+  const goal = MICRO_GOALS[key];
+  return (micronutrientMeta[key].unit === "mg" && goal >= 100) ? 0 : 1;
+}
+// Alimentos da biblioteca embutida (foodLibrary) que são boas fontes do nutriente, ordenados por
+// "eficiência calórica" (quantidade do nutriente por kcal) -- prioriza sugestões que cabem melhor no
+// orçamento de calorias da pessoa, não só o alimento com o maior valor absoluto. Só alimentos que o
+// próprio app já reconhece (ver detectFoods()), pra a sugestão mapear direto no que a pessoa pode
+// registrar por aqui.
+function alimentosSugeridosParaNutriente(key, n) {
+  return foodLibrary
+    .filter((f) => (f.values[key] || 0) > 0)
+    .map((f) => ({
+      label: f.label,
+      baseAmount: f.baseAmount,
+      valor: f.values[key],
+      calorias: f.values.calories || 0,
+      eficiencia: f.values.calories > 0 ? f.values[key] / f.values.calories : f.values[key],
+    }))
+    .sort((a, b) => b.eficiencia - a.eficiencia)
+    .slice(0, n || 5);
+}
+const ANALISE_FAIXA_TEXTO = {
+  adequado: "Dentro do esperado",
+  levemente_abaixo: "Levemente abaixo da referência",
+  abaixo: "Abaixo da referência",
+  bem_abaixo: "Bem abaixo da referência",
+  acima: "Acima do limite recomendado",
+  bem_acima: "Bem acima do limite recomendado",
+  acima_limite: "Acima do limite superior tolerável (UL)",
+};
+// Faixas "boas" (verde) x "de atenção" (vermelho/laranja) -- pra sódio, "adequado" é ficar ATÉ o teto;
+// pros demais, "adequado" é bater ou passar a referência (exceto se passar do UL, aí volta a ser atenção).
+function analiseFaixaEhBoa(faixa) { return faixa === "adequado"; }
+// Monta o texto completo da análise (mesma estrutura das análises dadas conversacionalmente: os números,
+// o que isso significa -- distinguindo "abaixo da meta" de "carência clínica" --, sugestões de alimentos
+// já reconhecidos pelo app, uma nota sobre suplementação, e a fonte).
+function analiseConsumoNarrativaTemplate(key, resultado) {
+  const meta = nutrientMeta[key] || micronutrientMeta[key];
+  const digits = nutrienteAnaliseDigits(key);
+  const ehVitD = key === "vitD";
+  const textoValor = (v) => ehVitD ? formatVitaminaDComUI(v, digits) : formatNumber(v, digits) + " " + meta.unit;
+  const info = NUTRIENT_INFO[key] || {};
+  const ref = resultado.ref || {};
+  const faixaTitulo = ANALISE_FAIXA_TEXTO[resultado.faixa];
+  const boa = analiseFaixaEhBoa(resultado.faixa);
+  const labelReferencia = resultado.ehSodio ? "do limite diário recomendado" : (nutrientMeta[key] ? "da sua meta diária" : "da referência diária (IDR)");
+
+  const paragrafoNumeros = "Nos " + resultado.dias + (resultado.dias === 1 ? " dia encerrado" : " dias encerrados") + " do período escolhido, seu consumo médio diário de " + esc(meta.label).toLowerCase() +
+    " foi " + textoValor(resultado.real) + " (" + formatNumber(resultado.percentual, 0) + "% " + labelReferencia + ", " + textoValor(resultado.esperado) + "/dia).";
+
+  let paragrafoSignificado = "";
+  if (resultado.faixa === "adequado") {
+    paragrafoSignificado = resultado.ehSodio
+      ? "Isso está dentro do limite diário recomendado -- ótimo sinal, já que o excesso (não a falta) é o que preocupa nesse nutriente."
+      : "Isso está dentro ou acima da referência diária, um bom sinal.";
+  } else if (resultado.faixa === "acima_limite") {
+    paragrafoSignificado = "Esse valor está acima do limite superior tolerável (UL) de " + textoValor(ref.ulTolerado) + "/dia estabelecido pelas Dietary Reference Intakes -- vale atenção, especialmente se parte relevante vier de suplemento. " + (ref.acima || "");
+  } else if (resultado.ehSodio) {
+    paragrafoSignificado = (resultado.faixa === "acima" ? "Isso já passou do limite recomendado -- " : "Isso está bem acima do limite recomendado -- ") + (ref.abaixo || "");
+  } else {
+    paragrafoSignificado = (resultado.faixa === "bem_abaixo" ? "Isso é uma diferença considerável em relação à referência. " : "Isso está abaixo da referência, mas dentro de uma faixa comum e geralmente sem gravidade isolada. ") + (ref.abaixo || "");
+  }
+
+  const querSugestaoAlimento = !boa && !resultado.ehSodio && resultado.faixa !== "acima_limite";
+  const alimentos = querSugestaoAlimento ? alimentosSugeridosParaNutriente(key, 5) : [];
+  const paragrafoAlimentos = alimentos.length
+    ? '<p>Alimentos já reconhecidos pelo app que são boas fontes de ' + esc(meta.label).toLowerCase() + ' (do mais eficiente em relação às calorias): ' +
+      alimentos.map((a) => esc(a.label) + " (" + a.baseAmount + ": " + formatNumber(a.valor, digits) + " " + meta.unit + (a.calorias ? ", " + formatNumber(a.calorias) + " kcal" : "") + ")").join("; ") + "." +
+      "</p>"
+    : "";
+
+  let paragrafoSuplementacao = "";
+  if (resultado.ehSodio || resultado.faixa === "acima" || resultado.faixa === "bem_acima" || resultado.faixa === "acima_limite") {
+    paragrafoSuplementacao = "Nesse caso o caminho é reduzir a fonte (geralmente sal de cozinha e alimentos ultraprocessados, no caso do sódio, ou revisar dose de suplemento nos demais), não suplementar.";
+  } else if (!boa) {
+    paragrafoSuplementacao = "Pra quem não tem uma condição de saúde específica, a orientação geral dessas fontes é priorizar ajustar a alimentação antes de recorrer a suplemento -- suplementação pode fazer sentido em casos específicos (ex.: dietas restritivas, alguma condição diagnosticada), mas vale avaliação individual com um profissional de saúde antes de decidir.";
+  }
+
+  const nota = '<p class="imc-empty analise-consumo-disclaimer">Essa é uma análise de referência geral, a partir de fontes científicas reconhecidas -- não substitui avaliação individualizada com um médico ou nutricionista, principalmente se você tiver alguma condição de saúde específica.</p>';
+  const fonteTexto = info.fonte ? '<p class="imc-empty analise-consumo-fonte">Fontes: ' + esc(info.fonte) + '</p>' : "";
+
+  return '' +
+    '<div class="analise-consumo-badge analise-consumo-badge-' + (boa ? "boa" : "atencao") + '">' + icon(boa ? "check" : "zap") + " " + faixaTitulo + "</div>" +
+    "<p>" + paragrafoNumeros + "</p>" +
+    "<p>" + paragrafoSignificado + "</p>" +
+    paragrafoAlimentos +
+    (paragrafoSuplementacao ? "<p>" + paragrafoSuplementacao + "</p>" : "") +
+    nota + fonteTexto;
+}
+// Resultado completo mostrado depois de clicar "Gerar análise" (ver acaoGerarAnaliseConsumo()) --
+// recalculado a cada render a partir de state.analiseGerada (função pura), então reflete na hora
+// qualquer dia encerrado/editado depois de gerado, sem precisar clicar em "Gerar análise" de novo.
+function analiseConsumoResultadoTemplate(gerada) {
+  const meta = nutrientMeta[gerada.key] || micronutrientMeta[gerada.key];
+  const resultado = calcularAnaliseConsumo(gerada.key, gerada.de, gerada.ate);
+  return '' +
+    '<div class="analise-consumo-resultado medidas-section">' +
+      '<h2 class="medidas-section-title">' + icon(meta.icon) + " " + esc(meta.label) + " -- " + dateLabel(gerada.de) + " a " + dateLabel(gerada.ate) + "</h2>" +
+      (resultado.temDados
+        ? analiseConsumoNarrativaTemplate(gerada.key, resultado)
+        : '<p class="imc-empty">Não há nenhum dia encerrado no Diário de Kcal dentro desse período. Encerre pelo menos um dia (manualmente ou deixando a virada de meia-noite consolidar) dentro do intervalo escolhido para gerar a análise.</p>'
+      ) +
+    "</div>";
+}
+// Aba "Análise de Consumo", ao lado de Macronutrientes/Micronutrientes (ver nutricaoTabTemplate()) --
+// seletor de nutriente + período "de"/"até" + botão "Gerar análise". O resultado só aparece depois do
+// clique (acaoGerarAnaliseConsumo()); trocar o nutriente/período sem clicar de novo não altera o
+// resultado já mostrado.
+function analiseConsumoTabTemplate() {
+  const opcoesMacro = Object.keys(nutrientMeta).filter((k) => k !== "calories");
+  const opcoesMicro = Object.keys(micronutrientMeta);
+  const podeGerar = !!(state.analiseFiltroDe && state.analiseFiltroAte && state.analiseFiltroDe <= state.analiseFiltroAte);
+  const dataInvalida = !!(state.analiseFiltroDe && state.analiseFiltroAte && state.analiseFiltroDe > state.analiseFiltroAte);
+  return '' +
+    '<section class="analise-consumo-section">' +
+      '<p class="imc-empty" style="margin-bottom:16px">Escolha um macro ou micronutriente e um período com pelo menos um dia encerrado no Diário de Kcal -- a análise usa as mesmas referências científicas (NIH, Dietary Reference Intakes, ANVISA) já usadas nos cards de nutrientes, e não substitui orientação profissional individualizada.</p>' +
+      '<div><label class="field-label">Nutriente</label>' +
+      '<select class="field-input analise-consumo-select" onchange="acaoSelecionarNutrienteAnalise(this.value)">' +
+        '<optgroup label="Macronutrientes">' +
+          opcoesMacro.map((k) => '<option value="' + k + '"' + (state.analiseNutrienteSelecionado === k ? " selected" : "") + '>' + nutrientMeta[k].label + "</option>").join("") +
+        "</optgroup>" +
+        '<optgroup label="Micronutrientes">' +
+          opcoesMicro.map((k) => '<option value="' + k + '"' + (state.analiseNutrienteSelecionado === k ? " selected" : "") + '>' + micronutrientMeta[k].label + "</option>").join("") +
+        "</optgroup>" +
+      "</select></div>" +
+      '<div class="evolucao-periodo-filtro medida-filtro-periodo">' +
+        '<div><label class="field-label">De</label><input type="date" class="field-input" max="' + esc(today()) + '" value="' + esc(state.analiseFiltroDe) + '" onchange="acaoFiltrarAnaliseConsumo(\'de\', this.value)"/></div>' +
+        '<div><label class="field-label">Até</label><input type="date" class="field-input" max="' + esc(today()) + '" value="' + esc(state.analiseFiltroAte) + '" onchange="acaoFiltrarAnaliseConsumo(\'ate\', this.value)"/></div>' +
+      "</div>" +
+      (dataInvalida ? '<p class="imc-empty analise-consumo-erro">A data "De" precisa ser antes (ou igual à) data "Até".</p>' : "") +
+      '<button class="btn-primary-pill-lg analise-consumo-gerar-btn" ' + (podeGerar ? "" : "disabled") + ' onclick="acaoGerarAnaliseConsumo()">' + icon("sparkles") + ' <span class="label">Gerar análise</span></button>' +
+      (state.analiseGerada ? analiseConsumoResultadoTemplate(state.analiseGerada) : "") +
+    "</section>";
+}
+function acaoSelecionarNutrienteAnalise(key) { state.analiseNutrienteSelecionado = key; render(); }
+function acaoFiltrarAnaliseConsumo(campo, valor) {
+  if (campo === "de") state.analiseFiltroDe = valor; else state.analiseFiltroAte = valor;
+  render();
+}
+function acaoGerarAnaliseConsumo() {
+  if (!state.analiseFiltroDe || !state.analiseFiltroAte || state.analiseFiltroDe > state.analiseFiltroAte) return;
+  state.analiseGerada = { key: state.analiseNutrienteSelecionado, de: state.analiseFiltroDe, ate: state.analiseFiltroAte };
+  render();
+}
+/* =============== fim Análise de Consumo =============== */
+
 // Envolve a frente já pronta de um card (frenteHtml, sem NENHUMA alteração -- continua sendo exatamente o
 // <div class="nutrient-card"> de sempre, preservando toda a estrutura que os testes existentes verificam)
 // num container que "vira" com um TOQUE simples em qualquer lugar do card -- pedido explícito do usuário,
@@ -8019,9 +8340,11 @@ function nutricaoTabTemplate() {
     "</div>" +
     (state.nutricaoAba === "diario" ? diarioKcalTabTemplate() : '' +
       '<div class="nutrient-tabs">' +
-        '<button class="nutrient-tab' + (state.nutrientAba !== "micro" ? " active" : "") + '" onclick="acaoTrocarAbaNutrientes(\'macro\')">Macronutrientes</button>' +
+        '<button class="nutrient-tab' + (state.nutrientAba === "macro" ? " active" : "") + '" onclick="acaoTrocarAbaNutrientes(\'macro\')">Macronutrientes</button>' +
         '<button class="nutrient-tab' + (state.nutrientAba === "micro" ? " active" : "") + '" onclick="acaoTrocarAbaNutrientes(\'micro\')">Micronutrientes</button>' +
+        '<button class="nutrient-tab' + (state.nutrientAba === "analise" ? " active" : "") + '" onclick="acaoTrocarAbaNutrientes(\'analise\')">Análise de Consumo</button>' +
       "</div>" +
+      (state.nutrientAba === "analise" ? analiseConsumoTabTemplate() : '' +
       (state.nutrientAba === "micro" ?
         '<section class="nutrient-grid nutrient-grid-micro">' + micronutrientCardsTemplate() + "</section>" +
         '<p class="micro-fonte-nota">' + icon("help") + " Valores de referência (Ingestão Diária de Referência) para a população em geral, conforme a ANVISA — Instrução Normativa nº 75/2020 (Anexo II), a norma vigente para rotulagem nutricional de alimentos no Brasil.</p>"
@@ -8061,6 +8384,7 @@ function nutricaoTabTemplate() {
         "</div>" +
       "</section>" +
       '<div class="footnote">' + icon("help") + "<p>Os valores são estimativas. O reconhecimento automático funciona com alimentos conhecidos e pode ser refinado com uma base nutricional maior.</p></div>"
+      )
     ) +
     "</main>";
 }
