@@ -264,6 +264,15 @@ svg{ display: block; }
 .nutrient-card-face-front{ position:relative; backface-visibility:hidden; -webkit-backface-visibility:hidden; }
 .nutrient-card-face-back{ position:absolute; inset:0; display:flex; flex-direction:column; gap:4px; backface-visibility:hidden; -webkit-backface-visibility:hidden; transform:rotateY(180deg); border-radius:22px; border:1px solid #e5e9e1; background:#fff; padding:16px; box-shadow:0 10px 28px rgba(43,73,53,0.045); overflow:auto; }
 .nutriente-comparacao-chart{ display:block; width:100%; height:82px; overflow:visible; }
+/* Gráfico do verso do card de macro/micronutriente (nutrienteComparacaoChartSvg()) -- classe PRÓPRIA
+   (não ".nutriente-comparacao-chart" acima, que essa mesma altura fixa de 82px também é usada pelo
+   gráfico de Aderência do card "Seu resumo de hoje" -- ver resumoAderenciaChartSvg() -- e não deve mudar
+   de tamanho junto). Mais alto que antes: agora tem os números de meta/consumo acima das barras e a
+   diferença abaixo, sempre visíveis (pedido do usuário). */
+.nutriente-comparacao-chart-verso{ display:block; width:100%; height:104px; overflow:visible; }
+.nutriente-comparacao-numero{ font-size:7.5px; font-weight:600; fill:#9aa9a1; font-family:'DM Sans', sans-serif; }
+.nutriente-comparacao-numero-esperado{ font-weight:500; opacity:.75; }
+.nutriente-comparacao-diferenca{ font-size:8.5px; font-weight:700; font-family:'DM Sans', sans-serif; }
 .nutrient-card-back-head{ display:flex; align-items:center; justify-content:space-between; }
 .nutrient-card-back-left{ display:flex; align-items:center; gap:10px; }
 .nutrient-card-back-icon{ display:flex; height:28px; width:28px; align-items:center; justify-content:center; border-radius:10px; font-size:14px; flex-shrink:0; }
@@ -1446,6 +1455,10 @@ const foodLibrary = [
   { terms: ["brigadeiro"], label: "Brigadeiro", baseAmount: "1 unidade (15 g)", values: { calories: 62, protein: 0.9, carbs: 9, fat: 2.4, fiber: 0.3, vitA: 5, vitC: 0, vitD: 0, calcio: 20, ferro: 0.3, magnesio: 5, potassio: 40, zinco: 0.1, sodio: 15, vitB12: 0.05 }, grams: 15 },
   { terms: ["barra de cereal"], label: "Barra de cereal", baseAmount: "1 unidade (25 g)", values: { calories: 95, protein: 1.3, carbs: 18, fat: 2, fiber: 1.2, vitA: 0, vitC: 0, vitD: 0, calcio: 15, ferro: 0.8, magnesio: 15, potassio: 60, zinco: 0.3, sodio: 30, vitB12: 0 }, grams: 25 },
   { terms: ["castanha do para", "castanha"], label: "Castanha-do-pará", baseAmount: "5 unidades (15 g)", values: { calories: 92, protein: 2, carbs: 1.7, fat: 9.3, fiber: 1, vitA: 0, vitC: 0, vitD: 0, calcio: 25, ferro: 0.4, magnesio: 55, potassio: 100, zinco: 0.7, sodio: 0.3, vitB12: 0 }, grams: 15 },
+  // Termo mais específico que "castanha" (que já aponta pra Castanha-do-pará acima) -- o termo mais longo
+  // sempre vence (ver comentário perto de "coca cola zero"/detectFoods()), então "castanha de caju"
+  // continua batendo aqui, e "castanha" sozinha continua batendo na Castanha-do-pará, sem ambiguidade.
+  { terms: ["castanha de caju", "castanha caju"], label: "Castanha de caju", baseAmount: "8 unidades (15 g)", values: { calories: 83, protein: 2.7, carbs: 4.5, fat: 6.6, fiber: 0.5, vitA: 0, vitC: 0.1, vitD: 0, calcio: 6, ferro: 1, magnesio: 44, potassio: 100, zinco: 0.9, sodio: 2, vitB12: 0 }, grams: 15 },
   { terms: ["amendoim"], label: "Amendoim", baseAmount: "30 g", values: { calories: 170, protein: 7.3, carbs: 6, fat: 14.5, fiber: 2.5, vitA: 0, vitC: 0, vitD: 0, calcio: 20, ferro: 0.6, magnesio: 48, potassio: 200, zinco: 0.9, sodio: 50, vitB12: 0 }, grams: 30 },
   { terms: ["pipoca"], label: "Pipoca", baseAmount: "30 g", values: { calories: 110, protein: 2.3, carbs: 22, fat: 1.5, fiber: 4, vitA: 1, vitC: 0, vitD: 0, calcio: 2, ferro: 0.3, magnesio: 30, potassio: 70, zinco: 0.3, sodio: 140, vitB12: 0 }, grams: 30 },
   { terms: ["manteiga"], label: "Manteiga", baseAmount: "1 colher de chá (5 g)", values: { calories: 36, protein: 0, carbs: 0, fat: 4, fiber: 0, vitA: 35, vitC: 0, vitD: 0.1, calcio: 1, ferro: 0, magnesio: 0, potassio: 1, zinco: 0, sodio: 40, vitB12: 0 }, grams: 5 },
@@ -4234,18 +4247,21 @@ function nutrienteMediaHistorico(key) {
 // de cada um...o consumo médio esperado"). Mesma cor do nutriente (meta.color) nas duas barras, só
 // variando a opacidade/largura pra diferenciar real x esperado sem introduzir uma segunda cor concorrente
 // (identidade = cor do próprio nutriente, não uma paleta nova por gráfico).
+// Pedido do usuário (depois de já existir esse gráfico): os números exatos de cada coluna SEMPRE visíveis
+// (não só ao passar o mouse/tocar, como era antes) -- "Meta"/"Consumo" imediatamente ACIMA de cada par de
+// barras, e a diferença entre os dois (consumido − esperado) imediatamente ABAIXO, com uma setinha
+// colorida: verde ▲ quando o consumido fica em cima do esperado, vermelha ▼ quando fica abaixo. Isso
+// deixou o gráfico bem mais alto que antes (as duas linhas de número acima e a linha de diferença abaixo
+// precisam de espaço) -- sem problema, porque o verso do card já cresce mais que a frente quando precisa
+// (ver overflow:auto em .nutrient-card-face-back). O <title> de cada barra continua existindo também
+// (redundante com o número agora sempre visível, mas não atrapalha).
 function nutrienteComparacaoChartSvg(comparacao, meta, digits) {
   const grupos = [
     { label: "Diário", real: comparacao.real.diario, esperado: comparacao.esperado.diario },
     { label: "Semanal", real: comparacao.real.semanal, esperado: comparacao.esperado.semanal },
     { label: "Mensal", real: comparacao.real.mensal, esperado: comparacao.esperado.mensal },
   ];
-  // Altura bem mais compacta que os outros gráficos da aba Evolução (evolucao-chart, 150px) de propósito:
-  // esse gráfico mora no VERSO de um card que precisa continuar do mesmo tamanho da frente (ver
-  // nutrienteCardFlipWrapperTemplate()/.nutrient-card-face-back), então precisa caber num espaço bem
-  // menor. Os valores exatos de cada barra continuam disponíveis ao passar o mouse/tocar (elemento
-  // <title>), então a leitura fina não se perde por causa do tamanho reduzido.
-  const W = 320, H = 82, PAD_L = 10, PAD_R = 10, PAD_T = 5, PAD_B = 15;
+  const W = 320, H = 104, PAD_L = 10, PAD_R = 10, PAD_T = 26, PAD_B = 30;
   const innerW = W - PAD_L - PAD_R, innerH = H - PAD_T - PAD_B;
   const maiorValor = Math.max.apply(null, grupos.map((g) => Math.max(g.real, g.esperado)).concat([1]));
   const maxEscala = maiorValor * 1.15;
@@ -4258,13 +4274,18 @@ function nutrienteComparacaoChartSvg(comparacao, meta, digits) {
     const cx = PAD_L + (i + 0.5) * larguraGrupo;
     const altEsperado = alturaDe(g.esperado);
     const altReal = alturaDe(g.real);
+    const diferenca = g.real - g.esperado;
+    const subiu = diferenca >= 0;
     return '' +
+      '<text x="' + cx.toFixed(1) + '" y="9" text-anchor="middle" class="nutriente-comparacao-numero nutriente-comparacao-numero-esperado">Meta ' + formatNumber(g.esperado, digits) + " " + meta.unit + "</text>" +
+      '<text x="' + cx.toFixed(1) + '" y="19" text-anchor="middle" class="nutriente-comparacao-numero" style="fill:' + meta.color + '">Consumo ' + formatNumber(g.real, digits) + " " + meta.unit + "</text>" +
       '<rect x="' + (cx - larguraEsperado / 2).toFixed(1) + '" y="' + (baseY - altEsperado).toFixed(1) + '" width="' + larguraEsperado.toFixed(1) + '" height="' + altEsperado.toFixed(1) + '" rx="3" fill="' + meta.color + '" opacity="0.22"><title>' + esc(g.label) + " esperado: " + formatNumber(g.esperado, digits) + " " + meta.unit + "</title></rect>" +
       '<rect x="' + (cx - larguraReal / 2).toFixed(1) + '" y="' + (baseY - altReal).toFixed(1) + '" width="' + larguraReal.toFixed(1) + '" height="' + altReal.toFixed(1) + '" rx="2.5" fill="' + meta.color + '"><title>' + esc(g.label) + " consumido: " + formatNumber(g.real, digits) + " " + meta.unit + "</title></rect>" +
-      '<text x="' + cx.toFixed(1) + '" y="' + (H - 3) + '" text-anchor="middle" class="evolucao-chart-axis-label">' + g.label + "</text>";
+      '<text x="' + cx.toFixed(1) + '" y="' + (baseY + 11).toFixed(1) + '" text-anchor="middle" class="evolucao-chart-axis-label">' + g.label + "</text>" +
+      '<text x="' + cx.toFixed(1) + '" y="' + (baseY + 26).toFixed(1) + '" text-anchor="middle" class="nutriente-comparacao-diferenca" fill="' + (subiu ? "#2f9e5c" : "#c35e4b") + '">' + (subiu ? "▲" : "▼") + " " + formatNumber(Math.abs(diferenca), digits) + " " + meta.unit + "</text>";
   }).join("");
   return '' +
-    '<svg class="nutriente-comparacao-chart" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="Consumo médio diário, semanal e mensal de ' + esc(meta.label) + ' comparado ao esperado">' +
+    '<svg class="nutriente-comparacao-chart-verso" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="Consumo médio diário, semanal e mensal de ' + esc(meta.label) + ' comparado ao esperado, com a diferença entre os dois">' +
       '<line x1="' + PAD_L + '" x2="' + (W - PAD_R) + '" y1="' + baseY + '" y2="' + baseY + '" class="evolucao-chart-grid"/>' +
       barras +
     "</svg>";
