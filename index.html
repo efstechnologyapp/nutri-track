@@ -303,6 +303,8 @@ svg{ display: block; }
 .analise-consumo-badge-boa{ background:#e3f1e6; color:#2f7d4f; }
 .analise-consumo-badge-atencao{ background:#fbe9e4; color:#b6503d; }
 .analise-consumo-disclaimer{ margin-top:16px; padding-top:12px; border-top:1px solid #eef1ec; }
+.analise-consumo-suplementar{ background:#f2f6ef; border:1px solid #dce5db; border-radius:14px; padding:12px 14px; }
+.analise-consumo-suplementar strong{ color:#1b3f34; }
 .analise-consumo-fonte{ margin-top:4px; }
 
 .dashboard-grid{ display:grid; gap:24px; grid-template-columns:1fr; }
@@ -4551,6 +4553,9 @@ function analiseConsumoNarrativaTemplate(key, resultado) {
   const faixaTitulo = ANALISE_FAIXA_TEXTO[resultado.faixa];
   const boa = analiseFaixaEhBoa(resultado.faixa);
   const labelReferencia = resultado.ehSodio ? "do limite diário recomendado" : (nutrientMeta[key] ? "da sua meta diária" : "da referência diária (IDR)");
+  // Mesmo texto de labelReferencia, só que na forma que combina com "até " em vez de "%" (ver
+  // paragrafoQuantoSuplementar abaixo) -- "até a sua meta diária", não "até da sua meta diária".
+  const labelReferenciaAte = nutrientMeta[key] ? "a sua meta diária" : "a referência diária (IDR)";
 
   const paragrafoNumeros = "Nos " + resultado.dias + (resultado.dias === 1 ? " dia encerrado" : " dias encerrados") + " do período escolhido, seu consumo médio diário de " + esc(meta.label).toLowerCase() +
     " foi " + textoValor(resultado.real) + " (" + formatNumber(resultado.percentual, 0) + "% " + labelReferencia + ", " + textoValor(resultado.esperado) + "/dia).";
@@ -4568,7 +4573,21 @@ function analiseConsumoNarrativaTemplate(key, resultado) {
     paragrafoSignificado = (resultado.faixa === "bem_abaixo" ? "Isso é uma diferença considerável em relação à referência. " : "Isso está abaixo da referência, mas dentro de uma faixa comum e geralmente sem gravidade isolada. ") + (ref.abaixo || "");
   }
 
+  // Pedido do usuário: "com base no meu consumo diario real, quanto eu precisaria suplementar
+  // diariamente nos casos em que ha deficit diario?" -- quantidade aproximada (esperado - real) que
+  // faltaria pra fechar a diferença até a meta/referência, só quando faz sentido (não pra sódio, que é
+  // um teto e não uma meta a bater, nem quando já passou do limite superior tolerável -- nesses casos o
+  // caminho é reduzir, não somar mais).
   const querSugestaoAlimento = !boa && !resultado.ehSodio && resultado.faixa !== "acima_limite";
+  let paragrafoQuantoSuplementar = "";
+  if (querSugestaoAlimento) {
+    const falta = Math.max(0, resultado.esperado - resultado.real);
+    if (falta > 0.0001) {
+      paragrafoQuantoSuplementar = '<p class="analise-consumo-suplementar"><strong>Quanto suplementar (se optar por isso):</strong> aproximadamente ' + textoValor(falta) + '/dia a mais do que você já consome em média, pra fechar a diferença até ' + labelReferenciaAte + '. ' +
+        (ref.ulTolerado ? 'Ao somar essa dose ao que já vem da alimentação, confira se o total do dia fica abaixo do limite superior tolerável de ' + textoValor(ref.ulTolerado) + '/dia -- é mais fácil passar do limite somando suplemento a uma dieta que já fornece boa parte do nutriente do que parece. ' : "") +
+        "Suplementos costumam vir em doses fixas (cápsulas/comprimidos de uma quantidade padrão) -- na prática, o normal é escolher a apresentação mais próxima dessa quantidade, não um valor exato como esse.</p>";
+    }
+  }
   const alimentos = querSugestaoAlimento ? alimentosSugeridosParaNutriente(key, 5) : [];
   const paragrafoAlimentos = alimentos.length
     ? '<p>Alimentos já reconhecidos pelo app que são boas fontes de ' + esc(meta.label).toLowerCase() + ' (do mais eficiente em relação às calorias): ' +
@@ -4576,11 +4595,16 @@ function analiseConsumoNarrativaTemplate(key, resultado) {
       "</p>"
     : "";
 
+  // "acima"/"bem_acima" só ocorrem pra sódio (ver calcularAnaliseConsumo()) -- os demais nutrientes só
+  // têm a faixa de excesso "acima_limite" (passou do UL), que ganha um texto próprio (não menciona sal
+  // de cozinha, que só faz sentido pro caso do sódio). Sem um texto genérico pro caso de déficit (!boa)
+  // aqui -- esse lugar agora é ocupado por paragrafoQuantoSuplementar, que já responde diretamente "quanto
+  // suplementar" em vez de só uma orientação genérica (pedido do usuário).
   let paragrafoSuplementacao = "";
-  if (resultado.ehSodio || resultado.faixa === "acima" || resultado.faixa === "bem_acima" || resultado.faixa === "acima_limite") {
-    paragrafoSuplementacao = "Nesse caso o caminho é reduzir a fonte (geralmente sal de cozinha e alimentos ultraprocessados, no caso do sódio, ou revisar dose de suplemento nos demais), não suplementar.";
-  } else if (!boa) {
-    paragrafoSuplementacao = "Pra quem não tem uma condição de saúde específica, a orientação geral dessas fontes é priorizar ajustar a alimentação antes de recorrer a suplemento -- suplementação pode fazer sentido em casos específicos (ex.: dietas restritivas, alguma condição diagnosticada), mas vale avaliação individual com um profissional de saúde antes de decidir.";
+  if (resultado.ehSodio) {
+    paragrafoSuplementacao = "Nesse caso o caminho é reduzir a fonte -- geralmente sal de cozinha e alimentos industrializados/ultraprocessados -- não suplementar.";
+  } else if (resultado.faixa === "acima_limite") {
+    paragrafoSuplementacao = "Como esse valor já passou do limite superior tolerável, o caminho aqui é revisar a fonte (alimento e/ou suplemento) que está levando a esse número, não aumentar ainda mais -- vale atenção redobrada se parte relevante vier de suplemento.";
   }
 
   const nota = '<p class="imc-empty analise-consumo-disclaimer">Essa é uma análise de referência geral, a partir de fontes científicas reconhecidas -- não substitui avaliação individualizada com um médico ou nutricionista, principalmente se você tiver alguma condição de saúde específica.</p>';
@@ -4591,6 +4615,7 @@ function analiseConsumoNarrativaTemplate(key, resultado) {
     "<p>" + paragrafoNumeros + "</p>" +
     "<p>" + paragrafoSignificado + "</p>" +
     paragrafoAlimentos +
+    paragrafoQuantoSuplementar +
     (paragrafoSuplementacao ? "<p>" + paragrafoSuplementacao + "</p>" : "") +
     nota + fonteTexto;
 }
