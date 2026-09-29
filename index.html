@@ -319,6 +319,19 @@ svg{ display: block; }
 .meal-input::placeholder, .meal-textarea::placeholder{ color:#9fb5aa; }
 .meal-input:focus, .meal-textarea:focus, .meal-select:focus{ border-color:#c5dfa9; }
 .meal-textarea{ resize:none; line-height:1.5; }
+/* Autocomplete de alimentos na descrição da refeição -- pedido do usuário (ver
+   acaoAtualizarSugestoesAlimento()/mealSugestoesListaHtml()). .meal-description-wrap serve de âncora
+   (position:relative) pro dropdown, que fica flutuando ("overlay", position:absolute) por cima do que
+   vem depois no formulário, em vez de empurrar o botão "Calcular refeição" pra baixo -- isso evita que o
+   botão MUDE DE POSIÇÃO bem no instante de um clique (o que poderia fazer o clique cair no lugar errado).
+   Combinado com o debounce (ver MEAL_SUGESTOES_DEBOUNCE_MS), a lista só chega a aparecer quando a pessoa
+   realmente para pra digitar, então normalmente ela não chega a cobrir o botão durante o uso comum. */
+.meal-description-wrap{ position:relative; }
+.meal-sugestoes-lista:empty{ display:none; }
+.meal-sugestoes-lista{ position:absolute; left:0; right:0; top:calc(100% + 4px); z-index:20; display:flex; flex-direction:column; gap:2px; max-height:220px; overflow-y:auto; background:#1c3a30; border:1px solid rgba(255,255,255,.14); border-radius:12px; padding:6px; box-shadow:0 12px 28px rgba(0,0,0,.35); }
+.meal-sugestao-item{ display:flex; align-items:center; gap:8px; width:100%; text-align:left; border:none; background:transparent; color:#fff; font-size:13px; padding:8px 10px; border-radius:8px; cursor:pointer; }
+.meal-sugestao-item:hover, .meal-sugestao-item:focus{ background:rgba(255,255,255,.1); }
+.meal-sugestao-item svg{ width:14px; height:14px; flex-shrink:0; color:#c5dfa9; }
 .meal-select{ appearance:none; -webkit-appearance:none; cursor:pointer; background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239fbeb0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; background-size:16px; padding-right:40px; }
 .meal-select option{ color:#18352d; background:#fff; }
 .meal-form-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
@@ -333,6 +346,9 @@ svg{ display: block; }
 .treino-nota-campo{ margin-top:16px; }
 .treino-distancia-campo{ margin-top:16px; }
 .treino-distancia-nota{ margin:6px 0 0; font-size:11px; line-height:1.5; color:#9fb5aa; }
+.treino-ciclismo-modalidade-campo{ margin-top:12px; }
+.treino-spinning-intensidade-campo{ margin-top:12px; }
+.treino-spinning-nota{ margin:6px 0 0; font-size:11px; line-height:1.5; color:#9fb5aa; }
 .treino-foto-campo{ margin-top:16px; }
 .treino-foto-botoes{ display:flex; gap:10px; }
 .treino-foto-btn{ display:flex; flex:1; width:100%; align-items:center; justify-content:center; gap:8px; border-radius:12px; border:1.5px dashed rgba(255,255,255,.28); background:rgba(255,255,255,.05); padding:12px 16px; font-size:13px; font-weight:600; color:#cfe4c8; cursor:pointer; transition:background .15s, border-color .15s; }
@@ -732,6 +748,12 @@ svg{ display: block; }
 .meal-detalhe-data-editar-btn{ margin-top:10px; display:inline-flex; align-items:center; gap:6px; border:none; background:none; padding:0; font-size:12px; font-weight:600; color:#6c8d68; }
 .meal-detalhe-data-editar-btn:hover{ color:#3d6355; }
 .meal-detalhe-data-editar-btn .icon{ width:14px; height:14px; }
+/* Mesmo visual do botão "Corrigir data" acima, só que classe própria -- não pode reusar
+   .meal-detalhe-data-editar-btn aqui porque essa classe já é usada em testes (e no CSS) esperando
+   corresponder só ao botão de corrigir data, um-pra-um. */
+.meal-detalhe-editar-refeicao-btn{ margin-top:10px; display:inline-flex; align-items:center; gap:6px; border:none; background:none; padding:0; font-size:12px; font-weight:600; color:#6c8d68; }
+.meal-detalhe-editar-refeicao-btn:hover{ color:#3d6355; }
+.meal-detalhe-editar-refeicao-btn .icon{ width:14px; height:14px; }
 .meal-detalhe-data-editar{ margin-top:12px; border-radius:14px; background:#f7f9f5; padding:12px 14px; }
 .meal-detalhe-data-editar-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .meal-detalhe-data-editar-row .field-input{ flex:1; min-width:150px; }
@@ -1383,6 +1405,10 @@ const foodLibrary = [
   { terms: ["pao de forma tradicional", "pao de caixa tradicional", "pao de caixa", "pao de forma"], label: "Pão de forma", baseAmount: "2 fatias (50 g)", values: { calories: 130, protein: 4, carbs: 24, fat: 1.6, fiber: 1.4, vitA: 0, vitC: 0, vitD: 0, calcio: 40, ferro: 1, magnesio: 10, potassio: 60, zinco: 0.3, sodio: 230, vitB12: 0 }, grams: 50 },
   { terms: ["pao de forma integral", "pao de caixa integral", "pao integral"], label: "Pão de forma integral", baseAmount: "2 fatias (50 g)", values: { calories: 120, protein: 5, carbs: 22, fat: 1.6, fiber: 3.2, vitA: 0, vitC: 0, vitD: 0, calcio: 30, ferro: 1.3, magnesio: 25, potassio: 80, zinco: 0.6, sodio: 220, vitB12: 0 }, grams: 50 },
   { terms: ["pao de queijo"], label: "Pão de queijo", baseAmount: "1 unidade (30 g)", values: { calories: 100, protein: 2.3, carbs: 9, fat: 6, fiber: 0.2, vitA: 10, vitC: 0, vitD: 0.1, calcio: 40, ferro: 0.3, magnesio: 5, potassio: 20, zinco: 0.3, sodio: 150, vitB12: 0.1 }, grams: 30 },
+  // Pedido do usuário. Fonte: TACO (Pão trigo sovado, 100 g: 311 kcal, 8,4 g proteína, 61,5 g
+  // carboidratos, 2,8 g gordura) -- demais micronutrientes cruzados com pães de trigo similares (pão
+  // francês/pão de forma, acima).
+  { terms: ["pao sovado"], label: "Pão sovado", baseAmount: "1 fatia (50 g)", values: { calories: 156, protein: 4.2, carbs: 30.8, fat: 1.4, fiber: 1, vitA: 0, vitC: 0, vitD: 0, calcio: 20, ferro: 1, magnesio: 10, potassio: 60, zinco: 0.4, sodio: 200, vitB12: 0 }, grams: 50 },
   { terms: ["tapioca"], label: "Tapioca", baseAmount: "1 unidade (60 g)", values: { calories: 130, protein: 0.2, carbs: 32, fat: 0.1, fiber: 0.3, vitA: 0, vitC: 0, vitD: 0, calcio: 15, ferro: 0.3, magnesio: 5, potassio: 10, zinco: 0.1, sodio: 5, vitB12: 0 }, grams: 60 },
   { terms: ["macarrao cozido", "macarrao", "massa"], label: "Macarrão cozido", baseAmount: "100 g", values: { calories: 158, protein: 5.8, carbs: 31, fat: 0.9, fiber: 1.8, vitA: 0, vitC: 0, vitD: 0, calcio: 7, ferro: 0.5, magnesio: 18, potassio: 45, zinco: 0.5, sodio: 180, vitB12: 0 }, grams: 100 },
   { terms: ["batata inglesa", "batata cozida", "batata"], label: "Batata inglesa cozida", baseAmount: "100 g", values: { calories: 87, protein: 1.9, carbs: 20, fat: 0.1, fiber: 1.8, vitA: 0, vitC: 13, vitD: 0, calcio: 8, ferro: 0.3, magnesio: 20, potassio: 380, zinco: 0.3, sodio: 200, vitB12: 0 }, grams: 100 },
@@ -1453,6 +1479,10 @@ const foodLibrary = [
   { terms: ["bacon"], label: "Bacon", baseAmount: "30 g", values: { calories: 150, protein: 10, carbs: 0, fat: 12, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 2, ferro: 0.3, magnesio: 5, potassio: 90, zinco: 0.6, sodio: 380, vitB12: 0.2 }, grams: 30 },
   { terms: ["peito de peru", "presunto de peru"], label: "Peito de peru fatiado", baseAmount: "2 fatias (30 g)", values: { calories: 35, protein: 6, carbs: 1, fat: 1, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 5, ferro: 0.2, magnesio: 6, potassio: 90, zinco: 0.4, sodio: 330, vitB12: 0.15 }, grams: 30 },
   { terms: ["presunto"], label: "Presunto", baseAmount: "2 fatias (30 g)", values: { calories: 60, protein: 8, carbs: 1, fat: 3, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 3, ferro: 0.2, magnesio: 5, potassio: 80, zinco: 0.4, sodio: 330, vitB12: 0.2 }, grams: 30 },
+  // Pedido do usuário. Fonte: TACO (Mortadela, 100 g: 269 kcal, 12 g proteína, 5,8 g carboidratos, 21,6 g
+  // gordura) -- sódio e demais micronutrientes cruzados com valores típicos de embutidos similares
+  // (linguiça/salsicha, acima), já que a TACO não detalha esses valores pra mortadela.
+  { terms: ["mortadela"], label: "Mortadela", baseAmount: "1 fatia (20 g)", values: { calories: 54, protein: 2.4, carbs: 1.2, fat: 4.3, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 5, ferro: 0.2, magnesio: 3, potassio: 40, zinco: 0.3, sodio: 230, vitB12: 0.1 }, grams: 20 },
   { terms: ["queijo minas"], label: "Queijo minas", baseAmount: "30 g", values: { calories: 72, protein: 5.6, carbs: 0.9, fat: 5.4, fiber: 0, vitA: 30, vitC: 0, vitD: 0, calcio: 180, ferro: 0.1, magnesio: 6, potassio: 30, zinco: 0.6, sodio: 85, vitB12: 0.3 }, grams: 30 },
   { terms: ["queijo mussarela", "mussarela", "muçarela"], label: "Queijo mussarela", baseAmount: "30 g", values: { calories: 90, protein: 6.6, carbs: 0.6, fat: 6.9, fiber: 0, vitA: 25, vitC: 0, vitD: 0, calcio: 200, ferro: 0.1, magnesio: 6, potassio: 20, zinco: 0.7, sodio: 180, vitB12: 0.3 }, grams: 30 },
   { terms: ["queijo gorgonzola", "gorgonzola"], label: "Queijo gorgonzola", baseAmount: "30 g", values: { calories: 106, protein: 6.4, carbs: 0.7, fat: 8.6, fiber: 0, vitA: 62, vitC: 0, vitD: 0.2, calcio: 158, ferro: 0.1, magnesio: 7, potassio: 77, zinco: 0.8, sodio: 419, vitB12: 0.4 }, grams: 30 },
@@ -1460,9 +1490,21 @@ const foodLibrary = [
   { terms: ["queijo parmesao", "parmesao"], label: "Queijo parmesão", baseAmount: "30 g", values: { calories: 118, protein: 10.7, carbs: 1, fat: 7.7, fiber: 0, vitA: 9, vitC: 0, vitD: 0, calcio: 333, ferro: 0.1, magnesio: 12, potassio: 19, zinco: 0.8, sodio: 413, vitB12: 0.26 }, grams: 30 },
   { terms: ["queijo prato"], label: "Queijo prato", baseAmount: "30 g", values: { calories: 108, protein: 7.6, carbs: 0.6, fat: 8.7, fiber: 0, vitA: 25, vitC: 0, vitD: 0, calcio: 210, ferro: 0.1, magnesio: 6, potassio: 20, zinco: 0.7, sodio: 141, vitB12: 0.3 }, grams: 30 },
   { terms: ["queijo gouda", "gouda"], label: "Queijo gouda", baseAmount: "30 g", values: { calories: 107, protein: 7.5, carbs: 0.7, fat: 8.2, fiber: 0, vitA: 59, vitC: 0, vitD: 0.2, calcio: 210, ferro: 0.1, magnesio: 6, potassio: 20, zinco: 1.2, sodio: 246, vitB12: 0.32 }, grams: 30 },
+  // Pedido do usuário. Fonte: NuTrilho (Queijo de manteiga, 100 g: 318 kcal, 21,6 g proteína, 2,5 g
+  // carboidratos, 24,6 g gordura) -- demais micronutrientes cruzados com queijos semiduros similares
+  // (queijo coalho/queijo prato, acima), que não constam na fonte primária.
+  { terms: ["queijo de manteiga"], label: "Queijo de manteiga", baseAmount: "30 g", values: { calories: 95, protein: 6.5, carbs: 0.8, fat: 7.4, fiber: 0, vitA: 55, vitC: 0, vitD: 0.1, calcio: 185, ferro: 0.2, magnesio: 8, potassio: 30, zinco: 0.9, sodio: 190, vitB12: 0.3 }, grams: 30 },
+  // Pedido do usuário. A TACO não lista "queijo do reino" separadamente -- no Brasil ele costuma ser,
+  // ele próprio, um queijo tipo Edam/prato importado, então usa os valores de "Queijo prato" (acima) como
+  // referência mais próxima, com sódio um pouco mais alto (queijo do reino tende a ser mais curado/salgado).
+  { terms: ["queijo do reino", "queijo reino"], label: "Queijo do reino", baseAmount: "30 g", values: { calories: 104, protein: 7.3, carbs: 0.6, fat: 8.3, fiber: 0, vitA: 38, vitC: 0, vitD: 0, calcio: 240, ferro: 0.1, magnesio: 9, potassio: 25, zinco: 1, sodio: 200, vitB12: 0.3 }, grams: 30 },
   { terms: ["requeijao"], label: "Requeijão", baseAmount: "1 colher de sopa (20 g)", values: { calories: 55, protein: 1.5, carbs: 1, fat: 5, fiber: 0, vitA: 15, vitC: 0, vitD: 0, calcio: 60, ferro: 0, magnesio: 3, potassio: 15, zinco: 0.2, sodio: 110, vitB12: 0.15 }, grams: 20 },
   { terms: ["leite integral", "leite"], label: "Leite integral", baseAmount: "1 copo (200 ml)", values: { calories: 122, protein: 6.4, carbs: 9.6, fat: 6.6, fiber: 0, vitA: 60, vitC: 2, vitD: 1, calcio: 240, ferro: 0.1, magnesio: 24, potassio: 300, zinco: 0.8, sodio: 90, vitB12: 0.72 }, ml: 200 },
   { terms: ["leite desnatado"], label: "Leite desnatado", baseAmount: "1 copo (200 ml)", values: { calories: 70, protein: 6.8, carbs: 9.8, fat: 0.2, fiber: 0, vitA: 30, vitC: 2, vitD: 1, calcio: 250, ferro: 0.1, magnesio: 24, potassio: 320, zinco: 0.8, sodio: 100, vitB12: 0.74 }, ml: 200 },
+  // Pedido do usuário. Fonte: TACO (Creme de leite, 100 g: 221 kcal, 1,5 g proteína, 4,5 g carboidratos,
+  // 22,5 g gordura) -- demais micronutrientes cruzados com laticínios gordurosos similares (a própria
+  // "Leite integral", acima).
+  { terms: ["creme de leite"], label: "Creme de leite", baseAmount: "1 colher de sopa (15 g)", values: { calories: 33, protein: 0.2, carbs: 0.7, fat: 3.4, fiber: 0, vitA: 20, vitC: 0, vitD: 0.1, calcio: 15, ferro: 0, magnesio: 1, potassio: 15, zinco: 0.1, sodio: 10, vitB12: 0.05 }, grams: 15 },
   // Leite em pó é vendido/medido em gramas (pó), não em ml como o leite líquido -- por isso é um
   // alimento à parte, com base em gramas, em vez de reaproveitar o "leite" líquido acima (que só aceita
   // quantidade em ml e, se a pessoa disser "100 g de leite em pó", só bate com o termo genérico "leite"
@@ -1583,8 +1625,16 @@ const foodLibrary = [
   { terms: ["pipoca"], label: "Pipoca", baseAmount: "30 g", values: { calories: 110, protein: 2.3, carbs: 22, fat: 1.5, fiber: 4, vitA: 1, vitC: 0, vitD: 0, calcio: 2, ferro: 0.3, magnesio: 30, potassio: 70, zinco: 0.3, sodio: 140, vitB12: 0 }, grams: 30 },
   { terms: ["manteiga"], label: "Manteiga", baseAmount: "1 colher de chá (5 g)", values: { calories: 36, protein: 0, carbs: 0, fat: 4, fiber: 0, vitA: 35, vitC: 0, vitD: 0.1, calcio: 1, ferro: 0, magnesio: 0, potassio: 1, zinco: 0, sodio: 40, vitB12: 0 }, grams: 5 },
   { terms: ["margarina"], label: "Margarina", baseAmount: "1 colher de chá (5 g)", values: { calories: 30, protein: 0, carbs: 0, fat: 3.3, fiber: 0, vitA: 40, vitC: 0, vitD: 0.2, calcio: 1, ferro: 0, magnesio: 0, potassio: 1, zinco: 0, sodio: 35, vitB12: 0 }, grams: 5 },
+  // Pedido do usuário. Fonte: TACO (Azeite de oliva extra virgem, 100 g: 884 kcal, 0 g proteína/
+  // carboidratos, 100 g gordura -- óleo puro). Vitamina E não é um dos nutrientes rastreados pelo app
+  // (ver NUTRIENT_META_CONGELADA_CHAVE/MICRO_GOALS), por isso fica de fora.
+  { terms: ["azeite de oliva", "azeite"], label: "Azeite de oliva", baseAmount: "1 colher de sopa (13 g)", values: { calories: 115, protein: 0, carbs: 0, fat: 13, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 0, ferro: 0.1, magnesio: 0, potassio: 0, zinco: 0, sodio: 0, vitB12: 0 }, grams: 13 },
   { terms: ["geleia de frutas", "geleia"], label: "Geleia de frutas", baseAmount: "1 colher de sopa (20 g)", values: { calories: 50, protein: 0.1, carbs: 13, fat: 0, fiber: 0.2, vitA: 1, vitC: 2, vitD: 0, calcio: 2, ferro: 0.1, magnesio: 1, potassio: 15, zinco: 0, sodio: 2, vitB12: 0 }, grams: 20 },
   { terms: ["mel"], label: "Mel", baseAmount: "1 colher de sopa (20 g)", values: { calories: 60, protein: 0.1, carbs: 16, fat: 0, fiber: 0, vitA: 0, vitC: 0.5, vitD: 0, calcio: 1, ferro: 0.1, magnesio: 0.4, potassio: 10, zinco: 0, sodio: 1, vitB12: 0 }, grams: 20 },
+  // Pedido do usuário. Fonte: TACO (Goiaba, doce em pasta, 100 g: 269 kcal, 0,6 g proteína, 74,1 g
+  // carboidratos, 0 g gordura) -- demais micronutrientes estimados a partir da goiaba in natura (retém
+  // parte da vitamina C e do potássio mesmo depois de cozida/processada em pasta).
+  { terms: ["goiabada"], label: "Goiabada", baseAmount: "1 fatia (30 g)", values: { calories: 81, protein: 0.2, carbs: 22.2, fat: 0, fiber: 0.6, vitA: 3, vitC: 3, vitD: 0, calcio: 5, ferro: 0.2, magnesio: 3, potassio: 30, zinco: 0.1, sodio: 5, vitB12: 0 }, grams: 30 },
   { terms: ["ketchup", "catchup"], label: "Ketchup", baseAmount: "1 colher de sopa (15 g)", values: { calories: 15, protein: 0.2, carbs: 4, fat: 0, fiber: 0.1, vitA: 3, vitC: 1, vitD: 0, calcio: 2, ferro: 0.1, magnesio: 2, potassio: 55, zinco: 0, sodio: 150, vitB12: 0 }, grams: 15 },
   { terms: ["maionese"], label: "Maionese", baseAmount: "1 colher de sopa (15 g)", values: { calories: 95, protein: 0.1, carbs: 0.5, fat: 10.5, fiber: 0, vitA: 3, vitC: 0, vitD: 0, calcio: 1, ferro: 0, magnesio: 0, potassio: 5, zinco: 0, sodio: 95, vitB12: 0 }, grams: 15 },
   { terms: ["mostarda"], label: "Mostarda", baseAmount: "1 colher de sopa (15 g)", values: { calories: 10, protein: 0.6, carbs: 1, fat: 0.6, fiber: 0.3, vitA: 0, vitC: 0, vitD: 0, calcio: 5, ferro: 0.2, magnesio: 5, potassio: 20, zinco: 0.1, sodio: 170, vitB12: 0 }, grams: 15 },
@@ -1829,6 +1879,18 @@ const ESPORTE_TIPOS = ["Boxe", "Caminhada", "Ciclismo", "Corrida", "Futebol", "J
 // Esportes em que faz sentido registrar dist\u00e2ncia percorrida (pra calcular velocidade m\u00e9dia/pace).
 const ESPORTES_COM_DISTANCIA = ["Corrida", "Caminhada", "Ciclismo"];
 
+// Submodalidades de Ciclismo (pedido do usu\u00e1rio) -- aparecem num subseletor assim que "Ciclismo" \u00e9
+// escolhido (ver treinoCiclismoModalidadeCampoTemplate()). "Spinning" \u00e9 a \u00fanica que muda o c\u00e1lculo de
+// kcal: por ser uma aula estacion\u00e1ria (bike de spinning, sem percurso real), n\u00e3o faz sentido pedir
+// dist\u00e2ncia -- ver SPINNING_INTENSIDADES abaixo e o desconto do campo de dist\u00e2ncia em
+// treinoDistanciaCampoTemplate(). As outras (Pista/Estrada/MTB/Gravel) continuam usando dist\u00e2ncia e o
+// c\u00e1lculo por ritmo j\u00e1 existente (metPorRitmo()), sem mudan\u00e7a -- servem s\u00f3 pra identificar/registrar a
+// submodalidade praticada.
+const CICLISMO_MODALIDADES = ["Pista", "Estrada", "MTB", "Gravel", "Spinning"];
+// Intensidades de spinning (pedido do usu\u00e1rio) -- sem dist\u00e2ncia dispon\u00edvel, a estimativa de kcal usa um
+// MET fixo por intensidade em vez do MET calculado por velocidade (ver metPorRitmo()/MET_SPINNING).
+const SPINNING_INTENSIDADES = ["Moderada", "Intensa (HIIT)"];
+
 // Grupos musculares e os exerc\u00edcios comuns de cada um -- usados no formul\u00e1rio de treino quando o
 // esporte \u00e9 Muscula\u00e7\u00e3o (ver treinoGruposMuscularesCampoTemplate()). A pessoa pode adicionar mais de um
 // grupo no mesmo registro de treino; em cada grupo, marca quais exerc\u00edcios fez e informa s\u00e9ries,
@@ -1928,8 +1990,48 @@ const ESPORTE_EMOJI = {
   "Jiu-jitsu": "\ud83e\udd4b", "Muay Thai": "\ud83e\uddb5", "Muscula\u00e7\u00e3o": "\ud83c\udfcb\ufe0f", "Nata\u00e7\u00e3o": "\ud83c\udfca", "T\u00eanis": "\ud83c\udfbe",
 };
 function emojiEsporte(esporte) { return ESPORTE_EMOJI[esporte] || "\ud83c\udfc5"; }
+// Nome do esporte pra exibi\u00e7\u00e3o (listas/hist\u00f3rico), incluindo a submodalidade de ciclismo e a
+// intensidade do spinning entre par\u00eanteses quando houver (pedido do usu\u00e1rio) -- ex.: "Ciclismo
+// (Estrada)" ou "Ciclismo (Spinning \u00b7 Intensa (HIIT))". Recebe tanto um registro salvo (t.esporte,
+// t.ciclismoModalidade, t.spinningIntensidade) quanto o treino em andamento (mesmo formato, ver
+// acaoIniciarTreino()).
+function nomeEsporteExibicao(t) {
+  if (t.esporte !== "Ciclismo" || !t.ciclismoModalidade) return t.esporte;
+  const intensidade = t.ciclismoModalidade === "Spinning" && t.spinningIntensidade ? " \u00b7 " + t.spinningIntensidade : "";
+  return t.esporte + " (" + t.ciclismoModalidade + intensidade + ")";
+}
 
 function normalizeText(value) { return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
+
+// Portugu\u00eas pluraliza de formas variadas -- a maioria s\u00f3 acrescenta letras no fim (regular: banana/
+// bananas, arroz/arrozes, franc\u00eas/franceses), mas algumas mudam o final da palavra (irregular: p\u00e3o/p\u00e3es,
+// pastel/past\u00e9is, atum/atuns). A busca por substring de detectFoods() (mais abaixo) s\u00f3 encontra um termo
+// digitado no plural sozinha, sem tratamento especial, quando a palavra flexionada \u00e9 a \u00daLTIMA do termo
+// (o que sobra no texto depois dela pode ser ignorado) E o plural dela \u00e9 regular (s\u00f3 estende, nunca muda,
+// a forma singular -- ex.: buscar "frances" j\u00e1 bate dentro de "franceses"). Em qualquer outro caso --
+// primeira palavra de um termo composto (ex.: "queijo do reino" -> "queijos do reino", "p\u00e3o franc\u00eas" ->
+// "p\u00e3es franceses") ou plural irregular de um termo de uma palavra s\u00f3 -- a forma plural deixa de conter a
+// forma singular como prefixo, e a busca simples n\u00e3o encontra mais nada. Por isso detectFoods() tamb\u00e9m
+// tenta, pra cada termo, uma variante com a PRIMEIRA palavra (o substantivo principal, que \u00e9 sempre o que
+// a pessoa flexiona ao contar "quantos" tem) no plural -- cobre tanto termo composto quanto termo de uma
+// palavra s\u00f3 com plural irregular. Pedido do usu\u00e1rio (ex.: "p\u00e3es franceses" n\u00e3o era reconhecido).
+const PLURAL_IRREGULAR_EXCECOES = { pao: "paes", mao: "maos", cidadao: "cidadaos", capitao: "capitaes", alemao: "alemaes" };
+function palavraNoPlural(palavra) {
+  if (PLURAL_IRREGULAR_EXCECOES[palavra]) return PLURAL_IRREGULAR_EXCECOES[palavra];
+  if (palavra.length > 2 && palavra.endsWith("ao")) return palavra.slice(0, -2) + "oes";
+  if (palavra.length > 2 && palavra.endsWith("el")) return palavra.slice(0, -2) + "eis";
+  if (palavra.length > 1 && palavra.endsWith("m")) return palavra.slice(0, -1) + "ns";
+  if (palavra.length > 1 && /[rsz]$/.test(palavra)) return palavra + "es";
+  return palavra + "s"; // caso regular mais comum (termina em vogal) e fallback gen\u00e9rico
+}
+// Devolve o termo (j\u00e1 normalizado) com a primeira palavra flexionada no plural, ou null se a primeira
+// palavra n\u00e3o mudar (string vazia ou algo assim -- n\u00e3o deveria acontecer na pr\u00e1tica).
+function formaPluralDoTermo(termoNormalizado) {
+  const palavras = termoNormalizado.split(" ");
+  const plural = palavraNoPlural(palavras[0]);
+  if (!plural || plural === palavras[0]) return null;
+  return [plural].concat(palavras.slice(1)).join(" ");
+}
 
 // Alguns alimentos contados por unidade (food.count, sem food.grams) têm o peso típico da unidade
 // descrito no próprio baseAmount, ex.: "1 unidade (200 g)" pra Manga. Quando a pessoa digita a
@@ -2027,6 +2129,20 @@ function detectFoods(description) {
       const normalizedTerm = normalizeText(term);
       const position = text.indexOf(normalizedTerm);
       if (position !== -1) candidates.push({ food, position, length: normalizedTerm.length });
+      // Também tenta a variante no plural (ver formaPluralDoTermo()), pra reconhecer o alimento mesmo
+      // digitado no plural (ex.: "pães franceses", "castanhas de caju"). Estende o comprimento até o fim
+      // da palavra no texto real -- e não só o comprimento da variante buscada --, porque o resto do
+      // termo pode ter sido digitado com SEU PRÓPRIO plural regular, que estende (sem mudar) a forma
+      // singular (ex.: "franceses" é mais longo que "frances", que é o que a variante ainda tem).
+      const termoPlural = formaPluralDoTermo(normalizedTerm);
+      if (termoPlural) {
+        const posicaoPlural = text.indexOf(termoPlural);
+        if (posicaoPlural !== -1) {
+          let fim = posicaoPlural + termoPlural.length;
+          while (fim < text.length && text[fim] >= "a" && text[fim] <= "z") fim++;
+          candidates.push({ food, position: posicaoPlural, length: fim - posicaoPlural });
+        }
+      }
     }
   }
   candidates.sort((a, b) => b.length - a.length || a.position - b.position);
@@ -2119,6 +2235,17 @@ const state = {
   // Pedido explícito do usuário depois de esquecer de registrar janta e treino de um dia que já tinha
   // virado -- ver acaoSalvarRefeicao()/sincronizarDiarioKcalDoDia().
   mealData: "",
+  // Pedido do usuário: editar uma refeição já registrada no dia, em vez de só poder corrigir a data
+  // (mealDetalheEditandoData) ou excluir (acaoRemoverRefeicao). Id da refeição sendo editada, ou null
+  // quando o formulário está no modo normal de "nova refeição" -- ver acaoEditarRefeicao()/
+  // acaoSalvarRefeicao()/acaoCancelarEdicaoRefeicao().
+  mealEditandoId: null,
+  // Sugestões de autocomplete pro alimento que a pessoa está digitando agora na descrição da refeição --
+  // lista de labels (string), atualizada a cada tecla (ver acaoAtualizarSugestoesAlimento()) e mostrada
+  // logo abaixo da textarea (mealSugestoesListaHtml()). Pedido do usuário. Fica fora do fluxo normal de
+  // render() -- é atualizada com uma escrita direta no DOM (não render()) pra não perder a posição do
+  // cursor na textarea a cada tecla digitada (um render() recria a textarea inteira via innerHTML).
+  mealSugestoes: [],
   // Campos do formulário de "Exposição Solar" -- ver exposicaoSolarCamposTemplate()/
   // acaoCalcularExposicaoSolar()/calcularVitaminaDSol(). Só aparecem quando mealTipo === "Exposição
   // Solar" (ver acaoSelecionarTipoRefeicao()), mesmo espírito de mealNomeCustom para "Outro".
@@ -2293,6 +2420,15 @@ const state = {
   treinoHoraFim: "",
   treinoNota: "", // observação livre sobre o treino (ex.: "treino pesado", "alto astral") — opcional
   treinoDistanciaKm: "", // distância percorrida (km), só pra esportes em ESPORTES_COM_DISTANCIA — opcional
+  // Submodalidade de Ciclismo (pedido do usuário) -- "" | "Pista" | "Estrada" | "MTB" | "Gravel" |
+  // "Spinning" -- ver CICLISMO_MODALIDADES/treinoCiclismoModalidadeCampoTemplate(). Só é usada/mostrada
+  // quando treinoEsporte === "Ciclismo".
+  treinoCiclismoModalidade: "",
+  // Intensidade do spinning (só quando treinoCiclismoModalidade === "Spinning") -- "" | "Moderada" |
+  // "Intensa (HIIT)" -- ver SPINNING_INTENSIDADES/estimarCaloriasQueimadas(). No spinning não se pede
+  // distância (é uma aula estacionária, sem percurso): a estimativa de kcal usa um MET fixo por
+  // intensidade em vez do MET calculado por ritmo/velocidade.
+  treinoSpinningIntensidade: "",
   // Grupos musculares trabalhados, só pra Musculação -- ver GRUPOS_MUSCULARES/treinoGruposMuscularesCampoTemplate().
   // treinoGruposSelecionados: array de ids de grupo adicionados ao registro atual, na ordem em que foram
   // adicionados. treinoExerciciosMarcados: mapa "grupoId::exercicioId" -> { series, repeticoes, peso },
@@ -3399,9 +3535,122 @@ function acaoAnalisar() {
   if (!description.trim()) { toastError("Descreva o que você comeu para eu calcular."); return; }
   const found = detectFoods(description);
   state.preview = found;
+  acaoFecharSugestoesAlimento(); // fecha o autocomplete e cancela debounce pendente, se estava aberto
   if (!found.length) toastError("Não identifiquei alimentos conhecidos. Tente informar pão, ovo, frango, arroz, patinho, banana ou suco de laranja.");
   else toastSuccess(found.length + " alimento" + (found.length > 1 ? "s" : "") + " identificado" + (found.length > 1 ? "s" : "") + ".");
   render();
+}
+/* ===================== autocomplete de alimentos na descrição da refeição ===================== */
+// Considera o texto depois da última vírgula (ou da última ocorrência de " e ", que costuma introduzir o
+// último item -- ex.: "1 pão francês, 1 ovo frito e 300 ml de suco de laranja", o mesmo formato sugerido
+// no placeholder da textarea) como o que a pessoa está digitando agora -- é sobre esse pedaço que as
+// sugestões são calculadas e, ao escolher uma, substituídas. Pedido do usuário.
+function indiceInicioFragmentoAtual(texto) {
+  const regex = /,| e /gi;
+  let inicio = 0, m;
+  while ((m = regex.exec(texto))) inicio = m.index + m[0].length;
+  return inicio;
+}
+function fragmentoAtualDescricao(texto) {
+  return texto.slice(indiceInicioFragmentoAtual(texto));
+}
+// Sugestões de alimentos (biblioteca embutida + produtos que a própria pessoa cadastrou) cujo nome bate
+// com o que está sendo digitado agora. Prioriza alimentos em que a PRIMEIRA palavra do nome ou de algum
+// termo bate (ex.: digitar "fra" sugere algo que COMEÇA por "fra") sobre alimentos em que só uma palavra
+// no meio do nome bate (ex.: "fra" batendo em "Pão francês" pela segunda palavra) -- mais relevante pra
+// quem está começando a digitar o nome do alimento do zero, que é o caso mais comum.
+function sugestoesDeAlimentos(fragmento) {
+  const frag = normalizeText(fragmento.trim());
+  if (frag.length < 2) return [];
+  // O fragmento digitado pode ter mais de uma palavra (ex.: "pao franc", enquanto a pessoa termina de
+  // digitar "pão francês") -- por isso a prioridade "início" compara o termo INTEIRO com o fragmento
+  // inteiro (startsWith), não só a primeira palavra. A prioridade "meio" cobre o caso de digitar só uma
+  // palavra do meio/fim do nome (ex.: "franc" batendo com "pão francês"), usando a última palavra do
+  // fragmento contra cada palavra do termo.
+  const ultimaPalavraFrag = frag.split(/\s+/).pop();
+  const biblioteca = foodLibrary.concat(state.produtosCustomizados || []);
+  const prioritarios = [];
+  const outros = [];
+  const vistos = new Set();
+  for (const food of biblioteca) {
+    if (vistos.has(food.label)) continue;
+    let prioridade = null;
+    for (const t of [food.label].concat(food.terms)) {
+      const termoNormalizado = normalizeText(t);
+      if (termoNormalizado.startsWith(frag)) { prioridade = "inicio"; break; }
+      const palavras = termoNormalizado.split(/\s+/);
+      if (!prioridade && palavras.some((p) => p.startsWith(ultimaPalavraFrag))) prioridade = "meio";
+    }
+    if (prioridade === "inicio") { prioritarios.push(food.label); vistos.add(food.label); }
+    else if (prioridade === "meio") { outros.push(food.label); vistos.add(food.label); }
+  }
+  return prioritarios.concat(outros).slice(0, 8);
+}
+function mealSugestoesListaHtml() {
+  if (!state.mealSugestoes.length) return "";
+  return state.mealSugestoes.map((label) =>
+    '<button type="button" class="meal-sugestao-item" data-label="' + esc(label) + '" onmousedown="event.preventDefault(); acaoSelecionarSugestaoAlimento(this.dataset.label)">' + icon("plus") + " " + esc(label) + "</button>"
+  ).join("");
+}
+// Atualiza as sugestões a cada tecla digitada -- escreve só no container das sugestões, direto no DOM, e
+// NUNCA chama render() (ver comentário de state.mealSugestoes): um render() recria a textarea inteira via
+// innerHTML, o que perderia a posição do cursor no meio da digitação a cada tecla.
+// Debounce (espera a pessoa parar de digitar por MEAL_SUGESTOES_DEBOUNCE_MS antes de calcular/mostrar as
+// sugestões) -- evita o dropdown "piscar" a cada tecla e, principalmente, evita que ele apareça bem no
+// meio de uma digitação rápida seguida de clique em outro botão (ex.: preencher a descrição inteira e já
+// clicar em "Calcular refeição" em seguida): sem o debounce, o dropdown poderia abrir e cobrir/empurrar
+// o botão bem no instante do clique. Com o debounce, isso só acontece se a pessoa realmente parar pra ver
+// as sugestões.
+let mealSugestoesTimeoutId = null;
+const MEAL_SUGESTOES_DEBOUNCE_MS = 300;
+function acaoAtualizarSugestoesAlimento(el) {
+  state.mealDescription = el.value;
+  if (mealSugestoesTimeoutId) clearTimeout(mealSugestoesTimeoutId);
+  // Some a lista antiga IMEDIATAMENTE a cada tecla -- nunca deixa uma sugestão desatualizada (de um
+  // fragmento anterior) visível enquanto espera o debounce da nova. Isso também é o que faz um
+  // preenchimento rápido seguido de clique em outro botão (padrão comum nos testes e ao usar o app
+  // normalmente) nunca esbarrar numa sugestão "presa" na tela por engano.
+  state.mealSugestoes = [];
+  const container = document.getElementById("meal-sugestoes-lista");
+  if (container) container.innerHTML = "";
+  const valor = el.value;
+  mealSugestoesTimeoutId = setTimeout(() => {
+    mealSugestoesTimeoutId = null;
+    // Se o valor mudou de novo ou a textarea sumiu (trocou de aba/refeição) enquanto o timer esperava,
+    // não faz nada -- evita sugestão desatualizada aparecendo fora de hora.
+    const atual = document.getElementById("meal-description");
+    if (!atual || atual.value !== valor) return;
+    state.mealSugestoes = sugestoesDeAlimentos(fragmentoAtualDescricao(valor));
+    const container2 = document.getElementById("meal-sugestoes-lista");
+    if (container2) container2.innerHTML = mealSugestoesListaHtml();
+  }, MEAL_SUGESTOES_DEBOUNCE_MS);
+}
+// Fecha as sugestões quando a pessoa sai da textarea (ex.: clica em outro campo). Nunca dispara ao clicar
+// numa sugestão: o botão da sugestão usa onmousedown (que acontece ANTES do blur) com preventDefault, que
+// impede a textarea de perder o foco nesse caso -- então esse onblur só reage a uma saída "de verdade".
+function acaoFecharSugestoesAlimento() {
+  // Cancela o debounce pendente (ver acaoAtualizarSugestoesAlimento()) -- sem isso, um timer que já
+  // estava agendado antes de fechar/trocar de refeição poderia disparar depois e reabrir a lista de
+  // sugestões fora de hora.
+  if (mealSugestoesTimeoutId) { clearTimeout(mealSugestoesTimeoutId); mealSugestoesTimeoutId = null; }
+  state.mealSugestoes = [];
+  const container = document.getElementById("meal-sugestoes-lista");
+  if (container) container.innerHTML = "";
+}
+// Insere o alimento escolhido no lugar do pedaço que estava sendo digitado (ver
+// indiceInicioFragmentoAtual()), preservando o que já tinha antes, e deixa ", " no final pra pessoa poder
+// emendar o próximo item direto. Escrita direta no DOM, mesmo motivo de acaoAtualizarSugestoesAlimento().
+function acaoSelecionarSugestaoAlimento(label) {
+  const el = document.getElementById("meal-description");
+  if (!el) return;
+  const texto = el.value;
+  const antes = texto.slice(0, indiceInicioFragmentoAtual(texto)).replace(/\s+$/, "");
+  const novoValor = (antes ? antes + " " : "") + label + ", ";
+  el.value = novoValor;
+  state.mealDescription = novoValor;
+  acaoFecharSugestoesAlimento();
+  el.focus();
+  el.setSelectionRange(novoValor.length, novoValor.length);
 }
 /* ===================== cadastrar produto no cardápio ===================== */
 // Deixa a pessoa cadastrar um produto/receita PRÓPRIO (ex.: "Pastel de Camarão") a partir dos
@@ -3617,6 +3866,7 @@ function acaoSelecionarTipoRefeicao(tipo) {
   // itens, com kcal/macros), e vice-versa. Trocar entre dois tipos de refeição "normais" continua
   // preservando o preview de alimentos já calculado, como sempre foi.
   if (tipo === "Exposição Solar" || state.mealTipo === "Exposição Solar") { state.preview = []; state.mealDescription = ""; }
+  acaoFecharSugestoesAlimento(); // fecha o autocomplete e cancela debounce pendente, se estava aberto
   state.mealTipo = tipo;
   if (tipo !== "Outro") state.mealNomeCustom = "";
   // Ao entrar em "Exposição Solar" pela primeira vez, já tenta obter a localização sozinho (sem exigir
@@ -3717,34 +3967,103 @@ function acaoSalvarRefeicao() {
   const dataEl = document.getElementById("meal-data");
   const dataRefeicao = dataEl && dataEl.value ? dataEl.value : today();
   if (dataRefeicao > today()) { toastError("A data da refeição não pode ser no futuro."); return; }
-  const now = new Date();
   const total = mealTotal();
   // Sem textarea de descrição no modo "Exposição Solar" (ver exposicaoSolarCamposTemplate()) -- a
   // descrição, nesse caso, já foi montada automaticamente em acaoCalcularExposicaoSolar() e guardada
   // direto em state.mealDescription, sem precisar de um campo de texto na tela.
   const description = descInput ? descInput.value.trim() : state.mealDescription;
+  // Editando uma refeição já registrada (ver acaoEditarRefeicao(), abaixo) -- igual acaoEditarDataRefeicao():
+  // não existe endpoint de "atualizar" no backend (só salvar/remover), então a edição é remover o registro
+  // antigo e recriar um novo, id novo, com o que está no formulário agora. Preserva o horário original --
+  // editar o que foi comido não deveria mudar "quando" foi comido, só o conteúdo do registro.
+  const editandoId = state.mealEditandoId;
+  const antiga = editandoId != null ? state.meals.find((meal) => meal.id === editandoId) : null;
   const novaRefeicao = Object.assign({}, total, {
     id: Date.now(), date: dataRefeicao, name: mealName, description: description,
-    detected: state.preview.map((f) => f.label), time: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+    detected: state.preview.map((f) => f.label),
+    time: antiga ? antiga.time : new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
     // Guarda o detalhamento por alimento (nome, quantidade e todos os nutrientes daquele alimento
     // específico) — é o que permite abrir uma refeição no histórico e ver o que cada alimento
     // individualmente contribuiu, e não só o total da refeição.
     alimentos: state.preview.map((f) => ({ label: f.label, amount: f.amount, values: f.values })),
   });
-  state.meals = state.meals.concat([novaRefeicao]);
+  state.meals = state.meals.filter((meal) => meal.id !== editandoId).concat([novaRefeicao]);
   persistMeals();
   state.preview = [];
-  state.mealTipo = ""; state.mealNomeCustom = ""; state.mealDescription = ""; state.mealData = "";
+  state.mealTipo = ""; state.mealNomeCustom = ""; state.mealDescription = ""; state.mealData = ""; state.mealEditandoId = null;
+  acaoFecharSugestoesAlimento();
   state.exposicaoInicio = ""; state.exposicaoFim = ""; state.exposicaoCeu = "";
   state.exposicaoLocalizacaoStatus = "idle"; state.exposicaoUVHorario = null; state.exposicaoLocalizacaoTexto = null;
   if (descInput) descInput.value = "";
   if (dataEl) dataEl.value = "";
-  toastSuccess(dataRefeicao === today() ? "Refeição registrada no histórico." : "Refeição registrada em " + dateLabel(dataRefeicao) + ".");
-  if (state.account) enviarComFila("salvarRefeicaoGoogle", [state.usuario.email, novaRefeicao]);
-  // Se esse dia já tinha sido encerrado no Diário de Kcal (ex.: registrando uma refeição esquecida de
-  // um dia que já virou -- ver comentário em state.mealData), ressincroniza esse registro fechado pra
-  // já incluir a refeição recém-adicionada, sem precisar clicar manualmente em "Recalcular".
+  if (antiga) {
+    toastSuccess("Refeição atualizada.");
+    if (state.account) {
+      enviarComFila("removerRefeicaoGoogle", [state.usuario.email, editandoId]);
+      enviarComFila("salvarRefeicaoGoogle", [state.usuario.email, novaRefeicao]);
+    }
+    sincronizarDiarioKcalDoDia(antiga.date);
+  } else {
+    toastSuccess(dataRefeicao === today() ? "Refeição registrada no histórico." : "Refeição registrada em " + dateLabel(dataRefeicao) + ".");
+    if (state.account) enviarComFila("salvarRefeicaoGoogle", [state.usuario.email, novaRefeicao]);
+  }
+  // Se esse dia (ou, numa edição, o dia antigo e/ou o novo) já estiver encerrado no Diário de Kcal,
+  // ressincroniza pra refletir o registro atualizado sem precisar clicar manualmente em "Recalcular".
   sincronizarDiarioKcalDoDia(dataRefeicao);
+  render();
+}
+// Abre o formulário de refeição já preenchido com os dados de uma refeição registrada, pra corrigir o
+// que foi identificado (ex.: descreveu errado, esqueceu um item, quantidade errada) sem precisar excluir
+// e recriar na mão. Pedido do usuário. Reaproveita o mesmo formulário/fluxo de "nova refeição"
+// (state.preview, mealPreviewTemplate()/acaoAnalisar()) -- só marca qual refeição está sendo substituída
+// (state.mealEditandoId), que acaoSalvarRefeicao() usa pra remover a antiga ao salvar. Pré-carrega o
+// preview com os alimentos já salvos (m.alimentos) pra já mostrar o total correto mesmo sem reanalisar --
+// só reanalisa (botão "Calcular refeição") quem realmente for mudar a descrição.
+function acaoEditarRefeicao(id) {
+  const m = state.meals.find((meal) => meal.id === id);
+  if (!m) return;
+  state.mealEditandoId = id;
+  const ehTipoPadrao = MEAL_TIPOS.includes(m.name);
+  state.mealTipo = ehTipoPadrao ? m.name : "Outro";
+  state.mealNomeCustom = ehTipoPadrao ? "" : m.name;
+  state.mealData = m.date;
+  state.mealDescription = m.description || "";
+  state.preview = (m.alimentos || []).map((a) => ({ label: a.label, amount: a.amount, values: a.values }));
+  state.mealDetalheId = null; // fecha o modal de detalhe, se estava aberto, pra não sobrepor com o formulário
+  acaoFecharSugestoesAlimento(); // fecha o autocomplete e cancela debounce pendente, se estava aberto
+  render();
+  // captureFormState() (chamado no início do render() acima) recaptura os valores ainda presentes no DOM
+  // (do preenchimento anterior, geralmente vazio) ANTES desse preenchimento ter chance de aparecer,
+  // sobrescrevendo os campos de state setados acima -- mesmo caso (e mesmo motivo/fix) de
+  // acaoEditarTreino(). Escreve direto nos inputs, depois do render(), pra garantir que o formulário
+  // reflita a refeição sendo editada.
+  // Usa os valores originais de "m" (e não state.mealDescription/mealData/mealNomeCustom) porque esses
+  // campos de state acabaram de ser sobrescritos pelo captureFormState() explicado acima.
+  const descEl = document.getElementById("meal-description");
+  const customEl = document.getElementById("meal-nome-custom");
+  const dataEl = document.getElementById("meal-data");
+  if (descEl) descEl.value = m.description || "";
+  if (customEl) customEl.value = ehTipoPadrao ? "" : m.name;
+  if (dataEl) dataEl.value = m.date;
+  // Ressincroniza o state com o que acabou de ser escrito no DOM -- sem isso, um re-render causado por
+  // outra coisa (ex.: uma sincronização em segundo plano terminando) reverteria os campos pro valor vazio
+  // que o captureFormState() capturou acima.
+  state.mealDescription = m.description || "";
+  state.mealNomeCustom = ehTipoPadrao ? "" : m.name;
+  state.mealData = m.date;
+  toastSuccess("Refeição carregada no formulário para edição.");
+  const card = document.querySelector(".meal-card");
+  if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+// Sai do modo de edição sem salvar, voltando o formulário pro estado normal de "nova refeição" -- mesma
+// limpeza de campos que acaoSalvarRefeicao() faz ao concluir.
+function acaoCancelarEdicaoRefeicao() {
+  state.mealEditandoId = null;
+  state.preview = [];
+  acaoFecharSugestoesAlimento();
+  state.mealTipo = ""; state.mealNomeCustom = ""; state.mealDescription = ""; state.mealData = "";
+  state.exposicaoInicio = ""; state.exposicaoFim = ""; state.exposicaoCeu = "";
+  state.exposicaoLocalizacaoStatus = "idle"; state.exposicaoUVHorario = null; state.exposicaoLocalizacaoTexto = null;
   render();
 }
 function acaoTrocarAbaNutrientes(aba) { state.nutrientAba = aba; render(); }
@@ -4888,7 +5207,7 @@ function mealPreviewTemplate() {
     ).join("") + "</div>" +
     '<div class="meal-preview-total"><div class="meal-preview-total-row"><span class="label">Total da refeição</span><span class="value">' + formatNumber(total.calories) + " kcal</span></div>" +
     '<div class="meal-preview-macros">P ' + formatNumber(total.protein, 1) + " · C " + formatNumber(total.carbs, 1) + " · G " + formatNumber(total.fat, 1) + " · F " + formatNumber(total.fiber, 1) + "</div></div>" +
-    '<button class="btn-accent" onclick="acaoSalvarRefeicao()">' + icon("check") + " Salvar no histórico</button>" +
+    '<button class="btn-accent" onclick="acaoSalvarRefeicao()">' + icon("check") + (state.mealEditandoId != null ? " Salvar alterações" : " Salvar no histórico") + "</button>" +
     "</div>";
 }
 
@@ -4946,7 +5265,7 @@ function exposicaoSolarPreviewTemplate() {
     '<div class="meal-preview"><div class="meal-preview-head"><span>Vitamina D estimada</span>' + icon("check") + "</div>" +
     '<div class="exposicao-solar-resultado"><span class="exposicao-solar-valor">' + formatNumber(item.values.vitD, 1) + '</span> <span class="exposicao-solar-unidade">mcg / ' + formatNumber(item.values.vitD * VITAMINA_D_MCG_PARA_UI, 0) + ' UI de vitamina D</span></div>' +
     '<p class="exposicao-solar-detalhe">' + esc(item.amount) + "</p>" +
-    '<button class="btn-accent" onclick="acaoSalvarRefeicao()">' + icon("check") + " Salvar no histórico</button>" +
+    '<button class="btn-accent" onclick="acaoSalvarRefeicao()">' + icon("check") + (state.mealEditandoId != null ? " Salvar alterações" : " Salvar no histórico") + "</button>" +
     "</div>";
 }
 
@@ -5029,6 +5348,19 @@ function acaoAlternarHistorico() {
 function acaoSelecionarEsporte(valor) {
   state.treinoEsporte = valor;
   if (valor !== "Outro") state.treinoEsporteCustom = "";
+  if (valor !== "Ciclismo") { state.treinoCiclismoModalidade = ""; state.treinoSpinningIntensidade = ""; }
+  render();
+}
+// Pedido do usuário: subseletor de submodalidade de ciclismo (ver CICLISMO_MODALIDADES), mostrado assim
+// que "Ciclismo" é escolhido no seletor de esporte.
+function acaoSelecionarModalidadeCiclismo(valor) {
+  state.treinoCiclismoModalidade = valor;
+  if (valor !== "Spinning") state.treinoSpinningIntensidade = "";
+  render();
+}
+// Pedido do usuário: intensidade do spinning (só aparece com modalidade "Spinning" escolhida acima).
+function acaoSelecionarIntensidadeSpinning(valor) {
+  state.treinoSpinningIntensidade = valor;
   render();
 }
 // Resolve o nome final do esporte a partir da seleção do formulário: se a pessoa escolheu "Outro", usa
@@ -5172,12 +5504,17 @@ function acaoIniciarTreino() {
   const esporte = resolverEsporteTreino();
   if (!esporte) { toastError(state.treinoEsporte === "Outro" ? "Informe o nome do esporte." : "Selecione o esporte."); return; }
   const now = new Date();
+  // Submodalidade de ciclismo/intensidade de spinning (pedido do usuário) -- só fazem sentido quando o
+  // esporte é "Ciclismo" (ver CICLISMO_MODALIDADES/estimarCaloriasQueimadas()); ficam "" pros demais.
+  const ciclismoModalidade = esporte === "Ciclismo" ? state.treinoCiclismoModalidade : "";
+  const spinningIntensidade = ciclismoModalidade === "Spinning" ? state.treinoSpinningIntensidade : "";
   state.treinoAtivo = {
     esporte, date: today(),
     horaInicioClock: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
     segmentoAtualInicio: Date.now(),
     acumuladoMs: 0,
     pausado: false,
+    ciclismoModalidade, spinningIntensidade,
   };
   persistTreinoAtivo();
   iniciarTickTreinoSeNecessario();
@@ -5267,6 +5604,13 @@ const MET_ESPORTE_FIXO = {
   Natação: 6.0,
   Tênis: 7.3,
 };
+// Pedido do usuário: no spinning (aula estacionária, sem percurso/distância -- ver
+// CICLISMO_MODALIDADES/treinoDistanciaCampoTemplate()) a estimativa de kcal usa um MET fixo por
+// intensidade, igual ao padrão de MET_ESPORTE_FIXO acima, em vez do MET calculado por velocidade
+// (metPorRitmo()) usado nas outras submodalidades de Ciclismo (Pista/Estrada/MTB/Gravel). Valores do
+// Compêndio de Atividades Físicas para bicicleta ergométrica/spinning: "moderada" ~150 W/esforço
+// moderado (7.0 MET); "intensa/HIIT" ~200 W/esforço vigoroso (10.5 MET).
+const MET_SPINNING = { Moderada: 7.0, "Intensa (HIIT)": 10.5 };
 // Musculação não tem ritmo pra usar, e não existe fórmula validada ligando peso levantado a calorias
 // (o gasto vem majoritariamente do custo metabólico do esforço e da recuperação entre séries, não do
 // trabalho mecânico de erguer a barra). Por isso a intensidade aqui é estimada pela "densidade" do
@@ -5285,17 +5629,137 @@ function metMusculacao(gruposMusculares, duracaoMin) {
 // peso mais recente registrado em Medidas e Aferições (ver ultimoRegistroMedida()); sem peso registrado
 // ou sem duração, não dá pra estimar e a função devolve null (o campo "caloriasQueimadas" do treino
 // fica null/ausente nesse caso, e simplesmente não aparece na tela).
+//
+// Spinning (pedido do usuário) é tratado ANTES de qualquer outra coisa: mesmo que o esporte seja
+// "Ciclismo" (que normalmente usa velocidadeMediaKmh/metPorRitmo quando há distância), o spinning nunca
+// tem distância (ver treinoDistanciaCampoTemplate()) -- por isso usa MET_SPINNING (fixo por
+// intensidade) e considera só peso e duração, igual ao restante do app: sexo e idade já influenciam o
+// peso/TMB da pessoa registrados em Medidas e Aferições/Calorimetria, mas o Compêndio de Atividades
+// Físicas (mesma fonte usada em todo o resto desta função) não tem tabelas de MET separadas por sexo ou
+// idade -- por consistência com o cálculo de TODOS os outros esportes deste app (nenhum considera
+// sexo/idade na fórmula), o spinning segue o mesmo método em vez de uma fórmula própria sem essa mesma
+// base de validação.
 function estimarCaloriasQueimadas(treino) {
   const registroPeso = ultimoRegistroMedida("peso");
   const pesoKg = registroPeso ? Number(registroPeso.valor) : null;
   if (!pesoKg || !treino.duracaoMin) return null;
   let met = null;
-  if (treino.velocidadeMediaKmh) met = metPorRitmo(treino.esporte, treino.velocidadeMediaKmh);
+  if (treino.esporte === "Ciclismo" && treino.ciclismoModalidade === "Spinning") met = MET_SPINNING[treino.spinningIntensidade] || null;
+  else if (treino.velocidadeMediaKmh) met = metPorRitmo(treino.esporte, treino.velocidadeMediaKmh);
   else if (treino.esporte === "Musculação") met = metMusculacao(treino.gruposMusculares, treino.duracaoMin);
   else met = MET_ESPORTE_FIXO[treino.esporte] || null;
   if (!met) return null;
   return met * pesoKg * (treino.duracaoMin / 60);
 }
+
+/* ===================== conexão treino × vitamina D (pedido do usuário) ===================== */
+// Esportes tipicamente praticados AO AR LIVRE -- são os únicos considerados pra creditar vitamina D
+// automaticamente a partir do horário do treino (ver registrarVitaminaDDoTreino() abaixo). Suposição
+// documentada aqui pra ficar clara (ajustável se a pessoa quiser outra lista): Musculação, Boxe,
+// Jiu-jitsu e Muay Thai ficam de fora por serem tipicamente praticados em academia/tatame, fechados; o
+// ciclismo em modalidade Spinning (ver CICLISMO_MODALIDADES) também fica de fora por ser bike
+// estacionária/indoor. Natação fica de fora por padrão -- academias no Brasil frequentemente têm
+// piscina coberta, então não dá pra presumir sol só pelo esporte.
+const ESPORTES_AO_AR_LIVRE = ["Caminhada", "Corrida", "Futebol", "Tênis", "Ciclismo"];
+function treinoElegivelParaVitaminaD(esporte, ciclismoModalidade) {
+  if (!ESPORTES_AO_AR_LIVRE.includes(esporte)) return false;
+  if (esporte === "Ciclismo" && ciclismoModalidade === "Spinning") return false;
+  return true;
+}
+// Só faz sentido tentar buscar o tempo/localização (custa uma permissão de geolocalização + uma
+// chamada de rede) quando o horário do treino realmente cruza a janela de luz solar (6h–18h, mesma
+// janela de fatorHorarioSolar()) -- filtro rápido, sem rede, pra não incomodar a pessoa com pedido de
+// localização num treino feito de madrugada ou à noite, que de qualquer forma não renderia vitamina D.
+function treinoTemJanelaDeLuzSolar(horaInicio, horaFim) {
+  const inicioDec = horaParaDecimal(horaInicio);
+  const fimDec = horaParaDecimal(horaFim);
+  return fimDec > inicioDec && fimDec > 6 && inicioDec < 18;
+}
+// Mesma ideia de buscarIndiceUVAtual() (índice UV + cobertura de nuvens hora-a-hora, API pública e
+// gratuita Open-Meteo, sem chave), só que pra uma DATA PASSADA -- usada quando o treino foi lançado com
+// atraso (a pessoa pode registrar um treino de um dia anterior, ver #treino-data), já que
+// buscarIndiceUVAtual() só cobre o dia de hoje. A API de arquivo/reanálise da Open-Meteo não tem índice
+// UV (só variáveis de reanálise como nuvens) -- por isso usa a "Historical Forecast API", que reprocessa
+// o modelo de previsão pra datas passadas e inclui uv_index. Cobertura a partir de ~2018 (dependendo do
+// modelo/região) -- cobre qualquer treino que a pessoa realisticamente lançaria com atraso.
+async function buscarIndiceUVHistorico(lat, lon, data) {
+  const url = "https://historical-forecast-api.open-meteo.com/v1/forecast?latitude=" + encodeURIComponent(lat) + "&longitude=" + encodeURIComponent(lon) + "&start_date=" + encodeURIComponent(data) + "&end_date=" + encodeURIComponent(data) + "&hourly=uv_index,cloud_cover&timezone=auto";
+  const resposta = await fetch(url);
+  if (!resposta.ok) throw new Error("Falha ao consultar índice UV histórico (HTTP " + resposta.status + ")");
+  const dados = await resposta.json();
+  if (!dados || !dados.hourly || !Array.isArray(dados.hourly.uv_index)) throw new Error("Resposta inesperada da API de índice UV histórico");
+  return { horarios: dados.hourly.time, uv: dados.hourly.uv_index, nuvens: Array.isArray(dados.hourly.cloud_cover) ? dados.hourly.cloud_cover : [] };
+}
+// Cria o registro de vitamina D no Diário de Refeições a partir de um treino, no MESMO formato usado por
+// "Exposição Solar" (ver acaoCalcularExposicaoSolar()/acaoSalvarRefeicao()) -- reaproveita toda a lógica
+// de diário/histórico/sincronização já existente. Chamada só depois que o índice UV real (de agora ou
+// histórico) já foi obtido -- ver registrarVitaminaDDoTreino() abaixo.
+function salvarVitaminaDDoTreino(treino, resultado, detalheFonte) {
+  const total = Object.assign({}, emptyNutrients, { vitD: resultado.mcg });
+  const label = "Exposição solar (durante o treino)";
+  const amount = treino.horaInicio + "–" + treino.horaFim + " (" + resultado.minutos + " min) · " + detalheFonte;
+  const novaRefeicao = Object.assign({}, total, {
+    id: Date.now() + 1, // +1 pra nunca colidir com o id do próprio treino (mesmo Date.now())
+    date: treino.date,
+    name: "Exposição Solar",
+    description: "Vitamina D estimada a partir do treino de " + nomeEsporteExibicao(treino) + " (" + treino.horaInicio + "–" + treino.horaFim + "), feito durante o horário de luz solar. " + amount,
+    time: treino.horaInicio,
+    detected: [label],
+    alimentos: [{ label, amount, values: total }],
+  });
+  state.meals = state.meals.concat([novaRefeicao]);
+  persistMeals();
+  if (state.account) enviarComFila("salvarRefeicaoGoogle", [state.usuario.email, novaRefeicao]);
+  sincronizarDiarioKcalDoDia(treino.date);
+  toastSuccess("Treino ao ar livre durante o dia: " + formatVitaminaDComUI(resultado.mcg, 1) + " de vitamina D estimada (" + detalheFonte + "), já registrada no Diário de Refeições.");
+  render(); // esse registro é criado em segundo plano, depois do treino já salvo -- atualiza a tela se a pessoa estiver olhando
+}
+// Pedido do usuário: liga o horário do treino à vitamina D -- quando o treino (mesmo que só em parte)
+// ocorreu durante a janela de luz solar E o esporte é um dos tipicamente ao ar livre (ver
+// ESPORTES_AO_AR_LIVRE acima), verifica AUTOMATICAMENTE como estava o tempo no local e horário do
+// treino (mesmo mecanismo de localização + índice UV real já usado por "Exposição Solar" -- ver
+// acaoObterLocalizacaoExposicao()/buscarIndiceUVAtual()/calcularVitaminaDSolPorUV()), em vez de presumir
+// uma condição de céu fixa. Roda em segundo plano, depois do treino já salvo (não trava o registro
+// esperando geolocalização/rede) -- ver salvarVitaminaDDoTreino() acima pra quando o resultado chega.
+// Pedido explícito do usuário: nunca presume o tempo -- se não for possível CONFIRMAR automaticamente
+// (geolocalização indisponível/negada, ou a consulta do índice UV falhar), simplesmente não credita
+// vitamina D nenhuma pra esse treino, em vez de chutar uma condição de céu. Também não credita quando: o
+// esporte não é elegível; o horário do treino cai todo fora da janela de luz solar; ou a pessoa ainda
+// não cadastrou o tipo de pele no perfil (mesma exigência da tela de Exposição Solar).
+// Limitação assumida (documentada aqui, igual ao resto do app): usa a localização ATUAL do dispositivo
+// como aproximação de onde a pessoa estava durante o treino -- não existe (nem no navegador, nem neste
+// app) um histórico de localização pra reconstituir onde a pessoa estava numa hora passada; é a mesma
+// limitação que "Exposição Solar" já tem hoje. Também só roda ao REGISTRAR um treino novo (manual ou
+// cronômetro), não ao editar um já existente nem ao excluir -- a pessoa pode corrigir manualmente esse
+// item no Diário de Refeições (editar/excluir), igual qualquer outro registro.
+function registrarVitaminaDDoTreino(treino) {
+  if (!treinoElegivelParaVitaminaD(treino.esporte, treino.ciclismoModalidade)) return;
+  if (!treinoTemJanelaDeLuzSolar(treino.horaInicio, treino.horaFim)) return;
+  const tipoPele = state.usuario && state.usuario.tipoPele;
+  if (!tipoPele) return;
+  if (!navigator.geolocation) return; // sem como confirmar o tempo automaticamente -- não credita (não presume)
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude, lon = pos.coords.longitude;
+      const buscaUV = treino.date === today() ? buscarIndiceUVAtual(lat, lon) : buscarIndiceUVHistorico(lat, lon, treino.date);
+      buscaUV.then((uvHorario) => {
+        const resultado = calcularVitaminaDSolPorUV(treino.horaInicio, treino.horaFim, uvHorario, tipoPele);
+        if (!resultado || !resultado.mcg) return;
+        const detalheBase = "índice UV real" + (resultado.condicaoTempo ? " · " + resultado.condicaoTempo : "");
+        // Cidade/estado/país é só pra EXIBIR de onde veio a leitura (mesmo espírito de
+        // localizacaoTextoFormatada()) -- uma falha aqui não pode travar o crédito da vitamina D, que já
+        // temos calculado a partir do índice UV.
+        buscarLocalizacaoTexto(lat, lon).then((loc) => {
+          const localTexto = [loc.cidade, loc.estado, loc.pais].filter(Boolean).join(", ");
+          salvarVitaminaDDoTreino(treino, resultado, (localTexto ? detalheBase + " de " + localTexto : detalheBase));
+        }).catch(() => salvarVitaminaDDoTreino(treino, resultado, detalheBase));
+      }).catch(() => { /* sem internet ou API de índice UV fora do ar -- não credita, não presume */ });
+    },
+    () => { /* localização negada/indisponível -- não credita, não presume */ },
+    { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }
+  );
+}
+
 function acaoEncerrarTreino() {
   if (!state.treinoAtivo) return;
   if (treinoFotoSelecionada && !state.account) { toastError("Conecte sua conta do Google para anexar fotos."); return; }
@@ -5310,6 +5774,7 @@ function acaoEncerrarTreino() {
     id: Date.now(), date: state.treinoAtivo.date, esporte: state.treinoAtivo.esporte,
     horaInicio: state.treinoAtivo.horaInicioClock, horaFim: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
     duracaoMin, fotoUrl: "", nota, gruposMusculares,
+    ciclismoModalidade: state.treinoAtivo.ciclismoModalidade || "", spinningIntensidade: state.treinoAtivo.spinningIntensidade || "",
   }, camposDistancia);
   novoTreino.caloriasQueimadas = estimarCaloriasQueimadas(novoTreino);
   // Mesmo padrão "salva primeiro, anexo depois" já usado nos exames de bioimpedância/calorimetria
@@ -5317,11 +5782,14 @@ function acaoEncerrarTreino() {
   const arquivoFoto = treinoFotoSelecionada;
   state.treinos = state.treinos.concat([novoTreino]);
   persistTreinos();
+  registrarVitaminaDDoTreino(novoTreino); // pedido do usuário -- ver comentário na função
   state.treinoAtivo = null;
   persistTreinoAtivo();
   pararTickTreino();
   state.treinoEsporte = "";
   state.treinoEsporteCustom = "";
+  state.treinoCiclismoModalidade = "";
+  state.treinoSpinningIntensidade = "";
   state.treinoNota = "";
   state.treinoDistanciaKm = "";
   state.treinoGruposSelecionados = [];
@@ -5373,6 +5841,8 @@ function acaoEditarTreino(id) {
   if (!t) return;
   state.treinoModo = "manual";
   state.treinoEsporte = t.esporte;
+  state.treinoCiclismoModalidade = t.ciclismoModalidade || "";
+  state.treinoSpinningIntensidade = t.spinningIntensidade || "";
   state.treinoData = t.date;
   state.treinoHoraInicio = t.horaInicio;
   state.treinoHoraFim = t.horaFim;
@@ -5405,6 +5875,8 @@ function acaoCancelarEdicaoTreino() {
   state.treinoEditandoId = null;
   state.treinoEsporte = "";
   state.treinoEsporteCustom = "";
+  state.treinoCiclismoModalidade = "";
+  state.treinoSpinningIntensidade = "";
   state.treinoData = "";
   state.treinoNota = "";
   state.treinoDistanciaKm = "";
@@ -5429,6 +5901,10 @@ function acaoSalvarTreino() {
   const distanciaEl = document.getElementById("treino-distancia");
   const esporteCustomEl = document.getElementById("treino-esporte-custom");
   const camposDistancia = calcularCamposDistanciaTreino(esporte, duracaoMin);
+  // Submodalidade de ciclismo/intensidade de spinning (pedido do usuário) -- já ficam sincronizadas em
+  // state direto pelos próprios seletores (onchange), sem precisar reler do DOM aqui.
+  const ciclismoModalidade = esporte === "Ciclismo" ? state.treinoCiclismoModalidade : "";
+  const spinningIntensidade = ciclismoModalidade === "Spinning" ? state.treinoSpinningIntensidade : "";
 
   // Modo edição (ver acaoEditarTreino()): atualiza o registro já salvo em vez de criar um novo,
   // preservando id e grupos musculares -- e, ao final, ressincroniza qualquer dia já encerrado no
@@ -5443,6 +5919,8 @@ function acaoSalvarTreino() {
     if (!registro) { toastError("Treino não encontrado."); return; }
     const dataAntiga = registro.date;
     registro.esporte = esporte;
+    registro.ciclismoModalidade = ciclismoModalidade;
+    registro.spinningIntensidade = spinningIntensidade;
     registro.date = dataTreino;
     registro.horaInicio = horaInicio;
     registro.horaFim = horaFim;
@@ -5457,6 +5935,8 @@ function acaoSalvarTreino() {
     state.treinoEditandoId = null;
     state.treinoEsporte = "";
     state.treinoEsporteCustom = "";
+    state.treinoCiclismoModalidade = "";
+    state.treinoSpinningIntensidade = "";
     state.treinoData = "";
     state.treinoNota = "";
     state.treinoDistanciaKm = "";
@@ -5477,13 +5957,16 @@ function acaoSalvarTreino() {
   }
 
   const gruposMusculares = obterGruposMuscularesParaSalvar();
-  const novoTreino = Object.assign({ id: Date.now(), date: dataTreino, esporte, horaInicio, horaFim, duracaoMin, fotoUrl: "", nota, gruposMusculares }, camposDistancia);
+  const novoTreino = Object.assign({ id: Date.now(), date: dataTreino, esporte, ciclismoModalidade, spinningIntensidade, horaInicio, horaFim, duracaoMin, fotoUrl: "", nota, gruposMusculares }, camposDistancia);
   novoTreino.caloriasQueimadas = estimarCaloriasQueimadas(novoTreino);
   const arquivoFoto = treinoFotoSelecionada;
   state.treinos = state.treinos.concat([novoTreino]);
   persistTreinos();
+  registrarVitaminaDDoTreino(novoTreino); // pedido do usuário -- ver comentário na função
   state.treinoEsporte = "";
   state.treinoEsporteCustom = "";
+  state.treinoCiclismoModalidade = "";
+  state.treinoSpinningIntensidade = "";
   state.treinoData = "";
   state.treinoNota = "";
   state.treinoDistanciaKm = "";
@@ -5575,7 +6058,7 @@ function treinoCaloriasResumoTexto(t) {
 function treinoResumoModalidadesHtml(dayTreinos) {
   return '<div class="history-day-modalidades">' + dayTreinos.map((t) => {
     const kcalTexto = treinoCaloriasResumoTexto(t);
-    return '<span class="history-day-modalidade-item">' + emojiEsporte(t.esporte) + " " + esc(t.esporte) +
+    return '<span class="history-day-modalidade-item">' + emojiEsporte(t.esporte) + " " + esc(nomeEsporteExibicao(t)) +
       (kcalTexto ? ' <span class="modalidade-kcal">· ' + esc(kcalTexto) + "</span>" : "") + "</span>";
   }).join("") + "</div>";
 }
@@ -5590,7 +6073,7 @@ function treinoListTemplate() {
       ? '<a class="meal-row-icon meal-row-icon-foto" href="' + esc(t.fotoUrl) + '" target="_blank" rel="noopener"><img src="' + esc(t.fotoUrl) + '" alt="Foto do treino"/></a>'
       : '<div class="meal-row-icon">' + icon("activity") + "</div>"
     ) +
-    '<div class="meal-row-text"><div class="meal-row-name">' + emojiEsporte(t.esporte) + " " + esc(t.esporte) + '</div><div class="meal-row-meta">' + icon("clock") + " " + esc(t.horaInicio) + " – " + esc(t.horaFim) + "</div>" +
+    '<div class="meal-row-text"><div class="meal-row-name">' + emojiEsporte(t.esporte) + " " + esc(nomeEsporteExibicao(t)) + '</div><div class="meal-row-meta">' + icon("clock") + " " + esc(t.horaInicio) + " – " + esc(t.horaFim) + "</div>" +
     (t.distanciaKm ? '<div class="meal-row-distancia">' + icon("zap") + " " + esc(treinoDistanciaResumoTexto(t)) + "</div>" : "") +
     (t.gruposMusculares && t.gruposMusculares.length ? '<div class="meal-row-grupos-musculares">' + icon("activity") + " " + esc(treinoGruposMuscularesResumoTexto(t)) + "</div>" : "") +
     (t.caloriasQueimadas ? '<div class="meal-row-calorias-queimadas">' + icon("flame") + " " + esc(treinoCaloriasResumoTexto(t)) + " queimadas (estimativa)</div>" : "") +
@@ -5633,7 +6116,7 @@ function treinoHistoryDayCardTemplate(date) {
       (expandido
         ? '<div class="history-day-meals">' + dayTreinos.map((t) =>
             '<div class="history-day-meal history-day-meal-static' + ((t.nota || t.distanciaKm || t.caloriasQueimadas || (t.gruposMusculares && t.gruposMusculares.length)) ? " history-day-meal-com-nota" : "") + '">' +
-              '<div class="history-day-meal-linha"><span>' + emojiEsporte(t.esporte) + " " + esc(t.esporte) + " · " + esc(t.horaInicio) + "–" + esc(t.horaFim) + "</span><span>" + esc(formatarDuracao(t.duracaoMin)) + (t.fotoUrl ? ' <a class="history-day-meal-foto-link" href="' + esc(t.fotoUrl) + '" target="_blank" rel="noopener" aria-label="Ver foto do treino">' + icon("camera") + "</a>" : "") + ' <button class="history-day-meal-editar-link" aria-label="Editar treino" onclick="event.stopPropagation(); acaoEditarTreino(' + t.id + ')">' + icon("edit") + "</button></span></div>" +
+              '<div class="history-day-meal-linha"><span>' + emojiEsporte(t.esporte) + " " + esc(nomeEsporteExibicao(t)) + " · " + esc(t.horaInicio) + "–" + esc(t.horaFim) + "</span><span>" + esc(formatarDuracao(t.duracaoMin)) + (t.fotoUrl ? ' <a class="history-day-meal-foto-link" href="' + esc(t.fotoUrl) + '" target="_blank" rel="noopener" aria-label="Ver foto do treino">' + icon("camera") + "</a>" : "") + ' <button class="history-day-meal-editar-link" aria-label="Editar treino" onclick="event.stopPropagation(); acaoEditarTreino(' + t.id + ')">' + icon("edit") + "</button></span></div>" +
               (t.distanciaKm ? '<p class="history-day-meal-distancia">' + esc(treinoDistanciaResumoTexto(t)) + "</p>" : "") +
               treinoGruposMuscularesListaHtml(t) +
               (t.caloriasQueimadas ? '<p class="history-day-meal-calorias-queimadas">' + esc(treinoCaloriasResumoTexto(t)) + " queimadas (estimativa)</p>" : "") +
@@ -5689,6 +6172,7 @@ function mealListTemplate() {
       ? '<div class="meal-row-kcal">' + formatVitaminaDComUI(m.vitD, 1) + " vitamina D</div>"
       : '<div class="meal-row-kcal">' + formatNumber(m.calories) + " kcal" + percentualTexto + '</div><div class="meal-row-macro">P ' + formatNumber(m.protein, 1) + " · C " + formatNumber(m.carbs, 1) + " · G " + formatNumber(m.fat, 1) + "</div>"
     ) + "</div>" +
+    '<button class="meal-row-edit" aria-label="Editar refeição" onclick="event.stopPropagation(); acaoEditarRefeicao(' + m.id + ')">' + icon("edit") + "</button>" +
     '<button class="meal-row-delete" aria-label="Remover refeição" onclick="event.stopPropagation(); acaoRemoverRefeicao(' + m.id + ')">' + icon("trash") + "</button></div></div>";
   }).join("");
 }
@@ -6007,6 +6491,10 @@ function mealDetalheModalTemplate() {
     '<div class="modal-card modal-card-wide">' +
       '<div class="meal-detalhe-head"><div><h2>' + esc(m.name) + '</h2><p class="sub">' + icon("clock") + " " + esc(m.time) + " · " + dateLabel(m.date) + "</p></div>" +
       '<button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharDetalheRefeicao()">' + icon("x") + "</button></div>" +
+      // Editar o conteúdo da refeição (ver acaoEditarRefeicao()) -- útil tanto pra hoje quanto pra um dia
+      // do histórico, já que os dois abrem esse mesmo modal. Fica ao lado de "Corrigir data" (abaixo),
+      // que resolve só a data; este resolve o resto (nome, alimentos/quantidades).
+      '<button class="meal-detalhe-editar-refeicao-btn" onclick="acaoEditarRefeicao(' + m.id + ')">' + icon("edit") + " Editar refeição</button>" +
       // Corrigir a data -- útil quando a refeição foi salva com a data errada (ex.: aparelho com o
       // relógio no dia errado no momento de registrar) e por isso aparece no dia errado na lista/
       // histórico. Fica escondido atrás de um botão "Corrigir data" pra não poluir o modal por padrão.
@@ -7281,7 +7769,36 @@ function treinoSeletorEsporteTemplate() {
   "</select>" +
   (state.treinoEsporte === "Outro"
     ? '<input id="treino-esporte-custom" class="meal-input" placeholder="Nome do esporte/atividade" value="' + esc(state.treinoEsporteCustom) + '"/>'
-    : "");
+    : "") +
+  treinoCiclismoModalidadeCampoTemplate();
+}
+// Pedido do usuário: subseletor de submodalidade de ciclismo (pista/estrada/mtb/gravel/spinning),
+// mostrado assim que "Ciclismo" é escolhido no seletor de esporte acima -- reaproveitado tanto no modo
+// cronômetro quanto no manual, igual o próprio seletor de esporte.
+function treinoCiclismoModalidadeCampoTemplate() {
+  if (state.treinoEsporte !== "Ciclismo") return "";
+  return '<div class="treino-ciclismo-modalidade-campo">' +
+    '<label class="meal-form-label" for="treino-ciclismo-modalidade-select">Modalidade de ciclismo</label>' +
+    '<select id="treino-ciclismo-modalidade-select" class="meal-select" onchange="acaoSelecionarModalidadeCiclismo(this.value)">' +
+      '<option value="">Selecione a modalidade...</option>' +
+      CICLISMO_MODALIDADES.map((m) => '<option value="' + esc(m) + '"' + (state.treinoCiclismoModalidade === m ? " selected" : "") + ">" + esc(m) + "</option>").join("") +
+    "</select>" +
+  "</div>" +
+  treinoSpinningIntensidadeCampoTemplate();
+}
+// Pedido do usuário: intensidade do spinning, só aparece com a modalidade "Spinning" escolhida acima --
+// é o que determina o MET fixo usado na estimativa de kcal (ver MET_SPINNING/estimarCaloriasQueimadas()),
+// já que o spinning não tem distância/velocidade pra calcular por ritmo.
+function treinoSpinningIntensidadeCampoTemplate() {
+  if (state.treinoCiclismoModalidade !== "Spinning") return "";
+  return '<div class="treino-spinning-intensidade-campo">' +
+    '<label class="meal-form-label" for="treino-spinning-intensidade-select">Intensidade do spinning</label>' +
+    '<select id="treino-spinning-intensidade-select" class="meal-select" onchange="acaoSelecionarIntensidadeSpinning(this.value)">' +
+      '<option value="">Selecione a intensidade...</option>' +
+      SPINNING_INTENSIDADES.map((i) => '<option value="' + esc(i) + '"' + (state.treinoSpinningIntensidade === i ? " selected" : "") + ">" + esc(i) + "</option>").join("") +
+    "</select>" +
+    '<p class="treino-spinning-nota">No spinning calculamos as calorias por estimativa (peso e duração do treino), sem precisar de distância.</p>' +
+  "</div>";
 }
 
 // Observação livre sobre o treino (ex.: "treino pesado", "alto astral") — opcional, mesma lógica de
@@ -7298,6 +7815,10 @@ function treinoNotaCampoTemplate() {
 // salvar (ver acaoEncerrarTreino()/acaoSalvarTreino()).
 function treinoDistanciaCampoTemplate() {
   if (!ESPORTES_COM_DISTANCIA.includes(state.treinoEsporte)) return "";
+  // Pedido do usuário: spinning é aula estacionária (sem percurso real) -- não faz sentido pedir
+  // distância; a estimativa de kcal usa MET fixo por intensidade em vez de velocidade (ver
+  // MET_SPINNING/estimarCaloriasQueimadas()).
+  if (state.treinoEsporte === "Ciclismo" && state.treinoCiclismoModalidade === "Spinning") return "";
   return '<div class="treino-distancia-campo"><label class="meal-form-label" for="treino-distancia">Distância percorrida (opcional)</label>' +
     '<input id="treino-distancia" type="number" min="0" step="0.01" class="meal-input" placeholder="Ex.: 5,2 (em km)" value="' + esc(state.treinoDistanciaKm) + '"/>' +
     '<p class="treino-distancia-nota">Informe se souber (relógio, app de mapa, percurso conhecido) — calculamos a velocidade média e o pace automaticamente a partir da distância e da duração do treino.</p>' +
@@ -7401,7 +7922,7 @@ function treinoCronometroAtivoTemplate() {
   const a = state.treinoAtivo;
   const ms = treinoAtivoElapsedMs();
   return '' +
-    '<p class="meal-card-desc">' + emojiEsporte(a.esporte) + " " + esc(a.esporte) + " · iniciado às " + esc(a.horaInicioClock) + (a.pausado ? " · pausado" : "") + "</p>" +
+    '<p class="meal-card-desc">' + emojiEsporte(a.esporte) + " " + esc(nomeEsporteExibicao(a)) + " · iniciado às " + esc(a.horaInicioClock) + (a.pausado ? " · pausado" : "") + "</p>" +
     '<div class="treino-cronometro">' + formatarCronometro(ms) + "</div>" +
     treinoDistanciaCampoTemplate() +
     treinoGruposMuscularesCampoTemplate() +
@@ -7425,9 +7946,11 @@ function treinoFormCronometroTemplate() {
 }
 
 function treinoFormManualTemplate() {
+  // Pedido do usuário: no cadastro manual, a data vem ANTES da seleção do esporte (nos outros
+  // formulários do app -- ex.: refeição -- também é assim; aqui ficava na ordem inversa por histórico).
   return '<div class="meal-form">' +
-    treinoSeletorEsporteTemplate() +
     '<div><label class="meal-form-label">Data do treino</label><input id="treino-data" type="date" class="meal-input" max="' + esc(today()) + '" value="' + esc(state.treinoData || today()) + '"/></div>' +
+    treinoSeletorEsporteTemplate() +
     '<div class="meal-form-row">' +
       '<div><label class="meal-form-label">Início</label><input id="treino-hora-inicio" type="time" class="meal-input" value="' + esc(state.treinoHoraInicio) + '"/></div>' +
       '<div><label class="meal-form-label">Término</label><input id="treino-hora-fim" type="time" class="meal-input" value="' + esc(state.treinoHoraFim) + '"/></div>' +
@@ -8338,6 +8861,7 @@ function diarioKcalTabTemplate() {
 function nutricaoTabTemplate() {
   const consumed = consumedToday();
   const remaining = remainingToday();
+  const editandoRefeicao = state.mealEditandoId != null;
   return '' +
     "<main>" +
     '<section class="hero">' +
@@ -8383,9 +8907,11 @@ function nutricaoTabTemplate() {
         macroFonteNotaTemplate()
       ) +
       '<section class="dashboard-grid">' +
-        '<aside class="meal-card"><div class="meal-card-eyebrow">' + icon(state.mealTipo === "Exposição Solar" ? "sun" : "sparkles") + (state.mealTipo === "Exposição Solar" ? " Exposição solar" : " Nova refeição") + "</div>" +
-        "<h2>" + (state.mealTipo === "Exposição Solar" ? "Quanto tempo você ficou no sol?" : "O que você vai comer?") + "</h2>" +
-        '<p class="meal-card-desc">' + (state.mealTipo === "Exposição Solar"
+        '<aside class="meal-card"><div class="meal-card-eyebrow">' + icon(editandoRefeicao ? "edit" : (state.mealTipo === "Exposição Solar" ? "sun" : "sparkles")) + (editandoRefeicao ? " Editando refeição" : (state.mealTipo === "Exposição Solar" ? " Exposição solar" : " Nova refeição")) + "</div>" +
+        "<h2>" + (editandoRefeicao ? "Editar refeição registrada" : (state.mealTipo === "Exposição Solar" ? "Quanto tempo você ficou no sol?" : "O que você vai comer?")) + "</h2>" +
+        '<p class="meal-card-desc">' + (editandoRefeicao
+          ? "Ajuste o que quiser e salve as alterações. Mudou os alimentos? Recalcule antes de salvar."
+          : state.mealTipo === "Exposição Solar"
           ? "Informe o horário de início e fim da exposição e como estava o céu — calculamos uma estimativa da vitamina D sintetizada pela pele."
           : "Escreva naturalmente. Ex.: “1 pão francês, 1 ovo frito e 300 ml de suco de laranja”.") + "</p>" +
         (state.mealTipo === "Exposição Solar" ? "" :
@@ -8399,11 +8925,15 @@ function nutricaoTabTemplate() {
           '<div><label class="meal-form-label">Data</label><input id="meal-data" type="date" class="meal-input" max="' + esc(today()) + '" value="' + esc(state.mealData || today()) + '"/></div>' +
           (state.mealTipo === "Exposição Solar"
             ? exposicaoSolarCamposTemplate()
-            : '<textarea id="meal-description" class="meal-textarea" placeholder="Descreva os alimentos e quantidades..." rows="4">' + esc(state.mealDescription) + "</textarea>" +
+            : '<div class="meal-description-wrap">' +
+                '<textarea id="meal-description" class="meal-textarea" placeholder="Descreva os alimentos e quantidades..." rows="4" oninput="acaoAtualizarSugestoesAlimento(this)" onblur="acaoFecharSugestoesAlimento()" onkeydown="if(event.key===\'Escape\'){acaoFecharSugestoesAlimento();}">' + esc(state.mealDescription) + "</textarea>" +
+                '<div id="meal-sugestoes-lista" class="meal-sugestoes-lista">' + mealSugestoesListaHtml() + "</div>" +
+              "</div>" +
               '<button class="btn-ghost-light" onclick="acaoAnalisar()">' + icon("sparkles") + " Calcular refeição</button>"
           ) +
         "</div>" +
         (state.mealTipo === "Exposição Solar" ? exposicaoSolarPreviewTemplate() : mealPreviewTemplate()) +
+        (editandoRefeicao ? '<button class="treino-cancelar-btn" onclick="acaoCancelarEdicaoRefeicao()">Cancelar edição</button>' : "") +
         "</aside>" +
         '<div class="history-card"><div class="history-card-head">' +
           '<div><div class="history-eyebrow">' + icon("utensils") + " Refeições de hoje</div><h2>O que você comeu</h2></div>" +
