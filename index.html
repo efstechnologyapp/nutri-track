@@ -5732,19 +5732,27 @@ function salvarVitaminaDDoTreino(treino, resultado, detalheFonte) {
 // limitação que "Exposição Solar" já tem hoje. Também só roda ao REGISTRAR um treino novo (manual ou
 // cronômetro), não ao editar um já existente nem ao excluir -- a pessoa pode corrigir manualmente esse
 // item no Diário de Refeições (editar/excluir), igual qualquer outro registro.
+// Pedido do usuário (correção seguinte): quando a checagem automática não conseguir confirmar o tempo
+// (e por isso não creditar vitamina D nenhuma), avisar a pessoa na tela com o motivo, em vez de falhar
+// em silêncio. Do jeito que estava antes, não tinha como a pessoa saber se o treino simplesmente não
+// rendeu vitamina D (ex.: índice UV baixo naquele horário/local) ou se alguma etapa técnica falhou
+// (permissão de localização, rede, perfil incompleto) -- toda essa distinção agora aparece num toast.
+function avisarSemVitaminaD(treino, motivo) {
+  toastAviso("Treino de " + nomeEsporteExibicao(treino) + " (" + treino.horaInicio + "–" + treino.horaFim + "): vitamina D não creditada — " + motivo);
+}
 function registrarVitaminaDDoTreino(treino) {
   if (!treinoElegivelParaVitaminaD(treino.esporte, treino.ciclismoModalidade)) return;
   if (!treinoTemJanelaDeLuzSolar(treino.horaInicio, treino.horaFim)) return;
   const tipoPele = state.usuario && state.usuario.tipoPele;
-  if (!tipoPele) return;
-  if (!navigator.geolocation) return; // sem como confirmar o tempo automaticamente -- não credita (não presume)
+  if (!tipoPele) { avisarSemVitaminaD(treino, "cadastre seu tipo de pele no Perfil para habilitar esse cálculo automático."); return; }
+  if (!navigator.geolocation) { avisarSemVitaminaD(treino, "este navegador não tem suporte a localização automática."); return; }
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       const lat = pos.coords.latitude, lon = pos.coords.longitude;
       const buscaUV = treino.date === today() ? buscarIndiceUVAtual(lat, lon) : buscarIndiceUVHistorico(lat, lon, treino.date);
       buscaUV.then((uvHorario) => {
         const resultado = calcularVitaminaDSolPorUV(treino.horaInicio, treino.horaFim, uvHorario, tipoPele);
-        if (!resultado || !resultado.mcg) return;
+        if (!resultado || !resultado.mcg) { avisarSemVitaminaD(treino, "o índice UV real confirmado nesse horário/local foi muito baixo (nuvens fechadas ou sol ainda fraco)."); return; }
         const detalheBase = "índice UV real" + (resultado.condicaoTempo ? " · " + resultado.condicaoTempo : "");
         // Cidade/estado/país é só pra EXIBIR de onde veio a leitura (mesmo espírito de
         // localizacaoTextoFormatada()) -- uma falha aqui não pode travar o crédito da vitamina D, que já
@@ -5753,9 +5761,9 @@ function registrarVitaminaDDoTreino(treino) {
           const localTexto = [loc.cidade, loc.estado, loc.pais].filter(Boolean).join(", ");
           salvarVitaminaDDoTreino(treino, resultado, (localTexto ? detalheBase + " de " + localTexto : detalheBase));
         }).catch(() => salvarVitaminaDDoTreino(treino, resultado, detalheBase));
-      }).catch(() => { /* sem internet ou API de índice UV fora do ar -- não credita, não presume */ });
+      }).catch(() => avisarSemVitaminaD(treino, "não foi possível confirmar o tempo agora (sem internet ou serviço de clima indisponível)."));
     },
-    () => { /* localização negada/indisponível -- não credita, não presume */ },
+    () => avisarSemVitaminaD(treino, "a localização não foi liberada ou não pôde ser obtida."),
     { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }
   );
 }
