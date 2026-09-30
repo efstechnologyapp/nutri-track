@@ -660,22 +660,21 @@ svg{ display: block; }
    duas, ganha rolagem própria dentro dessa mesma altura em vez de esticar o card (ver .bio-history-scroll).
    O card de Medidas e Aferições (ver medidasCardFlipWrapperTemplate()/acaoIrParaPaginaMedida(), MESMO
    pedido do usuário: "o card de medidas no tamanho padrão que está o card de bioimpedância... adotar nele
-   também a função virar") usa o MESMO mecanismo, só que com 2 páginas (formulário/histórico) em vez de 3
-   -- classes próprias (.medida-card-*), mas com os valores de CSS sempre combinados aqui com os
-   análogos .bio-card-* (idêntica aparência/comportamento), mesmo padrão já usado em
-   .medida-history-row/.bio-history-row etc. */
+   também a função virar") usa o MESMO mecanismo, também com 3 páginas (formulário/Evolução do Peso --
+   que "mudou de casa" da antiga aba Evolução, ver medidasEvolucaoPaginaTemplate() -- /histórico) -- classes
+   próprias (.medida-card-*), mas com os valores de CSS sempre combinados aqui com os análogos .bio-card-*
+   (idêntica aparência/comportamento), mesmo padrão já usado em .medida-history-row/.bio-history-row etc. */
 .bio-card-flip-wrap, .medida-card-flip-wrap{ margin-top:24px; display:flex; flex-direction:column; align-items:center; gap:8px; }
 .bio-card-flip, .medida-card-flip{ position:relative; width:100%; overflow:hidden; cursor:pointer; transition:height .4s cubic-bezier(.4,.05,.2,1); }
 /* largura de 300% (3 páginas) -- o translateX de cada página é sempre um múltiplo de 33,3333% (1/3 da
    largura da FAIXA, que equivale a exatamente 100% da largura do card) -- ver
-   bioimpedanciaCardFlipWrapperTemplate()/acaoIrParaPaginaBio() (% de transform é relativo à largura do
-   próprio elemento, não à do pai -- por isso não pode ser só "-100%" por página aqui). O card de Medidas
-   (.medida-card-track) segue a MESMA lógica, só que com 2 páginas -- largura de 200%, múltiplos de 50%
-   (1/2 da largura da faixa) -- ver acaoIrParaPaginaMedida(). */
-.bio-card-track{ display:flex; width:300%; transition:transform .4s cubic-bezier(.4,.05,.2,1); }
-.bio-card-page{ flex:0 0 33.3333%; min-width:0; }
-.medida-card-track{ display:flex; width:200%; transition:transform .4s cubic-bezier(.4,.05,.2,1); }
-.medida-card-page{ flex:0 0 50%; min-width:0; }
+   bioimpedanciaCardFlipWrapperTemplate()/acaoIrParaPaginaBio() e medidasCardFlipWrapperTemplate()/
+   acaoIrParaPaginaMedida() (% de transform é relativo à largura do próprio elemento, não à do pai -- por
+   isso não pode ser só "-100%" por página aqui). Os cards de Bioimpedância e de Medidas têm os dois 3
+   páginas agora, por isso a MESMA geometria serve pros dois (.bio-card-track/.medida-card-track
+   combinados). */
+.bio-card-track, .medida-card-track{ display:flex; width:300%; transition:transform .4s cubic-bezier(.4,.05,.2,1); }
+.bio-card-page, .medida-card-page{ flex:0 0 33.3333%; min-width:0; }
 /* Cada página vira um card (.medidas-section) com a MESMA altura fixa, calculada em ajustarAlturaBioCard()/
    ajustarAlturaMedidaCard() e aplicada via style.height diretamente (nunca por CSS 100%/stretch -- isso
    corromperia a medição do tamanho NATURAL da(s) página(s) que definem essa altura na próxima chamada,
@@ -723,7 +722,8 @@ svg{ display: block; }
    por essa classe. Pelo MESMO motivo, agora que o card de Medidas e Aferições também virou um card
    virável de páginas sempre montadas (ver medidasCardFlipWrapperTemplate()), o registro de HOJE pode
    aparecer simultaneamente na lista "de hoje" (página 0) E dentro do dia de hoje expandido no Histórico
-   (página 1) -- por isso medidaHistoryRowTemplate() aceita um "prefixo" (ver comentário lá) e a chamada
+   (página 2, com a Evolução do Peso agora no meio -- ver medidasEvolucaoPaginaTemplate()) -- por isso
+   medidaHistoryRowTemplate() aceita um "prefixo" (ver comentário lá) e a chamada
    dentro do Histórico usa .medida-card-history-* em vez de .medida-history-*, também sempre combinada
    aqui com as classes acima pra manter a MESMA aparência. */
 .medida-history-item, .bio-history-item, .medida-card-history-item{ padding:14px 0; border-top:1px solid #edf0eb; }
@@ -2447,13 +2447,17 @@ const state = {
   showEditarPerfil: false,
   showNovaSenha: false,
   sidebarOpen: false,
-  activeTab: "nutricao", // "nutricao" | "medidas" | "treinos" | "evolucao"
-  // Filtro de período (data "de"/"até") da aba Evolução -- ver evolucaoDataNoFiltro()/
-  // evolucaoPeriodoFiltroTemplate(). "" = sem limite (mesmo padrão de medidasFiltroDe/medidasFiltroAte
-  // acima). Só afeta os cards de Peso e Aderência à meta calórica -- o card de Composição corporal é
-  // fixo (sempre compara o primeiro com o último registro de TODA a história, não só do período
-  // filtrado -- ver evolucaoBioimpedanciaComparacao()). Fica só na memória, mesmo espírito de
-  // historyDiaExpandidoMedidas/medidaCardPagina acima.
+  activeTab: "nutricao", // "nutricao" | "medidas" | "treinos"
+  // Filtro de período (data "de"/"até") da página de Evolução do Peso, dentro do card de Medidas e
+  // Aferições -- ver evolucaoDataNoFiltro()/evolucaoPeriodoFiltroTemplate()/medidasEvolucaoPaginaTemplate().
+  // "" = sem limite (mesmo padrão de medidasFiltroDe/medidasFiltroAte acima). Morava numa aba "Evolução"
+  // própria, com mais 2 cards (Aderência à meta calórica, Composição corporal) -- ambos já tinham "mudado
+  // de casa" antes (Aderência foi pro verso do card "Seu resumo de hoje", com seu próprio seletor de
+  // período dia/semana/mês/ano; Composição corporal foi pra página central do card de Bioimpedância e
+  // Calorimetria, sempre fixo -- compara o primeiro com o último registro de TODA a história, não é
+  // afetado por este filtro -- ver evolucaoBioimpedanciaComparacao()) --, e a pedido do usuário o último
+  // card que restava (Peso) também migrou, junto com este filtro que só afeta ele. Fica só na memória,
+  // mesmo espírito de historyDiaExpandidoMedidas/medidaCardPagina acima.
   evolucaoFiltroDe: "",
   evolucaoFiltroAte: "",
   altura: readStorage(CHAVE_ALTURA, null), // cm
@@ -6888,12 +6892,14 @@ function mealDetalheModalTemplate() {
     "</div></div>";
 }
 
+// Aba "Evolução" removida daqui (pedido do usuário) -- seu único card restante (Peso) virou a página
+// central do card virável de Medidas e Aferições, ver medidasEvolucaoPaginaTemplate()/
+// medidasCardFlipWrapperTemplate().
 function homeTabsTemplate() {
   return '<div class="home-tabs">' +
     '<button class="home-tab' + (state.activeTab === "nutricao" ? " active" : "") + '" onclick="acaoTrocarAba(\'nutricao\')">' + icon("utensils") + " Nutrição</button>" +
     '<button class="home-tab' + (state.activeTab === "treinos" ? " active" : "") + '" onclick="acaoTrocarAba(\'treinos\')">' + icon("flame") + " Esportes</button>" +
     '<button class="home-tab' + (state.activeTab === "medidas" ? " active" : "") + '" onclick="acaoTrocarAba(\'medidas\')">' + icon("activity") + " Medidas</button>" +
-    '<button class="home-tab' + (state.activeTab === "evolucao" ? " active" : "") + '" onclick="acaoTrocarAba(\'evolucao\')">' + icon("trend") + " Evolução</button>" +
     "</div>";
 }
 
@@ -7979,13 +7985,13 @@ function bioimpedanciaSectionTemplate() {
   return bioimpedanciaCardFlipWrapperTemplate();
 }
 
-// "Abrir o histórico" agora é simplesmente ir pra 2ª página do card virável de Medidas e Aferições (ver
-// medidasCardFlipWrapperTemplate()/acaoIrParaPaginaMedida()) -- antes era uma tela separada
+// "Abrir o histórico" agora é simplesmente ir pra 3ª página (índice 2) do card virável de Medidas e
+// Aferições (ver medidasCardFlipWrapperTemplate()/acaoIrParaPaginaMedida()) -- antes era uma tela separada
 // (state.showHistoricoMedidas), a pedido do usuário virou uma página do mesmo card (MESMO espírito do
 // card de Bioimpedância e Calorimetria, ver acaoAbrirHistoricoBioimpedancia()). Cada vez que o histórico
 // é aberto, começa com todos os dias fechados -- mesmo padrão de acaoAlternarHistorico()/
 // acaoAlternarHistoricoTreinos().
-function acaoAbrirHistoricoMedidas() { state.historyDiaExpandidoMedidas = null; acaoIrParaPaginaMedida(1); }
+function acaoAbrirHistoricoMedidas() { state.historyDiaExpandidoMedidas = null; acaoIrParaPaginaMedida(2); }
 function acaoFecharHistoricoMedidas() { acaoIrParaPaginaMedida(0); }
 // Card de um dia no histórico de Medidas e Aferições -- mesma lógica de dia expansível (accordion) do
 // histórico de refeições (historyDayCardTemplate()) e de treinos (treinoHistoryDayCardTemplate()).
@@ -8254,37 +8260,39 @@ function medidasHistoricoTemplate() {
     "</section>";
 }
 
-// Rótulos dos 2 tracinhos indicadores (aria-label de cada .medida-card-dot) -- ver
+// Rótulos dos 3 tracinhos indicadores (aria-label de cada .medida-card-dot) -- ver
 // medidasCardFlipWrapperTemplate().
-const MEDIDA_CARD_PAGINA_LABELS = ["Ver formulário de Medidas e Aferições", "Ver Histórico de Medidas e Aferições"];
-// Envolve as 2 páginas do card de Medidas e Aferições (formulário/registros de hoje e Histórico de
+const MEDIDA_CARD_PAGINA_LABELS = ["Ver formulário de Medidas e Aferições", "Ver Evolução do Peso", "Ver Histórico de Medidas e Aferições"];
+// Envolve as 3 páginas do card de Medidas e Aferições (formulário/registros de hoje, Evolução do Peso --
+// que "mudou de casa" da antiga aba Evolução, ver medidasEvolucaoPaginaTemplate() -- e Histórico de
 // registros -- pedido do usuário: "o card de medidas no tamanho padrão que está o card de bioimpedância
 // ... adotar nele também a função virar") no MESMO mecanismo de slide horizontal (translateX) + tracinhos
 // indicadores + toque pra virar já usado no card de Bioimpedância e Calorimetria logo acima nessa mesma
-// aba -- ver bioimpedanciaCardFlipWrapperTemplate()/acaoCliqueBioCard()/acaoIrParaPaginaBio(). Só que com
-// 2 páginas em vez de 3 (ver acaoIrParaPaginaMedida()/.medida-card-track).
+// aba -- ver bioimpedanciaCardFlipWrapperTemplate()/acaoCliqueBioCard()/acaoIrParaPaginaBio(). MESMA
+// geometria de 3 páginas (ver acaoIrParaPaginaMedida()/.medida-card-track).
 function medidasCardFlipWrapperTemplate() {
   const pagina = state.medidaCardPagina || 0;
-  const paginas = [medidasFormTemplate(), medidasHistoricoTemplate()];
+  const paginas = [medidasFormTemplate(), medidasEvolucaoPaginaTemplate(), medidasHistoricoTemplate()];
   return '' +
     '<div class="medida-card-flip-wrap">' +
       '<div class="medida-card-flip" onclick="acaoCliqueMedidaCard(event)">' +
-        '<div class="medida-card-track" style="transform:translateX(-' + (pagina * 50) + '%)">' +
+        '<div class="medida-card-track" style="transform:translateX(-' + (pagina * 100 / 3) + '%)">' +
           paginas.map((html) => '<div class="medida-card-page">' + html + "</div>").join("") +
         "</div>" +
       "</div>" +
       '<div class="medida-card-dots">' +
-        [0, 1].map((i) => '<button class="medida-card-dot' + (pagina === i ? " active" : "") + '" aria-label="' + MEDIDA_CARD_PAGINA_LABELS[i] + '" onclick="acaoIrParaPaginaMedida(' + i + ')"></button>').join("") +
+        [0, 1, 2].map((i) => '<button class="medida-card-dot' + (pagina === i ? " active" : "") + '" aria-label="' + MEDIDA_CARD_PAGINA_LABELS[i] + '" onclick="acaoIrParaPaginaMedida(' + i + ')"></button>').join("") +
       "</div>" +
     "</div>";
 }
-// Toque em qualquer lugar do card avança pra próxima página (cicla 0 → 1 → 0) -- exceto em botões, abas,
-// selects e outros controles interativos das páginas (formulário tem os campos de registro/"Histórico de
-// registros"; histórico tem o filtro/editar-remover/os campos de data), que devem executar sua própria
-// ação em vez de virar a página -- mesmo padrão de acaoCliqueBioCard().
+// Toque em qualquer lugar do card avança pra próxima página (cicla 0 → 1 → 2 → 0) -- exceto em botões,
+// abas, selects e outros controles interativos das páginas (formulário tem os campos de registro/
+// "Histórico de registros"; Evolução do Peso tem os campos de data do filtro; histórico tem o
+// filtro/editar-remover/os campos de data), que devem executar sua própria ação em vez de virar a página
+// -- mesmo padrão de acaoCliqueBioCard().
 function acaoCliqueMedidaCard(event) {
   if (event.target.closest("button, a, select, input")) return;
-  acaoIrParaPaginaMedida((state.medidaCardPagina + 1) % 2);
+  acaoIrParaPaginaMedida((state.medidaCardPagina + 1) % 3);
 }
 // Vai pra uma página específica do card de Medidas e Aferições -- usado pelo toque no card
 // (acaoCliqueMedidaCard()) e pelos tracinhos indicadores/botão "Histórico de registros"
@@ -8295,23 +8303,24 @@ function acaoIrParaPaginaMedida(pagina) {
   const flip = document.querySelector(".medida-card-flip");
   const track = flip ? flip.querySelector(".medida-card-track") : null;
   if (!track) { state.medidaCardPagina = pagina; render(); return; }
-  track.style.transform = "translateX(-" + (pagina * 50) + "%)";
+  track.style.transform = "translateX(-" + (pagina * 100 / 3) + "%)";
   let comitado = false;
   const commit = () => { if (comitado) return; comitado = true; state.medidaCardPagina = pagina; render(); };
   track.addEventListener("transitionend", commit, { once: true });
   setTimeout(commit, 450); // salvaguarda (mesmo motivo do análogo em acaoAlternarFlipNutriente())
 }
-// Harmoniza a altura das 2 páginas do card de Medidas e Aferições -- chamado a cada render() (ver função
+// Harmoniza a altura das 3 páginas do card de Medidas e Aferições -- chamado a cada render() (ver função
 // render()). MESMO pedido do usuário aplicado ao card de Bioimpedância e Calorimetria (ver
-// ajustarAlturaBioCard()): a altura usada é o tamanho NATURAL do formulário (página 0) -- a única página
-// de conteúdo "de verdade" aqui --, e o Histórico (página 1) conforma-se a essa MESMA altura, com rolagem
-// própria pra caber sua lista (ver .medida-card-history-scroll) em vez de esticar o card.
+// ajustarAlturaBioCard()): a altura usada é a MAIOR entre o tamanho NATURAL do formulário (página 0) e da
+// Evolução do Peso (página 1) -- o Histórico (página 2) fica de fora dessa conta, já que sua lista pode
+// crescer bastante (é ele que ganha rolagem própria, ver .medida-card-history-scroll, em vez de esticar o
+// card).
 function ajustarAlturaMedidaCard() {
   const flip = document.querySelector(".medida-card-flip");
   if (!flip) return;
   const secoes = flip.querySelectorAll(".medida-card-page > .medidas-section");
-  if (!secoes.length) return;
-  const altura = secoes[0].scrollHeight;
+  if (secoes.length < 2) return;
+  const altura = Math.max(secoes[0].scrollHeight, secoes[1].scrollHeight);
   flip.style.height = altura + "px";
   secoes.forEach((secao) => { secao.style.height = altura + "px"; });
 }
@@ -8571,7 +8580,6 @@ function treinosTabTemplate() {
 function fullHomeTemplate() {
   if (state.activeTab === "medidas") return homeTabsTemplate() + medidasTabTemplate();
   if (state.activeTab === "treinos") return homeTabsTemplate() + treinosTabTemplate();
-  if (state.activeTab === "evolucao") return homeTabsTemplate() + evolucaoTabTemplate();
   return homeTabsTemplate() + nutricaoTabTemplate();
 }
 
@@ -9174,26 +9182,6 @@ function evolucaoPeriodoFiltroTemplate() {
     "</div>" +
     '<p class="imc-empty" style="margin-top:8px">Esse período afeta o card de Peso logo abaixo.</p>';
 }
-function evolucaoPesoCardTemplate() {
-  const serie = evolucaoPesoSerie();
-  const tendencia = evolucaoTendenciaPeso(serie);
-  return '' +
-    '<div class="medidas-section">' +
-      '<h2 class="medidas-section-title">' + icon("trend") + " Peso</h2>" +
-      (tendencia ?
-        evolucaoLineChartSvg(serie, { cor: "#1c4d3e", unidade: " kg", digits: 1, ariaLabel: "Peso ao longo do período" }) +
-        '<div class="evolucao-stats-row">' +
-          '<div class="evolucao-stat"><span class="evolucao-stat-label">Inicial</span><span class="evolucao-stat-value">' + formatNumber(tendencia.inicial, 1) + " kg</span></div>" +
-          '<div class="evolucao-stat"><span class="evolucao-stat-label">Atual</span><span class="evolucao-stat-value">' + formatNumber(tendencia.atual, 1) + " kg</span></div>" +
-          '<div class="evolucao-stat"><span class="evolucao-stat-label">Variação</span><span class="evolucao-stat-value">' + (tendencia.variacaoTotal > 0 ? "+" : "") + formatNumber(tendencia.variacaoTotal, 1) + " kg</span></div>" +
-          '<div class="evolucao-stat"><span class="evolucao-stat-label">Ritmo</span><span class="evolucao-stat-value">' + (tendencia.kgPorSemana > 0 ? "+" : "") + formatNumber(tendencia.kgPorSemana, 2) + " kg/semana</span></div>" +
-        "</div>" +
-        evolucaoPesoObjetivoNotaTemplate(tendencia)
-        :
-        '<p class="imc-empty">Registre pelo menos 2 pesagens (em Medidas e Aferições) dentro do período selecionado para ver o gráfico de evolução do peso.</p>'
-      ) +
-    "</div>";
-}
 // Card fixo (ver comentário de evolucaoBioimpedanciaSerie()), mostra uma mensagem no lugar do gráfico
 // quando ainda não há dados suficientes. Não mora mais na aba Evolução -- a pedido do usuário, virou a
 // página central do card virável de Bioimpedância e Calorimetria, na aba Medidas (ver
@@ -9223,24 +9211,47 @@ function evolucaoComposicaoCardTemplate() {
       ) +
     "</div>";
 }
-// Aba "Evolução" -- ver homeTabsTemplate()/fullHomeTemplate(). O card de Aderência à meta calórica que
-// ficava aqui foi movido pro verso do card "Seu resumo de hoje" -- ver
-// resumoAderenciaCardTemplate()/summaryCardFlipWrapperTemplate() -- e o card de Composição corporal
-// também "mudou de casa", pra página central do card virável de Bioimpedância e Calorimetria, na aba
-// Medidas (ver bioimpedanciaCardFlipWrapperTemplate()). Só resta o card de Peso.
-function evolucaoTabTemplate() {
+// Página central (entre Medidas e Aferições/registros de hoje e Histórico) do card virável de Medidas e
+// Aferições -- ver medidasCardFlipWrapperTemplate(). Era a aba "Evolução" do menu superior (ver
+// homeTabsTemplate()/fullHomeTemplate()); o card de Aderência à meta calórica que também morava lá já
+// tinha sido movido pro verso do card "Seu resumo de hoje" (ver resumoAderenciaCardTemplate()) e o de
+// Composição corporal pra página central do card de Bioimpedância e Calorimetria (ver
+// evolucaoComposicaoCardTemplate() acima) -- só restava o card de Peso, então a pedido do usuário a aba
+// inteira "mudou de casa" pra cá (e foi removida do menu) em vez de virar uma aba com um card só.
+// Reaproveita evolucaoPeriodoFiltroTemplate()/evolucaoPesoSerie()/evolucaoTendenciaPeso()/
+// evolucaoLineChartSvg()/evolucaoPesoObjetivoNotaTemplate() -- MESMA lógica de antes (incluindo os 2 níveis
+// de estado vazio: sem nenhum peso registrado vs. peso registrado mas sem pontos suficientes no período
+// filtrado) --, só reembalada num único <section class="medidas-section"> (em vez de <main> com título
+// "Evolução" + card "Peso" separados) pra bater com o padrão das outras páginas do card
+// (medidasFormTemplate()/medidasHistoricoTemplate()).
+function medidasEvolucaoPaginaTemplate() {
   const temAlgumDado = state.medidas.some((m) => m.tipo === "peso");
   if (!temAlgumDado) {
-    return '<main><div class="medidas-section">' +
-      '<h2 class="medidas-section-title">' + icon("trend") + " Evolução</h2>" +
-      '<div class="meal-empty"><div class="meal-empty-icon">' + icon("trend") + "</div><p>Ainda não há dados suficientes</p><p>Registre seu peso para começar a ver sua evolução aqui.</p></div>" +
-    "</div></main>";
+    return '' +
+      '<section class="medidas-section">' +
+        '<h2 class="medidas-section-title">' + icon("trend") + " Evolução do Peso</h2>" +
+        '<div class="meal-empty"><div class="meal-empty-icon">' + icon("trend") + "</div><p>Ainda não há dados suficientes</p><p>Registre seu peso para começar a ver sua evolução aqui.</p></div>" +
+      "</section>";
   }
-  return '<main>' +
-    '<div class="medidas-section-title-row" style="margin:24px 0 0"><h2 class="medidas-section-title" style="margin:0">' + icon("trend") + " Evolução</h2></div>" +
-    evolucaoPeriodoFiltroTemplate() +
-    evolucaoPesoCardTemplate() +
-  "</main>";
+  const serie = evolucaoPesoSerie();
+  const tendencia = evolucaoTendenciaPeso(serie);
+  return '' +
+    '<section class="medidas-section">' +
+      '<h2 class="medidas-section-title">' + icon("trend") + " Evolução do Peso</h2>" +
+      evolucaoPeriodoFiltroTemplate() +
+      (tendencia ?
+        evolucaoLineChartSvg(serie, { cor: "#1c4d3e", unidade: " kg", digits: 1, ariaLabel: "Peso ao longo do período" }) +
+        '<div class="evolucao-stats-row">' +
+          '<div class="evolucao-stat"><span class="evolucao-stat-label">Inicial</span><span class="evolucao-stat-value">' + formatNumber(tendencia.inicial, 1) + " kg</span></div>" +
+          '<div class="evolucao-stat"><span class="evolucao-stat-label">Atual</span><span class="evolucao-stat-value">' + formatNumber(tendencia.atual, 1) + " kg</span></div>" +
+          '<div class="evolucao-stat"><span class="evolucao-stat-label">Variação</span><span class="evolucao-stat-value">' + (tendencia.variacaoTotal > 0 ? "+" : "") + formatNumber(tendencia.variacaoTotal, 1) + " kg</span></div>" +
+          '<div class="evolucao-stat"><span class="evolucao-stat-label">Ritmo</span><span class="evolucao-stat-value">' + (tendencia.kgPorSemana > 0 ? "+" : "") + formatNumber(tendencia.kgPorSemana, 2) + " kg/semana</span></div>" +
+        "</div>" +
+        evolucaoPesoObjetivoNotaTemplate(tendencia)
+        :
+        '<p class="imc-empty">Registre pelo menos 2 pesagens (em Medidas e Aferições) dentro do período selecionado para ver o gráfico de evolução do peso.</p>'
+      ) +
+    "</section>";
 }
 
 // Registro "virtual" do dia de HOJE, ainda em andamento -- NUNCA salvo em state.diarioKcal, recalculado
