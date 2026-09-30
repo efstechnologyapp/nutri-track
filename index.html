@@ -306,6 +306,11 @@ svg{ display: block; }
 .analise-consumo-suplementar{ background:#f2f6ef; border:1px solid #dce5db; border-radius:14px; padding:12px 14px; }
 .analise-consumo-suplementar strong{ color:#1b3f34; }
 .analise-consumo-fonte{ margin-top:4px; }
+.analise-consumo-chart{ display:block; width:100%; height:150px; margin-top:16px; overflow:visible; }
+.analise-consumo-chart-ref{ stroke-width:1.5; stroke-dasharray:4 3; opacity:.55; }
+.analise-consumo-chart-ref-label{ font-weight:700; }
+.analise-consumo-chart-legenda{ margin-top:6px; display:flex; align-items:center; gap:6px; }
+.analise-consumo-chart-legenda .icon{ width:13px; height:13px; flex-shrink:0; }
 
 .dashboard-grid{ display:grid; gap:24px; grid-template-columns:1fr; }
 @media (min-width: 1280px){ .dashboard-grid{ grid-template-columns:minmax(0,1fr) 410px; } }
@@ -4882,6 +4887,11 @@ function calcularAnaliseConsumo(key, de, ate) {
   const real = somaReal / registros.length;
   const esperado = somaEsperado / registros.length;
   const percentual = esperado > 0 ? (real / esperado) * 100 : 0;
+  // Pedido do usuário: um gráfico do consumo dia a dia dentro do período escolhido (ver
+  // analiseConsumoDiarioChartSvg()) -- mesmos "dias encerrados" já usados pra calcular a média acima,
+  // só que ponto a ponto em vez de agregados. Ordenado por data (os registros do Diário de Kcal já
+  // costumam vir nessa ordem, mas ordena de novo aqui pra não depender disso).
+  const serieDiaria = registros.map((r) => ({ date: r.date, valor: r[key] || 0 })).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
   const ehSodio = key === "sodio";
   const ref = NUTRIENTE_ANALISE_REF[key] || {};
   // Faixa de classificação -- pra sódio, o "esperado" é um TETO (mais é pior); pros demais, um PISO
@@ -4900,7 +4910,7 @@ function calcularAnaliseConsumo(key, de, ate) {
   } else {
     faixa = "bem_abaixo";
   }
-  return { temDados: true, dias: registros.length, real, esperado, percentual, faixa, ehSodio, ref };
+  return { temDados: true, dias: registros.length, real, esperado, percentual, faixa, ehSodio, ref, serieDiaria };
 }
 // Mesma regra de casas decimais já usada nos cards (nutrientCardsTemplate()/micronutrientCardsTemplate()).
 function nutrienteAnaliseDigits(key) {
@@ -4938,6 +4948,46 @@ const ANALISE_FAIXA_TEXTO = {
 // Faixas "boas" (verde) x "de atenção" (vermelho/laranja) -- pra sódio, "adequado" é ficar ATÉ o teto;
 // pros demais, "adequado" é bater ou passar a referência (exceto se passar do UL, aí volta a ser atenção).
 function analiseFaixaEhBoa(faixa) { return faixa === "adequado"; }
+// Pedido do usuário: um gráfico (SVG, mesma técnica sem biblioteca externa já usada no resto do app -- ver
+// evolucaoLineChartSvg()/resumoAderenciaChartSvg()) mostrando o nível de consumo do nutriente EM CADA DIA
+// do período escolhido na Análise de Consumo. Uma barra por dia (cor do próprio nutriente, meta.color,
+// mesma identidade visual já usada nos cards/no verso deles) e uma linha tracejada na altura da
+// referência diária (meta pessoal pros macros, IDR pros micros -- ou o limite recomendado no caso do
+// sódio), pra comparar visualmente cada dia contra ela sem precisar ler os números.
+// Cap de dias mostrados (ANALISE_CONSUMO_CHART_MAX_BARRAS): um período escolhido livremente pela pessoa
+// pode abranger muitos meses de dias encerrados -- além desse limite as barras ficariam finas demais pra
+// ler, então mostra só os últimos N dias do período (mais recentes), com um aviso na legenda de que o
+// gráfico foi recortado.
+const ANALISE_CONSUMO_CHART_MAX_BARRAS = 45;
+function analiseConsumoDiarioChartSvg(serieDiaria, esperado, meta, digits, ehSodio) {
+  const recortado = serieDiaria.length > ANALISE_CONSUMO_CHART_MAX_BARRAS;
+  const pontos = recortado ? serieDiaria.slice(-ANALISE_CONSUMO_CHART_MAX_BARRAS) : serieDiaria;
+  const W = 320, H = 150, PAD_L = 32, PAD_R = 10, PAD_T = 16, PAD_B = 20;
+  const innerW = W - PAD_L - PAD_R, innerH = H - PAD_T - PAD_B;
+  const baseY = PAD_T + innerH;
+  const maiorValor = Math.max.apply(null, pontos.map((p) => p.valor).concat([esperado || 0, 1]));
+  const maxEscala = maiorValor * 1.15;
+  const escala = innerH / maxEscala;
+  const larguraBarra = Math.max(2, innerW / pontos.length - 2);
+  const barras = pontos.map((p, i) => {
+    const cx = PAD_L + (i + 0.5) * (innerW / pontos.length);
+    const alt = Math.max(1, p.valor * escala);
+    const rotulo = esc(dataCurta(p.date)) + ": " + formatNumber(p.valor, digits) + " " + meta.unit;
+    return '<rect x="' + (cx - larguraBarra / 2).toFixed(1) + '" y="' + (baseY - alt).toFixed(1) + '" width="' + larguraBarra.toFixed(1) + '" height="' + alt.toFixed(1) + '" rx="' + Math.min(2, larguraBarra / 2).toFixed(1) + '" fill="' + meta.color + '"><title>' + rotulo + "</title></rect>";
+  }).join("");
+  const yRef = baseY - Math.max(0, Math.min(innerH, (esperado || 0) * escala));
+  const labelRef = (ehSodio ? "Limite " : "Meta/IDR ") + formatNumber(esperado, digits) + " " + meta.unit;
+  return '' +
+    '<svg class="analise-consumo-chart" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="Consumo diário de ' + esc(meta.label) + ' em cada dia do período escolhido, comparado à referência">' +
+      '<line x1="' + PAD_L + '" x2="' + (W - PAD_R) + '" y1="' + baseY + '" y2="' + baseY + '" class="evolucao-chart-grid"/>' +
+      (esperado > 0 ? '<line x1="' + PAD_L + '" x2="' + (W - PAD_R) + '" y1="' + yRef.toFixed(1) + '" y2="' + yRef.toFixed(1) + '" class="analise-consumo-chart-ref" stroke="' + meta.color + '"><title>' + esc(labelRef) + "/dia</title></line>" : "") +
+      barras +
+      (esperado > 0 ? '<text x="' + (W - PAD_R) + '" y="' + Math.max(9, yRef - 4).toFixed(1) + '" text-anchor="end" class="evolucao-chart-axis-label analise-consumo-chart-ref-label" fill="' + meta.color + '">' + esc(labelRef) + "</text>" : "") +
+      '<text x="' + PAD_L + '" y="' + (H - 4) + '" class="evolucao-chart-axis-label">' + esc(dataCurta(pontos[0].date)) + "</text>" +
+      '<text x="' + (W - PAD_R) + '" y="' + (H - 4) + '" text-anchor="end" class="evolucao-chart-axis-label">' + esc(dataCurta(pontos[pontos.length - 1].date)) + "</text>" +
+    "</svg>" +
+    '<p class="imc-empty analise-consumo-chart-legenda">' + icon("trend") + " Consumo de " + esc(meta.label).toLowerCase() + " em cada dia encerrado do período" + (recortado ? " (últimos " + ANALISE_CONSUMO_CHART_MAX_BARRAS + " dias do período escolhido)" : "") + " -- a linha tracejada marca a referência diária.</p>";
+}
 // Monta o texto completo da análise (mesma estrutura das análises dadas conversacionalmente: os números,
 // o que isso significa -- distinguindo "abaixo da meta" de "carência clínica" --, sugestões de alimentos
 // já reconhecidos pelo app, uma nota sobre suplementação, e a fonte).
@@ -5007,10 +5057,16 @@ function analiseConsumoNarrativaTemplate(key, resultado) {
 
   const nota = '<p class="imc-empty analise-consumo-disclaimer">Essa é uma análise de referência geral, a partir de fontes científicas reconhecidas -- não substitui avaliação individualizada com um médico ou nutricionista, principalmente se você tiver alguma condição de saúde específica.</p>';
   const fonteTexto = info.fonte ? '<p class="imc-empty analise-consumo-fonte">Fontes: ' + esc(info.fonte) + '</p>' : "";
+  // Pedido do usuário: o gráfico de consumo dia a dia (ver analiseConsumoDiarioChartSvg()) entra bem aqui,
+  // entre o 1º parágrafo da conclusão (os números/médias do período, paragrafoNumeros) e o 2º (o que isso
+  // significa, paragrafoSignificado) -- antes de explicar o que a média significa, mostra visualmente como
+  // ela se formou dia a dia.
+  const graficoDiario = resultado.serieDiaria && resultado.serieDiaria.length ? analiseConsumoDiarioChartSvg(resultado.serieDiaria, resultado.esperado, meta, digits, resultado.ehSodio) : "";
 
   return '' +
     '<div class="analise-consumo-badge analise-consumo-badge-' + (boa ? "boa" : "atencao") + '">' + icon(boa ? "check" : "zap") + " " + faixaTitulo + "</div>" +
     "<p>" + paragrafoNumeros + "</p>" +
+    graficoDiario +
     "<p>" + paragrafoSignificado + "</p>" +
     paragrafoAlimentos +
     paragrafoQuantoSuplementar +
