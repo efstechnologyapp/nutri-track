@@ -1633,6 +1633,16 @@ const foodLibrary = [
   { terms: ["tomate"], label: "Tomate", baseAmount: "1 unidade (100 g)", values: { calories: 18, protein: 0.9, carbs: 3.9, fat: 0.2, fiber: 1.2, vitA: 40, vitC: 14, vitD: 0, calcio: 10, ferro: 0.3, magnesio: 11, potassio: 240, zinco: 0.2, sodio: 5, vitB12: 0 }, grams: 100 },
   { terms: ["cenoura"], label: "Cenoura crua", baseAmount: "100 g", values: { calories: 41, protein: 0.9, carbs: 10, fat: 0.2, fiber: 2.8, vitA: 830, vitC: 6, vitD: 0, calcio: 33, ferro: 0.3, magnesio: 12, potassio: 320, zinco: 0.2, sodio: 35, vitB12: 0 }, grams: 100 },
   { terms: ["alface"], label: "Alface", baseAmount: "50 g", values: { calories: 7, protein: 0.7, carbs: 1.2, fat: 0.1, fiber: 0.7, vitA: 75, vitC: 5, vitD: 0, calcio: 18, ferro: 0.4, magnesio: 7, potassio: 100, zinco: 0.1, sodio: 5, vitB12: 0 }, grams: 50 },
+  // Pedido do usuário. Fonte: TACO (Alho, cru, 100 g: 113 kcal, 7 g proteína, 23,9 g carboidratos, 0,2 g
+  // gordura, 4,3 g fibra) -- demais micronutrientes (cálcio/ferro/magnésio/potássio/zinco/sódio/vitamina C)
+  // cruzados com USDA (garlic, raw), por não constarem completos na TACO consultada. Quantidade-base
+  // pequena (poucos dentes), igual ao padrão já usado pra temperos/condimentos (ver "Azeite de oliva" acima).
+  { terms: ["alho"], label: "Alho", baseAmount: "3 dentes (9 g)", values: { calories: 10, protein: 0.6, carbs: 2.2, fat: 0, fiber: 0.4, vitA: 0, vitC: 0.7, vitD: 0, calcio: 1.3, ferro: 0.1, magnesio: 1.9, potassio: 30, zinco: 0.1, sodio: 0.5, vitB12: 0 }, grams: 9 },
+  // Pedido do usuário. Fonte: TACO (Cebola, crua, 100 g: 39 kcal, 1,7 g proteína, 8,9 g carboidratos, 0,1 g
+  // gordura, 2,2 g fibra) -- demais micronutrientes aproximados por composição típica de alimentos
+  // similares (cebolinha/alho-poró na própria TACO), já que a fonte consultada não trouxe a tabela
+  // completa. Quantidade-base de "1 unidade média", mesmo padrão do Tomate acima.
+  { terms: ["cebola"], label: "Cebola", baseAmount: "1 unidade média (100 g)", values: { calories: 39, protein: 1.7, carbs: 8.9, fat: 0.1, fiber: 2.2, vitA: 1, vitC: 6, vitD: 0, calcio: 19, ferro: 0.2, magnesio: 7, potassio: 166, zinco: 0.2, sodio: 3, vitB12: 0 }, grams: 100 },
   { terms: ["salada mista", "salada"], label: "Salada mista", baseAmount: "100 g", values: { calories: 25, protein: 1.2, carbs: 4, fat: 0.5, fiber: 1.8, vitA: 150, vitC: 15, vitD: 0, calcio: 25, ferro: 0.5, magnesio: 12, potassio: 200, zinco: 0.2, sodio: 40, vitB12: 0 }, grams: 100 },
   { terms: ["banana"], label: "Banana", baseAmount: "1 unidade", values: { calories: 90, protein: 1.1, carbs: 23, fat: 0.3, fiber: 2.6, vitA: 3, vitC: 9, vitD: 0, calcio: 6, ferro: 0.3, magnesio: 30, potassio: 380, zinco: 0.2, sodio: 1, vitB12: 0 }, count: 1 },
   { terms: ["maca"], label: "Maçã", baseAmount: "1 unidade (130 g)", values: { calories: 68, protein: 0.3, carbs: 18, fat: 0.2, fiber: 3, vitA: 4, vitC: 6, vitD: 0, calcio: 8, ferro: 0.2, magnesio: 6, potassio: 150, zinco: 0.1, sodio: 2, vitB12: 0 }, count: 1 },
@@ -2449,11 +2459,13 @@ const state = {
   sidebarOpen: false,
   activeTab: "nutricao", // "nutricao" | "medidas" | "treinos"
   // Tipo de medida escolhido na página de Evolução, dentro do card de Medidas e Aferições -- ver
-  // acaoSelecionarTipoEvolucao()/medidasEvolucaoPaginaTemplate(). Qualquer chave de medidaTipos (peso,
-  // glicemia, pressão etc.) -- pedido do usuário: poder ver a evolução de QUALQUER tipo de aferição, não
-  // só peso. Começa em "peso" (era o único tipo mostrado ali antes desse seletor existir). Fica só na
-  // memória, mesmo espírito de historyDiaExpandidoMedidas/medidaCardPagina acima.
-  evolucaoMedidaTipo: "peso",
+  // acaoSelecionarTipoEvolucao()/medidasEvolucaoPaginaTemplate(). "" (nenhum escolhido ainda) ou qualquer
+  // chave de medidaTipos (peso, glicemia, pressão etc.) -- pedido do usuário: poder ver a evolução de
+  // QUALQUER tipo de aferição, não só peso. Começa em "" (SEM pré-seleção, mesmo padrão do "Tipo de
+  // medição" do formulário de registro -- ver medidasFormTemplate()/state.medidaTipo -- pedido explícito
+  // do usuário: nada vem pré-selecionado, a pessoa escolhe o tipo ativamente). Fica só na memória, mesmo
+  // espírito de historyDiaExpandidoMedidas/medidaCardPagina acima.
+  evolucaoMedidaTipo: "",
   // Filtro de período (data "de"/"até") da página de Evolução, dentro do card de Medidas e Aferições --
   // ver evolucaoDataNoFiltro()/evolucaoPeriodoFiltroTemplate()/medidasEvolucaoPaginaTemplate(). "" = sem
   // limite (mesmo padrão de medidasFiltroDe/medidasFiltroAte acima). Afeta o tipo de medida escolhido
@@ -9285,14 +9297,15 @@ function acaoAlternarResumoCard(virado) {
 // tipo de medida em vez de métrica de bioimpedância. Pressão arterial não entra aqui (tem seu próprio
 // gráfico de 2 linhas, sempre em números inteiros de mmHg -- ver evolucaoPressaoChartSvg()).
 const EVOLUCAO_MEDIDA_DIGITS = { peso: 1, pescoco: 1, cintura: 1, batimentos: 0, glicemia: 0, temperatura: 1, saturacao: 0 };
-// Seletor de tipo de medida da página de Evolução -- mesmo padrão visual/de opções do "Tipo de medição" do
-// formulário de registro (ver medidasFormTemplate()), mas sem a opção vazia "Selecione...": aqui sempre há
-// um tipo escolhido (começa em "peso", ver state.evolucaoMedidaTipo), então não faz sentido um estado
-// "nenhum selecionado". Pedido do usuário: poder ver a evolução de QUALQUER tipo de aferição registrado,
-// escolhido antes dos campos de período (ver medidasEvolucaoPaginaTemplate()).
+// Seletor de tipo de medida da página de Evolução -- MESMO padrão visual/de opções do "Tipo de medição" do
+// formulário de registro, incluindo a opção vazia "Selecione..." (ver medidasFormTemplate()/state.medidaTipo):
+// pedido explícito do usuário, nada vem pré-selecionado aqui (ver state.evolucaoMedidaTipo). Poder ver a
+// evolução de QUALQUER tipo de aferição registrado, escolhido antes dos campos de período (ver
+// medidasEvolucaoPaginaTemplate()).
 function medidasEvolucaoTipoSelectorTemplate() {
   return '<div style="margin-bottom:12px"><label class="field-label">Tipo de aferição</label>' +
     '<select class="field-input" onchange="acaoSelecionarTipoEvolucao(this.value)">' +
+      '<option value="">Selecione...</option>' +
       Object.keys(medidaTipos).map((key) => '<option value="' + key + '"' + (state.evolucaoMedidaTipo === key ? " selected" : "") + ">" + medidaTipos[key].label + "</option>").join("") +
     "</select></div>";
 }
@@ -9351,8 +9364,18 @@ function evolucaoComposicaoCardTemplate() {
 // quando perguntado (ver evolucaoMedidaSerie()). Peso continua com sua nota de objetivo
 // (evolucaoPesoObjetivoNotaTemplate()); os demais tipos mostram a nota de classificação clínica
 // (evolucaoMedidaClassificacaoNotaTemplate()), reaproveitando a MESMA referência já usada no histórico.
+// Pedido do usuário: o seletor NÃO vem com nenhum tipo pré-selecionado (state.evolucaoMedidaTipo começa em
+// "") -- sem tipo escolhido, mostra só o seletor + um pedido pra escolher, sem período/gráfico ainda.
 function medidasEvolucaoPaginaTemplate() {
-  const tipo = state.evolucaoMedidaTipo || "peso";
+  const tipo = state.evolucaoMedidaTipo;
+  if (!tipo) {
+    return '' +
+      '<section class="medidas-section">' +
+        '<h2 class="medidas-section-title">' + icon("trend") + " Evolução</h2>" +
+        medidasEvolucaoTipoSelectorTemplate() +
+        '<div class="meal-empty"><div class="meal-empty-icon">' + icon("trend") + "</div><p>Escolha um tipo de aferição</p><p>Selecione acima qual tipo de medida (peso, glicemia, pressão arterial etc.) você quer ver a evolução.</p></div>" +
+      "</section>";
+  }
   const meta = medidaTipos[tipo];
   const temAlgumDado = state.medidas.some((m) => m.tipo === tipo);
   if (!temAlgumDado) {
