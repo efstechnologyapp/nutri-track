@@ -654,8 +654,10 @@ svg{ display: block; }
    resumo de sempre, 2) Composição corporal (que morava na aba Evolução) e 3) Histórico de registros (que
    era uma tela separada). Como o flip 3D (rotateY) só funciona bem pra 2 lados, aqui a virada é um slide
    horizontal (translateX) da faixa com as 3 páginas -- ver bioimpedanciaCardFlipWrapperTemplate()/
-   acaoIrParaPaginaBio(). A altura do card acompanha a página ativa (ver ajustarAlturaBioCard()), já que
-   cada página pode ter uma altura bem diferente (o Histórico, por exemplo, pode ficar bem mais alto). */
+   acaoIrParaPaginaBio(). As 3 páginas usam SEMPRE a MESMA altura fixa (pedido do usuário: "a página do
+   Histórico do mesmo tamanho das demais... todas as páginas harmoniosamente simétricas") -- ver
+   ajustarAlturaBioCard(). A página de Histórico, que pode ter uma lista bem mais longa que as outras
+   duas, ganha rolagem própria dentro dessa mesma altura em vez de esticar o card (ver .bio-history-scroll). */
 .bio-card-flip-wrap{ margin-top:24px; display:flex; flex-direction:column; align-items:center; gap:8px; }
 .bio-card-flip{ position:relative; width:100%; overflow:hidden; cursor:pointer; transition:height .4s cubic-bezier(.4,.05,.2,1); }
 /* largura de 300% (3 páginas) -- o translateX de cada página é sempre um múltiplo de 33,3333% (1/3 da
@@ -664,7 +666,13 @@ svg{ display: block; }
    próprio elemento, não à do pai -- por isso não pode ser só "-100%" por página aqui). */
 .bio-card-track{ display:flex; width:300%; transition:transform .4s cubic-bezier(.4,.05,.2,1); }
 .bio-card-page{ flex:0 0 33.3333%; min-width:0; }
-.bio-card-page > .medidas-section{ margin-top:0; box-shadow:none; }
+/* Cada página vira um card (.medidas-section) com a MESMA altura fixa, calculada em ajustarAlturaBioCard()
+   e aplicada via style.height diretamente (nunca por CSS 100%/stretch -- isso corromperia a medição do
+   tamanho NATURAL das páginas 0/1 na próxima chamada, virando uma referência circular). display:flex em
+   coluna permite que a página de Histórico (a única cujo conteúdo pode não caber) tenha uma área de
+   rolagem própria que ocupa só o espaço restante abaixo do título/abas -- ver .bio-history-scroll. */
+.bio-card-page > .medidas-section{ margin-top:0; box-shadow:none; display:flex; flex-direction:column; overflow:hidden; }
+.bio-history-scroll{ flex:1; min-height:0; overflow-y:auto; margin-top:14px; padding-right:2px; }
 .bio-card-dots{ display:flex; gap:5px; }
 .bio-card-dot{ height:3px; width:14px; border-radius:999px; background:#d5ddd0; padding:0; border:none; cursor:pointer; transition:background .15s, width .15s; }
 .bio-card-dot.active{ width:20px; background:#4b7048; }
@@ -7675,8 +7683,10 @@ function valoresCalorimetriaLegenda(r) {
 // outro lugar do app (ou em teste) pegaria os dois histéricos misturados, quando antes só existia um dos
 // dois por vez no DOM.
 function historicoListaTemplate(registros, tipoLabel, acaoRemover, acaoEditar, valoresLegenda) {
-  if (!registros.length) return '<p class="imc-empty" style="margin-top:14px">Nenhum registro de ' + tipoLabel.toLowerCase() + " ainda.</p>";
-  return '<div class="bio-history-list" style="margin-top:14px">' + registros.map((r) => {
+  // Sem margin-top próprio aqui -- quem chama (historicoBioimpedanciaTemplate()) envolve o resultado
+  // num wrapper com rolagem própria (.bio-history-scroll) que já cuida desse espaçamento.
+  if (!registros.length) return '<p class="imc-empty">Nenhum registro de ' + tipoLabel.toLowerCase() + " ainda.</p>";
+  return '<div class="bio-history-list">' + registros.map((r) => {
     const legenda = valoresLegenda ? valoresLegenda(r) : null;
     return '<div class="bio-history-item">' +
       '<div class="bio-history-row"><div class="bio-history-left"><span class="bio-history-tipo">' + tipoLabel + " registrada em " + dataCurta(r.date) + "</span>" +
@@ -7698,7 +7708,10 @@ function historicoListaTemplate(registros, tipoLabel, acaoRemover, acaoEditar, v
 // 3ª página do card virável de Bioimpedância e Calorimetria (ver bioimpedanciaCardFlipWrapperTemplate())
 // -- era uma tela separada (state.showHistoricoBioimpedancia), agora é só mais uma página do mesmo card.
 // Sem botão "Voltar" (os tracinhos/o toque no card já levam de volta pra 1ª página -- mesmo padrão dos
-// cards de macro/micronutriente, que também não têm botão de voltar).
+// cards de macro/micronutriente, que também não têm botão de voltar). O título e as abas Bioimpedância/
+// Calorimetria ficam FIXOS no topo; a lista em si entra num wrapper com rolagem própria
+// (.bio-history-scroll) que ocupa o espaço restante dentro da MESMA altura das outras 2 páginas do card
+// (pedido do usuário) -- ver ajustarAlturaBioCard().
 function historicoBioimpedanciaTemplate() {
   const aba = state.historicoAbaAtiva;
   const registrosBio = state.bioimpedancia.slice().sort((a, b) => b.id - a.id);
@@ -7716,9 +7729,11 @@ function historicoBioimpedanciaTemplate() {
         '<button class="bioimpedancia-form-tab' + (aba === "bioimpedancia" ? " active" : "") + '" onclick="acaoTrocarAbaHistoricoBioimpedancia(\'bioimpedancia\')">Bioimpedância</button>' +
         '<button class="bioimpedancia-form-tab' + (aba === "calorimetria" ? " active" : "") + '" onclick="acaoTrocarAbaHistoricoBioimpedancia(\'calorimetria\')">Calorimetria</button>' +
       "</div>" +
-      (aba === "calorimetria"
-        ? historicoListaTemplate(registrosCalo, "Calorimetria", "acaoRemoverCalorimetria", "acaoEditarCalorimetria", valoresCalorimetriaLegenda)
-        : historicoListaTemplate(registrosBio, "Bioimpedância", "acaoRemoverBioimpedancia", "acaoEditarBioimpedancia", valoresBioimpedanciaLegenda)) +
+      '<div class="bio-history-scroll">' +
+        (aba === "calorimetria"
+          ? historicoListaTemplate(registrosCalo, "Calorimetria", "acaoRemoverCalorimetria", "acaoEditarCalorimetria", valoresCalorimetriaLegenda)
+          : historicoListaTemplate(registrosBio, "Bioimpedância", "acaoRemoverBioimpedancia", "acaoEditarBioimpedancia", valoresBioimpedanciaLegenda)) +
+      "</div>" +
     "</section>";
 }
 
@@ -7810,32 +7825,36 @@ function acaoCliqueBioCard(event) {
 // acaoFecharHistoricoBioimpedancia()). Anima no MESMO nó (via transform direto, mesmo truque de
 // acaoAlternarFlipNutriente()/acaoAlternarResumoCard()) e só then confirma o state com um único render()
 // -- necessário porque render() substitui a tela inteira (innerHTML), o que quebraria uma transição CSS
-// em andamento. Como as 3 páginas podem ter alturas bem diferentes (o Histórico, por exemplo, pode ficar
-// bem mais alto que o resumo), a altura do card (.bio-card-flip) também é ajustada junto, pra acompanhar
-// a página de destino -- ver ajustarAlturaBioCard().
+// em andamento. As 3 páginas têm sempre a MESMA altura (ver ajustarAlturaBioCard()), então essa função só
+// precisa animar o slide horizontal -- não mexe mais na altura do card ao trocar de página.
 function acaoIrParaPaginaBio(pagina) {
   if (state.bioCardPagina === pagina) return; // já está nessa página, nada a fazer
   const flip = document.querySelector(".bio-card-flip");
   const track = flip ? flip.querySelector(".bio-card-track") : null;
   if (!track) { state.bioCardPagina = pagina; render(); return; }
-  const paginaAlvo = track.querySelectorAll(".bio-card-page")[pagina];
   track.style.transform = "translateX(-" + (pagina * 100 / 3) + "%)";
-  if (paginaAlvo) flip.style.height = paginaAlvo.scrollHeight + "px";
   let comitado = false;
   const commit = () => { if (comitado) return; comitado = true; state.bioCardPagina = pagina; render(); };
   track.addEventListener("transitionend", commit, { once: true });
   setTimeout(commit, 450); // salvaguarda (mesmo motivo do análogo em acaoAlternarFlipNutriente())
 }
-// Ajusta a altura do card virável de Bioimpedância e Calorimetria pra acompanhar a página ativa no
-// momento (chamado a cada render() -- ver função render()) -- necessário porque as 3 páginas (resumo,
-// Composição corporal, Histórico) podem ter alturas bem diferentes entre si, e o slide horizontal
-// (.bio-card-track) por si só não redimensiona o card conforme a página visível.
+// Harmoniza a altura das 3 páginas do card de Bioimpedância e Calorimetria -- chamado a cada render()
+// (ver função render()). Pedido do usuário: a página de Histórico deve ter o MESMO tamanho das outras 2
+// (com rolagem própria pra ver a lista, ver .bio-history-scroll), e as 3 páginas devem ficar
+// "harmoniosamente simétricas". A altura usada é a maior entre o tamanho NATURAL do resumo (página 0) e
+// da Composição corporal (página 1) -- a página de Histórico fica de fora dessa conta, já que sua lista
+// pode crescer bastante (é ela que ganha rolagem, em vez de esticar o card). Essa altura é aplicada
+// diretamente (style.height) nas 3 seções e no card -- nunca por CSS 100%/stretch, que faria a próxima
+// medição das páginas 0/1 ler de volta a própria altura já forçada (referência circular) em vez do
+// tamanho natural do conteúdo.
 function ajustarAlturaBioCard() {
   const flip = document.querySelector(".bio-card-flip");
   if (!flip) return;
-  const paginas = flip.querySelectorAll(".bio-card-page");
-  const ativa = paginas[state.bioCardPagina || 0] || paginas[0];
-  if (ativa) flip.style.height = ativa.scrollHeight + "px";
+  const secoes = flip.querySelectorAll(".bio-card-page > .medidas-section");
+  if (secoes.length < 2) return;
+  const alturaHarmoniosa = Math.max(secoes[0].scrollHeight, secoes[1].scrollHeight);
+  flip.style.height = alturaHarmoniosa + "px";
+  secoes.forEach((secao) => { secao.style.height = alturaHarmoniosa + "px"; });
 }
 
 function bioimpedanciaSectionTemplate() {
