@@ -2448,16 +2448,23 @@ const state = {
   showNovaSenha: false,
   sidebarOpen: false,
   activeTab: "nutricao", // "nutricao" | "medidas" | "treinos"
-  // Filtro de período (data "de"/"até") da página de Evolução do Peso, dentro do card de Medidas e
-  // Aferições -- ver evolucaoDataNoFiltro()/evolucaoPeriodoFiltroTemplate()/medidasEvolucaoPaginaTemplate().
-  // "" = sem limite (mesmo padrão de medidasFiltroDe/medidasFiltroAte acima). Morava numa aba "Evolução"
-  // própria, com mais 2 cards (Aderência à meta calórica, Composição corporal) -- ambos já tinham "mudado
-  // de casa" antes (Aderência foi pro verso do card "Seu resumo de hoje", com seu próprio seletor de
-  // período dia/semana/mês/ano; Composição corporal foi pra página central do card de Bioimpedância e
-  // Calorimetria, sempre fixo -- compara o primeiro com o último registro de TODA a história, não é
-  // afetado por este filtro -- ver evolucaoBioimpedanciaComparacao()) --, e a pedido do usuário o último
-  // card que restava (Peso) também migrou, junto com este filtro que só afeta ele. Fica só na memória,
-  // mesmo espírito de historyDiaExpandidoMedidas/medidaCardPagina acima.
+  // Tipo de medida escolhido na página de Evolução, dentro do card de Medidas e Aferições -- ver
+  // acaoSelecionarTipoEvolucao()/medidasEvolucaoPaginaTemplate(). Qualquer chave de medidaTipos (peso,
+  // glicemia, pressão etc.) -- pedido do usuário: poder ver a evolução de QUALQUER tipo de aferição, não
+  // só peso. Começa em "peso" (era o único tipo mostrado ali antes desse seletor existir). Fica só na
+  // memória, mesmo espírito de historyDiaExpandidoMedidas/medidaCardPagina acima.
+  evolucaoMedidaTipo: "peso",
+  // Filtro de período (data "de"/"até") da página de Evolução, dentro do card de Medidas e Aferições --
+  // ver evolucaoDataNoFiltro()/evolucaoPeriodoFiltroTemplate()/medidasEvolucaoPaginaTemplate(). "" = sem
+  // limite (mesmo padrão de medidasFiltroDe/medidasFiltroAte acima). Afeta o tipo de medida escolhido
+  // acima (evolucaoMedidaTipo). Essa página morava numa aba "Evolução" própria, com mais 2 cards
+  // (Aderência à meta calórica, Composição corporal) -- ambos já tinham "mudado de casa" antes (Aderência
+  // foi pro verso do card "Seu resumo de hoje", com seu próprio seletor de período dia/semana/mês/ano;
+  // Composição corporal foi pra página central do card de Bioimpedância e Calorimetria, sempre fixo --
+  // compara o primeiro com o último registro de TODA a história, não é afetado por este filtro -- ver
+  // evolucaoBioimpedanciaComparacao()) --, e a pedido do usuário o último card que restava (Peso, hoje
+  // generalizado pra qualquer tipo) também migrou, junto com este filtro. Fica só na memória, mesmo
+  // espírito de historyDiaExpandidoMedidas/medidaCardPagina acima.
   evolucaoFiltroDe: "",
   evolucaoFiltroAte: "",
   altura: readStorage(CHAVE_ALTURA, null), // cm
@@ -8262,7 +8269,7 @@ function medidasHistoricoTemplate() {
 
 // Rótulos dos 3 tracinhos indicadores (aria-label de cada .medida-card-dot) -- ver
 // medidasCardFlipWrapperTemplate().
-const MEDIDA_CARD_PAGINA_LABELS = ["Ver formulário de Medidas e Aferições", "Ver Evolução do Peso", "Ver Histórico de Medidas e Aferições"];
+const MEDIDA_CARD_PAGINA_LABELS = ["Ver formulário de Medidas e Aferições", "Ver Evolução", "Ver Histórico de Medidas e Aferições"];
 // Envolve as 3 páginas do card de Medidas e Aferições (formulário/registros de hoje, Evolução do Peso --
 // que "mudou de casa" da antiga aba Evolução, ver medidasEvolucaoPaginaTemplate() -- e Histórico de
 // registros -- pedido do usuário: "o card de medidas no tamanho padrão que está o card de bioimpedância
@@ -8834,29 +8841,61 @@ function acaoFiltrarEvolucaoPorData(campo, valor) {
   if (campo === "de") state.evolucaoFiltroDe = valor; else state.evolucaoFiltroAte = valor;
   render();
 }
+// Escolhe qual tipo de medida a página de Evolução mostra -- ver medidasEvolucaoTipoSelectorTemplate()/
+// state.evolucaoMedidaTipo. Não mexe no filtro de período (De/Até), que continua valendo pro tipo
+// recém-escolhido.
+function acaoSelecionarTipoEvolucao(tipo) {
+  state.evolucaoMedidaTipo = tipo;
+  render();
+}
 function evolucaoDataNoFiltro(date) {
   if (state.evolucaoFiltroDe && date < state.evolucaoFiltroDe) return false;
   if (state.evolucaoFiltroAte && date > state.evolucaoFiltroAte) return false;
   return true;
 }
 
-// Série de peso (kg) dentro do período filtrado, a partir dos registros de Medidas e Aferições (tipo
-// "peso") -- é a fonte mais granular de peso do app (pode ter vários registros por dia), diferente do
-// peso "de bioimpedância" (mais esparso, ver evolucaoBioimpedanciaSerie() abaixo). Ordenado do mais
-// antigo pro mais recente, ordem natural de leitura de um gráfico de linha do tempo.
-function evolucaoPesoSerie() {
+// TODOS os registros de Medidas e Aferições do TIPO escolhido que passam no filtro de período atual (ver
+// evolucaoDataNoFiltro()), já ordenados do mais antigo pro mais recente -- fonte tanto de
+// evolucaoMedidaSerie() (pro gráfico/estatísticas) quanto do registro "mais recente do período" usado na
+// nota de classificação clínica (ver evolucaoMedidaClassificacaoNotaTemplate()). Substituiu a antiga
+// evolucaoPesoSerie() (só cobria peso) -- pedido do usuário: poder ver a evolução de qualquer tipo de
+// aferição, escolhido em medidasEvolucaoTipoSelectorTemplate().
+function evolucaoMedidaRegistrosFiltrados(tipo) {
   return state.medidas
-    .filter((m) => m.tipo === "peso" && evolucaoDataNoFiltro(m.date))
-    .map((m) => ({ date: m.date, valor: Number(m.valor), id: m.id }))
-    .filter((p) => !isNaN(p.valor))
+    .filter((m) => m.tipo === tipo && evolucaoDataNoFiltro(m.date))
     .sort((a, b) => (a.date === b.date ? a.id - b.id : a.date < b.date ? -1 : 1));
 }
+// Série numérica (pra gráfico/estatísticas) do tipo escolhido, já filtrada por período -- ver
+// evolucaoMedidaRegistrosFiltrados(). A maioria dos tipos guarda um valor único (kg, cm, mg/dL...), mas
+// Pressão arterial guarda um TEXTO "sistólica/diastólica" (ver medidaTipos.pressao.texto) -- por isso
+// esses viram {date, id, sistolica, diastolica} em vez de {date, id, valor}; quem consome essa série
+// precisa checar meta.texto pra saber qual formato esperar (ver medidasEvolucaoPaginaTemplate()).
+function evolucaoMedidaSerie(tipo) {
+  const meta = medidaTipos[tipo];
+  const registros = evolucaoMedidaRegistrosFiltrados(tipo);
+  if (meta && meta.texto) {
+    return registros.map((m) => {
+      const partes = String(m.valor).split("/");
+      return {
+        date: m.date, id: m.id,
+        sistolica: Number((partes[0] || "").trim().replace(",", ".")),
+        diastolica: Number((partes[1] || "").trim().replace(",", ".")),
+      };
+    }).filter((p) => !isNaN(p.sistolica) && !isNaN(p.diastolica));
+  }
+  return registros
+    .map((m) => ({ date: m.date, id: m.id, valor: Number(String(m.valor).replace(",", ".")) }))
+    .filter((p) => !isNaN(p.valor));
+}
 
-// Resumo da tendência de peso no período: peso inicial/atual, variação total e um ritmo médio (kg por
-// semana) -- calculado de forma simples (variação total dividida pelas semanas decorridas entre o
-// primeiro e o último registro), não uma regressão estatística. É só uma média do período, o suficiente
-// pra dar uma noção de ritmo sem parecer mais precisa do que realmente é.
-function evolucaoTendenciaPeso(serie) {
+// Resumo da tendência de um tipo de medida no período: valor inicial/atual, variação total e um ritmo
+// médio (por semana) -- calculado de forma simples (variação total dividida pelas semanas decorridas
+// entre o primeiro e o último registro), não uma regressão estatística. É só uma média do período, o
+// suficiente pra dar uma noção de ritmo sem parecer mais precisa do que realmente é. Serve pra QUALQUER
+// tipo de valor único (a série tem sempre {date, valor}) -- pressão arterial (2 valores) chama isso 2
+// vezes, uma pra sistólica e outra pra diastólica (ver medidasEvolucaoPaginaTemplate()). Substituiu a
+// antiga evolucaoTendenciaPeso() (kgPorSemana virou porSemana, sem unidade fixa no nome).
+function evolucaoMedidaTendencia(serie) {
   if (serie.length < 2) return null;
   const inicial = serie[0].valor;
   const atual = serie[serie.length - 1].valor;
@@ -8864,31 +8903,49 @@ function evolucaoTendenciaPeso(serie) {
   const dataFinal = new Date(serie[serie.length - 1].date + "T12:00:00");
   const dias = Math.max(1, Math.round((dataFinal - dataInicial) / 86400000));
   const variacaoTotal = atual - inicial;
-  return { inicial: inicial, atual: atual, variacaoTotal: variacaoTotal, kgPorSemana: variacaoTotal / (dias / 7) };
+  return { inicial: inicial, atual: atual, variacaoTotal: variacaoTotal, porSemana: variacaoTotal / (dias / 7) };
 }
 
 // Nota logo abaixo dos números de peso: diz se a tendência do período bate com a direção que o objetivo
 // ATUAL busca (mesmo agrupamento de objetivos usado em diferencaPesoIcone()/diarioKcalMetaAtingida(),
 // aplicado aqui à tendência agregada do período em vez de dia a dia). Usa o objetivo atual (não um
-// congelado por registro, já que a tendência cruza vários dias/registros de uma vez).
+// congelado por registro, já que a tendência cruza vários dias/registros de uma vez). Só faz sentido pra
+// peso (é o único tipo com objetivo/meta no app) -- os demais tipos mostram
+// evolucaoMedidaClassificacaoNotaTemplate() no lugar (ver medidasEvolucaoPaginaTemplate()).
 function evolucaoPesoObjetivoNotaTemplate(tendencia) {
   const chave = state.goals.objetivo;
   if (!chave || !OBJETIVOS_META[chave]) return "";
   const LIMITE_ESTAVEL = 0.05; // kg/semana -- abaixo disso considera "estável" pra fins de comparação com objetivos de equilíbrio
   let bate;
-  if (chave === "emagrecimento" || chave === "definicao") bate = tendencia.kgPorSemana < -LIMITE_ESTAVEL;
-  else if (chave === "ganho_massa") bate = tendencia.kgPorSemana > LIMITE_ESTAVEL;
-  else bate = Math.abs(tendencia.kgPorSemana) <= LIMITE_ESTAVEL * 3; // manutenção/performance/saúde geral: tolera um pouco mais de oscilação natural da balança
+  if (chave === "emagrecimento" || chave === "definicao") bate = tendencia.porSemana < -LIMITE_ESTAVEL;
+  else if (chave === "ganho_massa") bate = tendencia.porSemana > LIMITE_ESTAVEL;
+  else bate = Math.abs(tendencia.porSemana) <= LIMITE_ESTAVEL * 3; // manutenção/performance/saúde geral: tolera um pouco mais de oscilação natural da balança
   return '<p class="evolucao-nota ' + (bate ? "evolucao-nota-positiva" : "evolucao-nota-negativa") + '">' +
     icon(bate ? "check" : "help") + " Tendência " + (bate ? "consistente" : "ainda não consistente") + " com o objetivo atual (" + esc(OBJETIVOS_META[chave].label) + ").</p>";
 }
+// Nota logo abaixo dos números de um tipo de medida (exceto peso, que tem sua própria nota de objetivo
+// acima) -- mostra a classificação clínica do registro MAIS RECENTE do período filtrado, reaproveitando
+// classificarMedida()/legendaMedida()/statusTextoMedida() -- MESMA referência já usada no histórico de
+// Medidas e Aferições (ver medidaHistoryRowTemplate()), agora também aqui. "" quando o tipo não tem
+// classificação (pescoço) ou o registro mais recente não pôde ser classificado (ex.: cintura sem sexo
+// informado no perfil).
+function evolucaoMedidaClassificacaoNotaTemplate(registroMaisRecente) {
+  if (!registroMaisRecente) return "";
+  const classificacao = classificarMedida(registroMaisRecente);
+  if (!classificacao) return "";
+  const legenda = legendaMedida(registroMaisRecente);
+  return '<p class="evolucao-nota" style="background:' + classificacao.corSuave + ";color:" + classificacao.cor + '">' +
+    icon("activity") + " Classificação do registro mais recente do período: " + esc(statusTextoMedida(registroMaisRecente, classificacao)) + "." +
+    (legenda ? " " + esc(legenda) : "") +
+  "</p>";
+}
 
 // TODOS os registros de Bioimpedância (histórico completo, sem filtro de período), ordenados do mais
-// antigo pro mais recente. Pedido do usuário: o card de Composição corporal é FIXO -- diferente do peso
-// (que tem registro quase todo dia e faz sentido filtrar por período), a Bioimpedância é medida com
-// muito menos frequência, então filtrar por um período curto (7/30/90 dias) quase sempre deixava o card
-// sem os 2 registros necessários pra comparar, e ele só aparecia escolhendo "Tudo". Por isso, ao
-// contrário de evolucaoPesoSerie()/evolucaoAderenciaSerie(), esta função IGNORA
+// antigo pro mais recente. Pedido do usuário: o card de Composição corporal é FIXO -- diferente dos
+// demais tipos de medida (que têm registro quase todo dia e faz sentido filtrar por período), a
+// Bioimpedância é medida com muito menos frequência, então filtrar por um período curto (7/30/90 dias)
+// quase sempre deixava o card sem os 2 registros necessários pra comparar, e ele só aparecia escolhendo
+// "Tudo". Por isso, ao contrário de evolucaoMedidaSerie()/evolucaoAderenciaSerie(), esta função IGNORA
 // evolucaoDataNoFiltro()/o filtro de data de propósito -- sempre compara o primeiro com o último
 // registro de toda a história.
 function evolucaoBioimpedanciaSerie() {
@@ -9044,6 +9101,55 @@ function evolucaoLineChartSvg(pontos, opts) {
       '<text x="' + (W - PAD_R) + '" y="' + (H - 4) + '" text-anchor="end" class="evolucao-chart-axis-label">' + esc(dataCurta(pontos[pontos.length - 1].date)) + "</text>" +
     "</svg>";
 }
+// Gráfico de linha em SVG com 2 séries (sistólica e diastólica) pra pressão arterial -- MESMA geometria/
+// paddings de evolucaoLineChartSvg(), mas pressão guarda 2 números por registro (ver evolucaoMedidaSerie(),
+// que já separa cada registro em {date, id, sistolica, diastolica}), então precisa de 2 traçados
+// compartilhando UMA única escala Y (calculada em cima da união dos valores das duas séries, pra elas
+// ficarem no mesmo referencial visual -- as duas são medidas em mmHg). Pedido explícito do usuário (opção
+// escolhida quando perguntado): gráfico com 2 linhas, do jeito que pressão arterial normalmente é
+// visualizada, em vez de uma linha só com a diastólica como ponto avulso. Sem preenchimento de área (só as
+// linhas) pra não confundir as 2 séries sobrepostas -- ver medidasEvolucaoPaginaTemplate() pela legenda
+// (cores Sistólica/Diastólica) exibida logo abaixo do gráfico.
+function evolucaoPressaoChartSvg(pontos) {
+  const W = 320, H = 150, PAD_L = 32, PAD_R = 10, PAD_T = 12, PAD_B = 20;
+  const innerW = W - PAD_L - PAD_R, innerH = H - PAD_T - PAD_B;
+  const corSistolica = "#1c4d3e", corDiastolica = "#b27691";
+  const todosValores = pontos.map((p) => p.sistolica).concat(pontos.map((p) => p.diastolica));
+  let min = Math.min.apply(null, todosValores), max = Math.max.apply(null, todosValores);
+  if (min === max) { min -= 1; max += 1; }
+  const folga = (max - min) * 0.1;
+  min -= folga; max += folga;
+  const x = (i) => PAD_L + (pontos.length === 1 ? innerW / 2 : (i / (pontos.length - 1)) * innerW);
+  const y = (v) => PAD_T + innerH - ((v - min) / (max - min)) * innerH;
+  const desenharLinha = (chave, cor, rotulo) => {
+    const coords = pontos.map((p, i) => [x(i), y(p[chave])]);
+    const pathD = coords.map((c, i) => (i === 0 ? "M" : "L") + c[0].toFixed(1) + "," + c[1].toFixed(1)).join(" ");
+    const marcadores = coords.map((c, i) => {
+      const p = pontos[i];
+      return '<circle cx="' + c[0].toFixed(1) + '" cy="' + c[1].toFixed(1) + '" r="3.5" fill="' + cor + '" stroke="#fff" stroke-width="1.5"><title>' + esc(dataCurta(p.date)) + " · " + rotulo + ": " + formatNumber(p[chave], 0) + " mmHg</title></circle>";
+    }).join("");
+    return '<path d="' + pathD + '" fill="none" stroke="' + cor + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' + marcadores;
+  };
+  const ticksY = [max, (max + min) / 2, min];
+  return '' +
+    '<svg class="evolucao-chart" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="Pressão arterial (sistólica e diastólica) ao longo do período">' +
+      ticksY.map((v) => '<line x1="' + PAD_L + '" x2="' + (W - PAD_R) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '" class="evolucao-chart-grid"/>' +
+        '<text x="1" y="' + (y(v) + 3).toFixed(1) + '" class="evolucao-chart-axis-label">' + formatNumber(v, 0) + "</text>").join("") +
+      desenharLinha("sistolica", corSistolica, "Sistólica") +
+      desenharLinha("diastolica", corDiastolica, "Diastólica") +
+      '<text x="' + PAD_L + '" y="' + (H - 4) + '" class="evolucao-chart-axis-label">' + esc(dataCurta(pontos[0].date)) + "</text>" +
+      '<text x="' + (W - PAD_R) + '" y="' + (H - 4) + '" text-anchor="end" class="evolucao-chart-axis-label">' + esc(dataCurta(pontos[pontos.length - 1].date)) + "</text>" +
+    "</svg>";
+}
+// Legenda do gráfico de pressão (sistólica/diastólica) -- reaproveita a MESMA marcação de bolinha+rótulo já
+// usada na comparação de nutrientes (ver nutrienteComparacaoCardTemplate()), só com as cores das 2 séries
+// do gráfico acima no lugar das cores de nutriente.
+function evolucaoPressaoLegendaTemplate() {
+  return '<div class="nutriente-comparacao-legenda" style="margin-top:8px">' +
+    '<span class="nutriente-comparacao-legenda-item"><span class="nutriente-comparacao-swatch" style="background:#1c4d3e"></span>Sistólica</span>' +
+    '<span class="nutriente-comparacao-legenda-item"><span class="nutriente-comparacao-swatch" style="background:#b27691"></span>Diastólica</span>' +
+  "</div>";
+}
 // Gráfico de barras divergente (SVG) do saldo calórico médio por "balde" (dia/semana/mês/ano, ver
 // resumoAderenciaAgrupar()) -- barra pra cima (superávit) ou pra baixo (déficit) a partir da linha de
 // zero, colorida pelo status da meta daquele balde: MESMAS cores já usadas em diario-kcal-meta-atingida/
@@ -9174,13 +9280,29 @@ function acaoAlternarResumoCard(virado) {
 // período dele (dia/semana/mês/ano) em vez desse filtro de data. O card de Composição corporal também
 // "mudou de casa" -- agora é a página central do card virável de Bioimpedância e Calorimetria, na aba
 // Medidas (ver bioimpedanciaCardFlipWrapperTemplate()), então não é mais afetado (nem exibido) aqui.
+// Dígitos decimais usados pra exibir cada tipo de medida na página de Evolução (stats de Inicial/Atual/
+// Variação e no eixo Y do gráfico) -- mesmo espírito de EVOLUCAO_METRICAS_BIOIMPEDANCIA.digits, mas por
+// tipo de medida em vez de métrica de bioimpedância. Pressão arterial não entra aqui (tem seu próprio
+// gráfico de 2 linhas, sempre em números inteiros de mmHg -- ver evolucaoPressaoChartSvg()).
+const EVOLUCAO_MEDIDA_DIGITS = { peso: 1, pescoco: 1, cintura: 1, batimentos: 0, glicemia: 0, temperatura: 1, saturacao: 0 };
+// Seletor de tipo de medida da página de Evolução -- mesmo padrão visual/de opções do "Tipo de medição" do
+// formulário de registro (ver medidasFormTemplate()), mas sem a opção vazia "Selecione...": aqui sempre há
+// um tipo escolhido (começa em "peso", ver state.evolucaoMedidaTipo), então não faz sentido um estado
+// "nenhum selecionado". Pedido do usuário: poder ver a evolução de QUALQUER tipo de aferição registrado,
+// escolhido antes dos campos de período (ver medidasEvolucaoPaginaTemplate()).
+function medidasEvolucaoTipoSelectorTemplate() {
+  return '<div style="margin-bottom:12px"><label class="field-label">Tipo de aferição</label>' +
+    '<select class="field-input" onchange="acaoSelecionarTipoEvolucao(this.value)">' +
+      Object.keys(medidaTipos).map((key) => '<option value="' + key + '"' + (state.evolucaoMedidaTipo === key ? " selected" : "") + ">" + medidaTipos[key].label + "</option>").join("") +
+    "</select></div>";
+}
 function evolucaoPeriodoFiltroTemplate() {
   return '' +
     '<div class="evolucao-periodo-filtro medida-filtro-periodo">' +
       '<div><label class="field-label">De</label><input type="date" class="field-input" max="' + esc(today()) + '" value="' + esc(state.evolucaoFiltroDe) + '" onchange="acaoFiltrarEvolucaoPorData(\'de\', this.value)"/></div>' +
       '<div><label class="field-label">Até</label><input type="date" class="field-input" max="' + esc(today()) + '" value="' + esc(state.evolucaoFiltroAte) + '" onchange="acaoFiltrarEvolucaoPorData(\'ate\', this.value)"/></div>' +
     "</div>" +
-    '<p class="imc-empty" style="margin-top:8px">Esse período afeta o card de Peso logo abaixo.</p>';
+    '<p class="imc-empty" style="margin-top:8px">Esse período afeta o gráfico logo abaixo.</p>';
 }
 // Card fixo (ver comentário de evolucaoBioimpedanciaSerie()), mostra uma mensagem no lugar do gráfico
 // quando ainda não há dados suficientes. Não mora mais na aba Evolução -- a pedido do usuário, virou a
@@ -9216,41 +9338,73 @@ function evolucaoComposicaoCardTemplate() {
 // homeTabsTemplate()/fullHomeTemplate()); o card de Aderência à meta calórica que também morava lá já
 // tinha sido movido pro verso do card "Seu resumo de hoje" (ver resumoAderenciaCardTemplate()) e o de
 // Composição corporal pra página central do card de Bioimpedância e Calorimetria (ver
-// evolucaoComposicaoCardTemplate() acima) -- só restava o card de Peso, então a pedido do usuário a aba
-// inteira "mudou de casa" pra cá (e foi removida do menu) em vez de virar uma aba com um card só.
-// Reaproveita evolucaoPeriodoFiltroTemplate()/evolucaoPesoSerie()/evolucaoTendenciaPeso()/
-// evolucaoLineChartSvg()/evolucaoPesoObjetivoNotaTemplate() -- MESMA lógica de antes (incluindo os 2 níveis
-// de estado vazio: sem nenhum peso registrado vs. peso registrado mas sem pontos suficientes no período
-// filtrado) --, só reembalada num único <section class="medidas-section"> (em vez de <main> com título
-// "Evolução" + card "Peso" separados) pra bater com o padrão das outras páginas do card
-// (medidasFormTemplate()/medidasHistoricoTemplate()).
+// evolucaoComposicaoCardTemplate() acima) -- só restava o card de Peso, então a aba inteira "mudou de casa"
+// pra cá (e foi removida do menu) em vez de virar uma aba com um card só.
+// Pedido do usuário: essa página não é mais SÓ do peso -- um seletor (ver
+// medidasEvolucaoTipoSelectorTemplate()/state.evolucaoMedidaTipo) escolhe QUALQUER tipo de medidaTipos
+// (peso, glicemia, pressão arterial etc.), exibido antes dos campos de período, e o gráfico e as
+// informações abaixo passam a refletir o tipo escolhido. Título simplificado de "Evolução do Peso" pra só
+// "Evolução", já que a página não é mais exclusiva do peso. Pressão arterial é o único tipo "de texto"
+// (sistólica/diastólica) e ganha um tratamento à parte: gráfico de 2 linhas (evolucaoPressaoChartSvg(), com
+// legenda) e um resumo simplificado (sistólica/diastólica atuais), em vez do gráfico de 1 linha + 4 stats
+// (Inicial/Atual/Variação/Ritmo) usado pelos demais tipos -- opção escolhida explicitamente pelo usuário
+// quando perguntado (ver evolucaoMedidaSerie()). Peso continua com sua nota de objetivo
+// (evolucaoPesoObjetivoNotaTemplate()); os demais tipos mostram a nota de classificação clínica
+// (evolucaoMedidaClassificacaoNotaTemplate()), reaproveitando a MESMA referência já usada no histórico.
 function medidasEvolucaoPaginaTemplate() {
-  const temAlgumDado = state.medidas.some((m) => m.tipo === "peso");
+  const tipo = state.evolucaoMedidaTipo || "peso";
+  const meta = medidaTipos[tipo];
+  const temAlgumDado = state.medidas.some((m) => m.tipo === tipo);
   if (!temAlgumDado) {
     return '' +
       '<section class="medidas-section">' +
-        '<h2 class="medidas-section-title">' + icon("trend") + " Evolução do Peso</h2>" +
-        '<div class="meal-empty"><div class="meal-empty-icon">' + icon("trend") + "</div><p>Ainda não há dados suficientes</p><p>Registre seu peso para começar a ver sua evolução aqui.</p></div>" +
+        '<h2 class="medidas-section-title">' + icon("trend") + " Evolução</h2>" +
+        medidasEvolucaoTipoSelectorTemplate() +
+        '<div class="meal-empty"><div class="meal-empty-icon">' + icon("trend") + "</div><p>Ainda não há dados suficientes</p><p>Adicione um registro de " + esc(meta.label.toLowerCase()) + " (em Medidas e Aferições) para começar a ver sua evolução aqui.</p></div>" +
       "</section>";
   }
-  const serie = evolucaoPesoSerie();
-  const tendencia = evolucaoTendenciaPeso(serie);
+  const registros = evolucaoMedidaRegistrosFiltrados(tipo);
+  const ultimoRegistro = registros.length ? registros[registros.length - 1] : null;
+  let conteudo;
+  if (meta.texto) {
+    const serie = evolucaoMedidaSerie(tipo);
+    if (serie.length < 2) {
+      conteudo = '<p class="imc-empty">Registre pelo menos 2 aferições de ' + esc(meta.label.toLowerCase()) + ' (em Medidas e Aferições) dentro do período selecionado para ver o gráfico de evolução.</p>';
+    } else {
+      const ultimoPonto = serie[serie.length - 1];
+      conteudo = '' +
+        evolucaoPressaoChartSvg(serie) +
+        evolucaoPressaoLegendaTemplate() +
+        '<div class="evolucao-stats-row" style="grid-template-columns:repeat(2,1fr)">' +
+          '<div class="evolucao-stat"><span class="evolucao-stat-label">Sistólica atual</span><span class="evolucao-stat-value">' + formatNumber(ultimoPonto.sistolica, 0) + " mmHg</span></div>" +
+          '<div class="evolucao-stat"><span class="evolucao-stat-label">Diastólica atual</span><span class="evolucao-stat-value">' + formatNumber(ultimoPonto.diastolica, 0) + " mmHg</span></div>" +
+        "</div>" +
+        evolucaoMedidaClassificacaoNotaTemplate(ultimoRegistro);
+    }
+  } else {
+    const serie = evolucaoMedidaSerie(tipo);
+    const tendencia = evolucaoMedidaTendencia(serie);
+    if (!tendencia) {
+      conteudo = '<p class="imc-empty">Registre pelo menos 2 registros de ' + esc(meta.label.toLowerCase()) + ' (em Medidas e Aferições) dentro do período selecionado para ver o gráfico de evolução.</p>';
+    } else {
+      const digits = EVOLUCAO_MEDIDA_DIGITS[tipo] != null ? EVOLUCAO_MEDIDA_DIGITS[tipo] : 1;
+      conteudo = '' +
+        evolucaoLineChartSvg(serie, { cor: "#1c4d3e", unidade: " " + meta.unidade, digits: digits, ariaLabel: meta.label + " ao longo do período" }) +
+        '<div class="evolucao-stats-row">' +
+          '<div class="evolucao-stat"><span class="evolucao-stat-label">Inicial</span><span class="evolucao-stat-value">' + formatNumber(tendencia.inicial, digits) + " " + meta.unidade + "</span></div>" +
+          '<div class="evolucao-stat"><span class="evolucao-stat-label">Atual</span><span class="evolucao-stat-value">' + formatNumber(tendencia.atual, digits) + " " + meta.unidade + "</span></div>" +
+          '<div class="evolucao-stat"><span class="evolucao-stat-label">Variação</span><span class="evolucao-stat-value">' + (tendencia.variacaoTotal > 0 ? "+" : "") + formatNumber(tendencia.variacaoTotal, digits) + " " + meta.unidade + "</span></div>" +
+          '<div class="evolucao-stat"><span class="evolucao-stat-label">Ritmo</span><span class="evolucao-stat-value">' + (tendencia.porSemana > 0 ? "+" : "") + formatNumber(tendencia.porSemana, digits + 1) + " " + meta.unidade + "/semana</span></div>" +
+        "</div>" +
+        (tipo === "peso" ? evolucaoPesoObjetivoNotaTemplate(tendencia) : evolucaoMedidaClassificacaoNotaTemplate(ultimoRegistro));
+    }
+  }
   return '' +
     '<section class="medidas-section">' +
-      '<h2 class="medidas-section-title">' + icon("trend") + " Evolução do Peso</h2>" +
+      '<h2 class="medidas-section-title">' + icon("trend") + " Evolução</h2>" +
+      medidasEvolucaoTipoSelectorTemplate() +
       evolucaoPeriodoFiltroTemplate() +
-      (tendencia ?
-        evolucaoLineChartSvg(serie, { cor: "#1c4d3e", unidade: " kg", digits: 1, ariaLabel: "Peso ao longo do período" }) +
-        '<div class="evolucao-stats-row">' +
-          '<div class="evolucao-stat"><span class="evolucao-stat-label">Inicial</span><span class="evolucao-stat-value">' + formatNumber(tendencia.inicial, 1) + " kg</span></div>" +
-          '<div class="evolucao-stat"><span class="evolucao-stat-label">Atual</span><span class="evolucao-stat-value">' + formatNumber(tendencia.atual, 1) + " kg</span></div>" +
-          '<div class="evolucao-stat"><span class="evolucao-stat-label">Variação</span><span class="evolucao-stat-value">' + (tendencia.variacaoTotal > 0 ? "+" : "") + formatNumber(tendencia.variacaoTotal, 1) + " kg</span></div>" +
-          '<div class="evolucao-stat"><span class="evolucao-stat-label">Ritmo</span><span class="evolucao-stat-value">' + (tendencia.kgPorSemana > 0 ? "+" : "") + formatNumber(tendencia.kgPorSemana, 2) + " kg/semana</span></div>" +
-        "</div>" +
-        evolucaoPesoObjetivoNotaTemplate(tendencia)
-        :
-        '<p class="imc-empty">Registre pelo menos 2 pesagens (em Medidas e Aferições) dentro do período selecionado para ver o gráfico de evolução do peso.</p>'
-      ) +
+      conteudo +
     "</section>";
 }
 
