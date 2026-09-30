@@ -2344,6 +2344,14 @@ const state = {
   produtoManualValores: {}, // valores digitados/lidos do rótulo, por chave de nutriente (string, como em bioFormValores)
   produtoManualPorcao: "", // peso/volume da porção (g ou ml) a que os valores acima se referem
   produtoRotuloLendo: false, // true enquanto a leitura automática (OCR) do rótulo está rodando
+  // Índice (em state.produtosCustomizados) do produto sendo EDITADO, ou null quando o modal está no modo
+  // normal de "novo produto" -- pedido do usuário: ícone de editar ao lado do de remover, na lista de
+  // "Produtos já cadastrados" (ver cadastrarProdutoModalTemplate()/acaoEditarProdutoCustomizado()). Abre
+  // o MESMO modal, sempre pré-preenchido no modo "Digitar valores do rótulo" (com os valores finais já
+  // salvos do produto) -- não dá pra reconstruir a descrição de ingredientes original a partir só dos
+  // valores agregados, então editar pelos valores exatos é o caminho mais simples e sempre funciona,
+  // não importa se o produto tinha sido cadastrado originalmente por ingredientes ou por rótulo.
+  produtoEditandoIndex: null,
   showGoals: false,
   showHistory: false,
   // Data do dia expandido no histórico de refeições (accordion: um dia de cada vez, ou nenhum) -- ver
@@ -3778,10 +3786,51 @@ function acaoAbrirCadastrarProduto() {
   state.produtoManualValores = {};
   state.produtoManualPorcao = "";
   state.produtoRotuloLendo = false;
+  state.produtoEditandoIndex = null;
   produtoRotuloArquivo = null;
   render();
 }
-function acaoFecharCadastrarProduto() { state.showCadastrarProduto = false; render(); }
+function acaoFecharCadastrarProduto() { state.showCadastrarProduto = false; state.produtoEditandoIndex = null; render(); }
+// Abre o mesmo modal de cadastro, mas pré-preenchido com os valores do produto no índice informado, no
+// modo "Digitar valores do rótulo" (ver comentário de state.produtoEditandoIndex acima) -- pedido do
+// usuário: ícone de editar ao lado do de remover, na lista de "Produtos já cadastrados"
+// (cadastrarProdutoModalTemplate()). acaoCadastrarProdutoManual()/acaoCadastrarProduto() detectam
+// produtoEditandoIndex e SUBSTITUEM o produto naquele índice em vez de criar um novo.
+function acaoEditarProdutoCustomizado(index) {
+  const p = state.produtosCustomizados[index];
+  if (!p) return;
+  state.showCadastrarProduto = true;
+  state.produtoEditandoIndex = index;
+  state.produtoNome = p.label;
+  state.produtoIngredientes = "";
+  state.produtoPreview = [];
+  state.produtoModoCadastro = "manual";
+  const valores = {};
+  PRODUTO_MANUAL_CAMPOS.forEach((c) => { valores[c.id] = p.values && p.values[c.id] ? p.values[c.id] : ""; });
+  state.produtoManualValores = valores;
+  state.produtoManualPorcao = p.grams != null ? String(p.grams) : "";
+  state.produtoRotuloLendo = false;
+  produtoRotuloArquivo = null;
+  render();
+  // captureFormState() (chamado no início do render() acima) recaptura os valores AINDA presentes no DOM
+  // de antes desse preenchimento (o campo "Nome do produto" existe nos dois modos do modal, então já
+  // existia -- normalmente vazio -- mesmo se o modal tivesse acabado de ser aberto por
+  // acaoAbrirCadastrarProduto()) ANTES desse preenchimento ter chance de aparecer, sobrescrevendo de volta
+  // os campos de state setados acima -- mesmo caso (e mesmo motivo/fix) de acaoEditarRefeicao()/
+  // acaoEditarTreino(). Escreve direto nos inputs, depois do render(), pra garantir que o formulário
+  // reflita o produto sendo editado, e ressincroniza o state com o que acabou de ser escrito no DOM --
+  // sem isso, um re-render causado por outra coisa (ex.: uma sincronização em segundo plano terminando)
+  // reverteria os campos pro valor que o captureFormState() capturou acima.
+  const nomeEl = document.getElementById("produto-nome");
+  if (nomeEl) nomeEl.value = p.label;
+  state.produtoNome = p.label;
+  const porcaoEl = document.getElementById("produto-manual-porcao");
+  if (porcaoEl) porcaoEl.value = state.produtoManualPorcao;
+  PRODUTO_MANUAL_CAMPOS.forEach((c) => {
+    const el = document.getElementById("produto-manual-" + c.id);
+    if (el) el.value = valores[c.id];
+  });
+}
 // Alterna entre descrever ingredientes (estimativa via detectFoods(), como já existia) e digitar/ler os
 // valores exatos de um rótulo impresso (ver cadastrarProdutoModalTemplate()) -- pedido do usuário.
 function acaoTrocarModoCadastroProduto(modo) { state.produtoModoCadastro = modo === "manual" ? "manual" : "ingredientes"; render(); }
@@ -3795,30 +3844,46 @@ function acaoAnalisarIngredientesProduto() {
   else toastSuccess(found.length + " ingrediente" + (found.length > 1 ? "s" : "") + " identificado" + (found.length > 1 ? "s" : "") + ".");
   render();
 }
+// Salva um produto customizado -- usado por acaoCadastrarProduto() (modo "ingredientes") e
+// acaoCadastrarProdutoManual() (modo "rótulo"), que só montam o objeto "novoProduto" (formato terms/
+// label/baseAmount/values/grams) e delegam o resto pra cá. Se state.produtoEditandoIndex estiver
+// definido (ver acaoEditarProdutoCustomizado()), SUBSTITUI o produto naquele índice em vez de adicionar
+// um novo -- o item sendo editado fica de fora da checagem de nome duplicado, senão a pessoa nunca
+// conseguiria salvar uma edição mantendo o mesmo nome. Devolve false (sem fechar o modal) se o nome
+// colidir com OUTRO produto já cadastrado.
+function salvarProdutoCustomizado(novoProduto, nome) {
+  const termoNormalizado = normalizeText(nome);
+  const editandoIndex = state.produtoEditandoIndex;
+  const colide = state.produtosCustomizados.some((p, i) => i !== editandoIndex && normalizeText(p.label) === termoNormalizado);
+  if (colide) { toastError("Já existe um produto cadastrado com esse nome."); return false; }
+  if (editandoIndex != null) {
+    state.produtosCustomizados = state.produtosCustomizados.map((p, i) => (i === editandoIndex ? novoProduto : p));
+    toastSuccess('Produto "' + nome + '" atualizado.');
+  } else {
+    state.produtosCustomizados = state.produtosCustomizados.concat([novoProduto]);
+    toastSuccess('Produto "' + nome + '" cadastrado no cardápio! Agora você pode usá-lo em qualquer refeição.');
+  }
+  persistProdutosCustomizados();
+  state.showCadastrarProduto = false;
+  state.produtoEditandoIndex = null;
+  return true;
+}
 // Soma os nutrientes e o peso estimado (gramsEstimadosParaItem()) de todos os ingredientes já
-// identificados, e registra o produto em state.produtosCustomizados -- a partir daí ele é só mais uma
-// entrada reconhecida por detectFoods(), no mesmo formato de qualquer alimento da biblioteca embutida
-// (terms/label/baseAmount/values/grams).
+// identificados, e registra (ou atualiza, ver salvarProdutoCustomizado()) o produto em
+// state.produtosCustomizados -- a partir daí ele é só mais uma entrada reconhecida por detectFoods(), no
+// mesmo formato de qualquer alimento da biblioteca embutida (terms/label/baseAmount/values/grams).
 function acaoCadastrarProduto() {
   const nomeEl = document.getElementById("produto-nome");
   const nome = nomeEl ? nomeEl.value.trim() : "";
   if (!nome) { toastError("Informe o nome do produto."); return; }
   if (!state.produtoPreview.length) { toastError("Analise os ingredientes antes de cadastrar o produto."); return; }
-  const termoNormalizado = normalizeText(nome);
-  if (state.produtosCustomizados.some((p) => normalizeText(p.label) === termoNormalizado)) {
-    toastError("Já existe um produto cadastrado com esse nome."); return;
-  }
   const totalValues = state.produtoPreview.reduce((sum, item) => addNutrients(sum, item.values), emptyNutrients);
   // Sem nenhum ingrediente com peso estimável (caso raro -- só suplementos, por exemplo), cai pra 100g
   // como peso padrão, só pra não deixar o produto com peso zero (o que quebraria a conversão de gramas
   // quando alguém digitar uma quantidade desse produto numa refeição futura).
   const pesoTotal = Math.round(state.produtoPreview.reduce((soma, item) => soma + (item.gramsEstimados || 0), 0)) || 100;
-  const novoProduto = { terms: [termoNormalizado], label: nome, baseAmount: pesoTotal + " g", values: totalValues, grams: pesoTotal };
-  state.produtosCustomizados = state.produtosCustomizados.concat([novoProduto]);
-  persistProdutosCustomizados();
-  toastSuccess('Produto "' + nome + '" cadastrado no cardápio! Agora você pode usá-lo em qualquer refeição.');
-  state.showCadastrarProduto = false;
-  render();
+  const novoProduto = { terms: [normalizeText(nome)], label: nome, baseAmount: pesoTotal + " g", values: totalValues, grams: pesoTotal };
+  if (salvarProdutoCustomizado(novoProduto, nome)) render();
 }
 function acaoRemoverProdutoCustomizado(index) {
   state.produtosCustomizados = state.produtosCustomizados.filter((_, i) => i !== index);
@@ -3958,10 +4023,6 @@ function acaoCadastrarProdutoManual() {
   const nomeEl = document.getElementById("produto-nome");
   const nome = nomeEl ? nomeEl.value.trim() : "";
   if (!nome) { toastError("Informe o nome do produto."); return; }
-  const termoNormalizado = normalizeText(nome);
-  if (state.produtosCustomizados.some((p) => normalizeText(p.label) === termoNormalizado)) {
-    toastError("Já existe um produto cadastrado com esse nome."); return;
-  }
   const porcaoEl = document.getElementById("produto-manual-porcao");
   const porcao = porcaoEl ? Number(String(porcaoEl.value).trim().replace(",", ".")) : 0;
   if (!porcao) { toastError("Informe o peso ou volume da porção (em g ou ml), igual aparece no rótulo."); return; }
@@ -3978,12 +4039,8 @@ function acaoCadastrarProdutoManual() {
     zinco: campo("zinco"), sodio: campo("sodio"),
   });
   if (!values.calories) { toastError("Informe pelo menos as calorias do produto."); return; }
-  const novoProduto = { terms: [termoNormalizado], label: nome, baseAmount: formatNumber(porcao, 0) + " g", values, grams: porcao };
-  state.produtosCustomizados = state.produtosCustomizados.concat([novoProduto]);
-  persistProdutosCustomizados();
-  toastSuccess('Produto "' + nome + '" cadastrado no cardápio! Agora você pode usá-lo em qualquer refeição.');
-  state.showCadastrarProduto = false;
-  render();
+  const novoProduto = { terms: [normalizeText(nome)], label: nome, baseAmount: formatNumber(porcao, 0) + " g", values, grams: porcao };
+  if (salvarProdutoCustomizado(novoProduto, nome)) render();
 }
 function acaoSelecionarTipoRefeicao(tipo) {
   // Trocar de/para "Exposição Solar" invalida o que já estava calculado -- o preview de "Exposição
@@ -5010,6 +5067,25 @@ function analiseFaixaEhBoa(faixa) { return faixa === "adequado"; }
 // ler, então mostra só os últimos N dias do período (mais recentes), com um aviso na legenda de que o
 // gráfico foi recortado.
 const ANALISE_CONSUMO_CHART_MAX_BARRAS = 45;
+// Pedido do usuário: "do jeito que tah, não dá pra ter ideia de quanto percentual foi consumido nos
+// dias do período" -- antes o gráfico só tinha a linha tracejada da referência (100%) e nenhuma outra
+// marcação, então uma barra um pouco mais alta ou mais baixa que ela não dava pra situar em termos de
+// PERCENTUAL (é 60%? 80%? 130%?) sem abrir o modal de cada dia. Essa função devolve as porcentagens
+// (múltiplos de "passo", sempre pulando 100 -- essa já tem a linha de referência colorida/tracejada,
+// não precisa duplicar) que cabem dentro da escala do gráfico (maxEscala), escolhendo o menor passo (10,
+// 25, 50 ou 100%) que ainda resulte em NO MÁXIMO 6 linhas -- evita tanto um gráfico "pelado" (poucas
+// faixas, período com barras próximas da referência) quanto um poluído demais (muitas faixas, período
+// com alguma bebida/refeição fora da curva empurrando a escala bem acima de 100%).
+function linhasPercentuaisAnaliseConsumo(esperado, maxEscala) {
+  if (!esperado || esperado <= 0) return [];
+  const percentualMax = (maxEscala / esperado) * 100;
+  const passo = [10, 25, 50, 100].find((c) => Math.ceil(percentualMax / c) <= 6) || 100;
+  const linhas = [];
+  for (let p = passo; p <= percentualMax + 0.01; p += passo) {
+    if (Math.round(p) !== 100) linhas.push(Math.round(p));
+  }
+  return linhas;
+}
 // key: chave do nutriente (nutrientMeta/micronutrientMeta) -- pedido do usuário: clicar numa barra abre
 // um modal com a data/dia da semana daquele dia e os 3 alimentos que mais contribuíram pro consumo desse
 // nutriente naquele dia (ver acaoAbrirDetalheDiaAnalise()/analiseConsumoDiaModalTemplate()).
@@ -5031,16 +5107,27 @@ function analiseConsumoDiarioChartSvg(serieDiaria, esperado, meta, digits, ehSod
   }).join("");
   const yRef = baseY - Math.max(0, Math.min(innerH, (esperado || 0) * escala));
   const labelRef = (ehSodio ? "Limite " : "Meta/IDR ") + formatNumber(esperado, digits) + " " + meta.unit;
+  // Faixas percentuais de referência (25%, 50%, 75%, 125%... conforme a escala do gráfico -- ver
+  // linhasPercentuaisAnaliseConsumo()) -- linhas finas e recessivas (mesmo cinza claro da grade zero,
+  // .evolucao-chart-grid), BEM mais discretas que a linha tracejada colorida da referência em si, com um
+  // rótulo pequeno à esquerda (ex.: "50%") pra dar exatamente a noção de percentual que faltava.
+  const linhasPercentuais = linhasPercentuaisAnaliseConsumo(esperado, maxEscala);
+  const gradePercentual = linhasPercentuais.map((p) => {
+    const y = baseY - Math.max(0, Math.min(innerH, esperado * (p / 100) * escala));
+    return '<line x1="' + PAD_L + '" x2="' + (W - PAD_R) + '" y1="' + y.toFixed(1) + '" y2="' + y.toFixed(1) + '" class="evolucao-chart-grid"/>' +
+      '<text x="' + (PAD_L - 4) + '" y="' + (y - 2).toFixed(1) + '" text-anchor="end" class="evolucao-chart-axis-label">' + p + "%</text>";
+  }).join("");
   return '' +
-    '<svg class="analise-consumo-chart" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="Consumo diário de ' + esc(meta.label) + ' em cada dia do período escolhido, comparado à referência">' +
+    '<svg class="analise-consumo-chart" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="Consumo diário de ' + esc(meta.label) + ' em cada dia do período escolhido, comparado à referência, com faixas percentuais de 25 em 25%">' +
       '<line x1="' + PAD_L + '" x2="' + (W - PAD_R) + '" y1="' + baseY + '" y2="' + baseY + '" class="evolucao-chart-grid"/>' +
+      gradePercentual +
       (esperado > 0 ? '<line x1="' + PAD_L + '" x2="' + (W - PAD_R) + '" y1="' + yRef.toFixed(1) + '" y2="' + yRef.toFixed(1) + '" class="analise-consumo-chart-ref" stroke="' + meta.color + '"><title>' + esc(labelRef) + "/dia</title></line>" : "") +
       barras +
       (esperado > 0 ? '<text x="' + (W - PAD_R) + '" y="' + Math.max(9, yRef - 4).toFixed(1) + '" text-anchor="end" class="evolucao-chart-axis-label analise-consumo-chart-ref-label" fill="' + meta.color + '">' + esc(labelRef) + "</text>" : "") +
       '<text x="' + PAD_L + '" y="' + (H - 4) + '" class="evolucao-chart-axis-label">' + esc(dataCurta(pontos[0].date)) + "</text>" +
       '<text x="' + (W - PAD_R) + '" y="' + (H - 4) + '" text-anchor="end" class="evolucao-chart-axis-label">' + esc(dataCurta(pontos[pontos.length - 1].date)) + "</text>" +
     "</svg>" +
-    '<p class="imc-empty analise-consumo-chart-legenda">' + icon("trend") + " Consumo de " + esc(meta.label).toLowerCase() + " em cada dia encerrado do período" + (recortado ? " (últimos " + ANALISE_CONSUMO_CHART_MAX_BARRAS + " dias do período escolhido)" : "") + " -- a linha tracejada marca a referência diária.</p>";
+    '<p class="imc-empty analise-consumo-chart-legenda">' + icon("trend") + " Consumo de " + esc(meta.label).toLowerCase() + " em cada dia encerrado do período" + (recortado ? " (últimos " + ANALISE_CONSUMO_CHART_MAX_BARRAS + " dias do período escolhido)" : "") + " -- a linha tracejada marca a referência diária (100%), e as linhas mais claras marcam faixas percentuais dela, pra dar noção de quanto foi consumido em cada dia.</p>";
 }
 // Monta o texto completo da análise (mesma estrutura das análises dadas conversacionalmente: os números,
 // o que isso significa -- distinguindo "abaixo da meta" de "carência clínica" --, sugestões de alimentos
@@ -6689,10 +6776,14 @@ function cadastrarProdutoModalTemplate() {
   const totalValues = preview.reduce((sum, item) => addNutrients(sum, item.values), emptyNutrients);
   const pesoTotal = Math.round(preview.reduce((soma, item) => soma + (item.gramsEstimados || 0), 0));
   const modo = state.produtoModoCadastro;
+  // Editando um produto já cadastrado (ver acaoEditarProdutoCustomizado()) -- MESMO modal do cadastro,
+  // só muda o título/texto do botão de salvar (a lógica de substituir em vez de adicionar fica em
+  // salvarProdutoCustomizado()).
+  const editando = state.produtoEditandoIndex != null;
   return '' +
     '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharCadastrarProduto();}">' +
     '<div class="modal-card modal-card-produto">' +
-      '<div class="meal-detalhe-head"><h2>Cadastrar produto no cardápio</h2>' +
+      '<div class="meal-detalhe-head"><h2>' + (editando ? "Editar produto do cardápio" : "Cadastrar produto no cardápio") + '</h2>' +
       '<button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharCadastrarProduto()">' + icon("x") + "</button></div>" +
       '<div class="bioimpedancia-form-tabs">' +
         '<button class="bioimpedancia-form-tab' + (modo === "ingredientes" ? " active" : "") + '" onclick="acaoTrocarModoCadastroProduto(\'ingredientes\')">Descrever ingredientes</button>' +
@@ -6722,13 +6813,16 @@ function cadastrarProdutoModalTemplate() {
           '<div class="meal-preview-head" style="margin-top:18px"><span>Produtos já cadastrados</span></div>' +
           '<div class="meal-list">' + state.produtosCustomizados.map((p, i) =>
             '<div class="meal-row"><div><span class="food-label">' + esc(p.label) + '</span> <span class="food-amount">· ' + esc(p.baseAmount) + "</span></div>" +
-            '<button class="meal-row-delete" aria-label="Remover produto" onclick="acaoRemoverProdutoCustomizado(' + i + ')">' + icon("trash") + "</button></div>"
+            '<div class="meal-row-right">' +
+              '<button class="meal-row-delete" aria-label="Editar produto" onclick="acaoEditarProdutoCustomizado(' + i + ')">' + icon("edit") + "</button>" +
+              '<button class="meal-row-delete" aria-label="Remover produto" onclick="acaoRemoverProdutoCustomizado(' + i + ')">' + icon("trash") + "</button>" +
+            "</div></div>"
           ).join("") + "</div>"
           : "") +
       "</div>" +
       '<div class="modal-footer"><div class="bioimpedancia-form-acoes">' +
         '<button class="bioimpedancia-btn-secundario" onclick="acaoFecharCadastrarProduto()">Cancelar</button>' +
-        '<button class="btn-primary" onclick="' + (modo === "manual" ? "acaoCadastrarProdutoManual" : "acaoCadastrarProduto") + '()">' + icon("check") + " Cadastrar produto</button>" +
+        '<button class="btn-primary" onclick="' + (modo === "manual" ? "acaoCadastrarProdutoManual" : "acaoCadastrarProduto") + '()">' + icon("check") + " " + (editando ? "Salvar alterações" : "Cadastrar produto") + "</button>" +
       "</div></div>" +
     "</div></div>";
 }
