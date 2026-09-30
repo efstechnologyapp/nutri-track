@@ -657,25 +657,36 @@ svg{ display: block; }
    acaoIrParaPaginaBio(). As 3 páginas usam SEMPRE a MESMA altura fixa (pedido do usuário: "a página do
    Histórico do mesmo tamanho das demais... todas as páginas harmoniosamente simétricas") -- ver
    ajustarAlturaBioCard(). A página de Histórico, que pode ter uma lista bem mais longa que as outras
-   duas, ganha rolagem própria dentro dessa mesma altura em vez de esticar o card (ver .bio-history-scroll). */
-.bio-card-flip-wrap{ margin-top:24px; display:flex; flex-direction:column; align-items:center; gap:8px; }
-.bio-card-flip{ position:relative; width:100%; overflow:hidden; cursor:pointer; transition:height .4s cubic-bezier(.4,.05,.2,1); }
+   duas, ganha rolagem própria dentro dessa mesma altura em vez de esticar o card (ver .bio-history-scroll).
+   O card de Medidas e Aferições (ver medidasCardFlipWrapperTemplate()/acaoIrParaPaginaMedida(), MESMO
+   pedido do usuário: "o card de medidas no tamanho padrão que está o card de bioimpedância... adotar nele
+   também a função virar") usa o MESMO mecanismo, só que com 2 páginas (formulário/histórico) em vez de 3
+   -- classes próprias (.medida-card-*), mas com os valores de CSS sempre combinados aqui com os
+   análogos .bio-card-* (idêntica aparência/comportamento), mesmo padrão já usado em
+   .medida-history-row/.bio-history-row etc. */
+.bio-card-flip-wrap, .medida-card-flip-wrap{ margin-top:24px; display:flex; flex-direction:column; align-items:center; gap:8px; }
+.bio-card-flip, .medida-card-flip{ position:relative; width:100%; overflow:hidden; cursor:pointer; transition:height .4s cubic-bezier(.4,.05,.2,1); }
 /* largura de 300% (3 páginas) -- o translateX de cada página é sempre um múltiplo de 33,3333% (1/3 da
    largura da FAIXA, que equivale a exatamente 100% da largura do card) -- ver
    bioimpedanciaCardFlipWrapperTemplate()/acaoIrParaPaginaBio() (% de transform é relativo à largura do
-   próprio elemento, não à do pai -- por isso não pode ser só "-100%" por página aqui). */
+   próprio elemento, não à do pai -- por isso não pode ser só "-100%" por página aqui). O card de Medidas
+   (.medida-card-track) segue a MESMA lógica, só que com 2 páginas -- largura de 200%, múltiplos de 50%
+   (1/2 da largura da faixa) -- ver acaoIrParaPaginaMedida(). */
 .bio-card-track{ display:flex; width:300%; transition:transform .4s cubic-bezier(.4,.05,.2,1); }
 .bio-card-page{ flex:0 0 33.3333%; min-width:0; }
-/* Cada página vira um card (.medidas-section) com a MESMA altura fixa, calculada em ajustarAlturaBioCard()
-   e aplicada via style.height diretamente (nunca por CSS 100%/stretch -- isso corromperia a medição do
-   tamanho NATURAL das páginas 0/1 na próxima chamada, virando uma referência circular). display:flex em
-   coluna permite que a página de Histórico (a única cujo conteúdo pode não caber) tenha uma área de
-   rolagem própria que ocupa só o espaço restante abaixo do título/abas -- ver .bio-history-scroll. */
-.bio-card-page > .medidas-section{ margin-top:0; box-shadow:none; display:flex; flex-direction:column; overflow:hidden; }
-.bio-history-scroll{ flex:1; min-height:0; overflow-y:auto; margin-top:14px; padding-right:2px; }
-.bio-card-dots{ display:flex; gap:5px; }
-.bio-card-dot{ height:3px; width:14px; border-radius:999px; background:#d5ddd0; padding:0; border:none; cursor:pointer; transition:background .15s, width .15s; }
-.bio-card-dot.active{ width:20px; background:#4b7048; }
+.medida-card-track{ display:flex; width:200%; transition:transform .4s cubic-bezier(.4,.05,.2,1); }
+.medida-card-page{ flex:0 0 50%; min-width:0; }
+/* Cada página vira um card (.medidas-section) com a MESMA altura fixa, calculada em ajustarAlturaBioCard()/
+   ajustarAlturaMedidaCard() e aplicada via style.height diretamente (nunca por CSS 100%/stretch -- isso
+   corromperia a medição do tamanho NATURAL da(s) página(s) que definem essa altura na próxima chamada,
+   virando uma referência circular). display:flex em coluna permite que a página de Histórico (a única
+   cujo conteúdo pode não caber) tenha uma área de rolagem própria que ocupa só o espaço restante abaixo
+   do título/abas -- ver .bio-history-scroll/.medida-card-history-scroll. */
+.bio-card-page > .medidas-section, .medida-card-page > .medidas-section{ margin-top:0; box-shadow:none; display:flex; flex-direction:column; overflow:hidden; }
+.bio-history-scroll, .medida-card-history-scroll{ flex:1; min-height:0; overflow-y:auto; margin-top:14px; padding-right:2px; }
+.bio-card-dots, .medida-card-dots{ display:flex; gap:5px; }
+.bio-card-dot, .medida-card-dot{ height:3px; width:14px; border-radius:999px; background:#d5ddd0; padding:0; border:none; cursor:pointer; transition:background .15s, width .15s; }
+.bio-card-dot.active, .medida-card-dot.active{ width:20px; background:#4b7048; }
 .medida-filtro{ margin-top:16px; }
 .medida-filtro-toggle{ display:inline-flex; align-items:center; gap:8px; border-radius:999px; border:1px solid #dce5db; background:#f7f9f5; padding:9px 14px; font-size:13px; font-weight:600; color:#3c5b4d; transition:background .15s, border-color .15s; }
 .medida-filtro-toggle:hover{ background:#eef3ea; border-color:#c4d6c0; }
@@ -698,8 +709,8 @@ svg{ display: block; }
 .medida-input-row{ display:flex; flex-direction:column; gap:12px; margin-top:4px; }
 .medidas-hoje{ margin-top:24px; padding-top:20px; border-top:1px solid #edf0eb; }
 .medidas-history-list, .bio-history-list{ margin-top:16px; display:flex; flex-direction:column; }
-.medida-history-row, .bio-history-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 0; border-top:1px solid #edf0eb; }
-.medida-history-row:first-child, .bio-history-row:first-child{ border-top:none; padding-top:4px; }
+.medida-history-row, .bio-history-row, .medida-card-history-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 0; border-top:1px solid #edf0eb; }
+.medida-history-row:first-child, .bio-history-row:first-child, .medida-card-history-row:first-child{ border-top:none; padding-top:4px; }
 /* No histórico de Medidas e Aferições, cada registro vem envolvido num .medida-history-item, que agora é
    quem controla o espaçamento/divisória entre registros -- a linha .medida-history-row interna fica sem
    padding/borda próprios, e a legenda de classificação clínica (.medida-history-legenda) entra como
@@ -709,20 +720,25 @@ svg{ display: block; }
    uma página do card virável (bioimpedanciaCardFlipWrapperTemplate()), ele fica sempre montado no DOM, e
    por isso não pode mais compartilhar a classe .medida-history-item com o histórico de Medidas e
    Aferições (que também está sempre visível, na mesma aba) sem os dois se misturarem numa mesma consulta
-   por essa classe. */
-.medida-history-item, .bio-history-item{ padding:14px 0; border-top:1px solid #edf0eb; }
-.medida-history-item:first-child, .bio-history-item:first-child{ border-top:none; padding-top:4px; }
-.medida-history-item .medida-history-row, .bio-history-item .bio-history-row{ padding:0; border-top:none; }
-.medida-history-left, .bio-history-left{ min-width:0; }
-.medida-history-tipo, .bio-history-tipo{ display:block; font-size:14px; font-weight:600; color:#31564a; }
-.medida-history-meta, .bio-history-meta{ margin-top:4px; display:flex; align-items:center; gap:4px; font-size:12px; color:#9aa9a1; }
-.medida-history-nota{ margin-top:4px; display:flex; align-items:flex-start; gap:4px; font-size:12px; color:#7c8c84; font-style:italic; }
-.medida-history-right, .bio-history-right{ display:flex; flex-shrink:0; align-items:center; gap:12px; }
-.medida-history-valor-col{ display:flex; flex-direction:column; align-items:flex-end; gap:2px; }
-.medida-history-valor{ font-size:14px; font-weight:600; color:#3d6355; }
-.medida-history-status{ font-size:11px; font-weight:600; }
-.medida-history-legenda, .bio-history-legenda{ margin:10px 0 0; display:flex; align-items:flex-start; gap:6px; font-size:11px; line-height:1.4; color:#92a099; }
-.medida-history-legenda .icon, .bio-history-legenda .icon{ margin-top:1px; width:13px; height:13px; color:#9db69a; flex-shrink:0; }
+   por essa classe. Pelo MESMO motivo, agora que o card de Medidas e Aferições também virou um card
+   virável de páginas sempre montadas (ver medidasCardFlipWrapperTemplate()), o registro de HOJE pode
+   aparecer simultaneamente na lista "de hoje" (página 0) E dentro do dia de hoje expandido no Histórico
+   (página 1) -- por isso medidaHistoryRowTemplate() aceita um "prefixo" (ver comentário lá) e a chamada
+   dentro do Histórico usa .medida-card-history-* em vez de .medida-history-*, também sempre combinada
+   aqui com as classes acima pra manter a MESMA aparência. */
+.medida-history-item, .bio-history-item, .medida-card-history-item{ padding:14px 0; border-top:1px solid #edf0eb; }
+.medida-history-item:first-child, .bio-history-item:first-child, .medida-card-history-item:first-child{ border-top:none; padding-top:4px; }
+.medida-history-item .medida-history-row, .bio-history-item .bio-history-row, .medida-card-history-item .medida-card-history-row{ padding:0; border-top:none; }
+.medida-history-left, .bio-history-left, .medida-card-history-left{ min-width:0; }
+.medida-history-tipo, .bio-history-tipo, .medida-card-history-tipo{ display:block; font-size:14px; font-weight:600; color:#31564a; }
+.medida-history-meta, .bio-history-meta, .medida-card-history-meta{ margin-top:4px; display:flex; align-items:center; gap:4px; font-size:12px; color:#9aa9a1; }
+.medida-history-nota, .medida-card-history-nota{ margin-top:4px; display:flex; align-items:flex-start; gap:4px; font-size:12px; color:#7c8c84; font-style:italic; }
+.medida-history-right, .bio-history-right, .medida-card-history-right{ display:flex; flex-shrink:0; align-items:center; gap:12px; }
+.medida-history-valor-col, .medida-card-history-valor-col{ display:flex; flex-direction:column; align-items:flex-end; gap:2px; }
+.medida-history-valor, .medida-card-history-valor{ font-size:14px; font-weight:600; color:#3d6355; }
+.medida-history-status, .medida-card-history-status{ font-size:11px; font-weight:600; }
+.medida-history-legenda, .bio-history-legenda, .medida-card-history-legenda{ margin:10px 0 0; display:flex; align-items:flex-start; gap:6px; font-size:11px; line-height:1.4; color:#92a099; }
+.medida-history-legenda .icon, .bio-history-legenda .icon, .medida-card-history-legenda .icon{ margin-top:1px; width:13px; height:13px; color:#9db69a; flex-shrink:0; }
 
 /* ---------- modal (editar perfil) ---------- */
 .modal-overlay{ position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.4); padding:16px; }
@@ -2437,7 +2453,7 @@ const state = {
   // acima). Só afeta os cards de Peso e Aderência à meta calórica -- o card de Composição corporal é
   // fixo (sempre compara o primeiro com o último registro de TODA a história, não só do período
   // filtrado -- ver evolucaoBioimpedanciaComparacao()). Fica só na memória, mesmo espírito de
-  // historyDiaExpandidoMedidas/showHistoricoMedidas acima.
+  // historyDiaExpandidoMedidas/medidaCardPagina acima.
   evolucaoFiltroDe: "",
   evolucaoFiltroAte: "",
   altura: readStorage(CHAVE_ALTURA, null), // cm
@@ -2455,7 +2471,14 @@ const state = {
   // na legenda do card de IMC (ver imcCardTemplate()). "" = ainda não respondido (obrigatório antes de
   // salvar um peso, igual ao jejum); resetado ao trocar de tipo de medição e depois de salvar um registro.
   medidaMomentoPeso: "",
-  showHistoricoMedidas: false,
+  // Página ativa do card "virável" de Medidas e Aferições -- 0 = formulário/registros de hoje (como
+  // sempre foi), 1 = Histórico de registros (que era uma tela separada, trocada por
+  // showHistoricoMedidas) -- MESMO espírito do card de Bioimpedância e Calorimetria logo acima na aba
+  // Medidas (ver medidasCardFlipWrapperTemplate()/acaoIrParaPaginaMedida(), espelha
+  // bioimpedanciaCardFlipWrapperTemplate()/acaoIrParaPaginaBio()) -- pedido do usuário: os dois cards da
+  // aba adotarem o mesmo tamanho padrão e a mesma função de virar. Fica só na memória, reseta ao
+  // recarregar a página.
+  medidaCardPagina: 0,
   // Data do dia expandido no histórico de Medidas e Aferições (mesmo accordion por dia do histórico de
   // refeições/treinos) -- ver medidasHistoricoTemplate()/acaoAlternarDiaHistoricoMedidas(). null = nenhum
   // dia expandido (só a lista de dias).
@@ -2464,7 +2487,7 @@ const state = {
   // padrão TODOS os tipos ficam selecionados e o período fica em aberto (sem "de"/"até"), o que
   // equivale a "sem filtro nenhum" -- mostra tudo, igual ao histórico já mostrava antes dessa opção
   // existir. Fica só na memória (não precisa persistir entre sessões, mesmo espírito de
-  // historyDiaExpandidoMedidas/showHistoricoMedidas).
+  // historyDiaExpandidoMedidas/medidaCardPagina).
   medidasFiltroTipos: Object.keys(medidaTipos),
   medidasFiltroDe: "", // "AAAA-MM-DD" ou "" = sem limite inferior
   medidasFiltroAte: "", // "AAAA-MM-DD" ou "" = sem limite superior
@@ -7956,21 +7979,33 @@ function bioimpedanciaSectionTemplate() {
   return bioimpedanciaCardFlipWrapperTemplate();
 }
 
-// Cada vez que o histórico é aberto, começa com todos os dias fechados -- mesmo padrão de
-// acaoAlternarHistorico()/acaoAlternarHistoricoTreinos().
-function acaoAbrirHistoricoMedidas() { state.showHistoricoMedidas = true; state.historyDiaExpandidoMedidas = null; render(); }
-function acaoFecharHistoricoMedidas() { state.showHistoricoMedidas = false; render(); }
+// "Abrir o histórico" agora é simplesmente ir pra 2ª página do card virável de Medidas e Aferições (ver
+// medidasCardFlipWrapperTemplate()/acaoIrParaPaginaMedida()) -- antes era uma tela separada
+// (state.showHistoricoMedidas), a pedido do usuário virou uma página do mesmo card (MESMO espírito do
+// card de Bioimpedância e Calorimetria, ver acaoAbrirHistoricoBioimpedancia()). Cada vez que o histórico
+// é aberto, começa com todos os dias fechados -- mesmo padrão de acaoAlternarHistorico()/
+// acaoAlternarHistoricoTreinos().
+function acaoAbrirHistoricoMedidas() { state.historyDiaExpandidoMedidas = null; acaoIrParaPaginaMedida(1); }
+function acaoFecharHistoricoMedidas() { acaoIrParaPaginaMedida(0); }
 // Card de um dia no histórico de Medidas e Aferições -- mesma lógica de dia expansível (accordion) do
 // histórico de refeições (historyDayCardTemplate()) e de treinos (treinoHistoryDayCardTemplate()).
 function medidasHistoryDayCardTemplate(date) {
   // Só os registros do dia que passam no filtro atual (ver medidaPassaFiltro()) -- com o filtro no
   // padrão (todos os tipos, sem período) isso equivale a mostrar todos os registros do dia, igual ao
   // comportamento de antes dessa opção existir.
+  //
+  // event.stopPropagation() no onclick do cabeçalho do dia: essa lista agora mora dentro da 2ª página do
+  // card virável de Medidas e Aferições (ver medidasCardFlipWrapperTemplate()), cujo clique-em-qualquer-
+  // lugar (acaoCliqueMedidaCard()) só ignora cliques em <button>/<a>/<select>/<input> -- e esse cabeçalho é
+  // uma <div> (apesar da classe "history-day-head-btn"), então sem isso o toque pra expandir/recolher um
+  // dia borbulharia até o card e trocaria de página sem querer. Mesmo raciocínio do botão de excluir
+  // registros do dia logo abaixo, que já tinha esse stopPropagation por outro motivo (não expandir o dia
+  // ao excluir).
   const dayMedidas = state.medidas.filter((m) => m.date === date && medidaPassaFiltro(m)).sort((a, b) => b.id - a.id);
   const expandido = state.historyDiaExpandidoMedidas === date;
   return '' +
     '<div class="history-day' + (expandido ? " history-day-expandido" : "") + '">' +
-      '<div class="history-day-head history-day-head-btn" onclick="acaoAlternarDiaHistoricoMedidas(\'' + date + '\')">' +
+      '<div class="history-day-head history-day-head-btn" onclick="event.stopPropagation(); acaoAlternarDiaHistoricoMedidas(\'' + date + '\')">' +
         '<span class="date">' + dateLabel(date) + "</span>" +
         '<span class="history-day-head-direita"><span class="total">' + dayMedidas.length + " registro" + (dayMedidas.length > 1 ? "s" : "") + "</span>" +
         '<button class="meal-row-delete" aria-label="Excluir registros de ' + esc(dateLabel(date)) + '" onclick="event.stopPropagation(); acaoRemoverDiaHistoricoMedidas(\'' + date + '\')">' + icon("trash") + "</button>" +
@@ -7978,7 +8013,7 @@ function medidasHistoryDayCardTemplate(date) {
       "</div>" +
       medidasResumoHtml(dayMedidas) +
       (expandido
-        ? '<div class="medidas-history-list">' + dayMedidas.map(medidaHistoryRowTemplate).join("") + "</div>"
+        ? '<div class="medidas-history-list">' + dayMedidas.map((m) => medidaHistoryRowTemplate(m, "medida-card-history")).join("") + "</div>"
         : ""
       ) +
     "</div>";
@@ -8005,21 +8040,31 @@ function medidasResumoHtml(dayMedidas) {
 // em jejum), valor e -- quando aplicável -- uma classificação clínica logo abaixo do valor
 // (classificarMedida()) e uma legenda compacta na ÚLTIMA linha do próprio registro com os parâmetros de
 // referência e a fonte (legendaMedida()), a pedido do usuário. Pescoço fica sem classificação/legenda.
-function medidaHistoryRowTemplate(r) {
+// prefixo: prefixo das classes CSS emitidas (default "medida-history", ver combinações no CSS) -- essa
+// mesma função é usada tanto na lista "Registros de hoje" (página 0 do card virável, ver
+// medidaListTemplate()) quanto num dia expandido do Histórico (página 1, ver
+// medidasHistoryDayCardTemplate()). Desde que as 2 páginas do card ficaram SEMPRE montadas no DOM juntas
+// (ver medidasCardFlipWrapperTemplate()), hoje pode aparecer nas duas ao mesmo tempo (o mesmo registro de
+// hoje pode estar na lista "de hoje" E dentro do dia de hoje expandido no Histórico) -- por isso a
+// chamada em medidasHistoryDayCardTemplate() passa "medida-card-history" aqui, pra não colidir com a
+// classe da OUTRA lista numa mesma consulta por ela (querySelectorAll etc.) -- mesmo motivo/solução já
+// aplicada ao histórico de Bioimpedância e Calorimetria (ver comentário em historicoListaTemplate()).
+function medidaHistoryRowTemplate(r, prefixo) {
+  const p = prefixo || "medida-history";
   const meta = medidaTipos[r.tipo] || { label: r.tipo, unidade: "" };
   const classificacao = classificarMedida(r);
   const legenda = legendaMedida(r);
   return '' +
-    '<div class="medida-history-item">' +
-      '<div class="medida-history-row"><div class="medida-history-left"><span class="medida-history-tipo">' + emojiMedida(r.tipo) + " " + esc(meta.label) + "</span>" +
-      '<span class="medida-history-meta">' + icon("clock") + " " + esc(r.time) + "</span>" +
-      (r.tipo === "glicemia" ? '<span class="medida-history-meta">' + (r.jejum ? "Em jejum" : "Fora do jejum") + "</span>" : "") +
-      (r.nota ? '<span class="medida-history-nota">' + icon("help") + " " + esc(r.nota) + "</span>" : "") +
+    '<div class="' + p + '-item">' +
+      '<div class="' + p + '-row"><div class="' + p + '-left"><span class="' + p + '-tipo">' + emojiMedida(r.tipo) + " " + esc(meta.label) + "</span>" +
+      '<span class="' + p + '-meta">' + icon("clock") + " " + esc(r.time) + "</span>" +
+      (r.tipo === "glicemia" ? '<span class="' + p + '-meta">' + (r.jejum ? "Em jejum" : "Fora do jejum") + "</span>" : "") +
+      (r.nota ? '<span class="' + p + '-nota">' + icon("help") + " " + esc(r.nota) + "</span>" : "") +
       "</div>" +
-      '<div class="medida-history-right"><div class="medida-history-valor-col"><span class="medida-history-valor">' + esc(String(r.valor)) + " " + esc(meta.unidade) + "</span>" +
-      (classificacao ? '<span class="medida-history-status" style="color:' + classificacao.cor + '">' + statusTextoMedida(r, classificacao) + "</span>" : "") + "</div>" +
+      '<div class="' + p + '-right"><div class="' + p + '-valor-col"><span class="' + p + '-valor">' + esc(String(r.valor)) + " " + esc(meta.unidade) + "</span>" +
+      (classificacao ? '<span class="' + p + '-status" style="color:' + classificacao.cor + '">' + statusTextoMedida(r, classificacao) + "</span>" : "") + "</div>" +
       '<button class="meal-row-delete" aria-label="Remover registro" onclick="acaoRemoverMedida(' + r.id + ')">' + icon("trash") + "</button></div></div>" +
-      (legenda ? '<p class="medida-history-legenda">' + icon("help") + " " + esc(legenda) + "</p>" : "") +
+      (legenda ? '<p class="' + p + '-legenda">' + icon("help") + " " + esc(legenda) + "</p>" : "") +
     "</div>";
 }
 // Exclui TODOS os registros de medida daquele dia -- o "registro do dia" no histórico é o agrupamento
@@ -8127,7 +8172,7 @@ function medidaListTemplate() {
   if (!medidas.length) {
     return '<div class="meal-empty"><div class="meal-empty-icon">' + icon("ruler") + "</div><p>Nenhuma medida registrada hoje</p><p>Escolha o tipo de medição abaixo e registre sua primeira aferição do dia.</p></div>";
   }
-  return '<div class="medida-history-list">' + medidas.map(medidaHistoryRowTemplate).join("") + "</div>";
+  return '<div class="medida-history-list">' + medidas.map((m) => medidaHistoryRowTemplate(m)).join("") + "</div>";
 }
 
 function medidasFormTemplate() {
@@ -8181,28 +8226,98 @@ function medidasFormTemplate() {
     "</section>";
 }
 
+// 2ª página do card virável de Medidas e Aferições (ver medidasCardFlipWrapperTemplate()) -- era uma tela
+// separada (state.showHistoricoMedidas), agora é só a outra página do mesmo card. Sem botão "Voltar" (os
+// tracinhos/o toque no card já levam de volta pra 1ª página -- mesmo padrão do card de Bioimpedância e
+// Calorimetria). O filtro (que pode crescer bastante quando aberto -- vários chips de tipo + 2 campos de
+// data) e a lista de dias entram JUNTOS dentro de .medida-card-history-scroll -- só o título fica fixo
+// acima -- assim nada fica cortado mesmo se o filtro aberto sozinho já ocupasse mais espaço do que a
+// altura fixa do card (ver ajustarAlturaMedidaCard()): tudo abaixo do título rola como um bloco só.
 function medidasHistoricoTemplate() {
   const temAlgumRegistro = historyDaysMedidas().length > 0;
   const days = historyDaysMedidasFiltrado();
   return '' +
     '<section class="medidas-section">' +
       '<h2 class="medidas-section-title">' + icon("history") + " Histórico de Medidas e Aferições</h2>" +
-      medidasFiltroTemplate() +
-      (days.length ?
-        '<div class="history-days-list" style="margin-top:14px">' + days.map((date) => medidasHistoryDayCardTemplate(date)).join("") + "</div>"
-        :
-        '<p class="history-panel-empty" style="margin-top:16px">' +
-          (temAlgumRegistro
-            ? "Nenhum registro encontrado para o filtro selecionado."
-            : "Seus registros de medidas e aferições aparecerão aqui depois do primeiro registro.") +
-        "</p>"
-      ) +
-      '<div class="bioimpedancia-form-acoes"><button class="bioimpedancia-btn-secundario" onclick="acaoFecharHistoricoMedidas()">Voltar</button></div>' +
+      '<div class="medida-card-history-scroll">' +
+        medidasFiltroTemplate() +
+        (days.length ?
+          '<div class="history-days-list" style="margin-top:14px">' + days.map((date) => medidasHistoryDayCardTemplate(date)).join("") + "</div>"
+          :
+          '<p class="history-panel-empty" style="margin-top:16px">' +
+            (temAlgumRegistro
+              ? "Nenhum registro encontrado para o filtro selecionado."
+              : "Seus registros de medidas e aferições aparecerão aqui depois do primeiro registro.") +
+          "</p>"
+        ) +
+      "</div>" +
     "</section>";
 }
 
+// Rótulos dos 2 tracinhos indicadores (aria-label de cada .medida-card-dot) -- ver
+// medidasCardFlipWrapperTemplate().
+const MEDIDA_CARD_PAGINA_LABELS = ["Ver formulário de Medidas e Aferições", "Ver Histórico de Medidas e Aferições"];
+// Envolve as 2 páginas do card de Medidas e Aferições (formulário/registros de hoje e Histórico de
+// registros -- pedido do usuário: "o card de medidas no tamanho padrão que está o card de bioimpedância
+// ... adotar nele também a função virar") no MESMO mecanismo de slide horizontal (translateX) + tracinhos
+// indicadores + toque pra virar já usado no card de Bioimpedância e Calorimetria logo acima nessa mesma
+// aba -- ver bioimpedanciaCardFlipWrapperTemplate()/acaoCliqueBioCard()/acaoIrParaPaginaBio(). Só que com
+// 2 páginas em vez de 3 (ver acaoIrParaPaginaMedida()/.medida-card-track).
+function medidasCardFlipWrapperTemplate() {
+  const pagina = state.medidaCardPagina || 0;
+  const paginas = [medidasFormTemplate(), medidasHistoricoTemplate()];
+  return '' +
+    '<div class="medida-card-flip-wrap">' +
+      '<div class="medida-card-flip" onclick="acaoCliqueMedidaCard(event)">' +
+        '<div class="medida-card-track" style="transform:translateX(-' + (pagina * 50) + '%)">' +
+          paginas.map((html) => '<div class="medida-card-page">' + html + "</div>").join("") +
+        "</div>" +
+      "</div>" +
+      '<div class="medida-card-dots">' +
+        [0, 1].map((i) => '<button class="medida-card-dot' + (pagina === i ? " active" : "") + '" aria-label="' + MEDIDA_CARD_PAGINA_LABELS[i] + '" onclick="acaoIrParaPaginaMedida(' + i + ')"></button>').join("") +
+      "</div>" +
+    "</div>";
+}
+// Toque em qualquer lugar do card avança pra próxima página (cicla 0 → 1 → 0) -- exceto em botões, abas,
+// selects e outros controles interativos das páginas (formulário tem os campos de registro/"Histórico de
+// registros"; histórico tem o filtro/editar-remover/os campos de data), que devem executar sua própria
+// ação em vez de virar a página -- mesmo padrão de acaoCliqueBioCard().
+function acaoCliqueMedidaCard(event) {
+  if (event.target.closest("button, a, select, input")) return;
+  acaoIrParaPaginaMedida((state.medidaCardPagina + 1) % 2);
+}
+// Vai pra uma página específica do card de Medidas e Aferições -- usado pelo toque no card
+// (acaoCliqueMedidaCard()) e pelos tracinhos indicadores/botão "Histórico de registros"
+// (medidasCardFlipWrapperTemplate()/acaoAbrirHistoricoMedidas()/acaoFecharHistoricoMedidas()). MESMA
+// técnica de animação/altura fixa de acaoIrParaPaginaBio() -- ver comentário lá.
+function acaoIrParaPaginaMedida(pagina) {
+  if (state.medidaCardPagina === pagina) return; // já está nessa página, nada a fazer
+  const flip = document.querySelector(".medida-card-flip");
+  const track = flip ? flip.querySelector(".medida-card-track") : null;
+  if (!track) { state.medidaCardPagina = pagina; render(); return; }
+  track.style.transform = "translateX(-" + (pagina * 50) + "%)";
+  let comitado = false;
+  const commit = () => { if (comitado) return; comitado = true; state.medidaCardPagina = pagina; render(); };
+  track.addEventListener("transitionend", commit, { once: true });
+  setTimeout(commit, 450); // salvaguarda (mesmo motivo do análogo em acaoAlternarFlipNutriente())
+}
+// Harmoniza a altura das 2 páginas do card de Medidas e Aferições -- chamado a cada render() (ver função
+// render()). MESMO pedido do usuário aplicado ao card de Bioimpedância e Calorimetria (ver
+// ajustarAlturaBioCard()): a altura usada é o tamanho NATURAL do formulário (página 0) -- a única página
+// de conteúdo "de verdade" aqui --, e o Histórico (página 1) conforma-se a essa MESMA altura, com rolagem
+// própria pra caber sua lista (ver .medida-card-history-scroll) em vez de esticar o card.
+function ajustarAlturaMedidaCard() {
+  const flip = document.querySelector(".medida-card-flip");
+  if (!flip) return;
+  const secoes = flip.querySelectorAll(".medida-card-page > .medidas-section");
+  if (!secoes.length) return;
+  const altura = secoes[0].scrollHeight;
+  flip.style.height = altura + "px";
+  secoes.forEach((secao) => { secao.style.height = altura + "px"; });
+}
+
 function medidasTabTemplate() {
-  return '<main>' + imcCardTemplate() + bioimpedanciaSectionTemplate() + (state.showHistoricoMedidas ? medidasHistoricoTemplate() : medidasFormTemplate()) + "</main>";
+  return '<main>' + imcCardTemplate() + bioimpedanciaSectionTemplate() + medidasCardFlipWrapperTemplate() + "</main>";
 }
 
 // Mesmo layout de duas colunas da aba Nutrição (formulário + histórico do dia), aplicado a treinos.
@@ -9512,6 +9627,7 @@ function render() {
   captureFormState();
   document.getElementById("app").innerHTML = state.usuario ? homeTemplate() : authTemplate();
   ajustarAlturaBioCard();
+  ajustarAlturaMedidaCard();
 }
 
 /* ===================== instalar como app (PWA) ===================== */
