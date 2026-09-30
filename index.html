@@ -309,8 +309,13 @@ svg{ display: block; }
 .analise-consumo-chart{ display:block; width:100%; height:150px; margin-top:16px; overflow:visible; }
 .analise-consumo-chart-ref{ stroke-width:1.5; stroke-dasharray:4 3; opacity:.55; }
 .analise-consumo-chart-ref-label{ font-weight:700; }
+/* Barras clicáveis -- pedido do usuário: ao clicar numa barra, abre um modal com o detalhe daquele dia
+   (data/dia da semana + os 3 alimentos que mais contribuíram) -- ver acaoAbrirDetalheDiaAnalise()/
+   analiseConsumoDiaModalTemplate(). */
+.analise-consumo-chart rect{ cursor:pointer; }
 .analise-consumo-chart-legenda{ margin-top:6px; display:flex; align-items:center; gap:6px; }
 .analise-consumo-chart-legenda .icon{ width:13px; height:13px; flex-shrink:0; }
+.analise-consumo-dia-modal-sub{ margin:0 0 12px; font-size:13px; line-height:1.5; color:#5c6b62; }
 
 .dashboard-grid{ display:grid; gap:24px; grid-template-columns:1fr; }
 @media (min-width: 1280px){ .dashboard-grid{ grid-template-columns:minmax(0,1fr) 410px; } }
@@ -643,6 +648,26 @@ svg{ display: block; }
 .bioimpedancia-anexo-remover:hover{ color:#c0503f; }
 .bioimpedancia-anexo-link{ margin-top:4px; display:inline-flex; align-items:center; gap:4px; font-size:12px; font-weight:600; color:#4b7048; }
 .bioimpedancia-anexo-link:hover{ text-decoration:underline; }
+/* Card de Bioimpedância e Calorimetria com 3 páginas -- pedido do usuário: reaproveita o MESMO espírito
+   dos tracinhos indicadores e da virada por toque já usados nos cards de macro/micronutriente e "Seu
+   resumo de hoje" (.nutrient-card-flip/.summary-card-flip), só que com 3 páginas em vez de 2: 1) o
+   resumo de sempre, 2) Composição corporal (que morava na aba Evolução) e 3) Histórico de registros (que
+   era uma tela separada). Como o flip 3D (rotateY) só funciona bem pra 2 lados, aqui a virada é um slide
+   horizontal (translateX) da faixa com as 3 páginas -- ver bioimpedanciaCardFlipWrapperTemplate()/
+   acaoIrParaPaginaBio(). A altura do card acompanha a página ativa (ver ajustarAlturaBioCard()), já que
+   cada página pode ter uma altura bem diferente (o Histórico, por exemplo, pode ficar bem mais alto). */
+.bio-card-flip-wrap{ margin-top:24px; display:flex; flex-direction:column; align-items:center; gap:8px; }
+.bio-card-flip{ position:relative; width:100%; overflow:hidden; cursor:pointer; transition:height .4s cubic-bezier(.4,.05,.2,1); }
+/* largura de 300% (3 páginas) -- o translateX de cada página é sempre um múltiplo de 33,3333% (1/3 da
+   largura da FAIXA, que equivale a exatamente 100% da largura do card) -- ver
+   bioimpedanciaCardFlipWrapperTemplate()/acaoIrParaPaginaBio() (% de transform é relativo à largura do
+   próprio elemento, não à do pai -- por isso não pode ser só "-100%" por página aqui). */
+.bio-card-track{ display:flex; width:300%; transition:transform .4s cubic-bezier(.4,.05,.2,1); }
+.bio-card-page{ flex:0 0 33.3333%; min-width:0; }
+.bio-card-page > .medidas-section{ margin-top:0; box-shadow:none; }
+.bio-card-dots{ display:flex; gap:5px; }
+.bio-card-dot{ height:3px; width:14px; border-radius:999px; background:#d5ddd0; padding:0; border:none; cursor:pointer; transition:background .15s, width .15s; }
+.bio-card-dot.active{ width:20px; background:#4b7048; }
 .medida-filtro{ margin-top:16px; }
 .medida-filtro-toggle{ display:inline-flex; align-items:center; gap:8px; border-radius:999px; border:1px solid #dce5db; background:#f7f9f5; padding:9px 14px; font-size:13px; font-weight:600; color:#3c5b4d; transition:background .15s, border-color .15s; }
 .medida-filtro-toggle:hover{ background:#eef3ea; border-color:#c4d6c0; }
@@ -664,27 +689,32 @@ svg{ display: block; }
 .medida-form{ margin-top:16px; display:flex; flex-direction:column; gap:12px; max-width:360px; }
 .medida-input-row{ display:flex; flex-direction:column; gap:12px; margin-top:4px; }
 .medidas-hoje{ margin-top:24px; padding-top:20px; border-top:1px solid #edf0eb; }
-.medidas-history-list{ margin-top:16px; display:flex; flex-direction:column; }
-.medida-history-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 0; border-top:1px solid #edf0eb; }
-.medida-history-row:first-child{ border-top:none; padding-top:4px; }
-/* No histórico de Medidas e Aferições (não no de Bioimpedância/Calorimetria, que reaproveita
-   .medida-history-row "solto" acima), cada registro vem envolvido num .medida-history-item, que agora é
+.medidas-history-list, .bio-history-list{ margin-top:16px; display:flex; flex-direction:column; }
+.medida-history-row, .bio-history-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 0; border-top:1px solid #edf0eb; }
+.medida-history-row:first-child, .bio-history-row:first-child{ border-top:none; padding-top:4px; }
+/* No histórico de Medidas e Aferições, cada registro vem envolvido num .medida-history-item, que agora é
    quem controla o espaçamento/divisória entre registros -- a linha .medida-history-row interna fica sem
    padding/borda próprios, e a legenda de classificação clínica (.medida-history-legenda) entra como
-   última linha do mesmo item, abaixo da linha principal. Ver medidaHistoryRowTemplate(). */
-.medida-history-item{ padding:14px 0; border-top:1px solid #edf0eb; }
-.medida-history-item:first-child{ border-top:none; padding-top:4px; }
-.medida-history-item .medida-history-row{ padding:0; border-top:none; }
-.medida-history-left{ min-width:0; }
-.medida-history-tipo{ display:block; font-size:14px; font-weight:600; color:#31564a; }
-.medida-history-meta{ margin-top:4px; display:flex; align-items:center; gap:4px; font-size:12px; color:#9aa9a1; }
+   última linha do mesmo item, abaixo da linha principal. Ver medidaHistoryRowTemplate(). O histórico de
+   Bioimpedância/Calorimetria (ver historicoListaTemplate()) usa a MESMA aparência, mas com classes
+   PRÓPRIAS (.bio-history-*, sempre combinadas aqui com as classes acima) -- desde que esse histórico virou
+   uma página do card virável (bioimpedanciaCardFlipWrapperTemplate()), ele fica sempre montado no DOM, e
+   por isso não pode mais compartilhar a classe .medida-history-item com o histórico de Medidas e
+   Aferições (que também está sempre visível, na mesma aba) sem os dois se misturarem numa mesma consulta
+   por essa classe. */
+.medida-history-item, .bio-history-item{ padding:14px 0; border-top:1px solid #edf0eb; }
+.medida-history-item:first-child, .bio-history-item:first-child{ border-top:none; padding-top:4px; }
+.medida-history-item .medida-history-row, .bio-history-item .bio-history-row{ padding:0; border-top:none; }
+.medida-history-left, .bio-history-left{ min-width:0; }
+.medida-history-tipo, .bio-history-tipo{ display:block; font-size:14px; font-weight:600; color:#31564a; }
+.medida-history-meta, .bio-history-meta{ margin-top:4px; display:flex; align-items:center; gap:4px; font-size:12px; color:#9aa9a1; }
 .medida-history-nota{ margin-top:4px; display:flex; align-items:flex-start; gap:4px; font-size:12px; color:#7c8c84; font-style:italic; }
-.medida-history-right{ display:flex; flex-shrink:0; align-items:center; gap:12px; }
+.medida-history-right, .bio-history-right{ display:flex; flex-shrink:0; align-items:center; gap:12px; }
 .medida-history-valor-col{ display:flex; flex-direction:column; align-items:flex-end; gap:2px; }
 .medida-history-valor{ font-size:14px; font-weight:600; color:#3d6355; }
 .medida-history-status{ font-size:11px; font-weight:600; }
-.medida-history-legenda{ margin:10px 0 0; display:flex; align-items:flex-start; gap:6px; font-size:11px; line-height:1.4; color:#92a099; }
-.medida-history-legenda .icon{ margin-top:1px; width:13px; height:13px; color:#9db69a; flex-shrink:0; }
+.medida-history-legenda, .bio-history-legenda{ margin:10px 0 0; display:flex; align-items:flex-start; gap:6px; font-size:11px; line-height:1.4; color:#92a099; }
+.medida-history-legenda .icon, .bio-history-legenda .icon{ margin-top:1px; width:13px; height:13px; color:#9db69a; flex-shrink:0; }
 
 /* ---------- modal (editar perfil) ---------- */
 .modal-overlay{ position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.4); padding:16px; }
@@ -2322,6 +2352,9 @@ const state = {
   analiseFiltroDe: "",
   analiseFiltroAte: "",
   analiseGerada: null, // { key, de, ate } | null
+  // { date, key } do dia clicado no gráfico diário da Análise de Consumo, com o modal de detalhe aberto,
+  // ou null -- ver analiseConsumoDiaModalTemplate()/acaoAbrirDetalheDiaAnalise().
+  analiseConsumoDiaAberto: null,
   // Chave do nutriente (nutrientMeta/micronutrientMeta) com o modal de informações aberto, ou null --
   // ver nutrientInfoModalTemplate()/acaoAbrirInfoNutriente().
   infoNutrienteAberto: null,
@@ -2425,7 +2458,12 @@ const state = {
   showFormBioimpedancia: false,
   bioAbaFormulario: "bioimpedancia", // "bioimpedancia" | "calorimetria"
   enviandoAnexo: false,
-  showHistoricoBioimpedancia: false,
+  // Página ativa do card "virável" de Bioimpedância e Calorimetria -- 0 = resumo (como sempre foi),
+  // 1 = Composição corporal (mudou-se da aba Evolução pra cá, a pedido do usuário) e 2 = Histórico de
+  // registros (que era uma tela separada, agora é a última página do mesmo card) -- ver
+  // bioimpedanciaCardFlipWrapperTemplate()/acaoIrParaPaginaBio(). Fica só na memória, reseta ao
+  // recarregar a página (mesmo espírito de nutrientCardsFlipped/resumoCardVirado acima).
+  bioCardPagina: 0,
   historicoAbaAtiva: "bioimpedancia", // "bioimpedancia" | "calorimetria"
   bioFormValores: {},
   caloFormValores: {},
@@ -4150,6 +4188,11 @@ function acaoTrocarAbaNutrientes(aba) { state.nutrientAba = aba; render(); }
 // micronutriente -- ver nutrientInfoModalTemplate()/NUTRIENT_INFO.
 function acaoAbrirInfoNutriente(chave) { state.infoNutrienteAberto = chave; render(); }
 function acaoFecharInfoNutriente() { state.infoNutrienteAberto = null; render(); }
+// Abre/fecha o modal de detalhe de um dia do gráfico diário da Análise de Consumo (clicado numa barra) --
+// ver analiseConsumoDiaModalTemplate()/analiseConsumoDiarioChartSvg(). Mesmo padrão de
+// acaoAbrirInfoNutriente() acima.
+function acaoAbrirDetalheDiaAnalise(date, key) { state.analiseConsumoDiaAberto = { date: date, key: key }; render(); }
+function acaoFecharDetalheDiaAnalise() { state.analiseConsumoDiaAberto = null; render(); }
 // Abre/fecha o modal de informações de um exame (Bioimpedância ou Calorimetria) -- ver
 // exameInfoModalTemplate()/EXAME_INFO. Mesmo padrão de acaoAbrirInfoNutriente() acima.
 function acaoAbrirInfoExame(tipo) { state.infoExameAberto = tipo; render(); }
@@ -4959,7 +5002,10 @@ function analiseFaixaEhBoa(faixa) { return faixa === "adequado"; }
 // ler, então mostra só os últimos N dias do período (mais recentes), com um aviso na legenda de que o
 // gráfico foi recortado.
 const ANALISE_CONSUMO_CHART_MAX_BARRAS = 45;
-function analiseConsumoDiarioChartSvg(serieDiaria, esperado, meta, digits, ehSodio) {
+// key: chave do nutriente (nutrientMeta/micronutrientMeta) -- pedido do usuário: clicar numa barra abre
+// um modal com a data/dia da semana daquele dia e os 3 alimentos que mais contribuíram pro consumo desse
+// nutriente naquele dia (ver acaoAbrirDetalheDiaAnalise()/analiseConsumoDiaModalTemplate()).
+function analiseConsumoDiarioChartSvg(serieDiaria, esperado, meta, digits, ehSodio, key) {
   const recortado = serieDiaria.length > ANALISE_CONSUMO_CHART_MAX_BARRAS;
   const pontos = recortado ? serieDiaria.slice(-ANALISE_CONSUMO_CHART_MAX_BARRAS) : serieDiaria;
   const W = 320, H = 150, PAD_L = 32, PAD_R = 10, PAD_T = 16, PAD_B = 20;
@@ -4973,7 +5019,7 @@ function analiseConsumoDiarioChartSvg(serieDiaria, esperado, meta, digits, ehSod
     const cx = PAD_L + (i + 0.5) * (innerW / pontos.length);
     const alt = Math.max(1, p.valor * escala);
     const rotulo = esc(dataCurta(p.date)) + ": " + formatNumber(p.valor, digits) + " " + meta.unit;
-    return '<rect x="' + (cx - larguraBarra / 2).toFixed(1) + '" y="' + (baseY - alt).toFixed(1) + '" width="' + larguraBarra.toFixed(1) + '" height="' + alt.toFixed(1) + '" rx="' + Math.min(2, larguraBarra / 2).toFixed(1) + '" fill="' + meta.color + '"><title>' + rotulo + "</title></rect>";
+    return '<rect x="' + (cx - larguraBarra / 2).toFixed(1) + '" y="' + (baseY - alt).toFixed(1) + '" width="' + larguraBarra.toFixed(1) + '" height="' + alt.toFixed(1) + '" rx="' + Math.min(2, larguraBarra / 2).toFixed(1) + '" fill="' + meta.color + '" onclick="acaoAbrirDetalheDiaAnalise(\'' + p.date + "', '" + key + '\')"><title>' + rotulo + "</title></rect>";
   }).join("");
   const yRef = baseY - Math.max(0, Math.min(innerH, (esperado || 0) * escala));
   const labelRef = (ehSodio ? "Limite " : "Meta/IDR ") + formatNumber(esperado, digits) + " " + meta.unit;
@@ -5061,7 +5107,7 @@ function analiseConsumoNarrativaTemplate(key, resultado) {
   // entre o 1º parágrafo da conclusão (os números/médias do período, paragrafoNumeros) e o 2º (o que isso
   // significa, paragrafoSignificado) -- antes de explicar o que a média significa, mostra visualmente como
   // ela se formou dia a dia.
-  const graficoDiario = resultado.serieDiaria && resultado.serieDiaria.length ? analiseConsumoDiarioChartSvg(resultado.serieDiaria, resultado.esperado, meta, digits, resultado.ehSodio) : "";
+  const graficoDiario = resultado.serieDiaria && resultado.serieDiaria.length ? analiseConsumoDiarioChartSvg(resultado.serieDiaria, resultado.esperado, meta, digits, resultado.ehSodio, key) : "";
 
   return '' +
     '<div class="analise-consumo-badge analise-consumo-badge-' + (boa ? "boa" : "atencao") + '">' + icon(boa ? "check" : "zap") + " " + faixaTitulo + "</div>" +
@@ -6329,21 +6375,23 @@ function alimentoDetalheTemplate(a) {
     "</div>";
 }
 
-// Alimentos/comidas de hoje (dentro das refeições que os cards somam -- ver
+// Alimentos/comidas de um conjunto de refeições (por padrão, as de hoje -- ver
 // mealsDesdeUltimoEncerramento()) que têm ALGUMA contribuição pro nutriente "chave" (>0), da que mais
 // contribuiu pra que menos contribuiu -- usada na seção "Alimentos que mais influenciaram" do modal de
-// informações de cada card (ver nutrientInfoModalTemplate()). CORRIGIDO a pedido do usuário: a versão
-// anterior listava a REFEIÇÃO inteira (ex.: "Almoço"), não o alimento específico (ex.: "Arroz branco
-// cozido") -- agora desce um nível, olhando m.alimentos (o detalhamento por alimento já guardado em
-// cada refeição, ver acaoSalvarRefeicao()) em vez da refeição como um todo. O mesmo alimento comido em
-// mais de uma refeição hoje (ex.: arroz no almoço E na janta) é somado numa linha só -- é a contribuição
-// TOTAL daquele alimento no nutriente que importa aqui, não cada ocasião em que foi comido. Empates
-// mantêm a ordem de primeira aparição (sort() é estável), e "Exposição solar" entra na lista
+// informações de cada card (ver nutrientInfoModalTemplate()) e, informando outro conjunto de refeições
+// (as de um dia específico), no modal de detalhe do gráfico diário da Análise de Consumo (ver
+// alimentosQueMaisInfluenciaramNutrienteNoDia()/analiseConsumoDiaModalTemplate()). CORRIGIDO a pedido do
+// usuário: a versão anterior listava a REFEIÇÃO inteira (ex.: "Almoço"), não o alimento específico (ex.:
+// "Arroz branco cozido") -- agora desce um nível, olhando m.alimentos (o detalhamento por alimento já
+// guardado em cada refeição, ver acaoSalvarRefeicao()) em vez da refeição como um todo. O mesmo alimento
+// comido em mais de uma refeição do dia (ex.: arroz no almoço E na janta) é somado numa linha só -- é a
+// contribuição TOTAL daquele alimento no nutriente que importa aqui, não cada ocasião em que foi comido.
+// Empates mantêm a ordem de primeira aparição (sort() é estável), e "Exposição solar" entra na lista
 // normalmente quando a chave é vitD (é a única em que contribui) -- sem nenhum caso especial, já que é
 // só mais um "alimento" (label "Exposição solar") dentro de uma refeição com vitD > 0.
-function alimentosQueMaisInfluenciaramNutriente(chave) {
+function alimentosQueMaisInfluenciaramNutriente(chave, meals) {
   const porAlimento = new Map();
-  mealsDesdeUltimoEncerramento().forEach((m) => {
+  (meals || mealsDesdeUltimoEncerramento()).forEach((m) => {
     (m.alimentos || []).forEach((a) => {
       const valor = (a.values && a.values[chave]) || 0;
       if (!valor) return;
@@ -6353,6 +6401,13 @@ function alimentosQueMaisInfluenciaramNutriente(chave) {
     });
   });
   return Array.from(porAlimento.values()).sort((a, b) => b.valor - a.valor);
+}
+// Mesma ideia acima, só que pros alimentos de UM DIA específico (qualquer data, não só hoje) -- usada
+// pelo modal de detalhe do gráfico diário da Análise de Consumo (ver analiseConsumoDiaModalTemplate()).
+// state.meals NUNCA é apagado quando um dia é encerrado (ver comentário em fecharDiaAutomaticamente()) --
+// o detalhamento por alimento continua disponível pra qualquer dia do histórico.
+function alimentosQueMaisInfluenciaramNutrienteNoDia(chave, date) {
+  return alimentosQueMaisInfluenciaramNutriente(chave, state.meals.filter((m) => m.date === date));
 }
 // Formata o valor de UM alimento pra uma chave de nutriente qualquer (macro ou micro), com a mesma
 // regra de casas decimais já usada nos cards (nutrientCardsTemplate()/micronutrientCardsTemplate()) --
@@ -6420,6 +6475,46 @@ function nutrientInfoModalTemplate() {
         alimentosInfluenciaramNutrienteTemplate(chave, meta) +
       "</div>" +
       '<p class="nutrient-info-fonte">' + icon("help") + " Fonte: " + esc(info.fonte) + "</p>" +
+    "</div></div>";
+}
+
+// Modal de detalhe de um dia do gráfico diário da Análise de Consumo -- pedido do usuário: ao clicar em
+// qualquer barra, mostra a data/dia da semana daquele dia e os 3 alimentos que mais contribuíram pro
+// consumo do nutriente naquele dia, em ordem decrescente, começando pelo que mais influenciou (ver
+// acaoAbrirDetalheDiaAnalise()/analiseConsumoDiarioChartSvg()). Reaproveita o mesmo formato visual (barra
+// proporcional + valor + %) já usado em "Alimentos que mais influenciaram hoje"
+// (alimentosInfluenciaramNutrienteTemplate() acima), só que limitado aos 3 primeiros e pra um dia
+// específico (não necessariamente hoje) -- ver alimentosQueMaisInfluenciaramNutrienteNoDia(). A % de cada
+// alimento é sempre relativa ao TOTAL do dia (todos os alimentos que contribuíram, não só os 3 exibidos),
+// pra representar de fato "quanto esse alimento pesou no total daquele dia".
+function analiseConsumoDiaModalTemplate() {
+  const aberto = state.analiseConsumoDiaAberto;
+  if (!aberto) return "";
+  const meta = nutrientMeta[aberto.key] || micronutrientMeta[aberto.key];
+  if (!meta) return "";
+  const lista = alimentosQueMaisInfluenciaramNutrienteNoDia(aberto.key, aberto.date);
+  const top3 = lista.slice(0, 3);
+  const total = lista.reduce((soma, r) => soma + r.valor, 0);
+  const corpo = !top3.length
+    ? '<p class="imc-empty">Não encontramos o detalhamento por alimento desse dia (registros muito antigos podem não ter esse detalhe).</p>'
+    : '<div class="nutrient-info-refeicoes-lista">' + top3.map((r, i) =>
+        '<div class="nutrient-info-refeicao-row">' +
+          '<span class="nutrient-info-refeicao-rank">' + (i + 1) + "º</span>" +
+          '<div class="nutrient-info-refeicao-info"><div class="nutrient-info-refeicao-nome">' + esc(r.label) + "</div>" +
+            '<div class="nutrient-info-refeicao-barra"><div class="nutrient-info-refeicao-barra-fill" style="width:' + pct(r.valor, total) + "%;background:" + meta.color + '"></div></div></div>' +
+          '<span class="nutrient-info-refeicao-valor">' + formatNutrienteValorGenerico(aberto.key, r.valor) + '<span class="nutrient-info-refeicao-pct">' + formatNumber(pct(r.valor, total), 0) + "%</span></span>" +
+        "</div>"
+      ).join("") + "</div>";
+  return '' +
+    '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharDetalheDiaAnalise();}">' +
+    '<div class="modal-card nutrient-info-modal">' +
+      '<div class="meal-detalhe-head"><div class="nutrient-info-modal-title">' +
+        '<div class="nutrient-icon" style="background:' + meta.soft + ";color:" + meta.color + '">' + icon(meta.icon) + "</div>" +
+        "<h2>" + esc(dateLabel(aberto.date)) + "</h2>" +
+      "</div>" +
+      '<button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharDetalheDiaAnalise()">' + icon("x") + "</button></div>" +
+      '<p class="analise-consumo-dia-modal-sub">Alimentos que mais contribuíram para ' + esc(meta.label.toLowerCase()) + " nesse dia:</p>" +
+      corpo +
     "</div></div>";
 }
 
@@ -6671,8 +6766,8 @@ function mealDetalheModalTemplate() {
 function homeTabsTemplate() {
   return '<div class="home-tabs">' +
     '<button class="home-tab' + (state.activeTab === "nutricao" ? " active" : "") + '" onclick="acaoTrocarAba(\'nutricao\')">' + icon("utensils") + " Nutrição</button>" +
-    '<button class="home-tab' + (state.activeTab === "treinos" ? " active" : "") + '" onclick="acaoTrocarAba(\'treinos\')">' + icon("flame") + " Treinos/Esportes</button>" +
-    '<button class="home-tab' + (state.activeTab === "medidas" ? " active" : "") + '" onclick="acaoTrocarAba(\'medidas\')">' + icon("activity") + " Medidas e Aferições</button>" +
+    '<button class="home-tab' + (state.activeTab === "treinos" ? " active" : "") + '" onclick="acaoTrocarAba(\'treinos\')">' + icon("flame") + " Esportes</button>" +
+    '<button class="home-tab' + (state.activeTab === "medidas" ? " active" : "") + '" onclick="acaoTrocarAba(\'medidas\')">' + icon("activity") + " Medidas</button>" +
     '<button class="home-tab' + (state.activeTab === "evolucao" ? " active" : "") + '" onclick="acaoTrocarAba(\'evolucao\')">' + icon("trend") + " Evolução</button>" +
     "</div>";
 }
@@ -6782,7 +6877,7 @@ function acaoFecharFormBioimpedancia() {
 function acaoEditarBioimpedancia(id) {
   const registro = state.bioimpedancia.find((r) => r.id === id);
   if (!registro) return;
-  state.showHistoricoBioimpedancia = false;
+  state.bioCardPagina = 0; // ao fechar o formulário, volta pro resumo (não fica preso no Histórico)
   state.showFormBioimpedancia = true;
   state.bioAbaFormulario = "bioimpedancia";
   anexoSelecionadoBio = null;
@@ -6798,7 +6893,7 @@ function acaoEditarBioimpedancia(id) {
 function acaoEditarCalorimetria(id) {
   const registro = state.calorimetria.find((r) => r.id === id);
   if (!registro) return;
-  state.showHistoricoBioimpedancia = false;
+  state.bioCardPagina = 0; // ao fechar o formulário, volta pro resumo (não fica preso no Histórico)
   state.showFormBioimpedancia = true;
   state.bioAbaFormulario = "calorimetria";
   anexoSelecionadoBio = null;
@@ -6833,13 +6928,15 @@ function onAnexoCaloSelecionado(event) {
 function acaoRemoverAnexoSelecionadoBio() { anexoSelecionadoBio = null; render(); }
 function acaoRemoverAnexoSelecionadoCalo() { anexoSelecionadoCalo = null; render(); }
 
+// "Abrir o histórico" agora é simplesmente ir pra 3ª página do card virável de Bioimpedância e
+// Calorimetria (ver bioimpedanciaCardFlipWrapperTemplate()/acaoIrParaPaginaBio()) -- antes era uma tela
+// separada (state.showHistoricoBioimpedancia), a pedido do usuário virou uma página do mesmo card.
 function acaoAbrirHistoricoBioimpedancia(aba) {
-  state.showHistoricoBioimpedancia = true;
   state.historicoAbaAtiva = aba === "calorimetria" ? "calorimetria" : "bioimpedancia";
-  render();
+  acaoIrParaPaginaBio(2);
 }
 function acaoTrocarAbaHistoricoBioimpedancia(aba) { state.historicoAbaAtiva = aba; render(); }
-function acaoFecharHistoricoBioimpedancia() { state.showHistoricoBioimpedancia = false; render(); }
+function acaoFecharHistoricoBioimpedancia() { acaoIrParaPaginaBio(0); }
 
 const BIOIMPEDANCIA_CAMPOS = ["altura", "peso", "gordura", "massaMagra", "massaMuscular", "aguaCorporal", "gorduraVisceral"];
 // idadeMetabolica morou aqui, mas passou pro formulário de Calorimetria a pedido do usuário -- faz mais
@@ -7569,34 +7666,52 @@ function valoresCalorimetriaLegenda(r) {
 // mostrar nenhuma) -- diferente pra Bioimpedância e Calorimetria, já que cada uma tem seus próprios
 // campos (ver valoresBioimpedanciaLegenda()/valoresCalorimetriaLegenda() acima), então quem chama essa
 // função passa a função certa pro tipo de registro sendo listado.
+// Classes PRÓPRIAS (bio-history-*, não medida-history-*) -- mesmo estilo visual do histórico de Medidas e
+// Aferições (ver CSS: ".medida-history-item, .bio-history-item{...}" etc., valores sempre combinados),
+// mas com nomes diferentes DE PROPÓSITO: agora que o card de Bioimpedância e Calorimetria vira (ver
+// bioimpedanciaCardFlipWrapperTemplate()), essa lista fica SEMPRE montada no DOM (mesmo quando a página do
+// Histórico não está a que está visível no momento), então não pode mais compartilhar a mesma classe do
+// histórico de Medidas e Aferições -- um simples document.querySelectorAll('.medida-history-item') em
+// outro lugar do app (ou em teste) pegaria os dois histéricos misturados, quando antes só existia um dos
+// dois por vez no DOM.
 function historicoListaTemplate(registros, tipoLabel, acaoRemover, acaoEditar, valoresLegenda) {
   if (!registros.length) return '<p class="imc-empty" style="margin-top:14px">Nenhum registro de ' + tipoLabel.toLowerCase() + " ainda.</p>";
-  return '<div class="medidas-history-list" style="margin-top:14px">' + registros.map((r) => {
+  return '<div class="bio-history-list" style="margin-top:14px">' + registros.map((r) => {
     const legenda = valoresLegenda ? valoresLegenda(r) : null;
-    return '<div class="medida-history-item">' +
-      '<div class="medida-history-row"><div class="medida-history-left"><span class="medida-history-tipo">' + tipoLabel + " registrada em " + dataCurta(r.date) + "</span>" +
+    return '<div class="bio-history-item">' +
+      '<div class="bio-history-row"><div class="bio-history-left"><span class="bio-history-tipo">' + tipoLabel + " registrada em " + dataCurta(r.date) + "</span>" +
       (r.anexoUrl
         ? '<a class="bioimpedancia-anexo-link" href="' + esc(r.anexoUrl) + '" target="_blank" rel="noopener">' + icon("file") + " Ver exame</a>"
-        : '<span class="medida-history-meta">Sem exame anexado</span>') +
+        : '<span class="bio-history-meta">Sem exame anexado</span>') +
       "</div>" +
-      '<div class="medida-history-right">' +
+      '<div class="bio-history-right">' +
         '<button class="meal-row-delete" aria-label="Editar registro" onclick="' + acaoEditar + "(" + r.id + ')">' + icon("edit") + "</button>" +
         '<button class="meal-row-delete" aria-label="Remover registro" onclick="' + acaoRemover + "(" + r.id + ')">' + icon("trash") + "</button>" +
       "</div></div>" +
       // Legenda logo ABAIXO do link do exame (mesmo padrão visual da legenda de referência do histórico
       // de Medidas e Aferições, ver medidaHistoryRowTemplate()/legendaMedida()).
-      (legenda ? '<p class="medida-history-legenda">' + icon("help") + " " + esc(legenda) + "</p>" : "") +
+      (legenda ? '<p class="bio-history-legenda">' + icon("help") + " " + esc(legenda) + "</p>" : "") +
     "</div>";
   }).join("") + "</div>";
 }
 
+// 3ª página do card virável de Bioimpedância e Calorimetria (ver bioimpedanciaCardFlipWrapperTemplate())
+// -- era uma tela separada (state.showHistoricoBioimpedancia), agora é só mais uma página do mesmo card.
+// Sem botão "Voltar" (os tracinhos/o toque no card já levam de volta pra 1ª página -- mesmo padrão dos
+// cards de macro/micronutriente, que também não têm botão de voltar).
 function historicoBioimpedanciaTemplate() {
   const aba = state.historicoAbaAtiva;
   const registrosBio = state.bioimpedancia.slice().sort((a, b) => b.id - a.id);
   const registrosCalo = state.calorimetria.slice().sort((a, b) => b.id - a.id);
+  // Título mais específico que só "Histórico de registros" (pedido do usuário usa essa expressão mais
+  // completa) -- de propósito: essa página agora fica SEMPRE montada no DOM (mesmo espírito das outras
+  // duas páginas do card, ver bioimpedanciaCardFlipWrapperTemplate()), então precisa ter um título que não
+  // seja IDÊNTICO ao do botão "Histórico de registros" do histórico de Medidas e Aferições (seção
+  // completamente diferente, na mesma aba) -- evita ambiguidade tanto pra quem usa leitor de tela quanto
+  // pra qualquer busca por texto na página.
   return '' +
     '<section class="medidas-section">' +
-      '<h2 class="medidas-section-title">' + icon("history") + " Histórico de registros</h2>" +
+      '<h2 class="medidas-section-title">' + icon("history") + " Histórico de Bioimpedância e Calorimetria</h2>" +
       '<div class="bioimpedancia-form-tabs">' +
         '<button class="bioimpedancia-form-tab' + (aba === "bioimpedancia" ? " active" : "") + '" onclick="acaoTrocarAbaHistoricoBioimpedancia(\'bioimpedancia\')">Bioimpedância</button>' +
         '<button class="bioimpedancia-form-tab' + (aba === "calorimetria" ? " active" : "") + '" onclick="acaoTrocarAbaHistoricoBioimpedancia(\'calorimetria\')">Calorimetria</button>' +
@@ -7604,13 +7719,13 @@ function historicoBioimpedanciaTemplate() {
       (aba === "calorimetria"
         ? historicoListaTemplate(registrosCalo, "Calorimetria", "acaoRemoverCalorimetria", "acaoEditarCalorimetria", valoresCalorimetriaLegenda)
         : historicoListaTemplate(registrosBio, "Bioimpedância", "acaoRemoverBioimpedancia", "acaoEditarBioimpedancia", valoresBioimpedanciaLegenda)) +
-      '<div class="bioimpedancia-form-acoes"><button class="bioimpedancia-btn-secundario" onclick="acaoFecharHistoricoBioimpedancia()">Voltar</button></div>' +
     "</section>";
 }
 
-function bioimpedanciaSectionTemplate() {
-  if (state.showFormBioimpedancia) return bioimpedanciaFormTemplate();
-  if (state.showHistoricoBioimpedancia) return historicoBioimpedanciaTemplate();
+// 1ª página do card virável (ver bioimpedanciaCardFlipWrapperTemplate() logo abaixo) -- o resumo de
+// sempre, sem NENHUMA alteração de conteúdo (só deixou de ter os returns próprios, pra virar uma das 3
+// páginas da faixa deslizante).
+function bioimpedanciaResumoPaginaTemplate() {
   const ultimoBio = ultimaBioimpedancia();
   const ultimoCalo = ultimaCalorimetria();
   if (!ultimoBio && !ultimoCalo) {
@@ -7653,6 +7768,79 @@ function bioimpedanciaSectionTemplate() {
       "</div>" +
     "</div>" +
     "</section>";
+}
+
+// Rótulos dos 3 tracinhos indicadores (aria-label de cada .bio-card-dot) -- ver
+// bioimpedanciaCardFlipWrapperTemplate().
+const BIO_CARD_PAGINA_LABELS = ["Ver Bioimpedância e Calorimetria", "Ver Composição corporal", "Ver Histórico de Bioimpedância e Calorimetria"];
+// Envolve as 3 páginas do card de Bioimpedância e Calorimetria (resumo, Composição corporal e Histórico
+// de registros -- pedido do usuário) numa faixa deslizante horizontal (translateX), com os mesmos
+// tracinhos indicadores abaixo (mesmo espírito de .nutrient-card-dots/.summary-card-dots) e um TOQUE em
+// qualquer lugar do card avançando pra próxima página (mesmo gesto de toque simples já usado nesses dois
+// cards) -- ver acaoCliqueBioCard()/acaoIrParaPaginaBio(). Diferente do flip 3D (rotateY) usado lá, que só
+// funciona bem pra 2 lados, aqui com 3 páginas usamos um slide (translateX) -- solução mais simples que
+// um flip 3D de 3 faces.
+function bioimpedanciaCardFlipWrapperTemplate() {
+  const pagina = state.bioCardPagina || 0;
+  const paginas = [bioimpedanciaResumoPaginaTemplate(), evolucaoComposicaoCardTemplate(), historicoBioimpedanciaTemplate()];
+  return '' +
+    '<div class="bio-card-flip-wrap">' +
+      '<div class="bio-card-flip" onclick="acaoCliqueBioCard(event)">' +
+        '<div class="bio-card-track" style="transform:translateX(-' + (pagina * 100 / 3) + '%)">' +
+          paginas.map((html) => '<div class="bio-card-page">' + html + "</div>").join("") +
+        "</div>" +
+      "</div>" +
+      '<div class="bio-card-dots">' +
+        [0, 1, 2].map((i) => '<button class="bio-card-dot' + (pagina === i ? " active" : "") + '" aria-label="' + BIO_CARD_PAGINA_LABELS[i] + '" onclick="acaoIrParaPaginaBio(' + i + ')"></button>').join("") +
+      "</div>" +
+    "</div>";
+}
+// Toque em qualquer lugar do card avança pra próxima página (cicla 0 → 1 → 2 → 0) -- exceto em botões,
+// links, abas e outros controles interativos das páginas (histórico tem editar/remover/"Ver exame"/abas
+// Bioimpedância-Calorimetria; o resumo tem "Nova medição"/"Histórico de registros"/botão "i"), que devem
+// executar sua própria ação em vez de virar a página (mesmo padrão de acaoCliqueNutrienteCard(), só que
+// aqui com uma lista maior de controles internos, daí o closest() genérico em vez de uma classe única).
+function acaoCliqueBioCard(event) {
+  if (event.target.closest("button, a, select, input")) return;
+  acaoIrParaPaginaBio((state.bioCardPagina + 1) % 3);
+}
+// Vai pra uma página específica do card de Bioimpedância e Calorimetria -- usado pelo toque no card
+// (acaoCliqueBioCard()) e pelos tracinhos indicadores/botão "Histórico de registros"/"Voltar"
+// (bioimpedanciaCardFlipWrapperTemplate()/acaoAbrirHistoricoBioimpedancia()/
+// acaoFecharHistoricoBioimpedancia()). Anima no MESMO nó (via transform direto, mesmo truque de
+// acaoAlternarFlipNutriente()/acaoAlternarResumoCard()) e só then confirma o state com um único render()
+// -- necessário porque render() substitui a tela inteira (innerHTML), o que quebraria uma transição CSS
+// em andamento. Como as 3 páginas podem ter alturas bem diferentes (o Histórico, por exemplo, pode ficar
+// bem mais alto que o resumo), a altura do card (.bio-card-flip) também é ajustada junto, pra acompanhar
+// a página de destino -- ver ajustarAlturaBioCard().
+function acaoIrParaPaginaBio(pagina) {
+  if (state.bioCardPagina === pagina) return; // já está nessa página, nada a fazer
+  const flip = document.querySelector(".bio-card-flip");
+  const track = flip ? flip.querySelector(".bio-card-track") : null;
+  if (!track) { state.bioCardPagina = pagina; render(); return; }
+  const paginaAlvo = track.querySelectorAll(".bio-card-page")[pagina];
+  track.style.transform = "translateX(-" + (pagina * 100 / 3) + "%)";
+  if (paginaAlvo) flip.style.height = paginaAlvo.scrollHeight + "px";
+  let comitado = false;
+  const commit = () => { if (comitado) return; comitado = true; state.bioCardPagina = pagina; render(); };
+  track.addEventListener("transitionend", commit, { once: true });
+  setTimeout(commit, 450); // salvaguarda (mesmo motivo do análogo em acaoAlternarFlipNutriente())
+}
+// Ajusta a altura do card virável de Bioimpedância e Calorimetria pra acompanhar a página ativa no
+// momento (chamado a cada render() -- ver função render()) -- necessário porque as 3 páginas (resumo,
+// Composição corporal, Histórico) podem ter alturas bem diferentes entre si, e o slide horizontal
+// (.bio-card-track) por si só não redimensiona o card conforme a página visível.
+function ajustarAlturaBioCard() {
+  const flip = document.querySelector(".bio-card-flip");
+  if (!flip) return;
+  const paginas = flip.querySelectorAll(".bio-card-page");
+  const ativa = paginas[state.bioCardPagina || 0] || paginas[0];
+  if (ativa) flip.style.height = ativa.scrollHeight + "px";
+}
+
+function bioimpedanciaSectionTemplate() {
+  if (state.showFormBioimpedancia) return bioimpedanciaFormTemplate();
+  return bioimpedanciaCardFlipWrapperTemplate();
 }
 
 // Cada vez que o histórico é aberto, começa com todos os dias fechados -- mesmo padrão de
@@ -8743,19 +8931,20 @@ function acaoAlternarResumoCard(virado) {
   setTimeout(commit, 450); // salvaguarda (mesmo motivo do análogo em acaoAlternarFlipNutriente())
 }
 
-// Filtro "de"/"até" que afeta o card de Peso (não afeta o card de Composição corporal, que é fixo -- ver
-// evolucaoBioimpedanciaSerie()). Mesmo layout de dois campos de data lado a lado do filtro de período do
-// histórico de Medidas e Aferições (medidaFiltroTemplate()), pra manter a mesma linguagem visual. O card
-// de Aderência à meta calórica que ficava aqui "mudou de casa" -- agora é o verso do card "Seu resumo de
-// hoje", na aba Nutrição (ver resumoAderenciaCardTemplate()), com o próprio seletor de período dele
-// (dia/semana/mês/ano) em vez desse filtro de data.
+// Filtro "de"/"até" que afeta o card de Peso. Mesmo layout de dois campos de data lado a lado do filtro
+// de período do histórico de Medidas e Aferições (medidaFiltroTemplate()), pra manter a mesma linguagem
+// visual. O card de Aderência à meta calórica que ficava aqui "mudou de casa" -- agora é o verso do card
+// "Seu resumo de hoje", na aba Nutrição (ver resumoAderenciaCardTemplate()), com o próprio seletor de
+// período dele (dia/semana/mês/ano) em vez desse filtro de data. O card de Composição corporal também
+// "mudou de casa" -- agora é a página central do card virável de Bioimpedância e Calorimetria, na aba
+// Medidas (ver bioimpedanciaCardFlipWrapperTemplate()), então não é mais afetado (nem exibido) aqui.
 function evolucaoPeriodoFiltroTemplate() {
   return '' +
     '<div class="evolucao-periodo-filtro medida-filtro-periodo">' +
       '<div><label class="field-label">De</label><input type="date" class="field-input" max="' + esc(today()) + '" value="' + esc(state.evolucaoFiltroDe) + '" onchange="acaoFiltrarEvolucaoPorData(\'de\', this.value)"/></div>' +
       '<div><label class="field-label">Até</label><input type="date" class="field-input" max="' + esc(today()) + '" value="' + esc(state.evolucaoFiltroAte) + '" onchange="acaoFiltrarEvolucaoPorData(\'ate\', this.value)"/></div>' +
     "</div>" +
-    '<p class="imc-empty" style="margin-top:8px">Esse período afeta o card de Peso logo abaixo. O card de Composição corporal é fixo e sempre mostra o histórico completo.</p>';
+    '<p class="imc-empty" style="margin-top:8px">Esse período afeta o card de Peso logo abaixo.</p>';
 }
 function evolucaoPesoCardTemplate() {
   const serie = evolucaoPesoSerie();
@@ -8777,9 +8966,11 @@ function evolucaoPesoCardTemplate() {
       ) +
     "</div>";
 }
-// Card fixo (ver comentário de evolucaoBioimpedanciaSerie()) -- ao contrário dos cards de Peso e
-// Aderência, SEMPRE aparece na mesma posição da aba Evolução, com o filtro de período ou não, mesmo sem
-// dados suficientes ainda (mostra uma mensagem no lugar do gráfico, igual aos outros dois cards já fazem).
+// Card fixo (ver comentário de evolucaoBioimpedanciaSerie()), mostra uma mensagem no lugar do gráfico
+// quando ainda não há dados suficientes. Não mora mais na aba Evolução -- a pedido do usuário, virou a
+// página central do card virável de Bioimpedância e Calorimetria, na aba Medidas (ver
+// bioimpedanciaCardFlipWrapperTemplate()); a função continua com esse nome só por não valer a pena
+// renomear (nenhuma mudança de conteúdo, só de onde é chamada).
 function evolucaoComposicaoCardTemplate() {
   const comparacao = evolucaoBioimpedanciaComparacao();
   return '' +
@@ -8804,23 +8995,23 @@ function evolucaoComposicaoCardTemplate() {
       ) +
     "</div>";
 }
-// Aba "Evolução" -- ver homeTabsTemplate()/fullHomeTemplate(). Junta os dois cards acima (peso e
-// composição corporal) com um filtro de período compartilhado entre eles. O card de Aderência à meta
-// calórica que ficava aqui foi movido pro verso do card "Seu resumo de hoje" -- ver
-// resumoAderenciaCardTemplate()/summaryCardFlipWrapperTemplate().
+// Aba "Evolução" -- ver homeTabsTemplate()/fullHomeTemplate(). O card de Aderência à meta calórica que
+// ficava aqui foi movido pro verso do card "Seu resumo de hoje" -- ver
+// resumoAderenciaCardTemplate()/summaryCardFlipWrapperTemplate() -- e o card de Composição corporal
+// também "mudou de casa", pra página central do card virável de Bioimpedância e Calorimetria, na aba
+// Medidas (ver bioimpedanciaCardFlipWrapperTemplate()). Só resta o card de Peso.
 function evolucaoTabTemplate() {
-  const temAlgumDado = state.medidas.some((m) => m.tipo === "peso") || state.bioimpedancia.length > 0;
+  const temAlgumDado = state.medidas.some((m) => m.tipo === "peso");
   if (!temAlgumDado) {
     return '<main><div class="medidas-section">' +
       '<h2 class="medidas-section-title">' + icon("trend") + " Evolução</h2>" +
-      '<div class="meal-empty"><div class="meal-empty-icon">' + icon("trend") + "</div><p>Ainda não há dados suficientes</p><p>Registre seu peso e cadastre uma Bioimpedância para começar a ver sua evolução aqui.</p></div>" +
+      '<div class="meal-empty"><div class="meal-empty-icon">' + icon("trend") + "</div><p>Ainda não há dados suficientes</p><p>Registre seu peso para começar a ver sua evolução aqui.</p></div>" +
     "</div></main>";
   }
   return '<main>' +
     '<div class="medidas-section-title-row" style="margin:24px 0 0"><h2 class="medidas-section-title" style="margin:0">' + icon("trend") + " Evolução</h2></div>" +
     evolucaoPeriodoFiltroTemplate() +
     evolucaoPesoCardTemplate() +
-    evolucaoComposicaoCardTemplate() +
   "</main>";
 }
 
@@ -9104,7 +9295,7 @@ function homeTemplate() {
   return '' +
     '<div class="app-shell">' +
     '<button class="hamburger-btn" onclick="acaoAbrirSidebar()" aria-label="Abrir menu"><span></span></button>' +
-    sidebarTemplate() + editarPerfilTemplate() + mealDetalheModalTemplate() + nutrientInfoModalTemplate() + exameInfoModalTemplate() + cadastrarProdutoModalTemplate() +
+    sidebarTemplate() + editarPerfilTemplate() + mealDetalheModalTemplate() + nutrientInfoModalTemplate() + exameInfoModalTemplate() + cadastrarProdutoModalTemplate() + analiseConsumoDiaModalTemplate() +
     '<div class="home-content"><div class="home-inner">' +
     (state.account ? fullHomeTemplate() : lockedTemplate()) +
     "</div></div></div>";
@@ -9207,6 +9398,7 @@ function captureFormState() {
 function render() {
   captureFormState();
   document.getElementById("app").innerHTML = state.usuario ? homeTemplate() : authTemplate();
+  ajustarAlturaBioCard();
 }
 
 /* ===================== instalar como app (PWA) ===================== */
