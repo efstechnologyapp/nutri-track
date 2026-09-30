@@ -1420,6 +1420,18 @@ const foodLibrary = [
   { terms: ["aveia em flocos", "aveia"], label: "Aveia em flocos", baseAmount: "2 colheres de sopa (30 g)", values: { calories: 117, protein: 4, carbs: 20, fat: 2.4, fiber: 3, vitA: 0, vitC: 0, vitD: 0, calcio: 15, ferro: 1.4, magnesio: 40, potassio: 100, zinco: 1, sodio: 2, vitB12: 0 }, grams: 30 },
   { terms: ["granola"], label: "Granola", baseAmount: "30 g", values: { calories: 120, protein: 3, carbs: 19, fat: 4, fiber: 2.5, vitA: 0, vitC: 0, vitD: 0, calcio: 20, ferro: 1, magnesio: 30, potassio: 90, zinco: 0.6, sodio: 15, vitB12: 0 }, grams: 30 },
   { terms: ["cuscuz"], label: "Cuscuz", baseAmount: "100 g", values: { calories: 112, protein: 2.5, carbs: 23, fat: 0.6, fiber: 1.4, vitA: 5, vitC: 0, vitD: 0, calcio: 8, ferro: 0.4, magnesio: 10, potassio: 40, zinco: 0.3, sodio: 180, vitB12: 0 }, grams: 100 },
+  // Pedido do usuário. Fonte: TACO (Milho verde, cozido, 100 g: 98 kcal, 3,4 g proteína, 19 g
+  // carboidratos, 1,5 g gordura, 2,4 g fibra, 141 mg potássio, 22 mg magnésio, 0,7 mg zinco, 5,4 mg
+  // vitamina C).
+  { terms: ["milho cozido", "milho verde", "milho"], label: "Milho cozido", baseAmount: "100 g", values: { calories: 98, protein: 3.4, carbs: 19, fat: 1.5, fiber: 2.4, vitA: 8, vitC: 5, vitD: 0, calcio: 2, ferro: 0.3, magnesio: 22, potassio: 141, zinco: 0.7, sodio: 1, vitB12: 0 }, grams: 100 },
+  // Pedido do usuário. A TACO não lista pamonha separadamente -- estimado a partir da própria composição
+  // do prato (milho verde ralado + leite + açúcar, cozido na palha), cruzando "Milho cozido" (acima) com
+  // "Leite integral" (mais acima), na proporção típica de receita.
+  { terms: ["pamonha"], label: "Pamonha", baseAmount: "1 unidade (150 g)", values: { calories: 210, protein: 4.5, carbs: 36, fat: 5.3, fiber: 2.3, vitA: 10, vitC: 3, vitD: 0.1, calcio: 40, ferro: 0.6, magnesio: 25, potassio: 180, zinco: 0.6, sodio: 90, vitB12: 0.1 }, grams: 150 },
+  // Pedido do usuário. A TACO não lista canjica separadamente -- estimado a partir da composição típica do
+  // prato (milho de canjica/mungunzá + leite + açúcar + coco), cruzando "Milho cozido" e "Leite integral"
+  // (acima) na proporção de receita, com um pouco de gordura/fibra a mais pelo coco.
+  { terms: ["canjica"], label: "Canjica", baseAmount: "1 tigela (200 g)", values: { calories: 240, protein: 5, carbs: 40, fat: 6, fiber: 2.4, vitA: 15, vitC: 2, vitD: 0.2, calcio: 90, ferro: 1, magnesio: 35, potassio: 220, zinco: 0.8, sodio: 40, vitB12: 0.15 }, grams: 200 },
   { terms: ["ovo frito", "ovo de galinha frito", "ovo"], label: "Ovo frito", baseAmount: "1 unidade", values: { calories: 90, protein: 6.3, carbs: 0.4, fat: 7, fiber: 0, vitA: 90, vitC: 0, vitD: 1, calcio: 25, ferro: 0.9, magnesio: 5, potassio: 65, zinco: 0.6, sodio: 95, vitB12: 0.55 }, count: 1 },
   { terms: ["ovo cozido"], label: "Ovo cozido", baseAmount: "1 unidade", values: { calories: 78, protein: 6.3, carbs: 0.6, fat: 5.3, fiber: 0, vitA: 80, vitC: 0, vitD: 1, calcio: 25, ferro: 0.9, magnesio: 5, potassio: 65, zinco: 0.6, sodio: 70, vitB12: 0.55 }, count: 1 },
   { terms: ["ovo de codorna", "ovos de codorna", "codorna"], label: "Ovo de codorna", baseAmount: "1 unidade", values: { calories: 14, protein: 1.2, carbs: 0.1, fat: 1, fiber: 0, vitA: 14, vitC: 0, vitD: 0.1, calcio: 6, ferro: 0.3, magnesio: 1, potassio: 12, zinco: 0.1, sodio: 13, vitB12: 0.15 }, count: 1 },
@@ -1635,6 +1647,16 @@ const foodLibrary = [
   // carboidratos, 0 g gordura) -- demais micronutrientes estimados a partir da goiaba in natura (retém
   // parte da vitamina C e do potássio mesmo depois de cozida/processada em pasta).
   { terms: ["goiabada"], label: "Goiabada", baseAmount: "1 fatia (30 g)", values: { calories: 81, protein: 0.2, carbs: 22.2, fat: 0, fiber: 0.6, vitA: 3, vitC: 3, vitD: 0, calcio: 5, ferro: 0.2, magnesio: 3, potassio: 30, zinco: 0.1, sodio: 5, vitB12: 0 }, grams: 30 },
+  // Pedido do usuário. Fonte: TACO (Doce de leite, 100 g: 315 kcal, 5,6 g proteína, 55,5 g carboidratos,
+  // 6,3 g gordura, 169 mg cálcio, 0,4 mg ferro, 96 mg sódio) -- demais micronutrientes (vitA/potássio/
+  // magnésio/zinco/vitB12) estimados a partir de laticínios açucarados similares (leite condensado/creme
+  // de leite, logo abaixo).
+  { terms: ["doce de leite"], label: "Doce de leite", baseAmount: "1 colher de sopa (20 g)", values: { calories: 63, protein: 1.1, carbs: 11, fat: 1.3, fiber: 0, vitA: 8, vitC: 0, vitD: 0, calcio: 34, ferro: 0.1, magnesio: 3, potassio: 28, zinco: 0.1, sodio: 19, vitB12: 0.1 }, grams: 20 },
+  // Pedido do usuário. Fonte: TACO (Leite condensado, 100 g: 315 kcal, 7,7 g proteína, 54,4 g
+  // carboidratos, 8,6 g gordura, 274 mg cálcio, 0,1 mg ferro, 91 mg sódio) -- demais micronutrientes
+  // (vitA/potássio/magnésio/zinco/vitB12) estimados proporcionalmente a partir do leite integral (acima),
+  // que não constam à parte na fonte primária.
+  { terms: ["leite condensado"], label: "Leite condensado", baseAmount: "1 colher de sopa (20 g)", values: { calories: 63, protein: 1.5, carbs: 10.9, fat: 1.7, fiber: 0, vitA: 6, vitC: 0, vitD: 0.1, calcio: 55, ferro: 0.1, magnesio: 4, potassio: 60, zinco: 0.1, sodio: 18, vitB12: 0.1 }, grams: 20 },
   { terms: ["ketchup", "catchup"], label: "Ketchup", baseAmount: "1 colher de sopa (15 g)", values: { calories: 15, protein: 0.2, carbs: 4, fat: 0, fiber: 0.1, vitA: 3, vitC: 1, vitD: 0, calcio: 2, ferro: 0.1, magnesio: 2, potassio: 55, zinco: 0, sodio: 150, vitB12: 0 }, grams: 15 },
   { terms: ["maionese"], label: "Maionese", baseAmount: "1 colher de sopa (15 g)", values: { calories: 95, protein: 0.1, carbs: 0.5, fat: 10.5, fiber: 0, vitA: 3, vitC: 0, vitD: 0, calcio: 1, ferro: 0, magnesio: 0, potassio: 5, zinco: 0, sodio: 95, vitB12: 0 }, grams: 15 },
   { terms: ["mostarda"], label: "Mostarda", baseAmount: "1 colher de sopa (15 g)", values: { calories: 10, protein: 0.6, carbs: 1, fat: 0.6, fiber: 0.3, vitA: 0, vitC: 0, vitD: 0, calcio: 5, ferro: 0.2, magnesio: 5, potassio: 20, zinco: 0.1, sodio: 170, vitB12: 0 }, grams: 15 },
@@ -3555,41 +3577,59 @@ function fragmentoAtualDescricao(texto) {
   return texto.slice(indiceInicioFragmentoAtual(texto));
 }
 // Sugestões de alimentos (biblioteca embutida + produtos que a própria pessoa cadastrou) cujo nome bate
-// com o que está sendo digitado agora. Prioriza alimentos em que a PRIMEIRA palavra do nome ou de algum
-// termo bate (ex.: digitar "fra" sugere algo que COMEÇA por "fra") sobre alimentos em que só uma palavra
-// no meio do nome bate (ex.: "fra" batendo em "Pão francês" pela segunda palavra) -- mais relevante pra
+// com o que está sendo digitado agora. Prioriza alimentos em que um trecho do FINAL do fragmento já é o
+// COMEÇO do nome do alimento (prioridade "inicio" -- ex.: "fra" pro início de "frango", ou "pao franc"
+// pro início de "pão francês") sobre alimentos em que só a última palavra bate no MEIO/fim do nome
+// (prioridade "meio" -- ex.: "franc" batendo em "pão francês" pela segunda palavra) -- mais relevante pra
 // quem está começando a digitar o nome do alimento do zero, que é o caso mais comum.
+// Bug relatado pelo usuário: um peso/quantidade digitado ANTES do nome do alimento (ex.: "150g de fra",
+// ou mesmo "1 pao franc") sumia ao escolher a sugestão, porque o fragmento inteiro (tudo desde a última
+// vírgula) era tratado como uma unidade só e substituído de uma vez. Corrigido calculando, junto com cada
+// sugestão, EXATAS QUANTAS PALAVRAS do final do fragmento formam o nome do alimento sendo digitado
+// ("palavras" abaixo) -- ver acaoSelecionarSugestaoAlimento(), que só substitui essas últimas palavras,
+// preservando o que vier antes (a quantidade/conector já digitados). Pra achar isso, tenta, da maior
+// suíte de palavras finais do fragmento pra menor, qual delas já é o COMEÇO de algum termo do alimento
+// (ex.: em "1 pao franc", as 2 últimas palavras "pao franc" já começam "pão francês", mesmo sobrando um
+// "1" antes que não faz parte do nome) -- só cai pro casamento por uma única palavra do MEIO do nome
+// (prioridade "meio") quando nenhum sufixo do fragmento é de fato o começo do termo.
 function sugestoesDeAlimentos(fragmento) {
   const frag = normalizeText(fragmento.trim());
   if (frag.length < 2) return [];
-  // O fragmento digitado pode ter mais de uma palavra (ex.: "pao franc", enquanto a pessoa termina de
-  // digitar "pão francês") -- por isso a prioridade "início" compara o termo INTEIRO com o fragmento
-  // inteiro (startsWith), não só a primeira palavra. A prioridade "meio" cobre o caso de digitar só uma
-  // palavra do meio/fim do nome (ex.: "franc" batendo com "pão francês"), usando a última palavra do
-  // fragmento contra cada palavra do termo.
-  const ultimaPalavraFrag = frag.split(/\s+/).pop();
+  const palavrasFrag = frag.split(/\s+/);
   const biblioteca = foodLibrary.concat(state.produtosCustomizados || []);
   const prioritarios = [];
   const outros = [];
   const vistos = new Set();
   for (const food of biblioteca) {
     if (vistos.has(food.label)) continue;
-    let prioridade = null;
+    let melhor = null; // { prioridade: "inicio"|"meio", palavras: quantas palavras do FINAL do fragmento substituir }
     for (const t of [food.label].concat(food.terms)) {
       const termoNormalizado = normalizeText(t);
-      if (termoNormalizado.startsWith(frag)) { prioridade = "inicio"; break; }
-      const palavras = termoNormalizado.split(/\s+/);
-      if (!prioridade && palavras.some((p) => p.startsWith(ultimaPalavraFrag))) prioridade = "meio";
+      let inicioComN = null;
+      for (let n = palavrasFrag.length; n >= 1; n--) {
+        const sufixo = palavrasFrag.slice(palavrasFrag.length - n).join(" ");
+        if (termoNormalizado.startsWith(sufixo)) { inicioComN = n; break; }
+      }
+      if (inicioComN != null) {
+        if (!melhor || melhor.prioridade !== "inicio" || inicioComN > melhor.palavras) melhor = { prioridade: "inicio", palavras: inicioComN };
+      } else if (!melhor || melhor.prioridade !== "inicio") {
+        const ultimaPalavraFrag = palavrasFrag[palavrasFrag.length - 1];
+        const palavrasTermo = termoNormalizado.split(/\s+/);
+        if (palavrasTermo.some((p) => p.startsWith(ultimaPalavraFrag))) melhor = { prioridade: "meio", palavras: 1 };
+      }
     }
-    if (prioridade === "inicio") { prioritarios.push(food.label); vistos.add(food.label); }
-    else if (prioridade === "meio") { outros.push(food.label); vistos.add(food.label); }
+    if (melhor) {
+      const entry = { label: food.label, prioridade: melhor.prioridade, palavras: melhor.palavras };
+      if (melhor.prioridade === "inicio") prioritarios.push(entry); else outros.push(entry);
+      vistos.add(food.label);
+    }
   }
   return prioritarios.concat(outros).slice(0, 8);
 }
 function mealSugestoesListaHtml() {
   if (!state.mealSugestoes.length) return "";
-  return state.mealSugestoes.map((label) =>
-    '<button type="button" class="meal-sugestao-item" data-label="' + esc(label) + '" onmousedown="event.preventDefault(); acaoSelecionarSugestaoAlimento(this.dataset.label)">' + icon("plus") + " " + esc(label) + "</button>"
+  return state.mealSugestoes.map((s) =>
+    '<button type="button" class="meal-sugestao-item" data-label="' + esc(s.label) + '" data-palavras="' + s.palavras + '" onmousedown="event.preventDefault(); acaoSelecionarSugestaoAlimento(this.dataset.label, this.dataset.palavras)">' + icon("plus") + " " + esc(s.label) + "</button>"
   ).join("");
 }
 // Atualiza as sugestões a cada tecla digitada -- escreve só no container das sugestões, direto no DOM, e
@@ -3637,14 +3677,32 @@ function acaoFecharSugestoesAlimento() {
   const container = document.getElementById("meal-sugestoes-lista");
   if (container) container.innerHTML = "";
 }
+// Posição (relativa ao próprio fragmento) em que começam as ÚLTIMAS "n" palavras (sequências sem espaço)
+// do fragmento -- usada por acaoSelecionarSugestaoAlimento() abaixo pra saber até onde preservar o texto
+// que veio antes do nome do alimento (ver "palavras" em sugestoesDeAlimentos()). Se o fragmento tiver n
+// palavras ou menos, não sobra nada antes pra preservar -- devolve 0 (substitui o fragmento inteiro).
+function posicaoInicioUltimasPalavras(fragmento, n) {
+  const palavras = [...fragmento.matchAll(/\S+/g)];
+  if (palavras.length <= n) return 0;
+  return palavras[palavras.length - n].index;
+}
 // Insere o alimento escolhido no lugar do pedaço que estava sendo digitado (ver
 // indiceInicioFragmentoAtual()), preservando o que já tinha antes, e deixa ", " no final pra pessoa poder
 // emendar o próximo item direto. Escrita direta no DOM, mesmo motivo de acaoAtualizarSugestoesAlimento().
-function acaoSelecionarSugestaoAlimento(label) {
+// Bug relatado pelo usuário: um peso/quantidade digitado ANTES do nome do alimento (ex.: "150g de fra", ou
+// mesmo "1 pao franc") sumia ao escolher a sugestão -- porque todo o fragmento desde a última vírgula
+// (que inclui o peso) era substituído de uma vez só pelo nome do alimento. Corrigido usando o número de
+// palavras que a sugestão calculou como sendo o nome do alimento em si (ver "palavras" em
+// sugestoesDeAlimentos()) -- só essas últimas palavras do fragmento são substituídas, preservando o que
+// veio antes delas (a quantidade/conector que a pessoa já tinha digitado).
+function acaoSelecionarSugestaoAlimento(label, palavras) {
   const el = document.getElementById("meal-description");
   if (!el) return;
   const texto = el.value;
-  const antes = texto.slice(0, indiceInicioFragmentoAtual(texto)).replace(/\s+$/, "");
+  const inicioFragmento = indiceInicioFragmentoAtual(texto);
+  const n = Number(palavras) || 1;
+  const inicioSubstituir = inicioFragmento + posicaoInicioUltimasPalavras(texto.slice(inicioFragmento), n);
+  const antes = texto.slice(0, inicioSubstituir).replace(/\s+$/, "");
   const novoValor = (antes ? antes + " " : "") + label + ", ";
   el.value = novoValor;
   state.mealDescription = novoValor;
@@ -3742,10 +3800,12 @@ function carregarTesseract() {
   return promessaTesseractCarregado;
 }
 // Palavras-chave (já sem acento/minúsculas -- comparadas com normalizeText()) que identificam cada
-// nutriente numa linha do texto reconhecido pelo OCR num rótulo brasileiro. Cobre só os nutrientes que
-// esse app já rastreia E que normalmente aparecem impressos (calorias, carboidratos, proteínas,
-// gorduras totais, fibras, sódio, cálcio, ferro) -- vitaminas e os demais minerais (magnésio, potássio,
-// zinco) quase nunca vêm no rótulo, então ficam de fora do formulário manual e entram como 0.
+// nutriente numa linha do texto reconhecido pelo OCR num rótulo brasileiro. Os primeiros oito
+// (calorias/macros + sódio/cálcio/ferro) são os que aparecem em praticamente QUALQUER rótulo -- os
+// demais (vitA/vitC/vitD/vitB12/magnésio/potássio/zinco, que o formulário manual também cobre agora --
+// ver PRODUTO_MANUAL_CAMPOS) só costumam vir impressos em produtos fortificados (ex.: cereal matinal,
+// suco/achocolatado enriquecido); quando não aparecem, o OCR simplesmente não acha a linha e o campo
+// continua editável, ficando 0 se a pessoa não preencher à mão.
 const ROTULO_NUTRIENTES_OCR = [
   { chave: "calories", aliases: ["valor energetico", "valor calorico"] },
   { chave: "carbs", aliases: ["carboidratos"] },
@@ -3755,6 +3815,13 @@ const ROTULO_NUTRIENTES_OCR = [
   { chave: "sodio", aliases: ["sodio"] },
   { chave: "calcio", aliases: ["calcio"] },
   { chave: "ferro", aliases: ["ferro"] },
+  { chave: "vitA", aliases: ["vitamina a"] },
+  { chave: "vitC", aliases: ["vitamina c"] },
+  { chave: "vitD", aliases: ["vitamina d"] },
+  { chave: "vitB12", aliases: ["vitamina b12", "vitamina b 12"] },
+  { chave: "magnesio", aliases: ["magnesio"] },
+  { chave: "potassio", aliases: ["potassio"] },
+  { chave: "zinco", aliases: ["zinco"] },
 ];
 // A tabela nutricional brasileira costuma trazer, em cada linha, até 3 números: valor por 100 g/ml,
 // valor pela PORÇÃO (a mesma base do campo "Porção" do formulário -- é esse que interessa) e o %VD.
@@ -3775,7 +3842,12 @@ function extrairValoresRotulo(textoOcr) {
     for (const config of ROTULO_NUTRIENTES_OCR) {
       if (nutrientes[config.chave] != null) continue; // já achado numa linha anterior (não sobrescreve)
       if (!config.aliases.some((a) => linhaNormalizada.indexOf(a) !== -1)) continue;
-      const numeros = (linha.match(/\d+(?:[.,]\d+)?/g) || []).map((n) => Number(n.replace(",", ".")));
+      // "Vitamina B12" carrega um número dentro do próprio nome ("12") -- sem remover isso antes de
+      // procurar os números da linha, ele entraria na contagem de colunas (100g/porção/%VD) e
+      // desalinharia qual número é o da porção (ver escolherValorDaLinhaRotulo()). Removido aqui (da
+      // linha ORIGINAL, não da normalizada, que só serve pra achar o alias) antes de extrair os números.
+      const linhaSemNomeDoNutriente = linha.replace(/b\s*12/i, "");
+      const numeros = (linhaSemNomeDoNutriente.match(/\d+(?:[.,]\d+)?/g) || []).map((n) => Number(n.replace(",", ".")));
       const valor = escolherValorDaLinhaRotulo(numeros);
       if (valor != null && !isNaN(valor)) nutrientes[config.chave] = valor;
     }
@@ -3850,7 +3922,9 @@ function acaoCadastrarProdutoManual() {
   };
   const values = Object.assign({}, emptyNutrients, {
     calories: campo("calories"), protein: campo("protein"), carbs: campo("carbs"), fat: campo("fat"), fiber: campo("fiber"),
-    sodio: campo("sodio"), calcio: campo("calcio"), ferro: campo("ferro"),
+    vitA: campo("vitA"), vitC: campo("vitC"), vitD: campo("vitD"), vitB12: campo("vitB12"),
+    calcio: campo("calcio"), ferro: campo("ferro"), magnesio: campo("magnesio"), potassio: campo("potassio"),
+    zinco: campo("zinco"), sodio: campo("sodio"),
   });
   if (!values.calories) { toastError("Informe pelo menos as calorias do produto."); return; }
   const novoProduto = { terms: [termoNormalizado], label: nome, baseAmount: formatNumber(porcao, 0) + " g", values, grams: porcao };
@@ -6396,17 +6470,30 @@ function exameInfoModalTemplate() {
 // corretamente .field-input (texto escuro sobre fundo claro). Trocado pra .field-input também, mesma
 // classe do campo vizinho, pra manter o texto digitado visível e os dois campos consistentes entre si.
 // Campos do formulário de cadastro manual (valores digitados ou lidos do rótulo por OCR, ver
-// acaoLerRotuloOCR()/acaoCadastrarProdutoManual()) -- só os nutrientes que normalmente vêm impressos
-// num rótulo brasileiro (ver comentário de ROTULO_NUTRIENTES_OCR).
+// acaoLerRotuloOCR()/acaoCadastrarProdutoManual()). Pedido do usuário: além dos nutrientes que já
+// vinham (calorias/macros + sódio/cálcio/ferro, os mais comuns em rótulo brasileiro -- ver comentário de
+// ROTULO_NUTRIENTES_OCR), o formulário agora cobre TODOS os micronutrientes que o app acompanha nos
+// próprios cards de "Micronutrientes" (ver micronutrientMeta) -- vitA/vitC/vitD/vitB12/magnésio/
+// potássio/zinco entraram pra fechar esse conjunto. Assim, um produto cadastrado manualmente pode
+// contribuir pra esses cards do mesmo jeito que um alimento da foodLibrary já contribui (ex.: um cereal
+// matinal fortificado, que costuma trazer bem mais desses nutrientes impressos que um rótulo comum).
+// Ordem e rótulos dos micronutrientes seguem exatamente micronutrientMeta, pra bater com os cards.
 const PRODUTO_MANUAL_CAMPOS = [
   { id: "calories", label: "Calorias", unidade: "kcal" },
   { id: "carbs", label: "Carboidratos", unidade: "g" },
   { id: "protein", label: "Proteínas", unidade: "g" },
   { id: "fat", label: "Gorduras totais", unidade: "g" },
   { id: "fiber", label: "Fibras alimentares", unidade: "g" },
-  { id: "sodio", label: "Sódio", unidade: "mg" },
+  { id: "vitA", label: "Vitamina A", unidade: "mcg" },
+  { id: "vitC", label: "Vitamina C", unidade: "mg" },
+  { id: "vitD", label: "Vitamina D", unidade: "mcg" },
+  { id: "vitB12", label: "Vitamina B12", unidade: "mcg" },
   { id: "calcio", label: "Cálcio", unidade: "mg" },
   { id: "ferro", label: "Ferro", unidade: "mg" },
+  { id: "magnesio", label: "Magnésio", unidade: "mg" },
+  { id: "potassio", label: "Potássio", unidade: "mg" },
+  { id: "zinco", label: "Zinco", unidade: "mg" },
+  { id: "sodio", label: "Sódio", unidade: "mg" },
 ];
 // Bloco do cadastro manual/OCR dentro do modal de cadastro de produto (ver cadastrarProdutoModalTemplate()
 // abaixo) -- pedido do usuário: produtos que já vêm com tabela nutricional impressa (ex.: uma caixinha
