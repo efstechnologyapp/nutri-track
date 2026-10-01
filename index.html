@@ -2511,6 +2511,19 @@ const state = {
   // espírito de historyDiaExpandidoMedidas/medidaCardPagina acima.
   evolucaoFiltroDe: "",
   evolucaoFiltroAte: "",
+  // Subfiltro de jejum da página de Evolução -- só se aplica a peso/glicemia (ver
+  // MEDIDA_TIPOS_COM_JEJUM/evolucaoFiltroJejumTemplate()). "" = Geral (todos os registros do tipo,
+  // comportamento de sempre); "sim" = só os registros em jejum; "nao" = só os fora de jejum -- que por sua
+  // vez pode ser refinado por uma refeição específica (ver evolucaoFiltroRefeicao logo abaixo). Pedido do
+  // usuário: poder ver a evolução separando, por exemplo, "peso em jejum" de "peso fora de jejum após a
+  // ceia". Fica só na memória, mesmo espírito de evolucaoMedidaTipo/evolucaoFiltroDe acima.
+  evolucaoFiltroJejum: "",
+  // Refeição específica (nome, ex. "Ceia") pra refinar o subfiltro "fora de jejum" acima -- só faz sentido
+  // quando evolucaoFiltroJejum === "nao". "" = qualquer refeição (não refina, mostra todos os registros
+  // fora de jejum). Comparado com o nome de cada refeição em medida.refeicoesAntes (ver
+  // evolucaoMedidaRegistrosFiltrados()) -- um registro vinculado a mais de uma refeição (ex.: café da manhã
+  // + lanche) aparece no filtro de QUALQUER uma delas, não só numa combinação exata.
+  evolucaoFiltroRefeicao: "",
   altura: readStorage(CHAVE_ALTURA, null), // cm
   medidas: readStorage(CHAVE_MEDIDAS, []),
   medidaTipo: "",
@@ -9073,16 +9086,84 @@ function evolucaoDataNoFiltro(date) {
   if (state.evolucaoFiltroAte && date > state.evolucaoFiltroAte) return false;
   return true;
 }
+// Troca o subfiltro de jejum (Geral/Em jejum/Fora de jejum) da página de Evolução -- ver
+// state.evolucaoFiltroJejum/evolucaoFiltroJejumTemplate(). Qualquer troca reseta a refeição específica
+// escolhida (state.evolucaoFiltroRefeicao), pelo mesmo motivo de acaoSelecionarJejum() no formulário de
+// registro: nunca deixar uma escolha "presa" que não faz mais sentido pra resposta atual (a refeição só
+// se aplica dentro de "Fora de jejum").
+function acaoFiltrarEvolucaoPorJejum(valor) {
+  state.evolucaoFiltroJejum = valor;
+  state.evolucaoFiltroRefeicao = "";
+  render();
+}
+// Refina o subfiltro "Fora de jejum" acima por uma refeição específica (ex.: "Ceia") -- ver
+// state.evolucaoFiltroRefeicao/evolucaoFiltroJejumTemplate().
+function acaoFiltrarEvolucaoPorRefeicao(valor) {
+  state.evolucaoFiltroRefeicao = valor;
+  render();
+}
+// Só os tipos de medida com pergunta de jejum (ver MEDIDA_TIPOS_COM_JEJUM) respeitam o subfiltro de
+// jejum/refeição acima -- os demais tipos (cintura, pressão etc.) ignoram esses dois campos e passam
+// sempre, como se o filtro estivesse em "Geral". Dentro de "Fora de jejum", sem uma refeição específica
+// escolhida (evolucaoFiltroRefeicao === "") mostra TODOS os registros fora de jejum, inclusive os sem
+// nenhuma refeição vinculada (ex.: "Nenhuma refeição antes" ou sem refeição nenhuma registrada naquele
+// dia) -- só ao escolher uma refeição específica é que esses ficam de fora. Um registro vinculado a mais
+// de uma refeição (ex.: café da manhã + lanche) passa no filtro de QUALQUER uma delas (pedido do usuário),
+// não só numa combinação exata.
+function evolucaoMedidaPassaFiltroJejum(m, tipo) {
+  if (!MEDIDA_TIPOS_COM_JEJUM.includes(tipo) || !state.evolucaoFiltroJejum) return true;
+  if (state.evolucaoFiltroJejum === "sim") return m.jejum === true;
+  if (m.jejum !== false) return false;
+  if (!state.evolucaoFiltroRefeicao) return true;
+  return !!(m.refeicoesAntes && m.refeicoesAntes.some((r) => r.name === state.evolucaoFiltroRefeicao));
+}
+// Nomes das refeições disponíveis pra refinar o subfiltro "Fora de jejum" (ver
+// evolucaoFiltroJejumTemplate()) -- toda refeição já vinculada a algum registro fora de jejum DESSE tipo,
+// em TODO o histórico (não só o período filtrado, pra não fazer opções aparecerem/sumirem da lista ao
+// mexer no filtro de data) -- na mesma ordem canônica de MEAL_TIPOS, não na ordem em que apareceram.
+function evolucaoFiltroRefeicoesDisponiveis(tipo) {
+  const nomes = new Set();
+  state.medidas.forEach((m) => {
+    if (m.tipo === tipo && m.jejum === false && m.refeicoesAntes) m.refeicoesAntes.forEach((r) => nomes.add(r.name));
+  });
+  return MEAL_TIPOS.filter((nome) => nomes.has(nome));
+}
+// Subfiltro de jejum/refeição específica da página de Evolução -- só aparece pros tipos de
+// MEDIDA_TIPOS_COM_JEJUM (peso, glicemia). Pedido do usuário: poder ver, por exemplo, só o peso em jejum,
+// ou só o peso fora de jejum depois da ceia, em vez de misturar tudo no mesmo gráfico. A refeição
+// específica só aparece depois de escolher "Fora de jejum", e só se houver pelo menos 1 refeição já
+// vinculada a algum registro fora de jejum desse tipo (ver evolucaoFiltroRefeicoesDisponiveis()).
+function evolucaoFiltroJejumTemplate(tipo) {
+  if (!MEDIDA_TIPOS_COM_JEJUM.includes(tipo)) return "";
+  const refeicoesDisponiveis = state.evolucaoFiltroJejum === "nao" ? evolucaoFiltroRefeicoesDisponiveis(tipo) : [];
+  return '' +
+    '<div style="margin-bottom:12px">' +
+      '<label class="field-label">Jejum</label>' +
+      '<select class="field-input" onchange="acaoFiltrarEvolucaoPorJejum(this.value)">' +
+        '<option value=""' + (!state.evolucaoFiltroJejum ? " selected" : "") + ">Geral (todos os registros)</option>" +
+        '<option value="sim"' + (state.evolucaoFiltroJejum === "sim" ? " selected" : "") + ">Em jejum</option>" +
+        '<option value="nao"' + (state.evolucaoFiltroJejum === "nao" ? " selected" : "") + ">Fora de jejum</option>" +
+      "</select>" +
+      (refeicoesDisponiveis.length ?
+        '<label class="field-label" style="margin-top:10px">Refeição</label>' +
+        '<select class="field-input" onchange="acaoFiltrarEvolucaoPorRefeicao(this.value)">' +
+          '<option value=""' + (!state.evolucaoFiltroRefeicao ? " selected" : "") + ">Qualquer refeição</option>" +
+          refeicoesDisponiveis.map((nome) => '<option value="' + esc(nome) + '"' + (state.evolucaoFiltroRefeicao === nome ? " selected" : "") + ">" + esc(nome) + "</option>").join("") +
+        "</select>"
+      : "") +
+    "</div>";
+}
 
 // TODOS os registros de Medidas e Aferições do TIPO escolhido que passam no filtro de período atual (ver
-// evolucaoDataNoFiltro()), já ordenados do mais antigo pro mais recente -- fonte tanto de
-// evolucaoMedidaSerie() (pro gráfico/estatísticas) quanto do registro "mais recente do período" usado na
-// nota de classificação clínica (ver evolucaoMedidaClassificacaoNotaTemplate()). Substituiu a antiga
-// evolucaoPesoSerie() (só cobria peso) -- pedido do usuário: poder ver a evolução de qualquer tipo de
-// aferição, escolhido em medidasEvolucaoTipoSelectorTemplate().
+// evolucaoDataNoFiltro()) E no subfiltro de jejum/refeição (ver evolucaoMedidaPassaFiltroJejum()), já
+// ordenados do mais antigo pro mais recente -- fonte tanto de evolucaoMedidaSerie() (pro gráfico/
+// estatísticas) quanto do registro "mais recente do período" usado na nota de classificação clínica (ver
+// evolucaoMedidaClassificacaoNotaTemplate()). Substituiu a antiga evolucaoPesoSerie() (só cobria peso) --
+// pedido do usuário: poder ver a evolução de qualquer tipo de aferição, escolhido em
+// medidasEvolucaoTipoSelectorTemplate().
 function evolucaoMedidaRegistrosFiltrados(tipo) {
   return state.medidas
-    .filter((m) => m.tipo === tipo && evolucaoDataNoFiltro(m.date))
+    .filter((m) => m.tipo === tipo && evolucaoDataNoFiltro(m.date) && evolucaoMedidaPassaFiltroJejum(m, tipo))
     .sort((a, b) => (a.date === b.date ? a.id - b.id : a.date < b.date ? -1 : 1));
 }
 // Série numérica (pra gráfico/estatísticas) do tipo escolhido, já filtrada por período -- ver
@@ -9616,7 +9697,7 @@ function medidasEvolucaoPaginaTemplate() {
     const serie = evolucaoMedidaSerie(tipo);
     const tendencia = evolucaoMedidaTendencia(serie);
     if (!tendencia) {
-      conteudo = '<p class="imc-empty">Registre pelo menos 2 registros de ' + esc(meta.label.toLowerCase()) + ' (em Medidas e Aferições) dentro do período selecionado para ver o gráfico de evolução.</p>';
+      conteudo = '<p class="imc-empty">Registre pelo menos 2 registros de ' + esc(meta.label.toLowerCase()) + ' (em Medidas e Aferições) dentro do período' + (state.evolucaoFiltroJejum ? " e do filtro de jejum" : "") + ' selecionados para ver o gráfico de evolução.</p>';
     } else {
       const digits = EVOLUCAO_MEDIDA_DIGITS[tipo] != null ? EVOLUCAO_MEDIDA_DIGITS[tipo] : 1;
       conteudo = '' +
@@ -9634,6 +9715,7 @@ function medidasEvolucaoPaginaTemplate() {
     '<section class="medidas-section">' +
       '<h2 class="medidas-section-title">' + icon("trend") + " Evolução</h2>" +
       medidasEvolucaoTipoSelectorTemplate() +
+      evolucaoFiltroJejumTemplate(tipo) +
       evolucaoPeriodoFiltroTemplate() +
       conteudo +
     "</section>";
