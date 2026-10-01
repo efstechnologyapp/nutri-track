@@ -1025,6 +1025,8 @@ const authApi = {
   atualizarFotoTreinoGoogle: (email, id, fotoUrl) => chamarApi("atualizarFotoTreinoGoogle", { email, id, fotoUrl }),
   atualizarTreinoGoogle: (email, treino) => chamarApi("atualizarTreinoGoogle", { email, treino }),
   salvarExercicioCustomizadoGoogle: (email, exercicio) => chamarApi("salvarExercicioCustomizadoGoogle", { email, exercicio }),
+  salvarProdutoCustomizadoGoogle: (email, produto) => chamarApi("salvarProdutoCustomizadoGoogle", { email, produto }),
+  removerProdutoCustomizadoGoogle: (email, id) => chamarApi("removerProdutoCustomizadoGoogle", { email, id }),
   salvarDiarioKcalGoogle: (email, registro) => chamarApi("salvarDiarioKcalGoogle", { email, registro }),
   removerDiarioKcalGoogle: (email, id) => chamarApi("removerDiarioKcalGoogle", { email, id }),
 };
@@ -1756,6 +1758,18 @@ const foodLibrary = [
 ];
 
 const MEAL_TIPOS = ["Caf\u00e9 da manh\u00e3", "Lanche da manh\u00e3", "Almo\u00e7o", "Lanche da tarde", "Jantar", "Ceia", "Suplementa\u00e7\u00e3o", "Exposi\u00e7\u00e3o Solar", "Outro"];
+// Artigo definido de cada tipo de refei\u00e7\u00e3o -- usado s\u00f3 por refeicaoComArtigoTexto() (ver
+// legendaContextoPesoReferencia()) pra montar frases como "ap\u00f3s o almo\u00e7o"/"ap\u00f3s a ceia" com a
+// concord\u00e2ncia de g\u00eanero certa. Tipos fora desta lista (ex.: nome digitado em "Outro") caem pro
+// feminino gen\u00e9rico "a" -- imperfeito pra um nome masculino digitado pela pessoa, mas sem como adivinhar
+// o g\u00eanero de um texto livre, e um erro de concord\u00e2ncia aqui \u00e9 s\u00f3 est\u00e9tico, nunca muda o significado.
+const MEAL_TIPO_ARTIGO = {
+  "Caf\u00e9 da manh\u00e3": "o", "Lanche da manh\u00e3": "o", "Almo\u00e7o": "o", "Lanche da tarde": "o", "Jantar": "o",
+  "Ceia": "a", "Suplementa\u00e7\u00e3o": "a", "Exposi\u00e7\u00e3o Solar": "a",
+};
+function refeicaoComArtigoTexto(nome) {
+  return (MEAL_TIPO_ARTIGO[nome] || "a") + " " + nome.toLowerCase();
+}
 // Posi\u00e7\u00e3o de uma refei\u00e7\u00e3o na ordem do seletor de tipos (MEAL_TIPOS) -- usada por
 // ordenarPorTipoDeRefeicao() logo abaixo pra exibir as refei\u00e7\u00f5es de um dia sempre na ordem em que os
 // tipos aparecem no seletor (Caf\u00e9 da manh\u00e3, Lanche da manh\u00e3, Almo\u00e7o, ...), nunca na ordem em que
@@ -2364,7 +2378,13 @@ const state = {
   // do índice UV, que é a parte que realmente importa).
   exposicaoLocalizacaoTexto: null,
   // Produtos/receitas cadastrados pela própria pessoa -- ver comentário em CHAVE_PRODUTOS_CUSTOMIZADOS.
-  produtosCustomizados: readStorage(CHAVE_PRODUTOS_CUSTOMIZADOS, []),
+  // .map() abaixo: produtos salvos ANTES de existir sincronização com o backend (ver
+  // salvarProdutoCustomizadoGoogle) não tinham "id" -- sem um id único, editar ou remover um desses
+  // produtos antigos podia acabar pegando o produto errado (ver acaoEditarProdutoCustomizado()), e eles
+  // nunca conseguiriam ser enviados pro servidor. "+ i" garante ids diferentes mesmo pra vários produtos
+  // sem id carregados juntos nesta mesma leitura (persistProdutosCustomizadosSeNecessario(), logo abaixo,
+  // grava esses ids de volta uma única vez, pra não ficar gerando um novo a cada vez que o app abre).
+  produtosCustomizados: readStorage(CHAVE_PRODUTOS_CUSTOMIZADOS, []).map((p, i) => (p.id ? p : Object.assign({}, p, { id: Date.now() + i }))),
   // Modal "Cadastrar produto no cardápio" -- ver cadastrarProdutoModalTemplate()/acaoAbrirCadastrarProduto().
   showCadastrarProduto: false,
   produtoNome: "",
@@ -2378,14 +2398,18 @@ const state = {
   produtoManualValores: {}, // valores digitados/lidos do rótulo, por chave de nutriente (string, como em bioFormValores)
   produtoManualPorcao: "", // peso/volume da porção (g ou ml) a que os valores acima se referem
   produtoRotuloLendo: false, // true enquanto a leitura automática (OCR) do rótulo está rodando
-  // Índice (em state.produtosCustomizados) do produto sendo EDITADO, ou null quando o modal está no modo
-  // normal de "novo produto" -- pedido do usuário: ícone de editar ao lado do de remover, na lista de
-  // "Produtos já cadastrados" (ver cadastrarProdutoModalTemplate()/acaoEditarProdutoCustomizado()). Abre
-  // o MESMO modal, sempre pré-preenchido no modo "Digitar valores do rótulo" (com os valores finais já
-  // salvos do produto) -- não dá pra reconstruir a descrição de ingredientes original a partir só dos
-  // valores agregados, então editar pelos valores exatos é o caminho mais simples e sempre funciona,
-  // não importa se o produto tinha sido cadastrado originalmente por ingredientes ou por rótulo.
-  produtoEditandoIndex: null,
+  // Id (em state.produtosCustomizados -- ver comentário em novoProduto.id, mais abaixo) do produto
+  // sendo EDITADO, ou null quando o modal está no modo normal de "novo produto" -- pedido do usuário:
+  // ícone de editar ao lado do de remover, na lista de "Produtos já cadastrados" (ver
+  // cadastrarProdutoModalTemplate()/acaoEditarProdutoCustomizado()). Abre o MESMO modal, sempre
+  // pré-preenchido no modo "Digitar valores do rótulo" (com os valores finais já salvos do produto) --
+  // não dá pra reconstruir a descrição de ingredientes original a partir só dos valores agregados, então
+  // editar pelos valores exatos é o caminho mais simples e sempre funciona, não importa se o produto
+  // tinha sido cadastrado originalmente por ingredientes ou por rótulo. Era guardado como ÍNDICE no
+  // array antes dos produtos sincronizarem com o backend -- virou id (igual refeições/medidas/treinos)
+  // porque um índice pode apontar pro produto errado se uma sincronização em segundo plano reordenar a
+  // lista enquanto o modal está aberto (ver formularioDeEdicaoAberto()).
+  produtoEditandoId: null,
   showGoals: false,
   showHistory: false,
   // Data do dia expandido no histórico de refeições (accordion: um dia de cada vez, ou nenhum) -- ver
@@ -2621,6 +2645,9 @@ function persistExerciciosCustomizados() { writeStorage(CHAVE_EXERCICIOS_CUSTOMI
 function persistEsportesCustomizados() { writeStorage(CHAVE_ESPORTES_CUSTOMIZADOS, state.esportesCustomizados); }
 function persistProdutosCustomizados() { writeStorage(CHAVE_PRODUTOS_CUSTOMIZADOS, state.produtosCustomizados); }
 function persistDiarioKcal() { writeStorage(CHAVE_DIARIO_KCAL, state.diarioKcal); }
+// Grava de volta os ids preenchidos pelo .map() de produtosCustomizados logo acima (comentário lá), pra
+// não ficar gerando um id novo pra esses produtos antigos a cada vez que o app abre.
+persistProdutosCustomizados();
 
 /* ===================== helpers de derivação ===================== */
 function today() { return todayKey(); }
@@ -3695,6 +3722,9 @@ async function sincronizarDoServidor() {
       persistExerciciosCustomizados();
     }
     state.diarioKcal = dedupDiarioKcalPorData(mesclarComPendentes(resposta.diarioKcal || [], "salvarDiarioKcalGoogle")); persistDiarioKcal();
+    // Produtos cadastrados no cardápio (ver salvarProdutoCustomizado()) -- mesmo padrão de
+    // mesclarComPendentes usado acima pros outros tipos de registro.
+    state.produtosCustomizados = mesclarComPendentes(resposta.produtosCustomizados || [], "salvarProdutoCustomizadoGoogle"); persistProdutosCustomizados();
     render();
   } catch { /* falha de rede — mantém os dados locais e tenta de novo na próxima abertura */ }
 }
@@ -3721,6 +3751,8 @@ function publicarRegistrosLocaisPendentes(remoto) {
   });
   const idsDiarioKcal = new Set((remoto.diarioKcal || []).map((r) => r.id));
   state.diarioKcal.filter((r) => !idsDiarioKcal.has(r.id)).forEach((r) => enviarComFila("salvarDiarioKcalGoogle", [state.usuario.email, r]));
+  const idsProdutos = new Set((remoto.produtosCustomizados || []).map((p) => p.id));
+  (state.produtosCustomizados || []).filter((p) => !idsProdutos.has(p.id)).forEach((p) => enviarComFila("salvarProdutoCustomizadoGoogle", [state.usuario.email, p]));
   if (!remoto.goals) enviarComFila("atualizarMetasGoogle", [state.usuario.email, state.goals, state.altura]);
 }
 // Única função que efetivamente abre algo do Google — e só roda quando a pessoa clica no botão
@@ -3745,6 +3777,7 @@ async function acaoConectarGoogle() {
     state.treinos = mergeMedidas(state.treinos, resposta.treinos || []); persistTreinos();
     state.exerciciosCustomizados = mesclarExerciciosCustomizados(state.exerciciosCustomizados, resposta.exerciciosCustomizados || {}); persistExerciciosCustomizados();
     state.diarioKcal = dedupDiarioKcalPorData(mergeMedidas(state.diarioKcal, resposta.diarioKcal || [])); persistDiarioKcal();
+    state.produtosCustomizados = mergeMedidas(state.produtosCustomizados, resposta.produtosCustomizados || []); persistProdutosCustomizados();
     toastSuccess("Conectado como " + state.account.email + ". Seus dados agora sincronizam entre aparelhos — sem precisar conectar de novo.");
   } catch (err) { toastError((err && err.message) || "Falha ao conectar com o Google. Tente novamente."); }
   finally { state.syncing = false; render(); }
@@ -3932,21 +3965,21 @@ function acaoAbrirCadastrarProduto() {
   state.produtoManualValores = {};
   state.produtoManualPorcao = "";
   state.produtoRotuloLendo = false;
-  state.produtoEditandoIndex = null;
+  state.produtoEditandoId = null;
   produtoRotuloArquivo = null;
   render();
 }
-function acaoFecharCadastrarProduto() { state.showCadastrarProduto = false; state.produtoEditandoIndex = null; render(); }
-// Abre o mesmo modal de cadastro, mas pré-preenchido com os valores do produto no índice informado, no
-// modo "Digitar valores do rótulo" (ver comentário de state.produtoEditandoIndex acima) -- pedido do
+function acaoFecharCadastrarProduto() { state.showCadastrarProduto = false; state.produtoEditandoId = null; render(); }
+// Abre o mesmo modal de cadastro, mas pré-preenchido com os valores do produto de id informado, no
+// modo "Digitar valores do rótulo" (ver comentário de state.produtoEditandoId acima) -- pedido do
 // usuário: ícone de editar ao lado do de remover, na lista de "Produtos já cadastrados"
 // (cadastrarProdutoModalTemplate()). acaoCadastrarProdutoManual()/acaoCadastrarProduto() detectam
-// produtoEditandoIndex e SUBSTITUEM o produto naquele índice em vez de criar um novo.
-function acaoEditarProdutoCustomizado(index) {
-  const p = state.produtosCustomizados[index];
+// produtoEditandoId e SUBSTITUEM o produto daquele id em vez de criar um novo.
+function acaoEditarProdutoCustomizado(id) {
+  const p = state.produtosCustomizados.find((item) => item.id === id);
   if (!p) return;
   state.showCadastrarProduto = true;
-  state.produtoEditandoIndex = index;
+  state.produtoEditandoId = id;
   state.produtoNome = p.label;
   state.produtoIngredientes = "";
   state.produtoPreview = [];
@@ -3992,26 +4025,37 @@ function acaoAnalisarIngredientesProduto() {
 }
 // Salva um produto customizado -- usado por acaoCadastrarProduto() (modo "ingredientes") e
 // acaoCadastrarProdutoManual() (modo "rótulo"), que só montam o objeto "novoProduto" (formato terms/
-// label/baseAmount/values/grams) e delegam o resto pra cá. Se state.produtoEditandoIndex estiver
-// definido (ver acaoEditarProdutoCustomizado()), SUBSTITUI o produto naquele índice em vez de adicionar
-// um novo -- o item sendo editado fica de fora da checagem de nome duplicado, senão a pessoa nunca
-// conseguiria salvar uma edição mantendo o mesmo nome. Devolve false (sem fechar o modal) se o nome
-// colidir com OUTRO produto já cadastrado.
+// label/baseAmount/values/grams) e delegam o resto pra cá. Se state.produtoEditandoId estiver definido
+// (ver acaoEditarProdutoCustomizado()), SUBSTITUI o produto daquele id em vez de adicionar um novo -- o
+// item sendo editado fica de fora da checagem de nome duplicado, senão a pessoa nunca conseguiria salvar
+// uma edição mantendo o mesmo nome. Devolve false (sem fechar o modal) se o nome colidir com OUTRO
+// produto já cadastrado.
+// Sincroniza com o backend igual refeições/treinos/medidas (ver enviarComFila() mais acima): não existe
+// endpoint de "atualizar" no backend (só salvar/remover -- ver salvarProdutoCustomizadoGoogle()/
+// removerProdutoCustomizadoGoogle() no Code.gs), então editar é remover o antigo (pelo id anterior) e
+// salvar de novo com um id novo -- mesmo padrão de acaoSalvarRefeicao()/acaoSalvarTreino().
 function salvarProdutoCustomizado(novoProduto, nome) {
   const termoNormalizado = normalizeText(nome);
-  const editandoIndex = state.produtoEditandoIndex;
-  const colide = state.produtosCustomizados.some((p, i) => i !== editandoIndex && normalizeText(p.label) === termoNormalizado);
+  const idEditando = state.produtoEditandoId;
+  const colide = state.produtosCustomizados.some((p) => p.id !== idEditando && normalizeText(p.label) === termoNormalizado);
   if (colide) { toastError("Já existe um produto cadastrado com esse nome."); return false; }
-  if (editandoIndex != null) {
-    state.produtosCustomizados = state.produtosCustomizados.map((p, i) => (i === editandoIndex ? novoProduto : p));
+  novoProduto.id = Date.now();
+  const editandoExistente = idEditando != null && state.produtosCustomizados.some((p) => p.id === idEditando);
+  if (editandoExistente) {
+    state.produtosCustomizados = state.produtosCustomizados.filter((p) => p.id !== idEditando).concat([novoProduto]);
     toastSuccess('Produto "' + nome + '" atualizado.');
+    if (state.account) {
+      enviarComFila("removerProdutoCustomizadoGoogle", [state.usuario.email, idEditando]);
+      enviarComFila("salvarProdutoCustomizadoGoogle", [state.usuario.email, novoProduto]);
+    }
   } else {
     state.produtosCustomizados = state.produtosCustomizados.concat([novoProduto]);
     toastSuccess('Produto "' + nome + '" cadastrado no cardápio! Agora você pode usá-lo em qualquer refeição.');
+    if (state.account) enviarComFila("salvarProdutoCustomizadoGoogle", [state.usuario.email, novoProduto]);
   }
   persistProdutosCustomizados();
   state.showCadastrarProduto = false;
-  state.produtoEditandoIndex = null;
+  state.produtoEditandoId = null;
   return true;
 }
 // Soma os nutrientes e o peso estimado (gramsEstimadosParaItem()) de todos os ingredientes já
@@ -4031,9 +4075,10 @@ function acaoCadastrarProduto() {
   const novoProduto = { terms: [normalizeText(nome)], label: nome, baseAmount: pesoTotal + " g", values: totalValues, grams: pesoTotal };
   if (salvarProdutoCustomizado(novoProduto, nome)) render();
 }
-function acaoRemoverProdutoCustomizado(index) {
-  state.produtosCustomizados = state.produtosCustomizados.filter((_, i) => i !== index);
+function acaoRemoverProdutoCustomizado(id) {
+  state.produtosCustomizados = state.produtosCustomizados.filter((p) => p.id !== id);
   persistProdutosCustomizados();
+  if (state.account) enviarComFila("removerProdutoCustomizadoGoogle", [state.usuario.email, id]);
   toastSuccess("Produto removido do cardápio.");
   render();
 }
@@ -6936,7 +6981,7 @@ function cadastrarProdutoModalTemplate() {
   // Editando um produto já cadastrado (ver acaoEditarProdutoCustomizado()) -- MESMO modal do cadastro,
   // só muda o título/texto do botão de salvar (a lógica de substituir em vez de adicionar fica em
   // salvarProdutoCustomizado()).
-  const editando = state.produtoEditandoIndex != null;
+  const editando = state.produtoEditandoId != null;
   return '' +
     '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharCadastrarProduto();}">' +
     '<div class="modal-card modal-card-produto">' +
@@ -6968,11 +7013,11 @@ function cadastrarProdutoModalTemplate() {
           : "")) +
         (state.produtosCustomizados.length ?
           '<div class="meal-preview-head" style="margin-top:18px"><span>Produtos já cadastrados</span></div>' +
-          '<div class="meal-list">' + state.produtosCustomizados.map((p, i) =>
+          '<div class="meal-list">' + state.produtosCustomizados.map((p) =>
             '<div class="meal-row"><div><span class="food-label">' + esc(p.label) + '</span> <span class="food-amount">· ' + esc(p.baseAmount) + "</span></div>" +
             '<div class="meal-row-right">' +
-              '<button class="meal-row-delete" aria-label="Editar produto" onclick="acaoEditarProdutoCustomizado(' + i + ')">' + icon("edit") + "</button>" +
-              '<button class="meal-row-delete" aria-label="Remover produto" onclick="acaoRemoverProdutoCustomizado(' + i + ')">' + icon("trash") + "</button>" +
+              '<button class="meal-row-delete" aria-label="Editar produto" onclick="acaoEditarProdutoCustomizado(' + p.id + ')">' + icon("edit") + "</button>" +
+              '<button class="meal-row-delete" aria-label="Remover produto" onclick="acaoRemoverProdutoCustomizado(' + p.id + ')">' + icon("trash") + "</button>" +
             "</div></div>"
           ).join("") + "</div>"
           : "") +
@@ -7044,16 +7089,22 @@ function juntarComE(itens) {
   return validos.slice(0, -1).join(", ") + " e " + validos[validos.length - 1];
 }
 // Complementa a legenda do card de IMC ("Calculado a partir do peso de X kg, registrado em [data]")
-// com a hora do registro e o que o usuário informou ao pesar: se foi em jejum ou não, e em que momento
-// (antes de dormir, antes/depois da refeição ou antes/depois do treino -- ver
-// MEDIDA_MOMENTO_PESO_OPCOES/acaoSalvarMedida()). Pedido do usuário. Devolve já com um espaço na
-// frente, pronta pra ser concatenada direto depois da data (ou "" se não houver nada a acrescentar --
-// registros salvos antes desses campos existirem, por exemplo).
+// com a hora do registro, se foi em jejum ou não (e, se não, quais refeições de hoje foram feitas antes
+// da pesagem -- ver medidaRefeicoesAntesSelectorTemplate()/acaoSalvarMedida()), e em que momento (antes
+// de dormir, antes/depois da refeição ou antes/depois do treino -- ver
+// MEDIDA_MOMENTO_PESO_OPCOES/acaoSalvarMedida()). Pedido do usuário -- ex.: "fora de jejum após a ceia e
+// antes de dormir". Devolve já com um espaço na frente, pronta pra ser concatenada direto depois da data
+// (ou "" se não houver nada a acrescentar -- registros salvos antes desses campos existirem, por
+// exemplo).
 function legendaContextoPesoReferencia(pesoRef) {
   const momento = pesoRef.momento ? momentoPesoInfo(pesoRef.momento) : null;
+  let jejumTexto = typeof pesoRef.jejum === "boolean" ? (pesoRef.jejum ? "em jejum" : "fora de jejum") : "";
+  if (jejumTexto === "fora de jejum" && pesoRef.refeicoesAntes && pesoRef.refeicoesAntes.length) {
+    jejumTexto += " após " + juntarComE(pesoRef.refeicoesAntes.map((r) => esc(refeicaoComArtigoTexto(r.name))));
+  }
   const texto = juntarComE([
     pesoRef.time ? "às " + esc(pesoRef.time) : "",
-    typeof pesoRef.jejum === "boolean" ? (pesoRef.jejum ? "em jejum" : "fora de jejum") : "",
+    jejumTexto,
     momento ? momento.frase : "",
   ]);
   return texto ? " " + texto : "";
@@ -10026,7 +10077,12 @@ setInterval(verificarViradaDeDia, 60000);
 // primeira. Por isso, enquanto um formulário de edição estiver aberto, a sincronização espera —
 // mexer nos dados de outro aparelho pode esperar até a pessoa terminar de editar.
 function formularioDeEdicaoAberto() {
-  return state.showFormBioimpedancia || state.showEditarPerfil || state.showGoals;
+  // showCadastrarProduto entrou nessa lista junto da sincronização de produtos customizados com o
+  // backend (ver salvarProdutoCustomizadoGoogle()) -- antes disso uma sincronização em segundo plano
+  // nunca mexia em state.produtosCustomizados, então não tinha risco de atrapalhar esse modal aberto
+  // (mesmo motivo dos outros 3 já na lista: evitar que um re-render no meio do preenchimento apague o
+  // que a pessoa já digitou, ou reordene a lista de produtos já cadastrados embaixo do modal).
+  return state.showFormBioimpedancia || state.showEditarPerfil || state.showGoals || state.showCadastrarProduto;
 }
 
 // Ao trocar de app/aba e voltar (ex.: usar o celular depois do PC), busca de novo os dados no nosso
