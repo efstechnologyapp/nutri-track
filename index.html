@@ -706,6 +706,14 @@ svg{ display: block; }
 .medidas-section-title{ margin:0; display:flex; align-items:center; gap:8px; font-family:'Fraunces',serif; font-size:20px; font-weight:600; color:#1b3f34; }
 .medida-form{ margin-top:16px; display:flex; flex-direction:column; gap:12px; max-width:360px; }
 .medida-input-row{ display:flex; flex-direction:column; gap:12px; margin-top:4px; }
+.medida-refeicoes-lista{ display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+.medida-refeicao-opcao{ display:flex; align-items:flex-start; gap:10px; border:1px solid #dce5db; border-radius:14px; padding:10px 12px; cursor:pointer; transition:border-color .15s, background .15s; }
+.medida-refeicao-opcao:hover{ border-color:#8fbf78; }
+.medida-refeicao-opcao.marcada{ border-color:var(--primary); background:#f1f7ef; }
+.medida-refeicao-opcao input[type="checkbox"]{ margin-top:2px; accent-color:var(--primary); width:16px; height:16px; flex-shrink:0; }
+.medida-refeicao-opcao-texto{ font-size:13px; color:#3a4a3e; line-height:1.4; }
+.medida-refeicao-opcao-alimentos{ font-size:12px; color:#8a9a85; }
+.medida-refeicao-opcao-nenhuma .medida-refeicao-opcao-texto{ font-style:italic; }
 .medidas-hoje{ margin-top:24px; padding-top:20px; border-top:1px solid #edf0eb; }
 .medidas-history-list, .bio-history-list{ margin-top:16px; display:flex; flex-direction:column; }
 .medida-history-row, .bio-history-row, .medida-card-history-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 0; border-top:1px solid #edf0eb; }
@@ -2494,6 +2502,20 @@ const state = {
   // na legenda do card de IMC (ver imcCardTemplate()). "" = ainda não respondido (obrigatório antes de
   // salvar um peso, igual ao jejum); resetado ao trocar de tipo de medição e depois de salvar um registro.
   medidaMomentoPeso: "",
+  // Refeições de hoje marcadas como "feitas antes dessa aferição" -- só relevante quando medidaJejum ===
+  // "nao" (ver medidaRefeicoesAntesSelectorTemplate()/acaoAlternarRefeicaoMedida()). Lista de ids de
+  // state.meals (pode ter mais de um -- ex.: café da manhã + lanche antes de pesar à tarde). Pedido do
+  // usuário: ao registrar uma medição fora do jejum, poder dizer o que já tinha comido naquele dia, e
+  // levar os alimentos dessas refeições junto pro registro da medição (ver acaoSalvarMedida()), pra
+  // aparecerem depois no Histórico de Medidas e Aferições. Mutuamente exclusiva com medidaSemRefeicaoAntes
+  // abaixo. Resetada ao trocar de tipo de medição, ao responder a pergunta de jejum de novo e depois de
+  // salvar um registro.
+  medidaRefeicoesSelecionadas: [],
+  // "Nenhuma refeição antes da aferição", marcado explicitamente -- mutuamente exclusivo com
+  // medidaRefeicoesSelecionadas acima (ver acaoMarcarSemRefeicaoMedida()). Existir como opção própria (em
+  // vez de simplesmente deixar a lista vazia) permite exigir uma resposta explícita quando há refeições
+  // registradas no dia, igual à pergunta de jejum -- ver validação em acaoSalvarMedida().
+  medidaSemRefeicaoAntes: false,
   // Página ativa do card "virável" de Medidas e Aferições -- 0 = formulário/registros de hoje (como
   // sempre foi), 1 = Histórico de registros (que era uma tela separada, trocada por
   // showHistoricoMedidas) -- MESMO espírito do card de Bioimpedância e Calorimetria logo acima na aba
@@ -3044,16 +3066,20 @@ function faixaSaturacao(spo2) { return SATURACAO_FAIXAS.find((f) => spo2 < f.ate
 
 // Circunferência da cintura (cm) -- Organização Mundial da Saúde, com cortes diferentes por sexo. Sem
 // sexo informado no perfil não é possível classificar (ver faixaCintura()) -- a legenda avisa nesse caso.
+// Os rótulos dizem explicitamente do que é o risco (cardiometabólico: doenças cardiovasculares e
+// diabetes tipo 2) -- pedido do usuário: "risco aumentado ou muito aumentado de quê? as pessoas
+// precisam ter a informação clara" (antes os rótulos diziam só "Risco aumentado"/"Risco muito
+// aumentado", sem dizer de quê). Ver também o texto completo em legendaMedida().
 const CINTURA_FAIXAS = {
   masculino: [
-    { ate: 94, label: "Risco não aumentado", cor: "#4b9350", corSuave: "#e9f5e9" },
-    { ate: 102, label: "Risco aumentado", cor: "#d9a92e", corSuave: "#faf2dc" },
-    { ate: Infinity, label: "Risco muito aumentado", cor: "#c13f34", corSuave: "#f7ddd9" },
+    { ate: 94, label: "Risco cardiometabólico não aumentado", cor: "#4b9350", corSuave: "#e9f5e9" },
+    { ate: 102, label: "Risco cardiometabólico aumentado", cor: "#d9a92e", corSuave: "#faf2dc" },
+    { ate: Infinity, label: "Risco cardiometabólico muito aumentado", cor: "#c13f34", corSuave: "#f7ddd9" },
   ],
   feminino: [
-    { ate: 80, label: "Risco não aumentado", cor: "#4b9350", corSuave: "#e9f5e9" },
-    { ate: 88, label: "Risco aumentado", cor: "#d9a92e", corSuave: "#faf2dc" },
-    { ate: Infinity, label: "Risco muito aumentado", cor: "#c13f34", corSuave: "#f7ddd9" },
+    { ate: 80, label: "Risco cardiometabólico não aumentado", cor: "#4b9350", corSuave: "#e9f5e9" },
+    { ate: 88, label: "Risco cardiometabólico aumentado", cor: "#d9a92e", corSuave: "#faf2dc" },
+    { ate: Infinity, label: "Risco cardiometabólico muito aumentado", cor: "#c13f34", corSuave: "#f7ddd9" },
   ],
 };
 function faixaCintura(cm, sexo) {
@@ -3137,9 +3163,9 @@ function legendaMedida(r) {
       return "Saturação de oxigênio (SpO₂): 95–100% normal; 90–94% levemente reduzida; 85–89% baixa; abaixo de 85% muito baixa (risco à vida) — Sociedade Brasileira de Pneumologia e Tisiologia.";
     case "cintura": {
       const sexo = state.usuario && state.usuario.sexo;
-      if (sexo === "masculino") return "Circunferência da cintura (homens): abaixo de 94 cm risco não aumentado; 94–101,9 cm risco aumentado; 102 cm ou mais risco muito aumentado — Organização Mundial da Saúde.";
-      if (sexo === "feminino") return "Circunferência da cintura (mulheres): abaixo de 80 cm risco não aumentado; 80–87,9 cm risco aumentado; 88 cm ou mais risco muito aumentado — Organização Mundial da Saúde.";
-      return "Circunferência da cintura (Organização Mundial da Saúde): risco aumentado a partir de 94 cm em homens e 80 cm em mulheres; risco muito aumentado a partir de 102 cm em homens e 88 cm em mulheres. Informe seu sexo no perfil para ver a sua classificação.";
+      if (sexo === "masculino") return "Circunferência da cintura (homens) e risco cardiometabólico (de desenvolver diabetes tipo 2 e doenças cardiovasculares): abaixo de 94 cm risco não aumentado; 94–101,9 cm risco aumentado; 102 cm ou mais risco muito aumentado — Organização Mundial da Saúde.";
+      if (sexo === "feminino") return "Circunferência da cintura (mulheres) e risco cardiometabólico (de desenvolver diabetes tipo 2 e doenças cardiovasculares): abaixo de 80 cm risco não aumentado; 80–87,9 cm risco aumentado; 88 cm ou mais risco muito aumentado — Organização Mundial da Saúde.";
+      return "Circunferência da cintura e risco cardiometabólico (de desenvolver diabetes tipo 2 e doenças cardiovasculares) — Organização Mundial da Saúde: risco aumentado a partir de 94 cm em homens e 80 cm em mulheres; risco muito aumentado a partir de 102 cm em homens e 88 cm em mulheres. Informe seu sexo no perfil para ver a sua classificação.";
     }
     default:
       return null;
@@ -3289,7 +3315,7 @@ const MEDIDA_MOMENTO_PESO_OPCOES = [
   { valor: "depois_treino", label: "Depois do treino", frase: "depois do treino" },
 ];
 function momentoPesoInfo(valor) { return MEDIDA_MOMENTO_PESO_OPCOES.find((o) => o.valor === valor) || null; }
-function acaoSelecionarTipoMedida(tipo) { state.medidaTipo = tipo; state.medidaJejum = ""; state.medidaMomentoPeso = ""; render(); }
+function acaoSelecionarTipoMedida(tipo) { state.medidaTipo = tipo; state.medidaJejum = ""; state.medidaMomentoPeso = ""; state.medidaRefeicoesSelecionadas = []; state.medidaSemRefeicaoAntes = false; render(); }
 // Trocar a resposta de jejum dispara um re-render (pra atualizar o <select> com a opção escolhida), e
 // esse re-render recria o campo de valor/observação do zero (não são inputs "controlados" por
 // state) -- sem isso, um valor já digitado antes de responder a pergunta de jejum seria perdido. Por
@@ -3299,6 +3325,43 @@ function acaoSelecionarJejum(valor) {
   const valorDigitado = (document.getElementById("medida-valor") || {}).value || "";
   const notaDigitada = (document.getElementById("medida-nota") || {}).value || "";
   state.medidaJejum = valor;
+  // A lista de refeições de antes (medidaRefeicoesAntesSelectorTemplate()) só aparece com jejum = "não" --
+  // qualquer troca na resposta de jejum reseta essa seleção, pra nunca ficar uma escolha "presa" de uma
+  // resposta anterior (ex.: responder "não", marcar o café da manhã, mudar de ideia e responder "sim").
+  state.medidaRefeicoesSelecionadas = [];
+  state.medidaSemRefeicaoAntes = false;
+  render();
+  const inputValor = document.getElementById("medida-valor");
+  if (inputValor) inputValor.value = valorDigitado;
+  const inputNota = document.getElementById("medida-nota");
+  if (inputNota) inputNota.value = notaDigitada;
+}
+// Alterna uma refeição de hoje na lista de "refeições feitas antes dessa aferição" (ver
+// state.medidaRefeicoesSelecionadas/medidaRefeicoesAntesSelectorTemplate()) -- checkbox, não dropdown,
+// porque mais de uma refeição pode ter acontecido antes da aferição (ex.: café da manhã + lanche, antes
+// de pesar à tarde). Marcar qualquer refeição desmarca "Nenhuma refeição antes" (mutuamente exclusivos --
+// ver acaoMarcarSemRefeicaoMedida() logo abaixo). Mesmo motivo/mecânica de acaoSelecionarJejum() pra
+// preservar o valor/nota já digitados através do re-render.
+function acaoAlternarRefeicaoMedida(mealId) {
+  const valorDigitado = (document.getElementById("medida-valor") || {}).value || "";
+  const notaDigitada = (document.getElementById("medida-nota") || {}).value || "";
+  state.medidaRefeicoesSelecionadas = state.medidaRefeicoesSelecionadas.includes(mealId)
+    ? state.medidaRefeicoesSelecionadas.filter((id) => id !== mealId)
+    : state.medidaRefeicoesSelecionadas.concat([mealId]);
+  state.medidaSemRefeicaoAntes = false;
+  render();
+  const inputValor = document.getElementById("medida-valor");
+  if (inputValor) inputValor.value = valorDigitado;
+  const inputNota = document.getElementById("medida-nota");
+  if (inputNota) inputNota.value = notaDigitada;
+}
+// Marca/desmarca "Nenhuma refeição antes da aferição" -- mutuamente exclusiva com as refeições específicas
+// acima (marcar essa desmarca todas as outras, e vice-versa, ver acaoAlternarRefeicaoMedida()).
+function acaoMarcarSemRefeicaoMedida() {
+  const valorDigitado = (document.getElementById("medida-valor") || {}).value || "";
+  const notaDigitada = (document.getElementById("medida-nota") || {}).value || "";
+  state.medidaSemRefeicaoAntes = !state.medidaSemRefeicaoAntes;
+  state.medidaRefeicoesSelecionadas = [];
   render();
   const inputValor = document.getElementById("medida-valor");
   if (inputValor) inputValor.value = valorDigitado;
@@ -3331,6 +3394,14 @@ function acaoSalvarMedida() {
     toastError("Informe se a medição foi feita em jejum.");
     return;
   }
+  // Ver medidaRefeicoesAntesSelectorTemplate() -- só exige resposta quando já existe pelo menos 1
+  // refeição registrada hoje pra escolher (sem nenhuma refeição no dia, não há o que selecionar, então a
+  // medição segue sem vincular nada, igual ao comportamento de antes dessa pergunta existir).
+  if (MEDIDA_TIPOS_COM_JEJUM.includes(tipo) && state.medidaJejum === "nao" && todayMeals().length
+      && !state.medidaSemRefeicaoAntes && !state.medidaRefeicoesSelecionadas.length) {
+    toastError('Selecione quais refeições de hoje você fez antes da aferição (ou marque "Nenhuma refeição antes").');
+    return;
+  }
   // Ver MEDIDA_MOMENTO_PESO_OPCOES -- pergunta em medidasFormTemplate(), só pra peso.
   if (tipo === "peso" && !momentoPesoInfo(state.medidaMomentoPeso)) {
     toastError("Informe em que momento você pesou (antes de dormir, da refeição ou do treino).");
@@ -3350,11 +3421,25 @@ function acaoSalvarMedida() {
   if (tipo === "peso") novaMedida.imc = calcularImcDoPeso(Number(valor));
   if (MEDIDA_TIPOS_COM_JEJUM.includes(tipo)) novaMedida.jejum = state.medidaJejum === "sim";
   if (tipo === "peso") novaMedida.momento = state.medidaMomentoPeso;
+  // Refeições de hoje marcadas como "feitas antes dessa aferição" (ver
+  // medidaRefeicoesAntesSelectorTemplate()) -- guarda uma CÓPIA (nome/horário/alimentos) de cada refeição
+  // escolhida dentro do próprio registro de medição, em vez de só o id, pelo mesmo motivo do IMC acima:
+  // não deve mudar se a refeição original for editada ou removida depois. Ordenada pelo mesmo critério do
+  // Diário (ordenarPorTipoDeRefeicao()), não pela ordem em que foram marcadas na tela.
+  if (MEDIDA_TIPOS_COM_JEJUM.includes(tipo) && state.medidaJejum === "nao" && state.medidaRefeicoesSelecionadas.length) {
+    const refeicoesEscolhidas = state.medidaRefeicoesSelecionadas
+      .map((id) => state.meals.find((m) => m.id === id))
+      .filter(Boolean);
+    novaMedida.refeicoesAntes = ordenarPorTipoDeRefeicao(refeicoesEscolhidas)
+      .map((m) => ({ id: m.id, name: m.name, time: m.time, alimentos: m.alimentos || [] }));
+  }
   state.medidas = state.medidas.concat([novaMedida]);
   persistMedidas();
   state.medidaTipo = "";
   state.medidaJejum = "";
   state.medidaMomentoPeso = "";
+  state.medidaRefeicoesSelecionadas = [];
+  state.medidaSemRefeicaoAntes = false;
   toastSuccess(tipo === "peso" && novaMedida.imc
     ? "Registro salvo no histórico (IMC " + formatNumber(novaMedida.imc, 1) + ")."
     : "Registro salvo no histórico.");
@@ -3583,6 +3668,21 @@ async function sincronizarDoServidor() {
     }
     state.account = { email: resposta.googleEmail || (state.account && state.account.email) || "" };
     writeStorage(CHAVE_GACCOUNT, state.account);
+    // Corrige um "buraco" raro, mas real, de sincronização entre aparelhos: logo depois de abrir o app
+    // (login automático ou troca de aba), este sincronizarDoServidor() ainda está rodando (é
+    // assíncrono, pode levar alguns segundos numa rede de celular) quando a pessoa já registra uma
+    // refeição/medida/treino. Até esse momento, SE este aparelho específico ainda não sabia que a
+    // conta está conectada (ex.: acabou de instalar o app de novo, ou limpou os dados do navegador),
+    // state.account local ainda estava vazio -- então aquele registro foi salvo só localmente, sem
+    // entrar na fila de reenvio (ver "if (state.account)" nos acaoSalvar*()), porque na hora de salvar
+    // o app não sabia que devia tentar subir pro servidor. Sem este passo, a troca abaixo (ver
+    // mesclarComPendentes) SUBSTITUIRIA a lista local pela do servidor e esse registro "preso" só neste
+    // aparelho desapareceria pra sempre -- e nunca chegaria no outro aparelho. publicarRegistrosLocaisPendentes
+    // (mesma função usada ao clicar em "Conectar Google") resolve isso: compara o que já existe aqui
+    // com o que vem do servidor e manda pro servidor (via enviarComFila, que entra em
+    // mesclarComPendentes/enviosEmAndamento na mesma hora) qualquer coisa que só exista neste aparelho --
+    // sem duplicar nada que já esteja lá (compara por id).
+    publicarRegistrosLocaisPendentes(resposta);
     state.meals = mesclarComPendentes(resposta.meals || [], "salvarRefeicaoGoogle"); persistMeals();
     if (resposta.goals) { state.goals = resposta.goals; persistGoals(); }
     if (resposta.altura) { state.altura = resposta.altura; persistAltura(); }
@@ -6387,6 +6487,17 @@ function treinoResumoModalidadesHtml(dayTreinos) {
       (kcalTexto ? ' <span class="modalidade-kcal">· ' + esc(kcalTexto) + "</span>" : "") + "</span>";
   }).join("") + "</div>";
 }
+// Fallback pra quando a foto de um treino não carrega (ex.: foto salva ANTES da correção do formato de
+// link do Drive -- ver uploadArquivoDrive() no Code.gs -- continua com o link antigo, que nunca vai
+// carregar como imagem). Em vez de deixar o ícone de "imagem quebrada" do navegador aparecendo (era
+// exatamente o que a pessoa via -- "Foto" no lugar da imagem), troca pelo mesmo ícone genérico usado
+// quando o treino não tem foto nenhuma, e mantém o link pra abrir o arquivo em outra aba (pode ser que
+// ele ainda abra certinho fora do <img>, mesmo sem servir como imagem embutida).
+function handleFotoTreinoErro(img) {
+  img.style.display = "none";
+  const link = img.closest("a");
+  if (link) link.insertAdjacentHTML("beforeend", icon("activity"));
+}
 function treinoListTemplate() {
   const treinos = todayTreinos();
   if (!treinos.length) {
@@ -6395,7 +6506,7 @@ function treinoListTemplate() {
   return treinos.map((t) =>
     '<div class="meal-row meal-row-static"><div class="meal-row-left">' +
     (t.fotoUrl
-      ? '<a class="meal-row-icon meal-row-icon-foto" href="' + esc(t.fotoUrl) + '" target="_blank" rel="noopener"><img src="' + esc(t.fotoUrl) + '" alt="Foto do treino"/></a>'
+      ? '<a class="meal-row-icon meal-row-icon-foto" href="' + esc(t.fotoUrl) + '" target="_blank" rel="noopener"><img src="' + esc(t.fotoUrl) + '" alt="Foto do treino" onerror="handleFotoTreinoErro(this)"/></a>'
       : '<div class="meal-row-icon">' + icon("activity") + "</div>"
     ) +
     '<div class="meal-row-text"><div class="meal-row-name">' + emojiEsporte(t.esporte) + " " + esc(nomeEsporteExibicao(t)) + '</div><div class="meal-row-meta">' + icon("clock") + " " + esc(t.horaInicio) + " – " + esc(t.horaFim) + "</div>" +
@@ -8089,6 +8200,14 @@ function medidaHistoryRowTemplate(r, prefixo) {
       '<div class="' + p + '-right"><div class="' + p + '-valor-col"><span class="' + p + '-valor">' + esc(String(r.valor)) + " " + esc(meta.unidade) + "</span>" +
       (classificacao ? '<span class="' + p + '-status" style="color:' + classificacao.cor + '">' + statusTextoMedida(r, classificacao) + "</span>" : "") + "</div>" +
       '<button class="meal-row-delete" aria-label="Remover registro" onclick="acaoRemoverMedida(' + r.id + ')">' + icon("trash") + "</button></div></div>" +
+      // Refeições vinculadas (ver medidaRefeicoesAntesSelectorTemplate()/acaoSalvarMedida()) -- mesmo
+      // formato "Nome (alimentos)" já usado em outras telas pra resumir uma refeição numa linha só.
+      (r.refeicoesAntes && r.refeicoesAntes.length ?
+        '<p class="' + p + '-legenda">' + icon("utensils") + " Antes da aferição: " +
+          esc(r.refeicoesAntes.map((ref) => ref.name + (ref.alimentos && ref.alimentos.length ? " (" + ref.alimentos.map((a) => a.label).join(", ") + ")" : "")).join("; ")) +
+        "</p>"
+        : ""
+      ) +
       (legenda ? '<p class="' + p + '-legenda">' + icon("help") + " " + esc(legenda) + "</p>" : "") +
     "</div>";
 }
@@ -8200,6 +8319,43 @@ function medidaListTemplate() {
   return '<div class="medida-history-list">' + medidas.map((m) => medidaHistoryRowTemplate(m)).join("") + "</div>";
 }
 
+// Lista de refeições de hoje pra marcar como "feitas antes dessa aferição" -- só aparece quando a pessoa
+// responde "Não, fora do jejum" na pergunta de jejum (ver MEDIDA_TIPOS_COM_JEJUM/medidasFormTemplate()).
+// Pedido do usuário: ao registrar peso ou glicemia fora do jejum, poder dizer o que já tinha comido
+// naquele dia (ex.: pesou depois do café da manhã) -- os alimentos dessas refeições ficam vinculados ao
+// registro da medição (ver acaoSalvarMedida()) e aparecem depois junto com ela no Histórico de Medidas e
+// Aferições (ver medidaHistoryRowTemplate()). Checkbox (não dropdown) porque mais de uma refeição do dia
+// pode ter acontecido antes da aferição. "Nenhuma refeição antes" é uma opção própria, mutuamente
+// exclusiva com as demais (ver acaoAlternarRefeicaoMedida()/acaoMarcarSemRefeicaoMedida()), pra poder
+// EXIGIR uma resposta explícita quando já existe refeição registrada no dia (mesmo espírito da pergunta de
+// jejum) sem travar quem realmente não comeu nada antes.
+function medidaRefeicoesAntesSelectorTemplate() {
+  const mealsHoje = ordenarPorTipoDeRefeicao(todayMeals());
+  if (!mealsHoje.length) {
+    return '' +
+      '<div><label class="field-label">Refeições de hoje antes da aferição</label>' +
+      '<p class="imc-empty" style="margin-top:6px">Nenhuma refeição registrada hoje ainda -- a medição será salva sem vincular a uma refeição.</p></div>';
+  }
+  return '' +
+    '<div><label class="field-label">Quais refeições de hoje você já tinha feito antes dessa aferição?</label>' +
+    '<div class="medida-refeicoes-lista">' +
+      mealsHoje.map((m) => {
+        const marcada = state.medidaRefeicoesSelecionadas.includes(m.id);
+        const alimentosTexto = (m.alimentos || []).map((a) => a.label).join(", ");
+        return '' +
+          '<label class="medida-refeicao-opcao' + (marcada ? " marcada" : "") + '">' +
+            '<input type="checkbox"' + (marcada ? " checked" : "") + ' onchange="acaoAlternarRefeicaoMedida(' + m.id + ')"/>' +
+            '<span class="medida-refeicao-opcao-texto"><strong>' + esc(m.name) + "</strong> · " + esc(m.time) +
+              (alimentosTexto ? '<br><span class="medida-refeicao-opcao-alimentos">' + esc(alimentosTexto) + "</span>" : "") +
+            "</span>" +
+          "</label>";
+      }).join("") +
+      '<label class="medida-refeicao-opcao medida-refeicao-opcao-nenhuma' + (state.medidaSemRefeicaoAntes ? " marcada" : "") + '">' +
+        '<input type="checkbox"' + (state.medidaSemRefeicaoAntes ? " checked" : "") + ' onchange="acaoMarcarSemRefeicaoMedida()"/>' +
+        '<span class="medida-refeicao-opcao-texto">Nenhuma refeição antes da aferição</span>' +
+      "</label>" +
+    "</div></div>";
+}
 function medidasFormTemplate() {
   const tipo = state.medidaTipo;
   const meta = tipo ? medidaTipos[tipo] : null;
@@ -8230,6 +8386,7 @@ function medidasFormTemplate() {
             '<p class="imc-empty" style="margin-top:6px">' + (tipo === "glicemia" ? "Usamos essa informação pra avaliar o resultado com o parâmetro de referência correto." : "Usamos essa informação para comparar corretamente seu peso em jejum entre os dias no Diário de Kcal.") + "</p></div>"
             : ""
           ) +
+          (MEDIDA_TIPOS_COM_JEJUM.includes(tipo) && state.medidaJejum === "nao" ? medidaRefeicoesAntesSelectorTemplate() : "") +
           (tipo === "peso" ?
             '<div><label class="field-label">Em que momento você pesou?</label>' +
             '<select id="medida-momento-peso" class="field-input" onchange="acaoSelecionarMomentoPeso(this.value)">' +
