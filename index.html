@@ -667,16 +667,22 @@ svg{ display: block; }
    que "mudou de casa" da antiga aba Evolução, ver medidasEvolucaoPaginaTemplate() -- /histórico) -- classes
    próprias (.medida-card-*), mas com os valores de CSS sempre combinados aqui com os análogos .bio-card-*
    (idêntica aparência/comportamento), mesmo padrão já usado em .medida-history-row/.bio-history-row etc.
-   O card de Treinos de hoje (ver treinoCardFlipWrapperTemplate()/acaoIrParaPaginaTreino()) também adotou o
+   O card "Treinos de hoje" (ver treinoCardFlipWrapperTemplate()/acaoIrParaPaginaTreino()) também adotou o
    mesmo mecanismo, mas com só 2 páginas (hoje/histórico, sem uma 3ª página de evolução) -- classes
-   próprias .treino-card-*, combinadas aqui do mesmo jeito. Pedido explícito do usuário: diferente de
+   próprias .treino-card-*, combinadas aqui do mesmo jeito. Pedido explícito do usuário: 1) diferente de
    Bioimpedância/Medidas (altura = a MAIOR entre as páginas), aqui a altura fica fixa na página "Treinos de
    hoje" (página 0) -- é ela que já tinha o tamanho/dimensão considerado harmonioso com o resto do app, e
-   não deve mudar só por ganhar uma 2ª página -- ver ajustarAlturaTreinoCard(). Por isso a página 0 do
-   Treino é o próprio .dashboard-grid (2 colunas, igual já era antes dessa mudança), não um .medidas-section
-   como as páginas 0 de Bioimpedância/Medidas -- só a página de Histórico (página 1) usa .medidas-section
-   (pra ganhar a mesma rolagem interna das demais, ver .treino-card-history-scroll). */
+   não deve mudar só por ganhar uma 2ª página -- ver ajustarAlturaTreinoCard(); e 2) só esse card específico
+   (a lista "Treinos de hoje") vira -- o card de "Novo treino"/"Editar treino" ao lado (ver
+   treinoFormCardTemplate()) fica de fora do flip, como card estático de sempre, lado a lado com o card
+   virável no mesmo .dashboard-grid de 2 colunas que já existia (ver treinosTabTemplate()). Por isso as 2
+   páginas do card de Treinos usam .medidas-section igual às de Bioimpedância/Medidas (não há mais um
+   .dashboard-grid DENTRO de uma página do flip). */
 .bio-card-flip-wrap, .medida-card-flip-wrap, .treino-card-flip-wrap{ margin-top:24px; display:flex; flex-direction:column; align-items:center; gap:8px; }
+/* Dentro do .dashboard-grid de Treinos (lado a lado com o card estático de "Novo treino", ver
+   treinosTabTemplate()) o espaçamento entre os 2 cards já vem do gap:24px do próprio grid -- sem isso o
+   card virável ficaria mais baixo que o card de "Novo treino", com uma folga extra de 24px só do lado dele. */
+.dashboard-grid > .treino-card-flip-wrap{ margin-top:0; }
 .bio-card-flip, .medida-card-flip, .treino-card-flip{ position:relative; width:100%; overflow:hidden; cursor:pointer; transition:height .4s cubic-bezier(.4,.05,.2,1); }
 /* largura de 300%/200% (3 ou 2 páginas) -- o translateX de cada página é sempre um múltiplo de 1/N da
    largura da FAIXA (N = número de páginas), que equivale a exatamente 100% da largura do card) -- ver
@@ -695,11 +701,8 @@ svg{ display: block; }
    altura na próxima chamada, virando uma referência circular). display:flex em coluna permite que a
    página de Histórico (a única cujo conteúdo pode não caber) tenha uma área de rolagem própria que ocupa
    só o espaço restante abaixo do título/abas -- ver .bio-history-scroll/.medida-card-history-scroll/
-   .treino-card-history-scroll. A página 0 (.dashboard-grid) do card de Treinos fica de fora dessa regra
-   (ver comentário grande acima) -- só ganha overflow:hidden como salvaguarda, sem o display:flex (que
-   quebraria suas 2 colunas). */
+   .treino-card-history-scroll. */
 .bio-card-page > .medidas-section, .medida-card-page > .medidas-section, .treino-card-page > .medidas-section{ margin-top:0; box-shadow:none; display:flex; flex-direction:column; overflow:hidden; }
-.treino-card-page > .dashboard-grid{ overflow:hidden; }
 .bio-history-scroll, .medida-card-history-scroll, .treino-card-history-scroll{ flex:1; min-height:0; overflow-y:auto; margin-top:14px; padding-right:2px; }
 .bio-card-dots, .medida-card-dots, .treino-card-dots{ display:flex; gap:5px; }
 .bio-card-dot, .medida-card-dot, .treino-card-dot{ height:3px; width:14px; border-radius:999px; background:#d5ddd0; padding:0; border:none; cursor:pointer; transition:background .15s, width .15s; }
@@ -8200,8 +8203,10 @@ function bioimpedanciaCardFlipWrapperTemplate() {
 // Bioimpedância-Calorimetria; o resumo tem "Nova medição"/"Histórico de registros"/botão "i"), que devem
 // executar sua própria ação em vez de virar a página (mesmo padrão de acaoCliqueNutrienteCard(), só que
 // aqui com uma lista maior de controles internos, daí o closest() genérico em vez de uma classe única).
+// Inclui "textarea" na lista (mesmo sem um campo desses no card de Bioimpedância hoje) pra já ficar
+// consistente com o mesmo fix em acaoCliqueMedidaCard() -- ver comentário lá.
 function acaoCliqueBioCard(event) {
-  if (event.target.closest("button, a, select, input")) return;
+  if (event.target.closest("button, a, select, input, textarea")) return;
   acaoIrParaPaginaBio((state.bioCardPagina + 1) % 3);
 }
 // Vai pra uma página específica do card de Bioimpedância e Calorimetria -- usado pelo toque no card
@@ -8597,9 +8602,12 @@ function medidasCardFlipWrapperTemplate() {
 // abas, selects e outros controles interativos das páginas (formulário tem os campos de registro/
 // "Histórico de registros"; Evolução do Peso tem os campos de data do filtro; histórico tem o
 // filtro/editar-remover/os campos de data), que devem executar sua própria ação em vez de virar a página
-// -- mesmo padrão de acaoCliqueBioCard().
+// -- mesmo padrão de acaoCliqueBioCard(). IMPORTANTE: a lista inclui "textarea" -- o formulário tem o
+// campo de observação (#medida-nota, ver medidasFormTemplate()), e closest() não considera uma <textarea>
+// como "input" (são tags HTML diferentes); sem isso, um toque pra começar a digitar um comentário virava a
+// página em vez de focar o campo -- bug relatado pelo usuário.
 function acaoCliqueMedidaCard(event) {
-  if (event.target.closest("button, a, select, input")) return;
+  if (event.target.closest("button, a, select, input, textarea")) return;
   acaoIrParaPaginaMedida((state.medidaCardPagina + 1) % 3);
 }
 // Vai pra uma página específica do card de Medidas e Aferições -- usado pelo toque no card
@@ -8866,24 +8874,33 @@ function treinoFormularioTemplate() {
     (state.treinoModo === "manual" ? treinoFormManualTemplate() : treinoFormCronometroTemplate());
 }
 
-// 1ª página do card virável de Treinos de hoje (ver treinoCardFlipWrapperTemplate()) -- é o MESMO
-// .dashboard-grid (formulário + lista de hoje) que já existia antes dessa página virar um card virável,
-// só com o botão "Histórico (N)" agora levando pra 2ª página (ver acaoAbrirHistoricoTreinos()) em vez de
-// abrir/fechar um painel logo abaixo.
-function treinoHojePaginaTemplate() {
+// Card de "Novo treino"/"Editar treino" -- FORA do mecanismo de virar card (ver
+// treinoCardFlipWrapperTemplate() logo abaixo): pedido explícito do usuário é que só o card "Treinos de
+// hoje" (treinoHojePaginaTemplate(), a 1ª página do card virável) ganhe a função de virar, não esse
+// formulário, que fica como card estático de sempre, ao lado do card virável (ver treinosTabTemplate()).
+function treinoFormCardTemplate() {
   const editando = state.treinoEditandoId != null;
   return '' +
-    '<section class="dashboard-grid">' +
-      '<aside class="meal-card"><div class="meal-card-eyebrow">' + icon(editando ? "edit" : "flame") + (editando ? " Editar treino" : " Novo treino") + "</div>" +
-      "<h2>" + (editando ? "Corrigindo um treino já salvo" : "Qual esporte você praticou?") + "</h2>" +
-      treinoFormularioTemplate() +
-      "</aside>" +
-      '<div class="history-card"><div class="history-card-head">' +
-        '<div><div class="history-eyebrow">' + icon("flame") + " Treinos de hoje</div><h2>Sua atividade física</h2></div>" +
-        '<button class="history-toggle" onclick="acaoAbrirHistoricoTreinos()">' + icon("history") + " Histórico (" + historyDaysTreinos().length + ")</button>" +
-      "</div>" +
-      '<div class="meal-list">' + treinoListTemplate() + "</div>" +
-      "</div>" +
+    '<aside class="meal-card"><div class="meal-card-eyebrow">' + icon(editando ? "edit" : "flame") + (editando ? " Editar treino" : " Novo treino") + "</div>" +
+    "<h2>" + (editando ? "Corrigindo um treino já salvo" : "Qual esporte você praticou?") + "</h2>" +
+    treinoFormularioTemplate() +
+    "</aside>";
+}
+
+// 1ª página do card virável de Treinos de hoje (ver treinoCardFlipWrapperTemplate()) -- é o MESMO card
+// "Treinos de hoje" que já existia antes dele virar um card virável (SEM o formulário de "Novo treino" ao
+// lado -- ver treinoFormCardTemplate() acima -- que fica de fora do flip), só com o botão "Histórico (N)"
+// agora levando pra 2ª página (ver acaoAbrirHistoricoTreinos()) em vez de abrir/fechar um painel logo
+// abaixo. Usa a mesma classe .medidas-section da 2ª página (treinoHistoricoPaginaTemplate()) -- mesmo
+// padrão de medidasFormTemplate()/medidasHistoricoTemplate() -- pra garantir que as 2 páginas desse card
+// tenham exatamente a mesma aparência (só o conteúdo muda ao virar).
+function treinoHojePaginaTemplate() {
+  return '' +
+    '<section class="medidas-section"><div class="history-card-head">' +
+      '<div><div class="history-eyebrow">' + icon("flame") + " Treinos de hoje</div><h2>Sua atividade física</h2></div>" +
+      '<button class="history-toggle" onclick="acaoAbrirHistoricoTreinos()">' + icon("history") + " Histórico (" + historyDaysTreinos().length + ")</button>" +
+    "</div>" +
+    '<div class="meal-list">' + treinoListTemplate() + "</div>" +
     "</section>";
 }
 // Rótulos dos 2 tracinhos indicadores (aria-label de cada .treino-card-dot) -- ver
@@ -8913,11 +8930,13 @@ function treinoCardFlipWrapperTemplate() {
     "</div>";
 }
 // Toque em qualquer lugar do card avança pra próxima página (cicla 0 → 1 → 0) -- exceto em botões, abas,
-// selects e outros controles interativos das páginas (formulário tem os campos de registro/o botão de
-// Histórico; Histórico tem o filtro/editar-remover), que devem executar sua própria ação em vez de virar a
-// página -- mesmo padrão de acaoCliqueMedidaCard()/acaoCliqueBioCard().
+// selects e outros controles interativos das páginas (a própria lista de hoje/botão de Histórico; Histórico
+// tem o filtro/editar-remover), que devem executar sua própria ação em vez de virar a página -- mesmo
+// padrão de acaoCliqueMedidaCard()/acaoCliqueBioCard() (inclusive o "textarea" na lista -- o formulário de
+// "Novo treino" com o campo de observação já não fica mais dentro desse card desde a correção do escopo do
+// flip, mas mantemos aqui por segurança/consistência).
 function acaoCliqueTreinoCard(event) {
-  if (event.target.closest("button, a, select, input")) return;
+  if (event.target.closest("button, a, select, input, textarea")) return;
   acaoIrParaPaginaTreino((state.treinoCardPagina + 1) % 2);
 }
 // Vai pra uma página específica do card de Treinos de hoje -- usado pelo toque no card
@@ -8944,15 +8963,19 @@ function acaoIrParaPaginaTreino(pagina) {
 function ajustarAlturaTreinoCard() {
   const flip = document.querySelector(".treino-card-flip");
   if (!flip) return;
-  const paginas = flip.querySelectorAll(".treino-card-page > .dashboard-grid, .treino-card-page > .medidas-section");
+  const paginas = flip.querySelectorAll(".treino-card-page > .medidas-section");
   if (paginas.length < 2) return;
   const altura = paginas[0].scrollHeight;
   flip.style.height = altura + "px";
   paginas.forEach((pagina) => { pagina.style.height = altura + "px"; });
 }
 
+// Card de "Novo treino" (estático, fora do flip -- ver treinoFormCardTemplate()) e card virável "Treinos
+// de hoje" (ver treinoCardFlipWrapperTemplate()) lado a lado, no MESMO .dashboard-grid de 2 colunas que já
+// existia antes da função de virar (pedido do usuário: só o card "Treinos de hoje" devia virar, não esse
+// formulário ao lado).
 function treinosTabTemplate() {
-  return '<main>' + treinoCardFlipWrapperTemplate() + "</main>";
+  return '<main><section class="dashboard-grid">' + treinoFormCardTemplate() + treinoCardFlipWrapperTemplate() + "</section></main>";
 }
 
 function fullHomeTemplate() {
