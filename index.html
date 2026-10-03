@@ -666,29 +666,44 @@ svg{ display: block; }
    também a função virar") usa o MESMO mecanismo, também com 3 páginas (formulário/Evolução do Peso --
    que "mudou de casa" da antiga aba Evolução, ver medidasEvolucaoPaginaTemplate() -- /histórico) -- classes
    próprias (.medida-card-*), mas com os valores de CSS sempre combinados aqui com os análogos .bio-card-*
-   (idêntica aparência/comportamento), mesmo padrão já usado em .medida-history-row/.bio-history-row etc. */
-.bio-card-flip-wrap, .medida-card-flip-wrap{ margin-top:24px; display:flex; flex-direction:column; align-items:center; gap:8px; }
-.bio-card-flip, .medida-card-flip{ position:relative; width:100%; overflow:hidden; cursor:pointer; transition:height .4s cubic-bezier(.4,.05,.2,1); }
-/* largura de 300% (3 páginas) -- o translateX de cada página é sempre um múltiplo de 33,3333% (1/3 da
-   largura da FAIXA, que equivale a exatamente 100% da largura do card) -- ver
-   bioimpedanciaCardFlipWrapperTemplate()/acaoIrParaPaginaBio() e medidasCardFlipWrapperTemplate()/
-   acaoIrParaPaginaMedida() (% de transform é relativo à largura do próprio elemento, não à do pai -- por
-   isso não pode ser só "-100%" por página aqui). Os cards de Bioimpedância e de Medidas têm os dois 3
-   páginas agora, por isso a MESMA geometria serve pros dois (.bio-card-track/.medida-card-track
-   combinados). */
+   (idêntica aparência/comportamento), mesmo padrão já usado em .medida-history-row/.bio-history-row etc.
+   O card de Treinos de hoje (ver treinoCardFlipWrapperTemplate()/acaoIrParaPaginaTreino()) também adotou o
+   mesmo mecanismo, mas com só 2 páginas (hoje/histórico, sem uma 3ª página de evolução) -- classes
+   próprias .treino-card-*, combinadas aqui do mesmo jeito. Pedido explícito do usuário: diferente de
+   Bioimpedância/Medidas (altura = a MAIOR entre as páginas), aqui a altura fica fixa na página "Treinos de
+   hoje" (página 0) -- é ela que já tinha o tamanho/dimensão considerado harmonioso com o resto do app, e
+   não deve mudar só por ganhar uma 2ª página -- ver ajustarAlturaTreinoCard(). Por isso a página 0 do
+   Treino é o próprio .dashboard-grid (2 colunas, igual já era antes dessa mudança), não um .medidas-section
+   como as páginas 0 de Bioimpedância/Medidas -- só a página de Histórico (página 1) usa .medidas-section
+   (pra ganhar a mesma rolagem interna das demais, ver .treino-card-history-scroll). */
+.bio-card-flip-wrap, .medida-card-flip-wrap, .treino-card-flip-wrap{ margin-top:24px; display:flex; flex-direction:column; align-items:center; gap:8px; }
+.bio-card-flip, .medida-card-flip, .treino-card-flip{ position:relative; width:100%; overflow:hidden; cursor:pointer; transition:height .4s cubic-bezier(.4,.05,.2,1); }
+/* largura de 300%/200% (3 ou 2 páginas) -- o translateX de cada página é sempre um múltiplo de 1/N da
+   largura da FAIXA (N = número de páginas), que equivale a exatamente 100% da largura do card) -- ver
+   bioimpedanciaCardFlipWrapperTemplate()/acaoIrParaPaginaBio(), medidasCardFlipWrapperTemplate()/
+   acaoIrParaPaginaMedida() e treinoCardFlipWrapperTemplate()/acaoIrParaPaginaTreino() (% de transform é
+   relativo à largura do próprio elemento, não à do pai -- por isso não pode ser só "-100%" por página
+   aqui). Bioimpedância/Medidas têm 3 páginas (width:300%, flex-basis:33,3333%); Treinos tem só 2
+   (width:200%, flex-basis:50%) -- cada par de regras abaixo então fica separado em vez de combinado. */
 .bio-card-track, .medida-card-track{ display:flex; width:300%; transition:transform .4s cubic-bezier(.4,.05,.2,1); }
 .bio-card-page, .medida-card-page{ flex:0 0 33.3333%; min-width:0; }
+.treino-card-track{ display:flex; width:200%; transition:transform .4s cubic-bezier(.4,.05,.2,1); }
+.treino-card-page{ flex:0 0 50%; min-width:0; }
 /* Cada página vira um card (.medidas-section) com a MESMA altura fixa, calculada em ajustarAlturaBioCard()/
-   ajustarAlturaMedidaCard() e aplicada via style.height diretamente (nunca por CSS 100%/stretch -- isso
-   corromperia a medição do tamanho NATURAL da(s) página(s) que definem essa altura na próxima chamada,
-   virando uma referência circular). display:flex em coluna permite que a página de Histórico (a única
-   cujo conteúdo pode não caber) tenha uma área de rolagem própria que ocupa só o espaço restante abaixo
-   do título/abas -- ver .bio-history-scroll/.medida-card-history-scroll. */
-.bio-card-page > .medidas-section, .medida-card-page > .medidas-section{ margin-top:0; box-shadow:none; display:flex; flex-direction:column; overflow:hidden; }
-.bio-history-scroll, .medida-card-history-scroll{ flex:1; min-height:0; overflow-y:auto; margin-top:14px; padding-right:2px; }
-.bio-card-dots, .medida-card-dots{ display:flex; gap:5px; }
-.bio-card-dot, .medida-card-dot{ height:3px; width:14px; border-radius:999px; background:#d5ddd0; padding:0; border:none; cursor:pointer; transition:background .15s, width .15s; }
-.bio-card-dot.active, .medida-card-dot.active{ width:20px; background:#4b7048; }
+   ajustarAlturaMedidaCard()/ajustarAlturaTreinoCard() e aplicada via style.height diretamente (nunca por
+   CSS 100%/stretch -- isso corromperia a medição do tamanho NATURAL da(s) página(s) que definem essa
+   altura na próxima chamada, virando uma referência circular). display:flex em coluna permite que a
+   página de Histórico (a única cujo conteúdo pode não caber) tenha uma área de rolagem própria que ocupa
+   só o espaço restante abaixo do título/abas -- ver .bio-history-scroll/.medida-card-history-scroll/
+   .treino-card-history-scroll. A página 0 (.dashboard-grid) do card de Treinos fica de fora dessa regra
+   (ver comentário grande acima) -- só ganha overflow:hidden como salvaguarda, sem o display:flex (que
+   quebraria suas 2 colunas). */
+.bio-card-page > .medidas-section, .medida-card-page > .medidas-section, .treino-card-page > .medidas-section{ margin-top:0; box-shadow:none; display:flex; flex-direction:column; overflow:hidden; }
+.treino-card-page > .dashboard-grid{ overflow:hidden; }
+.bio-history-scroll, .medida-card-history-scroll, .treino-card-history-scroll{ flex:1; min-height:0; overflow-y:auto; margin-top:14px; padding-right:2px; }
+.bio-card-dots, .medida-card-dots, .treino-card-dots{ display:flex; gap:5px; }
+.bio-card-dot, .medida-card-dot, .treino-card-dot{ height:3px; width:14px; border-radius:999px; background:#d5ddd0; padding:0; border:none; cursor:pointer; transition:background .15s, width .15s; }
+.bio-card-dot.active, .medida-card-dot.active, .treino-card-dot.active{ width:20px; background:#4b7048; }
 .medida-filtro{ margin-top:16px; }
 .medida-filtro-toggle{ display:inline-flex; align-items:center; gap:8px; border-radius:999px; border:1px solid #dce5db; background:#f7f9f5; padding:9px 14px; font-size:13px; font-weight:600; color:#3c5b4d; transition:background .15s, border-color .15s; }
 .medida-filtro-toggle:hover{ background:#eef3ea; border-color:#c4d6c0; }
@@ -2632,9 +2647,15 @@ const state = {
   // exerciciosDoGrupo()/acaoConfirmarNovoExercicio(). Persistido localmente e sincronizado com a conta
   // Google, igual ao resto dos dados, pra reaparecer em qualquer aparelho.
   exerciciosCustomizados: readStorage(CHAVE_EXERCICIOS_CUSTOMIZADOS, {}),
-  showHistoryTreinos: false,
+  // Página ativa do card virável de Treinos de hoje (0 = hoje/formulário, 1 = Histórico) -- mesmo
+  // espírito de medidaCardPagina/bioCardPagina, ver treinoCardFlipWrapperTemplate()/
+  // acaoIrParaPaginaTreino(). Substituiu o antigo showHistoryTreinos (um painel que aparecia/sumia abaixo
+  // da lista de hoje) -- pedido do usuário: adotar o mesmo mecanismo de virar o card já usado em Medidas e
+  // Aferições/Bioimpedância, com a página de hoje mantendo seu tamanho/dimensão atual (ver
+  // ajustarAlturaTreinoCard()). Fica só na memória, mesmo espírito de medidaCardPagina/bioCardPagina.
+  treinoCardPagina: 0,
   // Data do dia expandido no histórico de treinos (accordion: um dia de cada vez, ou nenhum) -- mesma
-  // lógica do histórico de refeições, ver treinoHistoryPanelTemplate()/acaoAlternarDiaHistoricoTreinos().
+  // lógica do histórico de refeições, ver treinoHistoricoPaginaTemplate()/acaoAlternarDiaHistoricoTreinos().
   historyDiaExpandidoTreinos: null,
   // Id do treino já salvo em edição no formulário manual (ver acaoEditarTreino()), ou null quando o
   // formulário é pra registrar um treino novo. Enquanto em edição, os grupos musculares/exercícios do
@@ -6374,7 +6395,7 @@ function acaoEditarTreino(id) {
   state.treinoHoraFim = t.horaFim;
   state.treinoNota = t.nota || "";
   state.treinoDistanciaKm = t.distanciaKm ? String(t.distanciaKm) : "";
-  state.showHistoryTreinos = false;
+  state.treinoCardPagina = 0; // volta pra página do formulário (ver treinoCardFlipWrapperTemplate())
   state.historyDiaExpandidoTreinos = null;
   limparFotoTreinoSelecionada();
   state.treinoEditandoId = id;
@@ -6622,21 +6643,25 @@ function treinoListTemplate() {
   ).join("");
 }
 
-// Mesma lógica do histórico de refeições (ver historyPanelTemplate()): lista TODOS os dias com treinos
-// registrados (mais recente primeiro), cada um como um card que se expande ao clicar, mostrando os
-// treinos daquele dia -- ver treinoHistoryDayCardTemplate(). Substituiu o antigo calendário de "escolher
-// uma data por vez", que obrigava adivinhar em qual dia havia registro.
-function treinoHistoryPanelTemplate() {
-  if (!state.showHistoryTreinos) return "";
+// 2ª página do card virável de Treinos de hoje (ver treinoCardFlipWrapperTemplate()) -- era um painel que
+// aparecia/sumia abaixo da lista de hoje (state.showHistoryTreinos), agora é a outra página do mesmo card,
+// no mesmo espírito de medidasHistoricoTemplate()/historicoBioimpedanciaTemplate(). Sem botão "Voltar" (os
+// tracinhos/o toque no card já levam de volta pra 1ª página). Lista TODOS os dias com treinos registrados
+// (mais recente primeiro), cada um como um card que se expande ao clicar, mostrando os treinos daquele dia
+// -- ver treinoHistoryDayCardTemplate(). Substituiu o antigo calendário de "escolher uma data por vez",
+// que obrigava adivinhar em qual dia havia registro.
+function treinoHistoricoPaginaTemplate() {
   const days = historyDaysTreinos();
   return '' +
-    '<div class="history-panel">' +
-      '<div class="history-panel-label">Histórico salvo</div>' +
-      (days.length
-        ? '<div class="history-days-list">' + days.map((date) => treinoHistoryDayCardTemplate(date)).join("") + "</div>"
-        : '<p class="history-panel-empty">Seus treinos aparecerão aqui depois do primeiro registro.</p>'
-      ) +
-    "</div>";
+    '<section class="medidas-section">' +
+      '<h2 class="medidas-section-title">' + icon("history") + " Histórico de treinos</h2>" +
+      '<div class="treino-card-history-scroll">' +
+        (days.length
+          ? '<div class="history-days-list">' + days.map((date) => treinoHistoryDayCardTemplate(date)).join("") + "</div>"
+          : '<p class="history-panel-empty">Seus treinos aparecerão aqui depois do primeiro registro.</p>'
+        ) +
+      "</div>" +
+    "</section>";
 }
 function treinoHistoryDayCardTemplate(date) {
   const dayTreinos = state.treinos.filter((t) => t.date === date);
@@ -6681,13 +6706,13 @@ function acaoRemoverDiaHistoricoTreinos(date) {
   sincronizarDiarioKcalDoDia(date);
   render();
 }
-// Cada vez que o histórico é aberto, começa com todos os dias fechados (evita reabrir com um dia antigo
-// expandido que a pessoa tinha navegado antes e esquecido).
-function acaoAlternarHistoricoTreinos() {
-  state.showHistoryTreinos = !state.showHistoryTreinos;
-  if (state.showHistoryTreinos) state.historyDiaExpandidoTreinos = null;
-  render();
-}
+// Abre/fecha a página de Histórico do card virável de Treinos de hoje -- mesmo padrão de
+// acaoAbrirHistoricoMedidas()/acaoFecharHistoricoMedidas() (card de Medidas e Aferições) e
+// acaoAbrirHistoricoBioimpedancia()/acaoFecharHistoricoBioimpedancia() (card de Bioimpedância e
+// Calorimetria). Toda vez que o histórico é aberto, começa com todos os dias fechados (evita reabrir com
+// um dia antigo expandido que a pessoa tinha navegado antes e esquecido).
+function acaoAbrirHistoricoTreinos() { state.historyDiaExpandidoTreinos = null; acaoIrParaPaginaTreino(1); }
+function acaoFecharHistoricoTreinos() { acaoIrParaPaginaTreino(0); }
 
 function mealListTemplate() {
   const meals = ordenarPorTipoDeRefeicao(todayMeals());
@@ -8841,9 +8866,13 @@ function treinoFormularioTemplate() {
     (state.treinoModo === "manual" ? treinoFormManualTemplate() : treinoFormCronometroTemplate());
 }
 
-function treinosTabTemplate() {
+// 1ª página do card virável de Treinos de hoje (ver treinoCardFlipWrapperTemplate()) -- é o MESMO
+// .dashboard-grid (formulário + lista de hoje) que já existia antes dessa página virar um card virável,
+// só com o botão "Histórico (N)" agora levando pra 2ª página (ver acaoAbrirHistoricoTreinos()) em vez de
+// abrir/fechar um painel logo abaixo.
+function treinoHojePaginaTemplate() {
   const editando = state.treinoEditandoId != null;
-  return '<main>' +
+  return '' +
     '<section class="dashboard-grid">' +
       '<aside class="meal-card"><div class="meal-card-eyebrow">' + icon(editando ? "edit" : "flame") + (editando ? " Editar treino" : " Novo treino") + "</div>" +
       "<h2>" + (editando ? "Corrigindo um treino já salvo" : "Qual esporte você praticou?") + "</h2>" +
@@ -8851,13 +8880,79 @@ function treinosTabTemplate() {
       "</aside>" +
       '<div class="history-card"><div class="history-card-head">' +
         '<div><div class="history-eyebrow">' + icon("flame") + " Treinos de hoje</div><h2>Sua atividade física</h2></div>" +
-        '<button class="history-toggle" onclick="acaoAlternarHistoricoTreinos()">' + icon("history") + " Histórico (" + historyDaysTreinos().length + ")</button>" +
+        '<button class="history-toggle" onclick="acaoAbrirHistoricoTreinos()">' + icon("history") + " Histórico (" + historyDaysTreinos().length + ")</button>" +
       "</div>" +
       '<div class="meal-list">' + treinoListTemplate() + "</div>" +
-      treinoHistoryPanelTemplate() +
       "</div>" +
-    "</section>" +
-    "</main>";
+    "</section>";
+}
+// Rótulos dos 2 tracinhos indicadores (aria-label de cada .treino-card-dot) -- ver
+// treinoCardFlipWrapperTemplate().
+const TREINO_CARD_PAGINA_LABELS = ["Ver treinos de hoje", "Ver Histórico de treinos"];
+// Envolve as 2 páginas do card de Treinos de hoje (hoje/formulário e Histórico) no MESMO mecanismo de
+// slide horizontal (translateX) + tracinhos indicadores + toque pra virar já usado nos cards de Medidas e
+// Aferições/Bioimpedância e Calorimetria logo acima nessa mesma aba -- ver
+// medidasCardFlipWrapperTemplate()/bioimpedanciaCardFlipWrapperTemplate(). Só 2 páginas (sem uma 3ª de
+// evolução, que não existe pra Treinos) -- geometria própria (.treino-card-*, width:200%/flex-basis:50%,
+// ver CSS). Pedido do usuário: a altura fica fixa no tamanho/dimensão NATURAL da página de hoje (página
+// 0), não na maior entre as duas páginas (diferente de Medidas/Bioimpedância) -- ver
+// ajustarAlturaTreinoCard().
+function treinoCardFlipWrapperTemplate() {
+  const pagina = state.treinoCardPagina || 0;
+  const paginas = [treinoHojePaginaTemplate(), treinoHistoricoPaginaTemplate()];
+  return '' +
+    '<div class="treino-card-flip-wrap">' +
+      '<div class="treino-card-flip" onclick="acaoCliqueTreinoCard(event)">' +
+        '<div class="treino-card-track" style="transform:translateX(-' + (pagina * 100 / 2) + '%)">' +
+          paginas.map((html) => '<div class="treino-card-page">' + html + "</div>").join("") +
+        "</div>" +
+      "</div>" +
+      '<div class="treino-card-dots">' +
+        [0, 1].map((i) => '<button class="treino-card-dot' + (pagina === i ? " active" : "") + '" aria-label="' + TREINO_CARD_PAGINA_LABELS[i] + '" onclick="acaoIrParaPaginaTreino(' + i + ')"></button>').join("") +
+      "</div>" +
+    "</div>";
+}
+// Toque em qualquer lugar do card avança pra próxima página (cicla 0 → 1 → 0) -- exceto em botões, abas,
+// selects e outros controles interativos das páginas (formulário tem os campos de registro/o botão de
+// Histórico; Histórico tem o filtro/editar-remover), que devem executar sua própria ação em vez de virar a
+// página -- mesmo padrão de acaoCliqueMedidaCard()/acaoCliqueBioCard().
+function acaoCliqueTreinoCard(event) {
+  if (event.target.closest("button, a, select, input")) return;
+  acaoIrParaPaginaTreino((state.treinoCardPagina + 1) % 2);
+}
+// Vai pra uma página específica do card de Treinos de hoje -- usado pelo toque no card
+// (acaoCliqueTreinoCard()) e pelos tracinhos indicadores/botão "Histórico (N)"
+// (treinoCardFlipWrapperTemplate()/acaoAbrirHistoricoTreinos()/acaoFecharHistoricoTreinos()). MESMA
+// técnica de animação de acaoIrParaPaginaMedida()/acaoIrParaPaginaBio() -- ver comentário lá.
+function acaoIrParaPaginaTreino(pagina) {
+  if (state.treinoCardPagina === pagina) return; // já está nessa página, nada a fazer
+  const flip = document.querySelector(".treino-card-flip");
+  const track = flip ? flip.querySelector(".treino-card-track") : null;
+  if (!track) { state.treinoCardPagina = pagina; render(); return; }
+  track.style.transform = "translateX(-" + (pagina * 100 / 2) + "%)";
+  let comitado = false;
+  const commit = () => { if (comitado) return; comitado = true; state.treinoCardPagina = pagina; render(); };
+  track.addEventListener("transitionend", commit, { once: true });
+  setTimeout(commit, 450); // salvaguarda (mesmo motivo do análogo em acaoAlternarFlipNutriente())
+}
+// Harmoniza a altura das 2 páginas do card de Treinos de hoje -- chamado a cada render() (ver função
+// render()). AO CONTRÁRIO de ajustarAlturaMedidaCard()/ajustarAlturaBioCard() (altura = a MAIOR entre as
+// páginas), aqui a altura usada é SEMPRE a da página 0 (Treinos de hoje) -- pedido explícito do usuário:
+// manter o tamanho/dimensão atual dessa página, já considerada harmoniosa com o resto do app, em vez de
+// deixar a página de Histórico (que pode crescer bastante) esticar o card. A página de Histórico só ganha
+// rolagem própria dentro dessa altura fixa (ver .treino-card-history-scroll).
+function ajustarAlturaTreinoCard() {
+  const flip = document.querySelector(".treino-card-flip");
+  if (!flip) return;
+  const paginas = flip.querySelectorAll(".treino-card-page > .dashboard-grid, .treino-card-page > .medidas-section");
+  if (paginas.length < 2) return;
+  const altura = paginas[0].scrollHeight;
+  flip.style.height = altura + "px";
+  paginas.forEach((pagina) => { pagina.style.height = altura + "px"; });
+}
+
+function treinosTabTemplate() {
+  return '<main>' + treinoCardFlipWrapperTemplate() + "</main>";
 }
 
 function fullHomeTemplate() {
@@ -10149,6 +10244,7 @@ function render() {
   document.getElementById("app").innerHTML = state.usuario ? homeTemplate() : authTemplate();
   ajustarAlturaBioCard();
   ajustarAlturaMedidaCard();
+  ajustarAlturaTreinoCard();
 }
 
 /* ===================== instalar como app (PWA) ===================== */
