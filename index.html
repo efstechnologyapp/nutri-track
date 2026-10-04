@@ -302,7 +302,21 @@ svg{ display: block; }
 .analise-consumo-badge .icon{ width:14px; height:14px; }
 .analise-consumo-badge-boa{ background:#e3f1e6; color:#2f7d4f; }
 .analise-consumo-badge-atencao{ background:#fbe9e4; color:#b6503d; }
+/* Variantes do selo usadas na Análise de Treinos (ver analiseTreinoBadgeTemplate()) -- "queda" é laranja
+   (mais neutro que o vermelho de atenção nutricional: aqui é só desempenho oscilando, não um alerta de
+   saúde) e "neutra" é cinza, pra quando a variação fica dentro da margem de ±8% (sem alta nem queda). */
+.analise-consumo-badge-queda{ background:#fbe9d9; color:#9a5a22; }
+.analise-consumo-badge-neutra{ background:#eef1ec; color:#5c6b62; }
 .analise-consumo-disclaimer{ margin-top:16px; padding-top:12px; border-top:1px solid #eef1ec; }
+/* Equivalente em kg ao lado de qualquer menção a kcal na Análise de Treinos (ver kcalComKg()) -- pedido
+   do usuário: discreto, fonte menor, cor mais clara, sem negrito. */
+.kg-eq{ font-size:11px; font-style:italic; color:var(--muted); font-weight:500; }
+/* Subseções "Nutricionais"/"Esportivas" dentro de "Conclusões" (só no modo "Por esporte" da Análise de
+   Treinos, ver analiseTreinoConclusaoEsporteTemplate()) -- título + selo lado a lado, pedido do usuário. */
+.analise-treino-conclusao-title{ margin-top:22px; }
+.analise-treino-subsecao-titulo{ margin:16px 0 8px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-family:'Fraunces',serif; font-size:15px; font-weight:600; color:#1b3f34; }
+.analise-treino-divisor{ margin:18px 0; border-top:1px solid #eef1ec; }
+.analise-treino-legenda{ margin-top:8px; flex-wrap:wrap; }
 .analise-consumo-suplementar{ background:#f2f6ef; border:1px solid #dce5db; border-radius:14px; padding:12px 14px; }
 .analise-consumo-suplementar strong{ color:#1b3f34; }
 .analise-consumo-fonte{ margin-top:4px; }
@@ -2702,6 +2716,26 @@ const state = {
   // acumuladoMs (soma dos trechos já concluídos), pausado }. Persistido para sobreviver a fechar o
   // app/aba no meio do treino.
   treinoAtivo: readStorage(CHAVE_TREINO_ATIVO, null),
+  // Sub-aba da aba Esportes/Treinos -- "treinos" (formulário + card de hoje/histórico, o que já existia)
+  // ou "analise" (NOVA: Análise de Treinos) -- mesmo espírito de nutricaoAba, ver treinosTabTemplate().
+  treinosAba: "treinos",
+  // Modo da Análise de Treinos -- "todos" (agregado, todos os esportes) ou "esporte" (um esporte
+  // específico, escolhido no seletor) -- ver analiseTreinoTabTemplate().
+  analiseTreinoModo: "todos",
+  // Esporte escolhido no seletor, só relevante no modo "esporte" -- preenchido com o 1º esporte
+  // presente em state.treinos (ver esportesPresentesTreinos()) na hora de montar o seletor.
+  analiseTreinoEsporteSelecionado: "",
+  analiseTreinoFiltroDe: "",
+  analiseTreinoFiltroAte: "",
+  // { modo, esporte, de, ate } | null -- preenchido só ao clicar "Gerar análise" (mesmo espírito de
+  // analiseGerada da Análise de Consumo): trocar modo/esporte/período sem clicar de novo não altera o
+  // resultado já mostrado.
+  analiseTreinoGerada: null,
+  // { id } do treino clicado no gráfico da Análise de Treinos (modo "esporte"), com o modal de detalhe
+  // daquele treino aberto, ou null -- ver analiseTreinoDiaModalTemplate(). Usa o id (não date+esporte)
+  // pra não depender de escapar o nome do esporte dentro do atributo onclick (esportes customizados,
+  // cadastrados via "Outro", podem ter qualquer caractere).
+  analiseTreinoDiaAberto: null,
 };
 function persistUsuario() { writeStorage(CHAVE_USUARIO, state.usuario); }
 function persistGoals() { writeStorage(CHAVE_GOALS, state.goals); }
@@ -5572,6 +5606,521 @@ function acaoGerarAnaliseConsumo() {
   render();
 }
 /* =============== fim Análise de Consumo =============== */
+
+/* =============== Análise de Treinos (ver treinosTabTemplate()/analiseTreinoTabTemplate()) =============== */
+// Pedido do usuário: mesmo espírito da Análise de Consumo acima, só que pros treinos -- motor local/
+// offline que analisa os treinos registrados num período escolhido, tanto agregando TODOS os esportes
+// (modo "todos") quanto focando num esporte específico (modo "esporte"), com uma projeção de ritmo
+// futuro (até fim do mês/ano) dentro da própria Conclusão, e -- só no modo "esporte" -- uma 2ª análise
+// ("Esportivas") do desempenho em si (ritmo/distância pros esportes com distância, carga/grupos
+// musculares pra Musculação), separada da análise nutricional (calorias).
+
+// Equivalente aproximado em kg de gordura pra um valor de kcal -- mesma referência de ~7.700 kcal por kg
+// já usada no app. Pedido do usuário: mostrar esse equivalente, pequeno e discreto, ao lado de QUALQUER
+// menção a kcal nessa análise (queimada OU consumida).
+function kgEquivalente(kcal) { return (kcal || 0) / 7700; }
+// "650 kcal (~0,08 kg)", com o equivalente num <small> discreto -- pronto pra entrar em qualquer
+// parágrafo. digits são as casas decimais do próprio número de kcal (0 por padrão).
+function kcalComKg(kcal, digits) {
+  return formatNumber(kcal, digits == null ? 0 : digits) + ' kcal<span class="kg-eq"> (~' + formatNumber(kgEquivalente(kcal), 2) + ' kg)</span>';
+}
+// Esportes presentes no histórico de treinos, do mais praticado pro menos (nº de treinos) -- usado pra
+// montar o seletor do modo "Por esporte" (só mostra esportes que a pessoa já registrou alguma vez).
+function esportesPresentesTreinos() {
+  const contagem = {};
+  state.treinos.forEach((tr) => { contagem[tr.esporte] = (contagem[tr.esporte] || 0) + 1; });
+  return Object.keys(contagem).sort((a, b) => contagem[b] - contagem[a]);
+}
+// Classifica a variação entre um valor inicial e final em "alta" (melhora), "queda" (piora) ou
+// "estavel", com margem de ±8% (mesmo critério já validado nos mockups aprovados pelo usuário) --
+// inverso=true quando um valor MENOR é a melhora (ex.: pace/ritmo em min/km).
+function classificarVariacaoTreino(inicial, final, inverso) {
+  if (!inicial) return "estavel";
+  const variacao = (final - inicial) / Math.abs(inicial);
+  const efetiva = inverso ? -variacao : variacao;
+  if (efetiva >= 0.08) return "alta";
+  if (efetiva <= -0.08) return "queda";
+  return "estavel";
+}
+// Selo colorido (ver .analise-consumo-badge* no CSS) -- reaproveita o verde "boa" já usado na Análise de
+// Consumo pra "alta", e ganha 2 variantes novas: laranja ("queda", mais neutro que o vermelho de
+// "atenção" nutricional -- aqui é só desempenho oscilando, não um alerta de saúde) e cinza ("estavel").
+const ANALISE_TREINO_BADGE_CLASSE = { alta: "boa", estavel: "neutra", queda: "queda" };
+const ANALISE_TREINO_BADGE_ICONE = { alta: "arrowup", estavel: "trend", queda: "arrowdown" };
+function analiseTreinoBadgeTemplate(estado, texto) {
+  return '<div class="analise-consumo-badge analise-consumo-badge-' + ANALISE_TREINO_BADGE_CLASSE[estado] + '">' + icon(ANALISE_TREINO_BADGE_ICONE[estado]) + " " + esc(texto) + "</div>";
+}
+
+/* ---------- projeção (ver calcularProjecaoTreino()) ---------- */
+function fimDoMesTreino(dateStr) {
+  const [y, m] = dateStr.split("-").map(Number);
+  const ultimoDia = new Date(y, m, 0).getDate();
+  return y + "-" + String(m).padStart(2, "0") + "-" + String(ultimoDia).padStart(2, "0");
+}
+function fimDoAnoTreino(dateStr) { return dateStr.split("-")[0] + "-12-31"; }
+function diasEntreTreino(de, ate) {
+  return Math.max(0, Math.round((new Date(ate + "T12:00:00") - new Date(de + "T12:00:00")) / 86400000));
+}
+// Projeta, a partir da média semanal observada no período escolhido (de/ate), quantos treinos/kcal/km/
+// duração seriam esperados até o fim do mês e até o fim do ano -- sempre contando a partir de HOJE (é
+// uma projeção "daqui pra frente", não do fim do período escolhido). null quando não há como projetar
+// (período de 0 dias ou sem nenhum treino).
+function calcularProjecaoTreino(de, ate, quantidade, kcalTotal, kmTotal, duracaoTotalMin) {
+  const diasPeriodo = diasEntreTreino(de, ate) + 1;
+  if (diasPeriodo <= 0 || quantidade <= 0) return null;
+  const semanasPeriodo = diasPeriodo / 7;
+  const treinosPorSemana = quantidade / semanasPeriodo;
+  if (!treinosPorSemana) return null;
+  const kcalPorSemana = kcalTotal / semanasPeriodo;
+  const kmPorSemana = kmTotal / semanasPeriodo;
+  const duracaoPorSemana = duracaoTotalMin / semanasPeriodo;
+  const hoje = today();
+  const calc = (dataFim) => {
+    const diasRestantes = diasEntreTreino(hoje, dataFim) + 1;
+    if (diasRestantes <= 0) return null;
+    const semanas = diasRestantes / 7;
+    return { treinos: Math.round(treinosPorSemana * semanas), kcal: kcalPorSemana * semanas, km: kmPorSemana * semanas, duracaoMin: duracaoPorSemana * semanas };
+  };
+  return { treinosPorSemana, fimMes: calc(fimDoMesTreino(hoje)), fimAno: calc(fimDoAnoTreino(hoje)) };
+}
+
+/* ---------- modo "Por esporte" ---------- */
+function calcularAnaliseTreinoEsporte(esporte, de, ate) {
+  const registros = state.treinos.filter((tr) => tr.esporte === esporte && tr.date >= de && tr.date <= ate)
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.id - b.id));
+  if (!registros.length) return { temDados: false };
+  const temDistancia = ESPORTES_COM_DISTANCIA.includes(esporte);
+  const ehMusculacao = esporte === "Musculação";
+  const quantidade = registros.length;
+  const kcalTotal = registros.reduce((s, r) => s + (r.caloriasQueimadas || 0), 0);
+  const duracaoTotal = registros.reduce((s, r) => s + (r.duracaoMin || 0), 0);
+  const kmTotal = temDistancia ? registros.reduce((s, r) => s + (r.distanciaKm || 0), 0) : 0;
+  const kcalMedia = kcalTotal / quantidade;
+  const kcalConsumidaPeriodo = state.diarioKcal.filter((r) => r.date >= de && r.date <= ate).reduce((s, r) => s + (r.calories || 0), 0);
+  const primeiro = registros[0], ultimo = registros[registros.length - 1];
+  const kcalPrimeiro = primeiro.caloriasQueimadas || 0, kcalUltimo = ultimo.caloriasQueimadas || 0;
+  const kmPrimeiro = primeiro.distanciaKm || 0, kmUltimo = ultimo.distanciaKm || 0;
+  const duracaoPrimeiro = primeiro.duracaoMin || 0, duracaoUltimo = ultimo.duracaoMin || 0;
+  const variKcal = classificarVariacaoTreino(kcalPrimeiro, kcalUltimo, false);
+  const variKm = temDistancia ? classificarVariacaoTreino(kmPrimeiro, kmUltimo, false) : null;
+  const projecao = calcularProjecaoTreino(de, ate, quantidade, kcalTotal, kmTotal, duracaoTotal);
+  return {
+    temDados: true, esporte, de, ate, registros, quantidade, kcalTotal, duracaoTotal, kmTotal, kcalMedia,
+    kcalConsumidaPeriodo, kcalPrimeiro, kcalUltimo, kmPrimeiro, kmUltimo, duracaoPrimeiro, duracaoUltimo,
+    variKcal, variKm, temDistancia, ehMusculacao, projecao,
+  };
+}
+function analiseTreinoResumoParagrafo(e) {
+  let texto = "No período de " + esc(dataCurta(e.de)) + " a " + esc(dataCurta(e.ate)) + ", você registrou " + e.quantidade + (e.quantidade === 1 ? " treino de " : " treinos de ") +
+    esc(e.esporte) + ", somando " + kcalComKg(e.kcalTotal) + " queimadas (média de " + kcalComKg(e.kcalMedia) + " por treino)";
+  if (e.temDistancia && e.kmTotal > 0) texto += " e percorrendo " + formatNumber(e.kmTotal, 1) + " km no total";
+  texto += ", em " + formatarDuracao(e.duracaoTotal) + " de atividade.";
+  return texto;
+}
+function analiseTreinoBadgeNutricionalTexto(e) {
+  const sufixo = e.variKcal === "alta" ? "em alta" : e.variKcal === "queda" ? "em queda" : "estável";
+  const base = (e.temDistancia && e.variKm === e.variKcal && e.variKcal !== "estavel") ? "Kcal e distância" : e.temDistancia ? "Kcal" : "Kcal por treino";
+  return base + " " + sufixo;
+}
+function analiseTreinoParagrafoEvolucao(e) {
+  if (e.quantidade < 2) return "";
+  const partes = [kcalComKg(e.kcalPrimeiro) + " → " + kcalComKg(e.kcalUltimo), formatarDuracao(e.duracaoPrimeiro) + " → " + formatarDuracao(e.duracaoUltimo)];
+  if (e.temDistancia) partes.push(formatNumber(e.kmPrimeiro, 1) + " km → " + formatNumber(e.kmUltimo, 1) + " km");
+  return "Do primeiro para o último treino de " + esc(e.esporte) + " no período, você foi de " + partes.join(", ") + ".";
+}
+function analiseTreinoParagrafoConsumo(e) {
+  if (!(e.kcalConsumidaPeriodo > 0)) return "";
+  const pctValor = (e.kcalTotal / e.kcalConsumidaPeriodo) * 100;
+  return "Isso representa " + formatNumber(pctValor, 1) + "% das " + kcalComKg(e.kcalConsumidaPeriodo) + " consumidas no mesmo período.";
+}
+function analiseTreinoDescreverProjecaoBloco(b, comKm) {
+  let t = b.treinos + (b.treinos === 1 ? " treino" : " treinos") + ", " + kcalComKg(b.kcal);
+  if (comKm) t += ", " + formatNumber(b.km, 0) + " km";
+  t += " e " + formatarDuracao(Math.round(b.duracaoMin));
+  return t;
+}
+function analiseTreinoParagrafoProjecao(e) {
+  const p = e.projecao;
+  if (!p || !p.fimMes || !p.fimAno) return "";
+  const nomeMes = new Intl.DateTimeFormat("pt-BR", { month: "long" }).format(new Date(fimDoMesTreino(today()) + "T12:00:00"));
+  return "Mantendo essa média de " + formatNumber(p.treinosPorSemana, 1) + " " + (p.treinosPorSemana === 1 ? "treino" : "treinos") + " de " + esc(e.esporte) + " por semana, a projeção é de " +
+    analiseTreinoDescreverProjecaoBloco(p.fimMes, e.temDistancia) + " até o fim de " + nomeMes + ", e " + analiseTreinoDescreverProjecaoBloco(p.fimAno, e.temDistancia) + " até o fim do ano.";
+}
+// "Esportivas" (pedido do usuário: só no modo "Por esporte") -- ritmo/distância pros esportes com
+// distância (reaproveita calcularPaceMinPorKm/formatarPace, já calculados/salvos em cada treino), ou
+// carga + grupos musculares trabalhados pra Musculação. null pros demais esportes (sem métrica confiável).
+function analiseEsportivaPaceTemplate(e) {
+  const comPace = e.registros.filter((r) => r.paceMinPorKm != null);
+  if (comPace.length < 2) return null;
+  const primeiro = comPace[0], ultimo = comPace[comPace.length - 1];
+  const estado = classificarVariacaoTreino(primeiro.paceMinPorKm, ultimo.paceMinPorKm, true); // inverso: pace menor é melhor
+  const badgeTexto = estado === "alta" ? "Ritmo mais rápido" : estado === "queda" ? "Ritmo mais lento" : "Ritmo estável";
+  let paragrafo;
+  if (estado === "estavel") {
+    paragrafo = "Seu ritmo se manteve estável ao longo do período: " + formatarPace(primeiro.paceMinPorKm) + " no primeiro treino de " + esc(e.esporte) + " e " + formatarPace(ultimo.paceMinPorKm) + " no último.";
+  } else {
+    const diffSegundos = Math.round(Math.abs(primeiro.paceMinPorKm - ultimo.paceMinPorKm) * 60);
+    const direcao = estado === "alta" ? "mais rápido" : "mais lento";
+    paragrafo = "Seu ritmo também " + (estado === "alta" ? "melhorou" : "piorou") + " ao longo do período: você saiu de " + formatarPace(primeiro.paceMinPorKm) + " por km no primeiro treino de " +
+      esc(e.esporte) + " para " + formatarPace(ultimo.paceMinPorKm) + " por km no último — cerca de " + diffSegundos + " segundos " + direcao + " por quilômetro.";
+  }
+  const variDuracao = classificarVariacaoTreino(e.duracaoPrimeiro, e.duracaoUltimo, false);
+  if (e.duracaoPrimeiro !== e.duracaoUltimo) {
+    paragrafo += " O tempo de atividade por treino também " + (variDuracao === "alta" ? "cresceu" : variDuracao === "queda" ? "diminuiu" : "se manteve estável") + ", de " + formatarDuracao(e.duracaoPrimeiro) + " para " + formatarDuracao(e.duracaoUltimo) + ".";
+  }
+  return { estado, badgeTexto, paragrafos: [paragrafo] };
+}
+function analiseEsportivaMusculacaoTemplate(e) {
+  const registros = e.registros;
+  const frequenciaGrupo = {};
+  registros.forEach((r) => {
+    Array.from(new Set((r.gruposMusculares || []).map((g) => g.grupo))).forEach((g) => { frequenciaGrupo[g] = (frequenciaGrupo[g] || 0) + 1; });
+  });
+  const gruposTrabalhados = Object.keys(frequenciaGrupo).sort((a, b) => frequenciaGrupo[b] - frequenciaGrupo[a]);
+  const gruposNaoTrabalhados = GRUPOS_MUSCULARES.map((g) => g.label).filter((g) => !gruposTrabalhados.includes(g));
+  let paragrafoGrupos = "";
+  if (gruposTrabalhados.length) {
+    const partes = gruposTrabalhados.map((g) => esc(g) + ", presente " + (frequenciaGrupo[g] === registros.length ? "em todos os " + registros.length + " treinos" : "em " + frequenciaGrupo[g] + " de " + registros.length + " treinos"));
+    paragrafoGrupos = "No período, você trabalhou " + gruposTrabalhados.length + (gruposTrabalhados.length === 1 ? " grupo muscular: " : " grupos musculares: ") + partes.join("; ") + ".";
+    if (gruposNaoTrabalhados.length) {
+      paragrafoGrupos += " " + esc(gruposNaoTrabalhados.join(", ")) + (gruposNaoTrabalhados.length === 1 ? " não entrou" : " não entraram") + " nos treinos registrados — pode valer a pena incluir " + (gruposNaoTrabalhados.length === 1 ? "esse grupo" : "esses grupos") + " pra equilibrar o treino.";
+    }
+  }
+  const exercicioPrimeiro = {}, exercicioUltimo = {};
+  registros.forEach((r) => {
+    (r.gruposMusculares || []).forEach((g) => {
+      (g.exercicios || []).forEach((ex) => {
+        if (ex.peso == null) return;
+        if (!exercicioPrimeiro[ex.exercicio]) exercicioPrimeiro[ex.exercicio] = { peso: ex.peso, series: ex.series, repeticoes: ex.repeticoes, date: r.date };
+        exercicioUltimo[ex.exercicio] = { peso: ex.peso, series: ex.series, repeticoes: ex.repeticoes, date: r.date };
+      });
+    });
+  });
+  const comparaveis = Object.keys(exercicioPrimeiro).filter((nome) => exercicioUltimo[nome].date !== exercicioPrimeiro[nome].date);
+  let paragrafoCarga = "", estadoCarga = "estavel";
+  if (comparaveis.length) {
+    let melhorNome = null, melhorVariacao = 0, melhorAbs = -1;
+    comparaveis.forEach((nome) => {
+      const ini = exercicioPrimeiro[nome].peso;
+      if (!ini) return;
+      const variacao = (exercicioUltimo[nome].peso - ini) / ini;
+      if (Math.abs(variacao) > melhorAbs) { melhorAbs = Math.abs(variacao); melhorVariacao = variacao; melhorNome = nome; }
+    });
+    if (melhorNome) {
+      const ini = exercicioPrimeiro[melhorNome], fim = exercicioUltimo[melhorNome];
+      estadoCarga = classificarVariacaoTreino(ini.peso, fim.peso, false);
+      const seriesTexto = (s, r) => (s != null && r != null) ? (formatNumber(s, 0) + "x" + formatNumber(r, 0)) : "";
+      let observacao = "";
+      if (ini.repeticoes != null && fim.repeticoes != null && fim.repeticoes < ini.repeticoes) observacao = ", mesmo com uma repetição a menos por série";
+      else if (ini.repeticoes != null && fim.repeticoes != null && fim.repeticoes > ini.repeticoes) observacao = ", com mais repetições por série ainda";
+      paragrafoCarga = "Sua carga também " + (melhorVariacao >= 0 ? "evoluiu" : "caiu") + ": no " + esc(melhorNome) + " — exercício presente em mais de um treino —, você foi de " + formatNumber(ini.peso, 1) + " kg" + (seriesTexto(ini.series, ini.repeticoes) ? " (" + seriesTexto(ini.series, ini.repeticoes) + ")" : "") +
+        " no primeiro treino para " + formatNumber(fim.peso, 1) + " kg" + (seriesTexto(fim.series, fim.repeticoes) ? " (" + seriesTexto(fim.series, fim.repeticoes) + ")" : "") + " no último, um " + (melhorVariacao >= 0 ? "aumento" : "redução") + " de " + Math.round(Math.abs(melhorVariacao) * 100) + "% na carga" + observacao + ".";
+    }
+  }
+  const badgeTexto = estadoCarga === "alta" ? "Carga em alta" : estadoCarga === "queda" ? "Carga em queda" : "Carga estável";
+  const paragrafos = [paragrafoGrupos, paragrafoCarga].filter(Boolean);
+  if (!paragrafos.length) return null;
+  return { estado: estadoCarga, badgeTexto, paragrafos };
+}
+function analiseEsportivaTemplateParaEsporte(e) {
+  if (e.ehMusculacao) return analiseEsportivaMusculacaoTemplate(e);
+  if (e.temDistancia) return analiseEsportivaPaceTemplate(e);
+  return null;
+}
+function analiseTreinoConclusaoEsporteTemplate(e) {
+  const paragrafosNutri = [analiseTreinoParagrafoEvolucao(e), analiseTreinoParagrafoConsumo(e), analiseTreinoParagrafoProjecao(e)].filter(Boolean);
+  const esportiva = analiseEsportivaTemplateParaEsporte(e);
+  const nota = '<p class="imc-empty analise-consumo-disclaimer">Essa é uma análise local, a partir dos treinos que você mesmo registrou -- não substitui orientação de um educador físico ou profissional de saúde, principalmente se você tiver alguma condição específica.</p>';
+  return '' +
+    '<h2 class="medidas-section-title analise-treino-conclusao-title">Conclusões</h2>' +
+    '<h3 class="analise-treino-subsecao-titulo">Nutricionais ' + analiseTreinoBadgeTemplate(e.variKcal, analiseTreinoBadgeNutricionalTexto(e)) + "</h3>" +
+    paragrafosNutri.map((p) => "<p>" + p + "</p>").join("") +
+    (esportiva && esportiva.paragrafos.length ? '' +
+      '<div class="analise-treino-divisor"></div>' +
+      '<h3 class="analise-treino-subsecao-titulo">Esportivas ' + analiseTreinoBadgeTemplate(esportiva.estado, esportiva.badgeTexto) + "</h3>" +
+      esportiva.paragrafos.map((p) => "<p>" + p + "</p>").join("")
+      : "") +
+    nota;
+}
+// Gráfico de linha (kcal queimada por treino, no período) -- mesma geometria de evolucaoLineChartSvg(),
+// só que clicando num ponto abre o modal de detalhe do treino daquele dia (ver
+// acaoAbrirDetalheDiaAnaliseTreino()/analiseTreinoDiaModalTemplate()).
+function analiseTreinoLineChartSvg(registros, esporte) {
+  const W = 320, H = 150, PAD_L = 32, PAD_R = 10, PAD_T = 12, PAD_B = 20;
+  const innerW = W - PAD_L - PAD_R, innerH = H - PAD_T - PAD_B;
+  const cor = "#c9762f"; // mesma cor laranja já usada pra kcal queimada (.meal-row-calorias-queimadas)
+  const valores = registros.map((r) => r.caloriasQueimadas || 0);
+  let min = Math.min.apply(null, valores), max = Math.max.apply(null, valores);
+  if (min === max) { min -= 1; max += 1; }
+  const folga = (max - min) * 0.1;
+  min -= folga; max += folga;
+  const x = (i) => PAD_L + (registros.length === 1 ? innerW / 2 : (i / (registros.length - 1)) * innerW);
+  const y = (v) => PAD_T + innerH - ((v - min) / (max - min)) * innerH;
+  const coords = registros.map((r, i) => [x(i), y(r.caloriasQueimadas || 0)]);
+  const pathD = coords.map((c, i) => (i === 0 ? "M" : "L") + c[0].toFixed(1) + "," + c[1].toFixed(1)).join(" ");
+  const areaD = pathD + " L" + coords[coords.length - 1][0].toFixed(1) + "," + (PAD_T + innerH) + " L" + coords[0][0].toFixed(1) + "," + (PAD_T + innerH) + " Z";
+  const ticksY = [max, (max + min) / 2, min];
+  const pontosSvg = coords.map((c, i) => {
+    const r = registros[i];
+    const rotulo = esc(dataCurta(r.date)) + ": " + formatNumber(r.caloriasQueimadas || 0, 0) + " kcal";
+    return '<circle cx="' + c[0].toFixed(1) + '" cy="' + c[1].toFixed(1) + '" r="4" fill="' + cor + '" stroke="#fff" stroke-width="1.5" style="cursor:pointer" onclick="acaoAbrirDetalheDiaAnaliseTreino(' + r.id + ')"><title>' + rotulo + "</title></circle>";
+  }).join("");
+  return '' +
+    '<svg class="evolucao-chart" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="Kcal queimada em cada treino de ' + esc(esporte) + ' no período">' +
+      ticksY.map((v) => '<line x1="' + PAD_L + '" x2="' + (W - PAD_R) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '" class="evolucao-chart-grid"/>' +
+        '<text x="1" y="' + (y(v) + 3).toFixed(1) + '" class="evolucao-chart-axis-label">' + formatNumber(v, 0) + "</text>").join("") +
+      '<path d="' + areaD + '" fill="' + cor + '" opacity="0.08" stroke="none"/>' +
+      '<path d="' + pathD + '" fill="none" stroke="' + cor + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+      pontosSvg +
+      '<text x="' + PAD_L + '" y="' + (H - 4) + '" class="evolucao-chart-axis-label">' + esc(dataCurta(registros[0].date)) + "</text>" +
+      '<text x="' + (W - PAD_R) + '" y="' + (H - 4) + '" text-anchor="end" class="evolucao-chart-axis-label">' + esc(dataCurta(registros[registros.length - 1].date)) + "</text>" +
+    "</svg>" +
+    '<p class="imc-empty analise-consumo-chart-legenda">' + icon("trend") + " Toque num ponto do gráfico pra ver os detalhes daquele treino.</p>";
+}
+// Modal de detalhe de um treino específico (clicado no gráfico acima) -- mesmo padrão visual do modal de
+// detalhe de dia da Análise de Consumo (analiseConsumoDiaModalTemplate()), só que com os dados do
+// treino (duração, kcal, distância/pace quando há, grupos musculares/exercícios quando é Musculação).
+function analiseTreinoDiaModalTemplate() {
+  const aberto = state.analiseTreinoDiaAberto;
+  if (!aberto) return "";
+  const treino = state.treinos.find((tr) => tr.id === aberto.id);
+  if (!treino) return "";
+  const temDistancia = ESPORTES_COM_DISTANCIA.includes(treino.esporte);
+  const ehMusculacao = treino.esporte === "Musculação";
+  let corpo = '<p class="analise-consumo-dia-modal-sub">' + esc(treino.esporte) + " · " + formatarDuracao(treino.duracaoMin) + (treino.caloriasQueimadas ? " · " + kcalComKg(treino.caloriasQueimadas) : "") + "</p>";
+  if (temDistancia && treino.distanciaKm) {
+    corpo += '<p class="imc-empty" style="margin-top:0">' + formatNumber(treino.distanciaKm, 1) + " km" + (treino.paceMinPorKm ? " · " + formatarPace(treino.paceMinPorKm) : "") + "</p>";
+  }
+  if (ehMusculacao && treino.gruposMusculares && treino.gruposMusculares.length) {
+    corpo += '<div class="nutrient-info-refeicoes-lista">' + treino.gruposMusculares.map((g) =>
+      '<div class="nutrient-info-refeicao-row"><div class="nutrient-info-refeicao-info"><div class="nutrient-info-refeicao-nome">' + esc(g.grupo) + "</div>" +
+        '<div class="imc-empty" style="margin-top:2px">' + (g.exercicios || []).map((ex) =>
+          esc(ex.exercicio) + (ex.peso != null ? " · " + formatNumber(ex.peso, 1) + "kg" : "") + (ex.series != null && ex.repeticoes != null ? " (" + formatNumber(ex.series, 0) + "x" + formatNumber(ex.repeticoes, 0) + ")" : "")
+        ).join(", ") + "</div></div></div>"
+    ).join("") + "</div>";
+  }
+  if (treino.nota) corpo += '<p class="imc-empty">“' + esc(treino.nota) + '”</p>';
+  return '' +
+    '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharDetalheDiaAnaliseTreino();}">' +
+    '<div class="modal-card nutrient-info-modal">' +
+      '<div class="meal-detalhe-head"><div class="nutrient-info-modal-title">' +
+        '<div class="nutrient-icon" style="background:#fbe9d9;color:#c9762f">' + icon("activity") + "</div>" +
+        "<h2>" + esc(dateLabel(treino.date)) + "</h2>" +
+      "</div>" +
+      '<button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharDetalheDiaAnaliseTreino()">' + icon("x") + "</button></div>" +
+      corpo +
+    "</div></div>";
+}
+function analiseTreinoResultadoEsporteTemplate(gerada) {
+  const e = calcularAnaliseTreinoEsporte(gerada.esporte, gerada.de, gerada.ate);
+  if (!e.temDados) {
+    return '<div class="analise-consumo-resultado medidas-section"><h2 class="medidas-section-title">' + icon("activity") + " " + esc(gerada.esporte) + "</h2>" +
+      '<p class="imc-empty">Não há nenhum treino de ' + esc(gerada.esporte) + " registrado nesse período.</p></div>";
+  }
+  return '' +
+    '<div class="analise-consumo-resultado medidas-section">' +
+      '<h2 class="medidas-section-title">' + icon("activity") + " " + esc(gerada.esporte) + " -- " + dateLabel(gerada.de) + " a " + dateLabel(gerada.ate) + "</h2>" +
+      "<p>" + analiseTreinoResumoParagrafo(e) + "</p>" +
+      analiseTreinoLineChartSvg(e.registros, e.esporte) +
+      analiseTreinoConclusaoEsporteTemplate(e) +
+    "</div>";
+}
+
+/* ---------- modo "Todos os treinos" ---------- */
+// Paleta fixa por esporte (pedido do skill de dataviz: identidade fixa por entidade, nunca por posição/
+// filtro) -- esportes comuns ganham uma cor combinando com a identidade visual do app; um esporte fora
+// dessa lista (customizado pela própria pessoa) cai num fallback indexado pela ordem de 1ª aparição.
+const ESPORTE_CORES_FIXAS = { "Corrida": "#c9762f", "Caminhada": "#71857e", "Ciclismo": "#3b6fa0", "Musculação": "#1c4d3e", "Natação": "#2f7d4f", "Spinning": "#b27691", "Yoga": "#9a5a22", "Funcional": "#6e8d69" };
+const ESPORTE_CORES_FALLBACK = ["#1c4d3e", "#c9762f", "#3b6fa0", "#b27691", "#2f7d4f", "#9a5a22", "#6e8d69", "#71857e"];
+function corDoEsporte(esporte, indice) { return ESPORTE_CORES_FIXAS[esporte] || ESPORTE_CORES_FALLBACK[indice % ESPORTE_CORES_FALLBACK.length]; }
+function calcularAnaliseTreinoTodos(de, ate) {
+  const registros = state.treinos.filter((tr) => tr.date >= de && tr.date <= ate).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.id - b.id));
+  if (!registros.length) return { temDados: false };
+  const quantidade = registros.length;
+  const kcalTotal = registros.reduce((s, r) => s + (r.caloriasQueimadas || 0), 0);
+  const duracaoTotal = registros.reduce((s, r) => s + (r.duracaoMin || 0), 0);
+  const kmTotal = registros.reduce((s, r) => s + (ESPORTES_COM_DISTANCIA.includes(r.esporte) ? (r.distanciaKm || 0) : 0), 0);
+  const kcalMedia = kcalTotal / quantidade;
+  const kcalConsumidaPeriodo = state.diarioKcal.filter((r) => r.date >= de && r.date <= ate).reduce((s, r) => s + (r.calories || 0), 0);
+  const porEsporte = {};
+  registros.forEach((r) => { (porEsporte[r.esporte] = porEsporte[r.esporte] || []).push(r); });
+  const esportesOrdenados = Object.keys(porEsporte).sort((a, b) => porEsporte[b].length - porEsporte[a].length);
+  const resumoPorEsporte = esportesOrdenados.map((esporte) => {
+    const regs = porEsporte[esporte];
+    return { esporte, quantidade: regs.length, kcal: regs.reduce((s, r) => s + (r.caloriasQueimadas || 0), 0) };
+  });
+  const meio = Math.max(1, Math.floor(registros.length / 2));
+  const primeiraMetade = registros.slice(0, meio), segundaMetade = registros.slice(meio);
+  const kcalPrimeiraMetade = primeiraMetade.reduce((s, r) => s + (r.caloriasQueimadas || 0), 0);
+  const kcalSegundaMetade = segundaMetade.reduce((s, r) => s + (r.caloriasQueimadas || 0), 0);
+  const freqPrimeiraMetade = primeiraMetade.length, freqSegundaMetade = segundaMetade.length;
+  const variKcal = classificarVariacaoTreino(kcalPrimeiraMetade, kcalSegundaMetade, false);
+  const variFreq = classificarVariacaoTreino(freqPrimeiraMetade, freqSegundaMetade, false);
+  const projecao = calcularProjecaoTreino(de, ate, quantidade, kcalTotal, kmTotal, duracaoTotal);
+  return { temDados: true, de, ate, registros, quantidade, kcalTotal, duracaoTotal, kmTotal, kcalMedia, kcalConsumidaPeriodo, porEsporte, esportesOrdenados, resumoPorEsporte, kcalPrimeiraMetade, kcalSegundaMetade, freqPrimeiraMetade, freqSegundaMetade, variKcal, variFreq, projecao };
+}
+function analiseTreinoTodosResumoParagrafo(t) {
+  let texto = "No período de " + esc(dataCurta(t.de)) + " a " + esc(dataCurta(t.ate)) + ", você registrou " + t.quantidade + (t.quantidade === 1 ? " treino no total" : " treinos no total") + ", somando " + kcalComKg(t.kcalTotal) + " (média de " + kcalComKg(t.kcalMedia) + " por treino)";
+  if (t.kmTotal > 0) texto += " e " + formatNumber(t.kmTotal, 1) + " km percorridos";
+  texto += ", em " + formatarDuracao(t.duracaoTotal) + " de atividade.";
+  return texto;
+}
+function analiseTreinoTodosParagrafoIndividual(t) {
+  if (!t.resumoPorEsporte.length) return "";
+  const maisPraticado = t.resumoPorEsporte[0];
+  const maisKcal = t.resumoPorEsporte.slice().sort((a, b) => b.kcal - a.kcal)[0];
+  let texto = esc(maisPraticado.esporte) + " foi o esporte mais praticado no período, com " + maisPraticado.quantidade + (maisPraticado.quantidade === 1 ? " treino" : " treinos");
+  texto += maisKcal.esporte !== maisPraticado.esporte
+    ? (", enquanto " + esc(maisKcal.esporte) + " foi o que mais queimou calorias, com " + kcalComKg(maisKcal.kcal) + ".")
+    : (" e também o que mais queimou calorias, com " + kcalComKg(maisKcal.kcal) + ".");
+  const outros = t.resumoPorEsporte.filter((r) => r.esporte !== maisPraticado.esporte);
+  if (outros.length) texto += " " + outros.map((r) => esc(r.esporte) + " somou " + kcalComKg(r.kcal) + " em " + r.quantidade + (r.quantidade === 1 ? " treino" : " treinos")).join("; ") + ".";
+  return texto;
+}
+function analiseTreinoTodosBadgeTexto(t) {
+  const sufixo = t.variKcal === "alta" ? "em alta" : t.variKcal === "queda" ? "em queda" : "estável";
+  const base = (t.variFreq === t.variKcal && t.variKcal !== "estavel") ? "Frequência e kcal" : "Kcal";
+  return base + " " + sufixo;
+}
+function analiseTreinoTodosParagrafoEvolucao(t) {
+  return "Ao longo do período, sua frequência e volume de treino " + (t.variKcal === "estavel" && t.variFreq === "estavel" ? "se mantiveram estáveis" : "evoluíram") + ": na primeira metade você somou " +
+    kcalComKg(t.kcalPrimeiraMetade) + " em " + t.freqPrimeiraMetade + (t.freqPrimeiraMetade === 1 ? " treino" : " treinos") + ", e na segunda metade, " + kcalComKg(t.kcalSegundaMetade) + " em " + t.freqSegundaMetade + (t.freqSegundaMetade === 1 ? " treino" : " treinos") + ".";
+}
+function analiseTreinoTodosParagrafoConsumo(t) {
+  if (!(t.kcalConsumidaPeriodo > 0)) return "";
+  const pctValor = (t.kcalTotal / t.kcalConsumidaPeriodo) * 100;
+  return "No total, isso representa " + formatNumber(pctValor, 1) + "% das " + kcalComKg(t.kcalConsumidaPeriodo) + " consumidas no mesmo período.";
+}
+function analiseTreinoTodosParagrafoProjecao(t) {
+  const p = t.projecao;
+  if (!p || !p.fimMes || !p.fimAno) return "";
+  const nomeMes = new Intl.DateTimeFormat("pt-BR", { month: "long" }).format(new Date(fimDoMesTreino(today()) + "T12:00:00"));
+  return "Mantendo essa média de ~" + formatNumber(p.treinosPorSemana, 1) + " treinos por semana, a projeção é de " + analiseTreinoDescreverProjecaoBloco(p.fimMes, t.kmTotal > 0) +
+    " até o fim de " + nomeMes + ", e " + analiseTreinoDescreverProjecaoBloco(p.fimAno, t.kmTotal > 0) + " até o fim do ano.";
+}
+function analiseTreinoConclusaoTodosTemplate(t) {
+  const paragrafos = [analiseTreinoTodosParagrafoEvolucao(t), analiseTreinoTodosParagrafoConsumo(t), analiseTreinoTodosParagrafoProjecao(t)].filter(Boolean);
+  const nota = '<p class="imc-empty analise-consumo-disclaimer">Essa é uma análise local, a partir dos treinos que você mesmo registrou -- não substitui orientação de um educador físico ou profissional de saúde, principalmente se você tiver alguma condição específica.</p>';
+  return '' +
+    '<h2 class="medidas-section-title analise-treino-conclusao-title">Conclusão</h2>' +
+    analiseTreinoBadgeTemplate(t.variKcal, analiseTreinoTodosBadgeTexto(t)) +
+    paragrafos.map((p) => "<p>" + p + "</p>").join("") +
+    nota;
+}
+// Gráfico com UMA linha por esporte (pedido explícito do usuário: não barras, não uma linha única
+// "misturando" esportes diferentes) -- generaliza evolucaoPressaoChartSvg() (que tem só 2 séries fixas)
+// pra N séries esparsas sobre um eixo X compartilhado com TODAS as datas de treino do período.
+function analiseTreinoMultiLineChartSvg(porEsporte, esportesOrdenados) {
+  const W = 320, H = 150, PAD_L = 32, PAD_R = 10, PAD_T = 12, PAD_B = 20;
+  const innerW = W - PAD_L - PAD_R, innerH = H - PAD_T - PAD_B;
+  const datas = Array.from(new Set(esportesOrdenados.reduce((acc, esp) => acc.concat(porEsporte[esp].map((r) => r.date)), []))).sort();
+  const nSlots = datas.length;
+  const idxPorData = {};
+  datas.forEach((d, i) => { idxPorData[d] = i; });
+  const todosValores = esportesOrdenados.reduce((acc, esp) => acc.concat(porEsporte[esp].map((r) => r.caloriasQueimadas || 0)), []).concat([0, 1]);
+  let min = Math.min.apply(null, todosValores), max = Math.max.apply(null, todosValores);
+  if (min === max) { min -= 1; max += 1; }
+  const folga = (max - min) * 0.15;
+  min = Math.max(0, min - folga); max += folga;
+  const x = (i) => PAD_L + (nSlots <= 1 ? innerW / 2 : (i / (nSlots - 1)) * innerW);
+  const y = (v) => PAD_T + innerH - ((v - min) / (max - min)) * innerH;
+  const ticksY = [max, (max + min) / 2, min];
+  let linhas = "", rotulos = "";
+  esportesOrdenados.forEach((esp, i) => {
+    const cor = corDoEsporte(esp, i);
+    const regs = porEsporte[esp].slice().sort((a, b) => (a.date < b.date ? -1 : 1));
+    const coords = regs.map((r) => [x(idxPorData[r.date]), y(r.caloriasQueimadas || 0)]);
+    const marcadores = coords.map((c, j) =>
+      '<circle cx="' + c[0].toFixed(1) + '" cy="' + c[1].toFixed(1) + '" r="3.5" fill="' + cor + '" stroke="#fff" stroke-width="1.4"><title>' + esc(dataCurta(regs[j].date)) + " · " + esc(esp) + ": " + formatNumber(regs[j].caloriasQueimadas || 0, 0) + " kcal</title></circle>"
+    ).join("");
+    const linha = coords.length > 1 ? '<path d="' + coords.map((c, j) => (j === 0 ? "M" : "L") + c[0].toFixed(1) + "," + c[1].toFixed(1)).join(" ") + '" fill="none" stroke="' + cor + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' : "";
+    linhas += linha + marcadores;
+    const ultimoReg = regs[regs.length - 1];
+    const ultimoIdx = idxPorData[ultimoReg.date];
+    const pertoDaBorda = ultimoIdx >= nSlots - 1;
+    const ultimoKcal = ultimoReg.caloriasQueimadas || 0;
+    const ultimoXY = coords[coords.length - 1];
+    rotulos += '<text x="' + (ultimoXY[0] + (pertoDaBorda ? -6 : 6)).toFixed(1) + '" y="' + (ultimoXY[1] - 6).toFixed(1) + '" text-anchor="' + (pertoDaBorda ? "end" : "start") + '" font-size="8" font-weight="700" fill="' + cor + '">' +
+      formatNumber(ultimoKcal, 0) + " (~" + formatNumber(kgEquivalente(ultimoKcal), 2) + "kg)</text>";
+  });
+  return '' +
+    '<svg class="evolucao-chart" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="Kcal queimada por treino, uma linha por esporte, ao longo do período">' +
+      ticksY.map((v) => '<line x1="' + PAD_L + '" x2="' + (W - PAD_R) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '" class="evolucao-chart-grid"/>' +
+        '<text x="1" y="' + (y(v) + 3).toFixed(1) + '" class="evolucao-chart-axis-label">' + formatNumber(v, 0) + "</text>").join("") +
+      linhas + rotulos +
+      '<text x="' + PAD_L + '" y="' + (H - 4) + '" class="evolucao-chart-axis-label">' + esc(dataCurta(datas[0])) + "</text>" +
+      '<text x="' + (W - PAD_R) + '" y="' + (H - 4) + '" text-anchor="end" class="evolucao-chart-axis-label">' + esc(dataCurta(datas[nSlots - 1])) + "</text>" +
+    "</svg>";
+}
+function analiseTreinoLegendaTemplate(esportesOrdenados) {
+  return '<div class="nutriente-comparacao-legenda analise-treino-legenda">' +
+    esportesOrdenados.map((esp, i) => '<span class="nutriente-comparacao-legenda-item"><span class="nutriente-comparacao-swatch" style="background:' + corDoEsporte(esp, i) + '"></span>' + esc(esp) + "</span>").join("") +
+  "</div>";
+}
+function analiseTreinoResultadoTodosTemplate(gerada) {
+  const t = calcularAnaliseTreinoTodos(gerada.de, gerada.ate);
+  if (!t.temDados) {
+    return '<div class="analise-consumo-resultado medidas-section"><h2 class="medidas-section-title">' + icon("activity") + " Todos os treinos</h2>" +
+      '<p class="imc-empty">Não há nenhum treino registrado nesse período.</p></div>';
+  }
+  return '' +
+    '<div class="analise-consumo-resultado medidas-section">' +
+      '<h2 class="medidas-section-title">' + icon("activity") + " Todos os treinos -- " + dateLabel(gerada.de) + " a " + dateLabel(gerada.ate) + "</h2>" +
+      "<p>" + analiseTreinoTodosResumoParagrafo(t) + "</p>" +
+      analiseTreinoMultiLineChartSvg(t.porEsporte, t.esportesOrdenados) +
+      analiseTreinoLegendaTemplate(t.esportesOrdenados) +
+      '<p class="imc-empty analise-consumo-chart-legenda">' + icon("trend") + " Kcal queimada em cada treino registrado no período, uma linha por esporte.</p>" +
+      "<p>" + analiseTreinoTodosParagrafoIndividual(t) + "</p>" +
+      analiseTreinoConclusaoTodosTemplate(t) +
+    "</div>";
+}
+
+/* ---------- aba/formulário (ver treinosTabTemplate()) ---------- */
+function analiseTreinoResultadoTemplate(gerada) { return gerada.modo === "esporte" ? analiseTreinoResultadoEsporteTemplate(gerada) : analiseTreinoResultadoTodosTemplate(gerada); }
+function analiseTreinoTabTemplate() {
+  const esportes = esportesPresentesTreinos();
+  if (state.analiseTreinoModo === "esporte" && !state.analiseTreinoEsporteSelecionado && esportes.length) state.analiseTreinoEsporteSelecionado = esportes[0];
+  const podeGerar = !!(state.analiseTreinoFiltroDe && state.analiseTreinoFiltroAte && state.analiseTreinoFiltroDe <= state.analiseTreinoFiltroAte) && (state.analiseTreinoModo === "todos" || !!state.analiseTreinoEsporteSelecionado);
+  const dataInvalida = !!(state.analiseTreinoFiltroDe && state.analiseTreinoFiltroAte && state.analiseTreinoFiltroDe > state.analiseTreinoFiltroAte);
+  return '' +
+    '<section class="analise-consumo-section">' +
+      '<p class="imc-empty" style="margin-bottom:16px">Escolha analisar todos os treinos juntos ou um esporte específico, e um período com pelo menos um treino registrado -- a análise usa só os treinos que você mesmo registrou no app.</p>' +
+      '<div class="nutricao-modo-tabs" style="margin-top:0">' +
+        '<button class="nutricao-modo-tab' + (state.analiseTreinoModo === "todos" ? " active" : "") + '" onclick="acaoAlternarModoAnaliseTreino(\'todos\')">' + icon("trend") + " Todos os treinos</button>" +
+        '<button class="nutricao-modo-tab' + (state.analiseTreinoModo === "esporte" ? " active" : "") + '" onclick="acaoAlternarModoAnaliseTreino(\'esporte\')">' + icon("activity") + " Por esporte</button>" +
+      "</div>" +
+      (state.analiseTreinoModo === "esporte" ? (
+        '<div style="margin-top:14px"><label class="field-label">Esporte</label>' +
+        (esportes.length
+          ? '<select class="field-input analise-consumo-select" onchange="acaoSelecionarEsporteAnaliseTreino(this.value)">' +
+              esportes.map((e) => '<option value="' + esc(e) + '"' + (state.analiseTreinoEsporteSelecionado === e ? " selected" : "") + '>' + esc(e) + "</option>").join("") +
+            "</select>"
+          : '<p class="imc-empty" style="margin-top:0">Nenhum treino registrado ainda.</p>') +
+        "</div>"
+      ) : "") +
+      '<div class="evolucao-periodo-filtro medida-filtro-periodo">' +
+        '<div><label class="field-label">De</label><input type="date" class="field-input" max="' + esc(today()) + '" value="' + esc(state.analiseTreinoFiltroDe) + '" onchange="acaoFiltrarAnaliseTreino(\'de\', this.value)"/></div>' +
+        '<div><label class="field-label">Até</label><input type="date" class="field-input" max="' + esc(today()) + '" value="' + esc(state.analiseTreinoFiltroAte) + '" onchange="acaoFiltrarAnaliseTreino(\'ate\', this.value)"/></div>' +
+      "</div>" +
+      (dataInvalida ? '<p class="imc-empty analise-consumo-erro">A data "De" precisa ser antes (ou igual à) data "Até".</p>' : "") +
+      '<button class="btn-primary-pill-lg analise-consumo-gerar-btn" ' + (podeGerar ? "" : "disabled") + ' onclick="acaoGerarAnaliseTreino()">' + icon("sparkles") + ' <span class="label">Gerar análise</span></button>' +
+      (state.analiseTreinoGerada ? analiseTreinoResultadoTemplate(state.analiseTreinoGerada) : "") +
+    "</section>" +
+    analiseTreinoDiaModalTemplate();
+}
+function acaoTrocarAbaTreinos(aba) { state.treinosAba = aba; render(); }
+function acaoAlternarModoAnaliseTreino(modo) { state.analiseTreinoModo = modo; render(); }
+function acaoSelecionarEsporteAnaliseTreino(esporte) { state.analiseTreinoEsporteSelecionado = esporte; render(); }
+function acaoFiltrarAnaliseTreino(campo, valor) { if (campo === "de") state.analiseTreinoFiltroDe = valor; else state.analiseTreinoFiltroAte = valor; render(); }
+function acaoGerarAnaliseTreino() {
+  if (!state.analiseTreinoFiltroDe || !state.analiseTreinoFiltroAte || state.analiseTreinoFiltroDe > state.analiseTreinoFiltroAte) return;
+  if (state.analiseTreinoModo === "esporte" && !state.analiseTreinoEsporteSelecionado) return;
+  state.analiseTreinoGerada = { modo: state.analiseTreinoModo, esporte: state.analiseTreinoEsporteSelecionado, de: state.analiseTreinoFiltroDe, ate: state.analiseTreinoFiltroAte };
+  render();
+}
+function acaoAbrirDetalheDiaAnaliseTreino(id) { state.analiseTreinoDiaAberto = { id }; render(); }
+function acaoFecharDetalheDiaAnaliseTreino() { state.analiseTreinoDiaAberto = null; render(); }
+/* =============== fim Análise de Treinos =============== */
 
 // Envolve a frente já pronta de um card (frenteHtml, sem NENHUMA alteração -- continua sendo exatamente o
 // <div class="nutrient-card"> de sempre, preservando toda a estrutura que os testes existentes verificam)
@@ -9038,7 +9587,19 @@ function ajustarAlturaTreinoCard() {
 // existia antes da função de virar (pedido do usuário: só o card "Treinos de hoje" devia virar, não esse
 // formulário ao lado).
 function treinosTabTemplate() {
-  return '<main><section class="dashboard-grid">' + treinoFormCardTemplate() + treinoCardFlipWrapperTemplate() + "</section></main>";
+  // Sub-aba "Treinos" (formulário + card de hoje/histórico, o que já existia) / "Análise de Treinos"
+  // (NOVA, ver analiseTreinoTabTemplate()) -- mesmo espírito de .nutricao-modo-tabs em Nutrição (ver
+  // nutricaoTabTemplate()), reaproveitando a mesma classe CSS (estilo genérico, não específico de Nutrição).
+  return '' +
+    "<main>" +
+    '<div class="nutricao-modo-tabs">' +
+      '<button class="nutricao-modo-tab' + (state.treinosAba !== "analise" ? " active" : "") + '" onclick="acaoTrocarAbaTreinos(\'treinos\')">' + icon("activity") + " Treinos</button>" +
+      '<button class="nutricao-modo-tab' + (state.treinosAba === "analise" ? " active" : "") + '" onclick="acaoTrocarAbaTreinos(\'analise\')">' + icon("trend") + " Análise de Treinos</button>" +
+    "</div>" +
+    (state.treinosAba === "analise"
+      ? analiseTreinoTabTemplate()
+      : '<section class="dashboard-grid">' + treinoFormCardTemplate() + treinoCardFlipWrapperTemplate() + "</section>") +
+    "</main>";
 }
 
 function fullHomeTemplate() {
