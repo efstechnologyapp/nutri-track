@@ -317,7 +317,16 @@ svg{ display: block; }
 .analise-consumo-chart-legenda .icon{ width:13px; height:13px; flex-shrink:0; }
 .analise-consumo-dia-modal-sub{ margin:0 0 12px; font-size:13px; line-height:1.5; color:#5c6b62; }
 
-.dashboard-grid{ display:grid; gap:24px; grid-template-columns:1fr; }
+/* minmax(0,1fr) (não só "1fr") também na coluna única do mobile -- sem isso, a track "1fr" tem um piso de
+   largura automático igual ao maior min-content entre os itens dessa coluna (regra padrão do CSS Grid), e
+   se QUALQUER item dentro tiver conteúdo que não encolhe (ex.: o card virável de Treinos de hoje, com sua
+   faixa interna de largura 200% -- ver .treino-card-track), a coluna INTEIRA fica mais larga que a tela,
+   empurrando os outros cards da mesma coluna (ex.: o card de "Novo treino" ao lado) pra fora da viewport
+   junto -- forçando o usuário a reduzir o zoom pra ver a página (bug relatado pelo usuário, só na aba de
+   Esportes, onde o card de Treinos de hoje "mora" dentro desse grid desde a correção do escopo do flip).
+   minmax(0,1fr) remove esse piso automático, deixando a track encolher até 0 e cada item lidar com seu
+   próprio overflow internamente (ex.: .treino-card-flip já tem overflow:hidden). */
+.dashboard-grid{ display:grid; gap:24px; grid-template-columns:minmax(0,1fr); }
 @media (min-width: 1280px){ .dashboard-grid{ grid-template-columns:minmax(0,1fr) 410px; } }
 .meal-card{ border-radius:26px; background:var(--primary); padding:20px; color:#fff; box-shadow:0 18px 40px rgba(28,77,62,0.16); }
 @media (min-width: 640px){ .meal-card{ padding:28px; } }
@@ -347,8 +356,13 @@ svg{ display: block; }
 .meal-form-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .meal-form-label{ display:block; margin-bottom:6px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:#9fb5aa; }
 .treino-modo-tabs{ margin-top:16px; display:flex; gap:8px; }
-.treino-modo-tab{ display:flex; flex:1; align-items:center; justify-content:center; gap:6px; border-radius:10px; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06); padding:9px 10px; font-size:12px; font-weight:600; color:#b8d4ba; transition:background .15s, color .15s; }
-.treino-modo-tab.active{ background:rgba(255,255,255,.16); color:#fff; border-color:rgba(255,255,255,.3); }
+.treino-modo-tab, .treino-ambiente-tab{ display:flex; flex:1; align-items:center; justify-content:center; gap:6px; border-radius:10px; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06); padding:9px 10px; font-size:12px; font-weight:600; color:#b8d4ba; transition:background .15s, color .15s; }
+.treino-modo-tab.active, .treino-ambiente-tab.active{ background:rgba(255,255,255,.16); color:#fff; border-color:rgba(255,255,255,.3); }
+/* Campo "Ambiente" (aberto/fechado), logo após o seletor de esporte -- ver
+   treinoAmbienteCampoTemplate()/acaoSelecionarAmbienteTreino(). Mesmo espírito visual de .treino-modo-tabs
+   (par de botões em pílula, um sempre "ativo"). */
+.treino-ambiente-campo{ margin-top:16px; }
+.treino-ambiente-tabs{ margin-top:8px; display:flex; gap:8px; }
 .treino-cronometro{ margin-top:24px; text-align:center; font-family:'Fraunces',serif; font-size:48px; font-weight:600; letter-spacing:0.02em; color:#fff; font-variant-numeric:tabular-nums; }
 .treino-cronometro-acoes{ margin-top:20px; display:flex; gap:10px; }
 .treino-cronometro-acoes button{ flex:1; width:auto; margin-top:0; }
@@ -369,6 +383,15 @@ svg{ display: block; }
 .treino-foto-remover:hover{ background:rgba(20,40,32,.9); }
 .treino-grupos-campo{ margin-top:16px; }
 .treino-grupos-nota{ margin:6px 0 0; font-size:12px; color:#9fb5aa; }
+/* Grade de checkboxes dos grupos musculares (ver treinoGruposMuscularesCampoTemplate()) -- pedido do
+   usuário: marcar vários grupos de uma vez em vez de reabrir um dropdown a cada grupo adicional. Mesmo
+   espírito visual (chip em pílula) de .treino-grupo-add-exercicio, só que como checkbox marcável/
+   desmarcável em vez de botão de ação. */
+.treino-grupos-grade{ margin-top:8px; display:flex; flex-wrap:wrap; gap:8px; }
+.treino-grupo-chip{ display:flex; align-items:center; gap:6px; border-radius:999px; border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.05); padding:7px 12px; font-size:12.5px; font-weight:600; color:#cfe4c8; cursor:pointer; transition:background .15s, border-color .15s; }
+.treino-grupo-chip:hover{ background:rgba(255,255,255,.1); }
+.treino-grupo-chip.marcado{ border-color:#7fb069; background:rgba(127,176,105,.22); color:#fff; }
+.treino-grupo-chip input[type="checkbox"]{ margin:0; width:14px; height:14px; flex-shrink:0; accent-color:#7fb069; }
 .treino-grupo-bloco{ margin-top:10px; border-radius:12px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); padding:12px 14px; }
 .treino-grupo-bloco-head{ display:flex; align-items:center; justify-content:space-between; font-size:13px; color:#fff; gap:8px; }
 .treino-grupo-bloco-acoes{ display:flex; align-items:center; gap:6px; flex-shrink:0; }
@@ -950,6 +973,7 @@ const ICON_PATHS = {
   image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',
   filter: '<path d="M4 5h16l-6.5 8v6l-3-1.5v-4.5L4 5Z"/>',
   trend: '<path d="M3 17l6-6 4 4 8-8"/><path d="M17 6h4v4"/>',
+  home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/>',
 };
 function icon(name, cls) {
   const p = ICON_PATHS[name] || "";
@@ -2630,6 +2654,13 @@ const state = {
   // Submodalidade de Ciclismo (pedido do usuário) -- "" | "Pista" | "Estrada" | "MTB" | "Gravel" |
   // "Spinning" -- ver CICLISMO_MODALIDADES/treinoCiclismoModalidadeCampoTemplate(). Só é usada/mostrada
   // quando treinoEsporte === "Ciclismo".
+  // Ambiente do treino (pedido do usuário) -- "" | "aberto" | "fechado" -- ver
+  // treinoAmbienteCampoTemplate()/acaoSelecionarAmbienteTreino(). Substituiu a antiga suposição automática
+  // de ambiente por tipo de esporte (ver comentário em treinoElegivelParaVitaminaD()): agora é a pessoa
+  // quem informa, a cada treino, e só com "aberto" escolhido é que o treino fica elegível pro
+  // cálculo/registro automático de vitamina D (que de qualquer forma ainda depende do horário do treino
+  // cruzar a janela de luz solar -- ver treinoTemJanelaDeLuzSolar()).
+  treinoAmbiente: "",
   treinoCiclismoModalidade: "",
   // Intensidade do spinning (só quando treinoCiclismoModalidade === "Spinning") -- "" | "Moderada" |
   // "Intensa (HIIT)" -- ver SPINNING_INTENSIDADES/estimarCaloriasQueimadas(). No spinning não se pede
@@ -5925,15 +5956,22 @@ function resolverEsporteTreino() {
   return nome;
 }
 
-// Adiciona um grupo muscular ao registro de treino atual (dropdown de treinoGruposMuscularesCampoTemplate()).
-// Pode adicionar quantos grupos quiser -- cada um vira um bloco separado com checkboxes dos exercícios
-// daquele grupo (ver treinoGrupoBlocoTemplate()).
+// Adiciona um grupo muscular ao registro de treino atual (grade de checkboxes de
+// treinoGruposMuscularesCampoTemplate()). Pode adicionar quantos grupos quiser -- cada um vira um bloco
+// separado com checkboxes dos exercícios daquele grupo (ver treinoGrupoBlocoTemplate()).
 function acaoAdicionarGrupoMuscular(grupoId) {
   if (!grupoId || !grupoMuscularPorId(grupoId)) return;
   if (!state.treinoGruposSelecionados.includes(grupoId)) {
     state.treinoGruposSelecionados = state.treinoGruposSelecionados.concat([grupoId]);
   }
   render();
+}
+// Marca/desmarca um grupo muscular na grade de checkboxes -- chamado direto pelo onchange do checkbox (ver
+// treinoGruposMuscularesCampoTemplate()). Reaproveita acaoAdicionarGrupoMuscular()/acaoRemoverGrupoMuscular()
+// conforme o novo estado do checkbox, sem duplicar a lógica de cada uma.
+function acaoAlternarGrupoMuscular(grupoId, marcado) {
+  if (marcado) acaoAdicionarGrupoMuscular(grupoId);
+  else acaoRemoverGrupoMuscular(grupoId);
 }
 // Remove um grupo do registro atual e descarta os exercícios que tinham sido marcados nele.
 function acaoRemoverGrupoMuscular(grupoId) {
@@ -6057,6 +6095,7 @@ function acaoIniciarTreino() {
     acumuladoMs: 0,
     pausado: false,
     ciclismoModalidade, spinningIntensidade,
+    ambiente: state.treinoAmbiente, // "" | "aberto" | "fechado" -- ver treinoAmbienteCampoTemplate()
   };
   persistTreinoAtivo();
   iniciarTickTreinoSeNecessario();
@@ -6195,18 +6234,15 @@ function estimarCaloriasQueimadas(treino) {
 }
 
 /* ===================== conexão treino × vitamina D (pedido do usuário) ===================== */
-// Esportes tipicamente praticados AO AR LIVRE -- são os únicos considerados pra creditar vitamina D
-// automaticamente a partir do horário do treino (ver registrarVitaminaDDoTreino() abaixo). Suposição
-// documentada aqui pra ficar clara (ajustável se a pessoa quiser outra lista): Musculação, Boxe,
-// Jiu-jitsu e Muay Thai ficam de fora por serem tipicamente praticados em academia/tatame, fechados; o
-// ciclismo em modalidade Spinning (ver CICLISMO_MODALIDADES) também fica de fora por ser bike
-// estacionária/indoor. Natação fica de fora por padrão -- academias no Brasil frequentemente têm
-// piscina coberta, então não dá pra presumir sol só pelo esporte.
-const ESPORTES_AO_AR_LIVRE = ["Caminhada", "Corrida", "Futebol", "Tênis", "Ciclismo"];
-function treinoElegivelParaVitaminaD(esporte, ciclismoModalidade) {
-  if (!ESPORTES_AO_AR_LIVRE.includes(esporte)) return false;
-  if (esporte === "Ciclismo" && ciclismoModalidade === "Spinning") return false;
-  return true;
+// Pedido do usuário (correção seguinte): a elegibilidade pra vitamina D deixou de ser uma suposição
+// automática por tipo de esporte (uma lista fixa de "esportes ao ar livre" chutava o ambiente, e podia
+// errar -- ex.: Ciclismo numa bike ergométrica dentro de casa, ou Musculação num treino funcional ao ar
+// livre). Agora é só o campo "Ambiente" que a própria pessoa escolhe a cada treino (ver
+// treinoAmbienteCampoTemplate()) -- só "aberto" credita vitamina D, qualquer que seja o esporte, sempre
+// combinado com o horário do treino cruzar a janela de luz solar (ver treinoTemJanelaDeLuzSolar() logo
+// abaixo e registrarVitaminaDDoTreino()).
+function treinoElegivelParaVitaminaD(ambiente) {
+  return ambiente === "aberto";
 }
 // Só faz sentido tentar buscar o tempo/localização (custa uma permissão de geolocalização + uma
 // chamada de rede) quando o horário do treino realmente cruza a janela de luz solar (6h–18h, mesma
@@ -6257,17 +6293,18 @@ function salvarVitaminaDDoTreino(treino, resultado, detalheFonte) {
   render(); // esse registro é criado em segundo plano, depois do treino já salvo -- atualiza a tela se a pessoa estiver olhando
 }
 // Pedido do usuário: liga o horário do treino à vitamina D -- quando o treino (mesmo que só em parte)
-// ocorreu durante a janela de luz solar E o esporte é um dos tipicamente ao ar livre (ver
-// ESPORTES_AO_AR_LIVRE acima), verifica AUTOMATICAMENTE como estava o tempo no local e horário do
-// treino (mesmo mecanismo de localização + índice UV real já usado por "Exposição Solar" -- ver
-// acaoObterLocalizacaoExposicao()/buscarIndiceUVAtual()/calcularVitaminaDSolPorUV()), em vez de presumir
-// uma condição de céu fixa. Roda em segundo plano, depois do treino já salvo (não trava o registro
-// esperando geolocalização/rede) -- ver salvarVitaminaDDoTreino() acima pra quando o resultado chega.
+// ocorreu durante a janela de luz solar E a pessoa marcou "Ambiente aberto" nesse treino (ver
+// treinoAmbienteCampoTemplate()/treinoElegivelParaVitaminaD() acima), verifica AUTOMATICAMENTE como estava
+// o tempo no local e horário do treino (mesmo mecanismo de localização + índice UV real já usado por
+// "Exposição Solar" -- ver acaoObterLocalizacaoExposicao()/buscarIndiceUVAtual()/
+// calcularVitaminaDSolPorUV()), em vez de presumir uma condição de céu fixa. Roda em segundo plano, depois
+// do treino já salvo (não trava o registro esperando geolocalização/rede) -- ver salvarVitaminaDDoTreino()
+// acima pra quando o resultado chega.
 // Pedido explícito do usuário: nunca presume o tempo -- se não for possível CONFIRMAR automaticamente
 // (geolocalização indisponível/negada, ou a consulta do índice UV falhar), simplesmente não credita
 // vitamina D nenhuma pra esse treino, em vez de chutar uma condição de céu. Também não credita quando: o
-// esporte não é elegível; o horário do treino cai todo fora da janela de luz solar; ou a pessoa ainda
-// não cadastrou o tipo de pele no perfil (mesma exigência da tela de Exposição Solar).
+// ambiente não foi marcado como "aberto"; o horário do treino cai todo fora da janela de luz solar; ou a
+// pessoa ainda não cadastrou o tipo de pele no perfil (mesma exigência da tela de Exposição Solar).
 // Limitação assumida (documentada aqui, igual ao resto do app): usa a localização ATUAL do dispositivo
 // como aproximação de onde a pessoa estava durante o treino -- não existe (nem no navegador, nem neste
 // app) um histórico de localização pra reconstituir onde a pessoa estava numa hora passada; é a mesma
@@ -6283,7 +6320,7 @@ function avisarSemVitaminaD(treino, motivo) {
   toastAviso("Treino de " + nomeEsporteExibicao(treino) + " (" + treino.horaInicio + "–" + treino.horaFim + "): vitamina D não creditada — " + motivo);
 }
 function registrarVitaminaDDoTreino(treino) {
-  if (!treinoElegivelParaVitaminaD(treino.esporte, treino.ciclismoModalidade)) return;
+  if (!treinoElegivelParaVitaminaD(treino.ambiente)) return;
   if (!treinoTemJanelaDeLuzSolar(treino.horaInicio, treino.horaFim)) return;
   const tipoPele = state.usuario && state.usuario.tipoPele;
   if (!tipoPele) { avisarSemVitaminaD(treino, "cadastre seu tipo de pele no Perfil para habilitar esse cálculo automático."); return; }
@@ -6325,6 +6362,7 @@ function acaoEncerrarTreino() {
     horaInicio: state.treinoAtivo.horaInicioClock, horaFim: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
     duracaoMin, fotoUrl: "", nota, gruposMusculares,
     ciclismoModalidade: state.treinoAtivo.ciclismoModalidade || "", spinningIntensidade: state.treinoAtivo.spinningIntensidade || "",
+    ambiente: state.treinoAtivo.ambiente || "",
   }, camposDistancia);
   novoTreino.caloriasQueimadas = estimarCaloriasQueimadas(novoTreino);
   // Mesmo padrão "salva primeiro, anexo depois" já usado nos exames de bioimpedância/calorimetria
@@ -6340,6 +6378,7 @@ function acaoEncerrarTreino() {
   state.treinoEsporteCustom = "";
   state.treinoCiclismoModalidade = "";
   state.treinoSpinningIntensidade = "";
+  state.treinoAmbiente = "";
   state.treinoNota = "";
   state.treinoDistanciaKm = "";
   state.treinoGruposSelecionados = [];
@@ -6393,6 +6432,7 @@ function acaoEditarTreino(id) {
   state.treinoEsporte = t.esporte;
   state.treinoCiclismoModalidade = t.ciclismoModalidade || "";
   state.treinoSpinningIntensidade = t.spinningIntensidade || "";
+  state.treinoAmbiente = t.ambiente || "";
   state.treinoData = t.date;
   state.treinoHoraInicio = t.horaInicio;
   state.treinoHoraFim = t.horaFim;
@@ -6427,6 +6467,7 @@ function acaoCancelarEdicaoTreino() {
   state.treinoEsporteCustom = "";
   state.treinoCiclismoModalidade = "";
   state.treinoSpinningIntensidade = "";
+  state.treinoAmbiente = "";
   state.treinoData = "";
   state.treinoNota = "";
   state.treinoDistanciaKm = "";
@@ -6471,6 +6512,7 @@ function acaoSalvarTreino() {
     registro.esporte = esporte;
     registro.ciclismoModalidade = ciclismoModalidade;
     registro.spinningIntensidade = spinningIntensidade;
+    registro.ambiente = state.treinoAmbiente;
     registro.date = dataTreino;
     registro.horaInicio = horaInicio;
     registro.horaFim = horaFim;
@@ -6487,6 +6529,7 @@ function acaoSalvarTreino() {
     state.treinoEsporteCustom = "";
     state.treinoCiclismoModalidade = "";
     state.treinoSpinningIntensidade = "";
+    state.treinoAmbiente = "";
     state.treinoData = "";
     state.treinoNota = "";
     state.treinoDistanciaKm = "";
@@ -6507,7 +6550,7 @@ function acaoSalvarTreino() {
   }
 
   const gruposMusculares = obterGruposMuscularesParaSalvar();
-  const novoTreino = Object.assign({ id: Date.now(), date: dataTreino, esporte, ciclismoModalidade, spinningIntensidade, horaInicio, horaFim, duracaoMin, fotoUrl: "", nota, gruposMusculares }, camposDistancia);
+  const novoTreino = Object.assign({ id: Date.now(), date: dataTreino, esporte, ciclismoModalidade, spinningIntensidade, ambiente: state.treinoAmbiente, horaInicio, horaFim, duracaoMin, fotoUrl: "", nota, gruposMusculares }, camposDistancia);
   novoTreino.caloriasQueimadas = estimarCaloriasQueimadas(novoTreino);
   const arquivoFoto = treinoFotoSelecionada;
   state.treinos = state.treinos.concat([novoTreino]);
@@ -6517,6 +6560,7 @@ function acaoSalvarTreino() {
   state.treinoEsporteCustom = "";
   state.treinoCiclismoModalidade = "";
   state.treinoSpinningIntensidade = "";
+  state.treinoAmbiente = "";
   state.treinoData = "";
   state.treinoNota = "";
   state.treinoDistanciaKm = "";
@@ -8662,8 +8706,25 @@ function treinoSeletorEsporteTemplate() {
   (state.treinoEsporte === "Outro"
     ? '<input id="treino-esporte-custom" class="meal-input" placeholder="Nome do esporte/atividade" value="' + esc(state.treinoEsporteCustom) + '"/>'
     : "") +
+  treinoAmbienteCampoTemplate() +
   treinoCiclismoModalidadeCampoTemplate();
 }
+// Campo "Ambiente" (aberto/fechado), logo após o seletor de esporte -- pedido do usuário. Reaproveitado
+// tanto no modo cronômetro quanto no manual, igual o próprio seletor de esporte (ver
+// treinoSeletorEsporteTemplate() acima). Substitui a antiga suposição automática de ambiente por tipo de
+// esporte (ver comentário em treinoElegivelParaVitaminaD()) -- agora é a pessoa quem informa, a cada
+// treino, e só com "Ambiente aberto" marcado é que o treino fica elegível pro cálculo/registro automático
+// de vitamina D (que de qualquer forma ainda depende do horário do treino cruzar a janela de luz solar).
+function treinoAmbienteCampoTemplate() {
+  return '<div class="treino-ambiente-campo">' +
+    '<label class="meal-form-label">Ambiente</label>' +
+    '<div class="treino-ambiente-tabs">' +
+      '<button type="button" class="treino-ambiente-tab' + (state.treinoAmbiente === "aberto" ? " active" : "") + '" onclick="acaoSelecionarAmbienteTreino(\'aberto\')">' + icon("sun") + " Aberto</button>" +
+      '<button type="button" class="treino-ambiente-tab' + (state.treinoAmbiente === "fechado" ? " active" : "") + '" onclick="acaoSelecionarAmbienteTreino(\'fechado\')">' + icon("home") + " Fechado</button>" +
+    "</div>" +
+  "</div>";
+}
+function acaoSelecionarAmbienteTreino(valor) { state.treinoAmbiente = valor; render(); }
 // Pedido do usuário: subseletor de submodalidade de ciclismo (pista/estrada/mtb/gravel/spinning),
 // mostrado assim que "Ciclismo" é escolhido no seletor de esporte acima -- reaproveitado tanto no modo
 // cronômetro quanto no manual, igual o próprio seletor de esporte.
@@ -8717,21 +8778,23 @@ function treinoDistanciaCampoTemplate() {
   "</div>";
 }
 
-// Campo de grupos musculares -- só aparece pra Musculação. A pessoa escolhe um grupo no dropdown (some
-// da lista depois de escolhido, pra não duplicar), o que abre um bloco com checkbox de cada exercício
-// comum daquele grupo. Pode repetir o processo pra adicionar mais de um grupo no mesmo treino.
+// Campo de grupos musculares -- só aparece pra Musculação. Pedido do usuário: em vez de escolher um grupo
+// de cada vez num dropdown (precisava reabrir o dropdown pra cada grupo adicional), agora é uma grade de
+// checkboxes com TODOS os grupos musculares -- dá pra marcar vários de uma vez. Cada grupo marcado abre
+// (ou fecha, se desmarcado) seu próprio bloco com checkbox de cada exercício comum daquele grupo -- ver
+// treinoGrupoBlocoTemplate()/acaoAlternarGrupoMuscular().
 function treinoGruposMuscularesCampoTemplate() {
   if (state.treinoEsporte !== "Musculação") return "";
-  const disponiveis = GRUPOS_MUSCULARES.filter((g) => !state.treinoGruposSelecionados.includes(g.id));
   return '<div class="treino-grupos-campo">' +
-    '<label class="meal-form-label" for="treino-grupo-select">Grupos musculares trabalhados</label>' +
-    (disponiveis.length
-      ? '<select id="treino-grupo-select" class="meal-select" onchange="acaoAdicionarGrupoMuscular(this.value); this.value=\'\';">' +
-          '<option value="">Adicionar grupo muscular...</option>' +
-          disponiveis.map((g) => '<option value="' + esc(g.id) + '">' + esc(g.label) + "</option>").join("") +
-        "</select>"
-      : '<p class="treino-grupos-nota">Todos os grupos musculares já foram adicionados.</p>'
-    ) +
+    '<label class="meal-form-label">Grupos musculares trabalhados</label>' +
+    '<div class="treino-grupos-grade">' +
+      GRUPOS_MUSCULARES.map((g) => {
+        const marcado = state.treinoGruposSelecionados.includes(g.id);
+        return '<label class="treino-grupo-chip' + (marcado ? " marcado" : "") + '">' +
+          '<input type="checkbox" onchange="acaoAlternarGrupoMuscular(\'' + esc(g.id) + '\', this.checked)"' + (marcado ? " checked" : "") + "/> " + esc(g.label) +
+        "</label>";
+      }).join("") +
+    "</div>" +
     state.treinoGruposSelecionados.map(treinoGrupoBlocoTemplate).join("") +
   "</div>";
 }
