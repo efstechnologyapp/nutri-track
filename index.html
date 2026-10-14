@@ -165,22 +165,45 @@ svg{ display: block; }
 .summary-consumed-label{ margin-top:4px; font-size:14px; color:#6f8d67; }
 .progress-track-light{ margin-top:20px; height:8px; overflow:hidden; border-radius:999px; background:rgba(255,255,255,.7); }
 .progress-fill-light{ height:100%; border-radius:999px; background:#6f9b59; transition:width .3s; }
-/* Card "Seu resumo de hoje" virável -- toque no card mostra o verso, com Aderência à meta calórica (ver
-   summaryCardFlipWrapperTemplate()/acaoAlternarResumoCard()). Mesma técnica de flip 3D dos cards de
-   macro/micronutriente (.nutrient-card-flip), só que aqui o gesto é um toque simples, não um arraste. */
-.summary-card-flip-wrap{ display:flex; flex-direction:column; align-items:center; gap:10px; }
-.summary-card-flip{ position:relative; width:100%; perspective:1400px; cursor:pointer; }
-.summary-card-flip-inner{ position:relative; width:100%; transform-style:preserve-3d; transition:transform .45s cubic-bezier(.4,.05,.2,1); }
-.summary-card-face-front{ position:relative; backface-visibility:hidden; -webkit-backface-visibility:hidden; }
-.summary-card-face-back{ position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden; transform:rotateY(180deg); border-radius:28px; background:#e6f1dc; padding:20px; overflow:auto; }
-@media (min-width: 640px){ .summary-card-face-back{ padding:24px; } }
+/* Card "Seu resumo de hoje" virável -- um TOQUE no card cicla entre 3 páginas: 0) resumo de hoje (como
+   sempre foi), 1) Aderência à meta calórica (que já vivia aqui, era o "verso" do flip 3D) e 2) Autonomia
+   energética (NOVA -- pedido do usuário: "vamos por esse card da métrica 2 como página 3 do verso do
+   card de seu resumo de hoje", ver resumoAutonomiaCardTemplate()). Com 3 páginas em vez de 2 lados,
+   trocamos o flip 3D (rotateY, só funciona bem pra 2 faces) pela MESMA técnica de faixa deslizante
+   horizontal (translateX) já usada nos cards de Bioimpedância/Medidas -- ver comentário detalhado em
+   .bio-card-flip-wrap mais abaixo, cujas regras ficam combinadas com as do resumo (.summary-card-flip-wrap
+   etc.) exatamente pelo mesmo motivo. Único detalhe próprio daqui: cada página é um
+   <div class="summary-card"> (não um <section class="medidas-section">), daí a regra extra
+   .summary-card-page > .summary-card abaixo. Altura fixa na página 0 (resumo de hoje, que já tinha o
+   tamanho considerado harmonioso com o resto do app -- MESMO critério/pedido do usuário já usado no card
+   de Treinos, ver ajustarAlturaTreinoCard()), nunca na maior das 3 -- ver ajustarAlturaResumoCard(). */
+.summary-card-page > .summary-card{ margin-top:0; overflow:auto; }
 .resumo-aderencia-periodo-tabs{ margin-top:12px; display:flex; gap:6px; }
 .resumo-aderencia-periodo-btn{ flex:1; border-radius:8px; border:1px solid rgba(76,110,66,.18); background:rgba(255,255,255,.55); padding:5px 4px; font-size:11px; font-weight:600; color:#4b7048; transition:background .15s, color .15s; }
 .resumo-aderencia-periodo-btn.active{ background:#1d4b3d; border-color:#1d4b3d; color:#fff; }
 .resumo-aderencia-nota{ margin-top:6px; font-size:11.5px; line-height:1.4; color:#587a50; }
-.summary-card-dots{ display:flex; gap:6px; }
-.summary-card-dot{ height:4px; width:20px; border-radius:999px; background:#d5ddd0; padding:0; border:none; cursor:pointer; transition:background .15s, width .15s; }
-.summary-card-dot.active{ width:28px; background:#1d4b3d; }
+/* ---------- card "Autonomia energética" (página 3 do verso de "Seu resumo de hoje") ----------
+   Pedido do usuário: o card inteiro de linha do tempo (ledger contínuo considerando TODOS os dados --
+   refeições, treinos, GET/calorimetria e o histórico de Aderência à meta calórica) condensado no mesmo
+   tamanho do card "Seu resumo de hoje" -- ver resumoAutonomiaCardTemplate()/resumoAutonomiaInfo(). Régua
+   SEMPRE 00h-23:59h (pedido do usuário -- nenhuma janela/corte de horário arbitrário). Tamanhos em px
+   pequenos de propósito (8-11px), calibrados pra caber nesse espaço reduzido sem cortar nada. */
+.autonomia-chartzone{ margin-top:9px; position:relative; z-index:1; }
+.autonomia-marks{ position:relative; height:24px; }
+.autonomia-mark{ position:absolute; transform:translateX(-50%); text-align:center; }
+.autonomia-mark-dot{ width:5px; height:5px; border-radius:999px; background:#1d4b3d; margin:0 auto 2px; }
+.autonomia-mark-txt{ font-size:8.6px; font-weight:700; color:#2b3a33; white-space:nowrap; line-height:1.15; }
+.autonomia-mark-sub{ font-size:8px; color:#6f8d67; white-space:nowrap; }
+.autonomia-track{ height:12px; border-radius:6px; background:rgba(255,255,255,.55); overflow:hidden; display:flex; position:relative; }
+.autonomia-seg{ height:100%; }
+.autonomia-now{ position:absolute; top:-3px; width:2px; height:18px; background:#1d4b3d; }
+.autonomia-now::after{ content:""; position:absolute; top:-3px; left:-2.5px; width:7px; height:7px; border-radius:999px; background:#1d4b3d; }
+.autonomia-axis{ display:flex; justify-content:space-between; font-size:8.6px; color:#75857a; margin-top:4px; }
+.autonomia-legend{ display:flex; gap:11px; margin-top:5px; font-size:9px; color:#3a443e; position:relative; z-index:1; }
+.autonomia-legend span{ display:inline-flex; align-items:center; gap:4px; }
+.autonomia-sw{ width:7px; height:7px; border-radius:2px; display:inline-block; }
+.autonomia-caption{ font-size:10.3px; color:#4b5a51; line-height:1.4; margin-top:6px; position:relative; z-index:1; }
+.autonomia-caption b{ font-weight:700; }
 
 .goals-panel{ margin-bottom:28px; border-radius:24px; border:1px solid #dce8dc; background:#fff; padding:20px; box-shadow:0 12px 35px rgba(43,73,53,0.06); }
 .goals-panel-head{ margin-bottom:16px; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
@@ -717,22 +740,31 @@ svg{ display: block; }
    treinoFormCardTemplate()) fica de fora do flip, como card estático de sempre, lado a lado com o card
    virável no mesmo .dashboard-grid de 2 colunas que já existia (ver treinosTabTemplate()). Por isso as 2
    páginas do card de Treinos usam .medidas-section igual às de Bioimpedância/Medidas (não há mais um
-   .dashboard-grid DENTRO de uma página do flip). */
-.bio-card-flip-wrap, .medida-card-flip-wrap, .treino-card-flip-wrap{ margin-top:24px; display:flex; flex-direction:column; align-items:center; gap:8px; }
+   .dashboard-grid DENTRO de uma página do flip). O card "Seu resumo de hoje" (ver
+   summaryCardFlipWrapperTemplate()/acaoIrParaPaginaResumo(), na aba Nutrição) também adotou esse mesmo
+   mecanismo depois, com 3 páginas como Bioimpedância/Medidas (resumo de hoje/Aderência à meta
+   calórica/Autonomia energética) -- classes próprias .summary-card-*, combinadas aqui do mesmo jeito, MAS
+   com a altura fixa na página 0 (mesmo critério do card de Treinos acima, não o da MAIOR altura). */
+.bio-card-flip-wrap, .medida-card-flip-wrap, .treino-card-flip-wrap, .summary-card-flip-wrap{ margin-top:24px; display:flex; flex-direction:column; align-items:center; gap:8px; }
 /* Dentro do .dashboard-grid de Treinos (lado a lado com o card estático de "Novo treino", ver
    treinosTabTemplate()) o espaçamento entre os 2 cards já vem do gap:24px do próprio grid -- sem isso o
    card virável ficaria mais baixo que o card de "Novo treino", com uma folga extra de 24px só do lado dele. */
 .dashboard-grid > .treino-card-flip-wrap{ margin-top:0; }
-.bio-card-flip, .medida-card-flip, .treino-card-flip{ position:relative; width:100%; overflow:hidden; cursor:pointer; transition:height .4s cubic-bezier(.4,.05,.2,1); }
+/* "Seu resumo de hoje" não é um card virável dentro de uma dashboard-grid com margin-top extra, mas sim o
+   PRÓPRIO conteúdo de .hero (ver nutricaoTabTemplate()) -- sem margem extra em cima, mesmo espírito do
+   ajuste acima pro card de Treinos. */
+.hero .summary-card-flip-wrap{ margin-top:0; }
+.bio-card-flip, .medida-card-flip, .treino-card-flip, .summary-card-flip{ position:relative; width:100%; overflow:hidden; cursor:pointer; transition:height .4s cubic-bezier(.4,.05,.2,1); }
 /* largura de 300%/200% (3 ou 2 páginas) -- o translateX de cada página é sempre um múltiplo de 1/N da
    largura da FAIXA (N = número de páginas), que equivale a exatamente 100% da largura do card) -- ver
    bioimpedanciaCardFlipWrapperTemplate()/acaoIrParaPaginaBio(), medidasCardFlipWrapperTemplate()/
-   acaoIrParaPaginaMedida() e treinoCardFlipWrapperTemplate()/acaoIrParaPaginaTreino() (% de transform é
-   relativo à largura do próprio elemento, não à do pai -- por isso não pode ser só "-100%" por página
-   aqui). Bioimpedância/Medidas têm 3 páginas (width:300%, flex-basis:33,3333%); Treinos tem só 2
-   (width:200%, flex-basis:50%) -- cada par de regras abaixo então fica separado em vez de combinado. */
-.bio-card-track, .medida-card-track{ display:flex; width:300%; transition:transform .4s cubic-bezier(.4,.05,.2,1); }
-.bio-card-page, .medida-card-page{ flex:0 0 33.3333%; min-width:0; }
+   acaoIrParaPaginaMedida(), treinoCardFlipWrapperTemplate()/acaoIrParaPaginaTreino() e
+   summaryCardFlipWrapperTemplate()/acaoIrParaPaginaResumo() (% de transform é relativo à largura do
+   próprio elemento, não à do pai -- por isso não pode ser só "-100%" por página aqui). Bioimpedância/
+   Medidas/Resumo têm 3 páginas (width:300%, flex-basis:33,3333%); Treinos tem só 2 (width:200%,
+   flex-basis:50%) -- cada par de regras abaixo então fica separado em vez de combinado. */
+.bio-card-track, .medida-card-track, .summary-card-track{ display:flex; width:300%; transition:transform .4s cubic-bezier(.4,.05,.2,1); }
+.bio-card-page, .medida-card-page, .summary-card-page{ flex:0 0 33.3333%; min-width:0; }
 .treino-card-track{ display:flex; width:200%; transition:transform .4s cubic-bezier(.4,.05,.2,1); }
 .treino-card-page{ flex:0 0 50%; min-width:0; }
 /* Cada página vira um card (.medidas-section) com a MESMA altura fixa, calculada em ajustarAlturaBioCard()/
@@ -741,12 +773,16 @@ svg{ display: block; }
    altura na próxima chamada, virando uma referência circular). display:flex em coluna permite que a
    página de Histórico (a única cujo conteúdo pode não caber) tenha uma área de rolagem própria que ocupa
    só o espaço restante abaixo do título/abas -- ver .bio-history-scroll/.medida-card-history-scroll/
-   .treino-card-history-scroll. */
+   .treino-card-history-scroll. O card de Resumo usa a MESMA ideia, só que com .summary-card em vez de
+   .medidas-section (ver regra própria .summary-card-page > .summary-card, lá no topo do arquivo, junto do
+   resto do CSS de .summary-card) -- overflow:auto em vez de hidden ali, pra uma página mais alta que a 0
+   (resumo de hoje) rolar por dentro em vez de ser cortada, em vez de uma área de rolagem dedicada feita só
+   pra lista de Histórico aqui. */
 .bio-card-page > .medidas-section, .medida-card-page > .medidas-section, .treino-card-page > .medidas-section{ margin-top:0; box-shadow:none; display:flex; flex-direction:column; overflow:hidden; }
 .bio-history-scroll, .medida-card-history-scroll, .treino-card-history-scroll{ flex:1; min-height:0; overflow-y:auto; margin-top:14px; padding-right:2px; }
-.bio-card-dots, .medida-card-dots, .treino-card-dots{ display:flex; gap:5px; }
-.bio-card-dot, .medida-card-dot, .treino-card-dot{ height:3px; width:14px; border-radius:999px; background:#d5ddd0; padding:0; border:none; cursor:pointer; transition:background .15s, width .15s; }
-.bio-card-dot.active, .medida-card-dot.active, .treino-card-dot.active{ width:20px; background:#4b7048; }
+.bio-card-dots, .medida-card-dots, .treino-card-dots, .summary-card-dots{ display:flex; gap:5px; }
+.bio-card-dot, .medida-card-dot, .treino-card-dot, .summary-card-dot{ height:3px; width:14px; border-radius:999px; background:#d5ddd0; padding:0; border:none; cursor:pointer; transition:background .15s, width .15s; }
+.bio-card-dot.active, .medida-card-dot.active, .treino-card-dot.active, .summary-card-dot.active{ width:20px; background:#4b7048; }
 .medida-filtro{ margin-top:16px; }
 .medida-filtro-toggle{ display:inline-flex; align-items:center; gap:8px; border-radius:999px; border:1px solid #dce5db; background:#f7f9f5; padding:9px 14px; font-size:13px; font-weight:600; color:#3c5b4d; transition:background .15s, border-color .15s; }
 .medida-filtro-toggle:hover{ background:#eef3ea; border-color:#c4d6c0; }
@@ -2497,20 +2533,29 @@ const state = {
   // Mapa { [chave]: true } dos cards de macro/micronutriente virados (mostrando o verso, com o gráfico
   // de consumo médio -- ver nutrienteCardFlipWrapperTemplate()/acaoAlternarFlipNutriente()). Pedido do
   // usuário: um TOQUE no card "vira" ele, mostrando diário/semanal/mensal real x esperado (mesmo mecanismo
-  // do card "Seu resumo de hoje" -- ver resumoCardVirado logo abaixo).
+  // do card "Seu resumo de hoje" -- ver resumoCardPagina logo abaixo).
   // Fica só na memória (mesmo espírito de historyDiaExpandidoMedidas), reseta ao recarregar a página.
   nutrientCardsFlipped: {},
-  // Card "Seu resumo de hoje" virado (mostrando o verso, com Aderência à meta calórica) ou não -- ver
-  // summaryCardFlipWrapperTemplate()/acaoAlternarResumoCard(). Diferente do gesto de arrastar dos cards de
-  // macro/micronutriente (nutrientCardsFlipped acima), esse card vira com um toque simples no card (ou nos
-  // dois tracinhos indicadores abaixo dele) -- pedido explícito do usuário. Fica só na memória, reseta ao
+  // Página ativa do card "virável" de "Seu resumo de hoje" -- 0 = resumo de hoje (como sempre foi), 1 =
+  // Aderência à meta calórica (que já vivia aqui, era o "verso" do flip 3D) e 2 = Autonomia energética
+  // (NOVA -- ver resumoAutonomiaCardTemplate()) -- ver summaryCardFlipWrapperTemplate()/
+  // acaoIrParaPaginaResumo(). Substituiu o antigo booleano resumoCardVirado (só 2 lados, flip 3D) quando
+  // ganhou essa 3ª página -- mesmo padrão de bioCardPagina/medidaCardPagina/treinoCardPagina (ver
+  // comentário em bioCardPagina mais abaixo). Diferente do gesto de arrastar dos cards de macro/
+  // micronutriente (nutrientCardsFlipped acima), esse card avança com um toque simples no card (ou nos
+  // 3 tracinhos indicadores abaixo dele) -- pedido explícito do usuário. Fica só na memória, reseta ao
   // recarregar a página.
-  resumoCardVirado: false,
-  // Agrupamento do gráfico de Aderência à meta calórica no verso do card acima -- "diaria" (1 barra por
+  resumoCardPagina: 0,
+  // Agrupamento do gráfico de Aderência à meta calórica na página 2 do card acima -- "diaria" (1 barra por
   // dia), "semanal"/"mensal"/"anual" (1 barra por semana/mês/ano, com a média do saldo calórico diário
   // daquele período) -- ver resumoAderenciaAgrupar(). Sempre considera TODO o histórico do Diário de Kcal,
   // sem filtro de data (mesmo espírito de "todo o histórico" já adotado nos cards de macro/micronutriente).
   resumoAderenciaPeriodo: "diaria",
+  // Modal de informações da Autonomia energética (página 3 do card acima) aberto ou não -- ver
+  // autonomiaInfoModalTemplate()/acaoAbrirInfoAutonomia(). Mesmo padrão de infoNutrienteAberto/
+  // infoExameAberto abaixo, só que sem variantes (um conteúdo fixo só, por isso é um booleano em vez de
+  // guardar uma chave).
+  infoAutonomiaAberto: false,
   // "bioimpedancia" | "calorimetria" | null -- qual dos dois modais de informação do exame (mesmo
   // padrão do de cima, só que pros campos de Bioimpedância e Calorimetria) está aberto -- ver
   // exameInfoModalTemplate()/acaoAbrirInfoExame().
@@ -2645,7 +2690,7 @@ const state = {
   // 1 = Composição corporal (mudou-se da aba Evolução pra cá, a pedido do usuário) e 2 = Histórico de
   // registros (que era uma tela separada, agora é a última página do mesmo card) -- ver
   // bioimpedanciaCardFlipWrapperTemplate()/acaoIrParaPaginaBio(). Fica só na memória, reseta ao
-  // recarregar a página (mesmo espírito de nutrientCardsFlipped/resumoCardVirado acima).
+  // recarregar a página (mesmo espírito de nutrientCardsFlipped/resumoCardPagina acima).
   bioCardPagina: 0,
   historicoAbaAtiva: "bioimpedancia", // "bioimpedancia" | "calorimetria"
   bioFormValores: {},
@@ -4592,6 +4637,10 @@ function acaoTrocarAbaNutrientes(aba) { state.nutrientAba = aba; render(); }
 // micronutriente -- ver nutrientInfoModalTemplate()/NUTRIENT_INFO.
 function acaoAbrirInfoNutriente(chave) { state.infoNutrienteAberto = chave; render(); }
 function acaoFecharInfoNutriente() { state.infoNutrienteAberto = null; render(); }
+// Abre/fecha o modal de informações da Autonomia energética (passo a passo do cálculo + fontes
+// acadêmicas) -- ver autonomiaInfoModalTemplate(). Mesmo padrão de acaoAbrirInfoNutriente() acima.
+function acaoAbrirInfoAutonomia() { state.infoAutonomiaAberto = true; render(); }
+function acaoFecharInfoAutonomia() { state.infoAutonomiaAberto = false; render(); }
 // Abre/fecha o modal de detalhe de um dia do gráfico diário da Análise de Consumo (clicado numa barra) --
 // ver analiseConsumoDiaModalTemplate()/analiseConsumoDiarioChartSvg(). Mesmo padrão de
 // acaoAbrirInfoNutriente() acima.
@@ -6227,9 +6276,11 @@ function acaoFecharDetalheDiaAnaliseTreino() { state.analiseTreinoDiaAberto = nu
 // Envolve a frente já pronta de um card (frenteHtml, sem NENHUMA alteração -- continua sendo exatamente o
 // <div class="nutrient-card"> de sempre, preservando toda a estrutura que os testes existentes verificam)
 // num container que "vira" com um TOQUE simples em qualquer lugar do card -- pedido explícito do usuário,
-// mesmo mecanismo (e mesmos dois tracinhos indicadores abaixo) já usado no card "Seu resumo de hoje" (ver
-// summaryCardFlipWrapperTemplate()/acaoAlternarResumoCard()), no lugar do gesto de arrastar usado antes
-// aqui. A rotação é aplicada via transform inline (refletindo sempre o state.nutrientCardsFlipped[key]
+// mesmo mecanismo (e mesmos dois tracinhos indicadores abaixo) do flip 3D que o card "Seu resumo de
+// hoje" também usava (hoje ele usa uma faixa deslizante de 3 páginas -- ver
+// summaryCardFlipWrapperTemplate()/acaoIrParaPaginaResumo() --, mas esse card de macro/micronutriente
+// continua só com 2 lados, então o flip 3D segue sendo a técnica certa aqui), no lugar do gesto de
+// arrastar usado antes aqui. A rotação é aplicada via transform inline (refletindo sempre o state.nutrientCardsFlipped[key]
 // atual) -- quem efetivamente ANIMA a virada é acaoAlternarFlipNutriente(), mutando o DOM diretamente
 // antes de confirmar o state com um único render().
 function nutrienteCardFlipWrapperTemplate(key, frenteHtml, meta, digits) {
@@ -6249,7 +6300,7 @@ function nutrienteCardFlipWrapperTemplate(key, frenteHtml, meta, digits) {
     "</div>";
 }
 // Toque em qualquer lugar do card (fora do botão de informação, que já se protege com stopPropagation())
-// alterna frente/verso -- mesmo padrão de acaoCliqueResumoCard().
+// alterna frente/verso -- mesmo espírito de acaoCliqueResumoCard() (lá com 3 páginas em vez de 2 lados).
 function acaoCliqueNutrienteCard(event, key) {
   if (event.target.closest(".nutrient-info-btn")) return;
   acaoAlternarFlipNutriente(key, !state.nutrientCardsFlipped[key]);
@@ -6258,7 +6309,7 @@ function acaoCliqueNutrienteCard(event, key) {
 // (acaoCliqueNutrienteCard()) e pelos tracinhos indicadores (nutrienteCardFlipWrapperTemplate()). Anima no
 // MESMO nó (via transform direto) e só then confirma o state com um único render() -- necessário porque
 // render() substitui a tela inteira (innerHTML), o que quebraria uma transição CSS em andamento (mesmo
-// padrão de acaoAlternarResumoCard()).
+// motivo de acaoIrParaPaginaResumo()/acaoIrParaPaginaBio()).
 function acaoAlternarFlipNutriente(key, virado) {
   if (!!state.nutrientCardsFlipped[key] === virado) return; // já está do lado pedido, nada a fazer
   const flip = document.querySelector('.nutrient-card-flip[data-nutrient-key="' + key + '"]');
@@ -6268,7 +6319,7 @@ function acaoAlternarFlipNutriente(key, virado) {
   let comitado = false;
   const commit = () => { if (comitado) return; comitado = true; state.nutrientCardsFlipped[key] = virado; render(); };
   inner.addEventListener("transitionend", commit, { once: true });
-  setTimeout(commit, 450); // salvaguarda (mesmo motivo do análogo em acaoAlternarResumoCard())
+  setTimeout(commit, 450); // salvaguarda (mesmo motivo do análogo em acaoIrParaPaginaResumo())
 }
 
 // Cards da aba "Macronutrientes" -- calorias NÃO entra aqui: calorias é a unidade de energia, não um
@@ -7551,6 +7602,45 @@ function nutrientInfoModalTemplate() {
         alimentosInfluenciaramNutrienteTemplate(chave, meta) +
       "</div>" +
       '<p class="nutrient-info-fonte">' + icon("help") + " Fonte: " + esc(info.fonte) + "</p>" +
+    "</div></div>";
+}
+
+// Modal de informações da Autonomia energética (página 3 do verso de "Seu resumo de hoje") -- aberto pelo
+// botão "i" ao lado do título do card (mesmo padrão/classes de nutrientInfoModalTemplate() acima, só que
+// com conteúdo fixo em vez de um por nutriente) -- pedido explícito do usuário: "ponha o icone de legenda
+// para quando o usuario clica-lo saber como o calculo eh feito e as fontes academicas das formulas e
+// calculos". Passo a passo do cálculo primeiro, fontes acadêmicas depois (mesma ordem de
+// nutrientInfoModalTemplate(): conteúdo educativo fixo antes, igual a lá).
+function autonomiaInfoModalTemplate() {
+  if (!state.infoAutonomiaAberto) return "";
+  return '' +
+    '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharInfoAutonomia();}">' +
+    '<div class="modal-card nutrient-info-modal">' +
+      '<div class="meal-detalhe-head"><div class="nutrient-info-modal-title">' +
+        '<div class="nutrient-icon" style="background:#eef6e4;color:#4b7048">' + icon("zap") + "</div>" +
+        "<h2>Autonomia energética</h2>" +
+      "</div>" +
+      '<button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharInfoAutonomia()">' + icon("x") + "</button></div>" +
+      '<div class="nutrient-info-secao"><h3>Passo a passo do cálculo</h3>' +
+        '<ul class="nutrient-info-lista">' +
+          "<li><b>Taxa de gasto:</b> seu GET (Gasto Energético Total, da Calorimetria mais recente) dividido pelos 1.440 minutos do dia -- quanto você gasta, em repouso, a cada minuto. Se você registrou algum treino hoje, a taxa dele soma à base só durante a janela do treino (início-fim), nunca substituindo o GET -- confirmado com você: o GET já é só a rotina sedentária do dia a dia, então o treino é sempre um \"gasto extra\" de verdade, sem contar nada duas vezes.</li>" +
+          "<li><b>Depósito de cada refeição:</b> ao comer, as calorias daquela refeição ficam disponíveis e são \"gastas\" primeiro -- você está em <b>comida</b> enquanto esse depósito ainda não foi todo consumido pela sua taxa de gasto (calculada no passo acima).</li>" +
+          "<li><b>Fim do depósito = gordura:</b> quando as calorias da última refeição se esgotam, você passa a queimar reservas do próprio corpo (<b>gordura</b>) até a próxima refeição -- e assim até o fim do dia, se não comer mais nada.</li>" +
+          "<li><b>De onde vem a reserva inicial:</b> a 1ª refeição do dia também conta com uma reserva de glicogênio do fígado (até ~400 kcal de referência) -- cheia se o seu saldo calórico médio (consumido − gasto, de todo o seu histórico na Aderência à meta calórica) for positivo, menor ou zerada quanto maior for o seu déficit médio. Essa reserva só entra na 1ª refeição do dia -- nunca é reposta por refeições seguintes (reserva sempre decrescente, nunca some de novo, pra manter o cálculo simples).</li>" +
+        "</ul>" +
+      "</div>" +
+      '<div class="nutrient-info-secao"><h3>Por que 00h-23:59h, sem recorte</h3>' +
+        '<p style="margin:0;font-size:13.5px;line-height:1.5;color:#3d5a4f">O período antes da sua 1ª refeição registrada hoje aparece sem cor (sem dados) -- a madrugada depende de quando você dormiu e do que sobrou do dia anterior, informação que não temos com confiança, então preferimos não arriscar um palpite.</p>' +
+      "</div>" +
+      '<div class="nutrient-info-secao"><h3>Fontes acadêmicas</h3>' +
+        '<ul class="nutrient-info-lista">' +
+          "<li>Anton SD et al. (2018), \"Flipping the Metabolic Switch\", <i>Obesity</i>/JCI Insight -- a transição de queima de glicose (comida) para queima de gordura após o esgotamento das reservas de glicogênio.</li>" +
+          "<li>McArthur KE &amp; Isenberg JI (1988), <i>Gut</i> -- esvaziamento gástrico e disponibilização de calorias de uma refeição ao longo do tempo.</li>" +
+          "<li>PMC6213197 -- cinética da depleção de glicogênio hepático em jejum de curto prazo.</li>" +
+          "<li>Capacidade de referência de glicogênio hepático (~300-500 kcal, aqui usado 400 kcal) -- literatura de fisiologia do exercício/metabolismo energético.</li>" +
+        "</ul>" +
+      "</div>" +
+      '<p class="nutrient-info-fonte">' + icon("help") + " Estimativa simplificada, baseada no seu histórico -- não substitui orientação médica ou nutricional individualizada.</p>" +
     "</div></div>";
 }
 
@@ -8908,7 +8998,7 @@ function acaoCliqueBioCard(event) {
 // (acaoCliqueBioCard()) e pelos tracinhos indicadores/botão "Histórico de registros"/"Voltar"
 // (bioimpedanciaCardFlipWrapperTemplate()/acaoAbrirHistoricoBioimpedancia()/
 // acaoFecharHistoricoBioimpedancia()). Anima no MESMO nó (via transform direto, mesmo truque de
-// acaoAlternarFlipNutriente()/acaoAlternarResumoCard()) e só then confirma o state com um único render()
+// acaoAlternarFlipNutriente()/acaoIrParaPaginaResumo()) e só then confirma o state com um único render()
 // -- necessário porque render() substitui a tela inteira (innerHTML), o que quebraria uma transição CSS
 // em andamento. As 3 páginas têm sempre a MESMA altura (ver ajustarAlturaBioCard()), então essa função só
 // precisa animar o slide horizontal -- não mexe mais na altura do card ao trocar de página.
@@ -10344,8 +10434,8 @@ function evolucaoPressaoLegendaTemplate() {
 // diario-kcal-meta-nao-atingida (azul/terracota), pra manter a mesma linguagem visual do Diário de Kcal
 // aqui também. Cinza quando não dá pra avaliar (sem objetivo definido). Mostra no máximo os últimos N
 // baldes (ver RESUMO_ADERENCIA_MAX_BARRAS) pra não espremer demais as barras num histórico muito longo.
-// Compacto (menor que os outros gráficos da aba Evolução) porque mora no verso do card "Seu resumo de
-// hoje" -- ver resumoAderenciaCardTemplate()/.summary-card-face-back.
+// Compacto (menor que os outros gráficos da aba Evolução) porque mora na página 2 do card "Seu resumo de
+// hoje" -- ver resumoAderenciaCardTemplate()/summaryCardFlipWrapperTemplate().
 const RESUMO_ADERENCIA_MAX_BARRAS = 60;
 function resumoAderenciaChartSvg(grupos) {
   const baldes = grupos.slice(-RESUMO_ADERENCIA_MAX_BARRAS);
@@ -10389,7 +10479,7 @@ function acaoDefinirPeriodoAderencia(periodo) {
   state.resumoAderenciaPeriodo = periodo;
   render();
 }
-// Verso do card "Seu resumo de hoje" (ver summaryCardFlipWrapperTemplate()) -- gráfico de Aderência à
+// Página 2 do card "Seu resumo de hoje" (ver summaryCardFlipWrapperTemplate()) -- gráfico de Aderência à
 // meta calórica que antes vivia na aba Evolução, agora agrupável por dia/semana/mês/ano (pedido do
 // usuário) e sempre considerando todo o histórico do Diário de Kcal (sem o filtro de data que a aba
 // Evolução usava, já que esse card não está mais lá).
@@ -10417,48 +10507,252 @@ function resumoAderenciaCardTemplate() {
       '<p class="resumo-aderencia-nota">Use "Encerrar dia" (com uma calorimetria registrada) para começar a ver sua aderência à meta calórica aqui.</p>'
     );
 }
+
+/* ===================== página 3 do card "Seu resumo de hoje": Autonomia energética ===================== */
+// Pedido do usuário: "vamos por esse card da métrica 2 como página 3 do verso do card de seu resumo de
+// hoje" -- o ledger contínuo (considerando TODOS os dados de hoje: refeições, treinos, GET/calorimetria e
+// o histórico de saldo calórico) que antes só existia como protótipo, agora como 3ª página real do card,
+// sempre recalculado a partir do estado atual (nada fica guardado -- uma refeição ou treino novo de hoje
+// já aparece aqui no próximo render(), sem nenhuma ação extra -- pedido explícito do usuário: "essa regua
+// deve ser dinamica, de modo que quando o usuario informar dados que a afetem ela se ajuste
+// automaticamente").
+//
+// Reserva de glicogênio (kcal) com que o dia de hoje "começa" -- reaproveita resumoAderenciaSerieDiaria()
+// (mesmo saldo médio diário já usado na página de Aderência à meta calórica, 2 acima). Ideia: se o saldo
+// médio histórico (consumido − gasto, de TODO o Diário de Kcal) é positivo, a reserva de glicogênio do
+// fígado (capacidade de referência ~400 kcal -- ver fontes acadêmicas em autonomiaInfoModalTemplate())
+// começa cheia; se é negativo (déficit), começa tanto mais baixa quanto maior o déficit médio, podendo
+// chegar a zero. Nunca um valor travado/fixo -- sempre recalculada a partir do próprio histórico, e só
+// entra na 1ª refeição do dia (ver resumoAutonomiaInfo() abaixo) -- reserva sempre decrescente, nunca
+// reposta por uma refeição seguinte, de propósito, pra manter o modelo simples.
+function resumoAutonomiaReservaInicial() {
+  const serie = resumoAderenciaSerieDiaria();
+  if (!serie.length) return 400; // sem histórico ainda: não há base pra estimar déficit, assume reserva cheia
+  const saldoMedio = serie.reduce((acc, d) => acc + d.saldo, 0) / serie.length;
+  return saldoMedio >= 0 ? 400 : Math.max(0, 400 + saldoMedio);
+}
+// Taxa de gasto calórico (kcal/min) em cada trecho do dia de hoje -- a base (taxaBase) é o GET (repouso,
+// da Calorimetria mais recente) dividido por 1.440 minutos, e cada treino registrado hoje SOMA (nunca
+// substitui -- confirmado com o usuário, mesma lógica de diarioKcalGastoTotalInfo(): GET já é só a rotina
+// sedentária, sem o treino, então somar o treino em cima não é dupla contagem) sua própria taxa
+// (caloriasQueimadas/duracaoMin) só durante a janela horaInicio-horaFim dele. Retorna uma lista ordenada
+// de { de, ate, taxa } (minutos desde 00h) cobrindo o dia inteiro (0 a 1440), pra
+// resumoAutonomiaAvancar() percorrer.
+function resumoAutonomiaSegmentosTaxa(taxaBase) {
+  const pontos = new Set([0, 1440]);
+  const janelas = todayTreinos()
+    .filter((tr) => tr.duracaoMin > 0 && tr.horaInicio && tr.horaFim)
+    .map((tr) => {
+      const de = Math.max(0, Math.min(1440, horaParaDecimal(tr.horaInicio) * 60));
+      const ate = Math.max(0, Math.min(1440, horaParaDecimal(tr.horaFim) * 60));
+      pontos.add(de); pontos.add(ate);
+      return { de: Math.min(de, ate), ate: Math.max(de, ate), taxa: (tr.caloriasQueimadas || 0) / tr.duracaoMin };
+    });
+  const cortes = Array.from(pontos).sort((a, b) => a - b);
+  const segmentos = [];
+  for (let i = 0; i < cortes.length - 1; i++) {
+    const de = cortes[i], ate = cortes[i + 1];
+    if (ate <= de) continue;
+    const meio = (de + ate) / 2;
+    const extra = janelas.filter((j) => meio >= j.de && meio < j.ate).reduce((s, j) => s + j.taxa, 0);
+    segmentos.push({ de: de, ate: ate, taxa: taxaBase + extra });
+  }
+  return segmentos;
+}
+// Avança pelos segmentos de taxa (ver acima) a partir do minuto "deMin", consumindo "kcalDisponivel" (o
+// que resta da última refeição, já somada a reserva de glicogênio quando for a 1ª do dia) -- para no
+// minuto exato em que esse saldo chega a zero (retorna esse minuto) ou, se sobreviver até "limiteMin" (o
+// próximo evento: a próxima refeição ou o fim do dia, 1440), retorna null (ainda não esgotou).
+function resumoAutonomiaAvancar(segmentos, deMin, kcalDisponivel, limiteMin) {
+  let restante = kcalDisponivel;
+  for (const seg of segmentos) {
+    const inicio = Math.max(seg.de, deMin);
+    const fim = Math.min(seg.ate, limiteMin);
+    if (fim <= inicio) continue;
+    const custo = seg.taxa * (fim - inicio);
+    if (custo >= restante) return inicio + (seg.taxa > 0 ? restante / seg.taxa : 0);
+    restante -= custo;
+  }
+  return null; // sobreviveu até limiteMin sem esgotar
+}
+// "13:30" (ou 13.5, em decimal) -- NÃO usa, de propósito: horaParaDecimal() já existe e é reaproveitada
+// direto; essa função só faz o caminho inverso (minutos desde 00h -> "HH:MM"), pros rótulos dos
+// marcadores/legenda abaixo.
+function autonomiaMinutosParaHora(min) {
+  const m = Math.max(0, Math.min(1439, Math.round(min)));
+  const h = Math.floor(m / 60), mm = m % 60;
+  return (h < 10 ? "0" : "") + h + ":" + (mm < 10 ? "0" : "") + mm;
+}
+// Monta a simulação completa do dia de hoje -- uma lista de trechos coloridos { de, ate, tipo }
+// ("comida"/"gordura"/"semdados", em minutos desde 00h, sempre cobrindo 0-1440 sem buracos), as refeições
+// de hoje (pros marcadores acima da régua) e o status atual (pra legenda abaixo) -- ver
+// resumoAutonomiaCardTemplate()/autonomiaInfoModalTemplate(). null quando ainda não há Calorimetria
+// registrada (sem GET não há taxa de gasto pra calcular nada).
+// Só 2 cores (comida/gordura) -- de propósito: uma 3ª cor (glicogênio/"baixa confiança", que existia num
+// protótipo anterior) foi removida a pedido do usuário ("qual a necessidade dela?") porque, com a reserva
+// inicial podendo chegar a zero, não dava pra distinguir com confiança uma fase "ainda no glicogênio" de
+// "já em gordura" -- ambas são, na prática, "já esgotou o que comeu, queimando reserva do corpo".
+function resumoAutonomiaInfo() {
+  const ultimoCalo = ultimaCalorimetria();
+  const get = ultimoCalo && ultimoCalo.get ? Number(ultimoCalo.get) : null;
+  if (!get) return null;
+  const taxaBase = get / 1440;
+  const segmentosTaxa = resumoAutonomiaSegmentosTaxa(taxaBase);
+  const refeicoes = todayMeals()
+    .filter((m) => m.calories > 0)
+    .map((m) => ({ hora: horaParaDecimal(m.time) * 60, label: m.time, kcal: m.calories, nome: m.name }))
+    .sort((a, b) => a.hora - b.hora);
+  const agora = new Date();
+  const agoraMin = agora.getHours() * 60 + agora.getMinutes();
+  const trechos = [];
+  if (!refeicoes.length) {
+    trechos.push({ de: 0, ate: 1440, tipo: "semdados" });
+  } else {
+    // Antes da 1ª refeição: sem dados -- não dá pra saber com confiança se a pessoa ainda estava com
+    // reserva de ontem ou já em gordura durante a madrugada (pedido do usuário, implícito na remoção da
+    // cor de "baixa confiança": só mostrar o que o dado garante). Ver autonomiaInfoModalTemplate().
+    trechos.push({ de: 0, ate: refeicoes[0].hora, tipo: "semdados" });
+    const reservaInicial = resumoAutonomiaReservaInicial();
+    for (let i = 0; i < refeicoes.length; i++) {
+      const r = refeicoes[i];
+      const limite = i + 1 < refeicoes.length ? refeicoes[i + 1].hora : 1440;
+      const kcalDisponivel = r.kcal + (i === 0 ? reservaInicial : 0);
+      const fimComida = resumoAutonomiaAvancar(segmentosTaxa, r.hora, kcalDisponivel, limite);
+      if (fimComida == null) {
+        trechos.push({ de: r.hora, ate: limite, tipo: "comida" });
+      } else {
+        trechos.push({ de: r.hora, ate: fimComida, tipo: "comida" });
+        trechos.push({ de: fimComida, ate: limite, tipo: "gordura" });
+      }
+    }
+  }
+  let idxAtual = trechos.findIndex((t) => agoraMin >= t.de && agoraMin < t.ate);
+  if (idxAtual === -1) idxAtual = trechos.length - 1;
+  return {
+    trechos: trechos, refeicoes: refeicoes, agoraMin: agoraMin,
+    statusAtual: trechos[idxAtual].tipo,
+    proximaTransicao: idxAtual + 1 < trechos.length ? trechos[idxAtual + 1] : null,
+  };
+}
+// Cores dos 2 estados do dia (ver resumoAutonomiaInfo()) -- reaproveita EXATAMENTE cores já usadas em
+// nutrientMeta, de propósito (consistência visual com o resto do app, sem inventar uma paleta nova):
+// verde (#4b7048) é a mesma cor "positiva"/de destaque usada em todo o card "Seu resumo de hoje"
+// (summary-edit-btn, summary-card-dot.active etc.) -- aqui representa "comida": ainda digerindo/
+// absorvendo o que comeu. Rosa-amarronzado (#b27691) é a MESMA cor de "Gorduras" em nutrientMeta -- aqui
+// representa literalmente "em gordura": já esgotou o que comeu, queimando reservas do corpo.
+const AUTONOMIA_COR = { comida: "#4b7048", gordura: "#b27691" };
+const AUTONOMIA_EIXO_HORAS = ["00h", "06h", "12h", "18h", "24h"];
+function resumoAutonomiaLegendaTexto(info) {
+  const agoraLabel = autonomiaMinutosParaHora(info.agoraMin);
+  const textoEstado = { comida: "ainda digerindo a última refeição", gordura: "já em gordura, queimando reservas do corpo", semdados: "sem refeição registrada hoje suficiente pra calcular" };
+  let texto = "<b>Agora (" + agoraLabel + "):</b> " + textoEstado[info.statusAtual];
+  if (info.proximaTransicao && info.proximaTransicao.tipo !== "semdados") {
+    const horaTransicao = autonomiaMinutosParaHora(info.proximaTransicao.de);
+    texto += info.proximaTransicao.tipo === "gordura"
+      ? " · entra em gordura após <b>" + horaTransicao + "</b>"
+      : " · volta a <b>comida</b> a partir das <b>" + horaTransicao + "</b>";
+  } else if (info.statusAtual === "gordura") {
+    texto += ", e segue assim até o fim do dia se não comer mais nada";
+  }
+  return texto;
+}
+function resumoAutonomiaCorpoTemplate(info) {
+  if (!info) {
+    return '<p class="resumo-aderencia-nota">Registre uma Calorimetria (TMB/GET) em Bioimpedância e Calorimetria para calcular sua autonomia energética.</p>';
+  }
+  const min2pct = (min) => (min / 1440) * 100;
+  const marcadores = info.refeicoes.map((r) =>
+    '<div class="autonomia-mark" style="left:' + min2pct(r.hora) + '%">' +
+      '<div class="autonomia-mark-dot"></div>' +
+      '<div class="autonomia-mark-txt">' + esc(r.nome) + " " + esc(r.label) + "</div>" +
+      '<div class="autonomia-mark-sub">' + formatNumber(r.kcal) + " kcal</div>" +
+    "</div>"
+  ).join("");
+  const segmentosHtml = info.trechos.map((t) =>
+    '<div class="autonomia-seg" style="width:' + min2pct(t.ate - t.de) + "%;background:" + (AUTONOMIA_COR[t.tipo] || "transparent") + ';"></div>'
+  ).join("");
+  const nowHtml = '<div class="autonomia-now" style="left:' + min2pct(info.agoraMin) + '%"></div>';
+  return '' +
+    '<div class="autonomia-chartzone">' +
+      '<div class="autonomia-marks">' + marcadores + "</div>" +
+      '<div class="autonomia-track">' + segmentosHtml + nowHtml + "</div>" +
+      '<div class="autonomia-axis">' + AUTONOMIA_EIXO_HORAS.map((h) => "<span>" + h + "</span>").join("") + "</div>" +
+    "</div>" +
+    '<div class="autonomia-legend">' +
+      '<span><i class="autonomia-sw" style="background:' + AUTONOMIA_COR.comida + '"></i>Comida</span>' +
+      '<span><i class="autonomia-sw" style="background:' + AUTONOMIA_COR.gordura + '"></i>Gordura</span>' +
+    "</div>" +
+    '<p class="autonomia-caption">' + resumoAutonomiaLegendaTexto(info) + "</p>";
+}
+// Página 3 do card "Seu resumo de hoje" (ver summaryCardFlipWrapperTemplate()) -- Autonomia energética.
+function resumoAutonomiaCardTemplate() {
+  return '' +
+    '<div class="summary-label">' + icon("zap") + " Autonomia energética" +
+      '<button class="nutrient-info-btn" aria-label="Como esse cálculo é feito" onclick="event.stopPropagation(); acaoAbrirInfoAutonomia()">' + icon("info") + "</button>" +
+    "</div>" +
+    '<div class="summary-meta">Hoje, 00h–23:59h · ajustado pelo seu histórico</div>' +
+    resumoAutonomiaCorpoTemplate(resumoAutonomiaInfo());
+}
+
+// Rótulos dos 3 tracinhos indicadores (aria-label de cada .summary-card-dot) -- ver
+// summaryCardFlipWrapperTemplate().
+const SUMMARY_CARD_PAGINA_LABELS = ["Ver resumo de hoje", "Ver aderência à meta calórica", "Ver autonomia energética"];
 // Envolve o card "Seu resumo de hoje" (frenteHtml, sem NENHUMA alteração -- continua sendo exatamente o
-// <div class="summary-card"> de sempre) num container que vira ao TOCAR/CLICAR em qualquer lugar do card
-// -- diferente do gesto de arrastar dos cards de macro/micronutriente, esse é um toque simples (pedido
-// explícito do usuário). Os dois tracinhos abaixo do card (ver .resumo-card-dots) indicam em qual lado o
-// card está e também podem ser clicados pra pular direto pra frente/verso.
+// <div class="summary-card"> de sempre) + as páginas de Aderência à meta calórica e Autonomia energética
+// numa faixa deslizante horizontal (translateX), MESMA técnica (e classes, combinadas no CSS) já usada
+// nos cards de Bioimpedância/Medidas -- ver bioimpedanciaCardFlipWrapperTemplate()/comentário detalhado
+// em .bio-card-flip-wrap. Um TOQUE em qualquer lugar do card avança pra próxima página (cicla 0→1→2→0);
+// os 3 tracinhos indicadores abaixo também pulam direto pra uma página específica.
 function summaryCardFlipWrapperTemplate(frenteHtml) {
-  const virado = !!state.resumoCardVirado;
+  const pagina = state.resumoCardPagina || 0;
+  const paginas = [frenteHtml, '<div class="summary-card">' + resumoAderenciaCardTemplate() + "</div>", '<div class="summary-card">' + resumoAutonomiaCardTemplate() + "</div>"];
   return '' +
     '<div class="summary-card-flip-wrap">' +
       '<div class="summary-card-flip" onclick="acaoCliqueResumoCard(event)">' +
-        '<div class="summary-card-flip-inner" style="transform:rotateY(' + (virado ? 180 : 0) + 'deg)">' +
-          '<div class="summary-card-face-front">' + frenteHtml + "</div>" +
-          '<div class="summary-card-face-back">' + resumoAderenciaCardTemplate() + "</div>" +
+        '<div class="summary-card-track" style="transform:translateX(-' + (pagina * 100 / 3) + '%)">' +
+          paginas.map((html) => '<div class="summary-card-page">' + html + "</div>").join("") +
         "</div>" +
       "</div>" +
       '<div class="summary-card-dots">' +
-        '<button class="summary-card-dot' + (!virado ? " active" : "") + '" aria-label="Ver resumo de hoje" onclick="acaoAlternarResumoCard(false)"></button>' +
-        '<button class="summary-card-dot' + (virado ? " active" : "") + '" aria-label="Ver aderência à meta calórica" onclick="acaoAlternarResumoCard(true)"></button>' +
+        [0, 1, 2].map((i) => '<button class="summary-card-dot' + (pagina === i ? " active" : "") + '" aria-label="' + SUMMARY_CARD_PAGINA_LABELS[i] + '" onclick="acaoIrParaPaginaResumo(' + i + ')"></button>').join("") +
       "</div>" +
     "</div>";
 }
-// Toque em qualquer lugar do card (fora do lápis de metas e do seletor de período, que já se protegem
-// com stopPropagation) alterna frente/verso.
+// Toque em qualquer lugar do card (fora do lápis de metas, do seletor de período de Aderência e do botão
+// "i" de Autonomia energética, que já se protegem com stopPropagation) avança pra próxima página (cicla
+// 0 → 1 → 2 → 0) -- mesmo padrão de acaoCliqueBioCard()/acaoCliqueTreinoCard().
 function acaoCliqueResumoCard(event) {
-  if (event.target.closest(".summary-edit-btn, .resumo-aderencia-periodo-btn")) return;
-  acaoAlternarResumoCard(!state.resumoCardVirado);
+  if (event.target.closest(".summary-edit-btn, .resumo-aderencia-periodo-btn, .nutrient-info-btn")) return;
+  acaoIrParaPaginaResumo((state.resumoCardPagina + 1) % 3);
 }
-// Vira/desvira o card "Seu resumo de hoje" pra um lado específico -- usado pelos tracinhos indicadores
-// (summaryCardFlipWrapperTemplate()) e pelo toque no card (acaoCliqueResumoCard()). Mesmo truque de
-// animar no MESMO nó (via transform direto) e só then confirmar o state com um único render() já usado
-// nos cards de macro/micronutriente (ver acaoAlternarFlipNutriente()) -- necessário porque render()
-// substitui a tela inteira (innerHTML), o que quebraria uma transição CSS em andamento.
-function acaoAlternarResumoCard(virado) {
-  if (!!state.resumoCardVirado === virado) return; // já está do lado pedido, nada a fazer
+// Vai pra uma página específica do card "Seu resumo de hoje" -- usado pelo toque no card
+// (acaoCliqueResumoCard()) e pelos tracinhos indicadores (summaryCardFlipWrapperTemplate()). MESMA
+// técnica de animação de acaoIrParaPaginaBio()/acaoIrParaPaginaTreino() -- ver comentário lá.
+function acaoIrParaPaginaResumo(pagina) {
+  if (state.resumoCardPagina === pagina) return; // já está nessa página, nada a fazer
   const flip = document.querySelector(".summary-card-flip");
-  const inner = flip ? flip.querySelector(".summary-card-flip-inner") : null;
-  if (!inner) { state.resumoCardVirado = virado; render(); return; }
-  inner.style.transform = "rotateY(" + (virado ? 180 : 0) + "deg)";
+  const track = flip ? flip.querySelector(".summary-card-track") : null;
+  if (!track) { state.resumoCardPagina = pagina; render(); return; }
+  track.style.transform = "translateX(-" + (pagina * 100 / 3) + "%)";
   let comitado = false;
-  const commit = () => { if (comitado) return; comitado = true; state.resumoCardVirado = virado; render(); };
-  inner.addEventListener("transitionend", commit, { once: true });
-  setTimeout(commit, 450); // salvaguarda (mesmo motivo do análogo em acaoAlternarFlipNutriente())
+  const commit = () => { if (comitado) return; comitado = true; state.resumoCardPagina = pagina; render(); };
+  track.addEventListener("transitionend", commit, { once: true });
+  setTimeout(commit, 450); // salvaguarda (mesmo motivo do análogo em acaoIrParaPaginaBio())
+}
+// Harmoniza a altura das 3 páginas do card "Seu resumo de hoje" -- chamado a cada render() (ver função
+// render()). MESMO critério de ajustarAlturaTreinoCard() (não o de ajustarAlturaBioCard()/
+// ajustarAlturaMedidaCard(), que usam a MAIOR altura): aqui a altura fica fixa na página 0 (resumo de
+// hoje) -- é ela que já tinha o tamanho/dimensão considerado harmonioso com o resto do app, e não deve
+// mudar só por ganhar mais 2 páginas. As páginas de Aderência e Autonomia, se ficarem mais altas que a 0,
+// rolam por dentro (ver .summary-card-page > .summary-card, overflow:auto) em vez de esticar o card.
+function ajustarAlturaResumoCard() {
+  const flip = document.querySelector(".summary-card-flip");
+  if (!flip) return;
+  const paginas = flip.querySelectorAll(".summary-card-page > .summary-card");
+  if (paginas.length < 2) return;
+  const altura = paginas[0].scrollHeight;
+  flip.style.height = altura + "px";
+  paginas.forEach((pagina) => { pagina.style.height = altura + "px"; });
 }
 
 // Filtro "de"/"até" que afeta o card de Peso. Mesmo layout de dois campos de data lado a lado do filtro
@@ -10888,7 +11182,7 @@ function homeTemplate() {
   return '' +
     '<div class="app-shell">' +
     '<button class="hamburger-btn" onclick="acaoAbrirSidebar()" aria-label="Abrir menu"><span></span></button>' +
-    sidebarTemplate() + editarPerfilTemplate() + mealDetalheModalTemplate() + nutrientInfoModalTemplate() + exameInfoModalTemplate() + cadastrarProdutoModalTemplate() + analiseConsumoDiaModalTemplate() +
+    sidebarTemplate() + editarPerfilTemplate() + mealDetalheModalTemplate() + nutrientInfoModalTemplate() + exameInfoModalTemplate() + cadastrarProdutoModalTemplate() + analiseConsumoDiaModalTemplate() + autonomiaInfoModalTemplate() +
     '<div class="home-content"><div class="home-inner">' +
     (state.account ? fullHomeTemplate() : lockedTemplate()) +
     "</div></div></div>";
@@ -10994,6 +11288,7 @@ function render() {
   ajustarAlturaBioCard();
   ajustarAlturaMedidaCard();
   ajustarAlturaTreinoCard();
+  ajustarAlturaResumoCard();
 }
 
 /* ===================== instalar como app (PWA) ===================== */
