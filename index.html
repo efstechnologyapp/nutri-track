@@ -7649,11 +7649,12 @@ function autonomiaInfoModalTemplate() {
           "<li><b>Taxa de gasto:</b> seu GET (Gasto Energético Total, da Calorimetria mais recente) dividido pelos 1.440 minutos do dia -- quanto você gasta, em repouso, a cada minuto. Se você registrou algum treino hoje, a taxa dele soma à base só durante a janela do treino (início-fim), nunca substituindo o GET -- confirmado com você: o GET já é só a rotina sedentária do dia a dia, então o treino é sempre um \"gasto extra\" de verdade, sem contar nada duas vezes.</li>" +
           "<li><b>Depósito de cada refeição:</b> ao comer, as calorias daquela refeição ficam disponíveis e são \"gastas\" primeiro -- você está em <b>comida</b> enquanto esse depósito ainda não foi todo consumido pela sua taxa de gasto (calculada no passo acima).</li>" +
           "<li><b>Fim do depósito = gordura:</b> quando as calorias da última refeição se esgotam, você passa a queimar reservas do próprio corpo (<b>gordura</b>) até a próxima refeição -- e assim até o fim do dia, se não comer mais nada.</li>" +
-          "<li><b>De onde vem a reserva inicial:</b> a 1ª refeição do dia também conta com uma reserva de glicogênio do fígado (até ~400 kcal de referência) -- cheia se o seu saldo calórico médio (consumido − gasto, de todo o seu histórico na Aderência à meta calórica) for positivo, menor ou zerada quanto maior for o seu déficit médio. Essa reserva só entra na 1ª refeição do dia -- nunca é reposta por refeições seguintes (reserva sempre decrescente, nunca some de novo, pra manter o cálculo simples).</li>" +
+          "<li><b>Antes da 1ª refeição de hoje:</b> continuamos a mesma simulação a partir da sua última refeição registrada ONTEM, atravessando a virada do dia -- se ela já tinha esgotado antes da meia-noite, você já começa o dia em gordura; se ainda sobrava depósito, a madrugada conta como comida até ele acabar. Só mostramos sem cor (sem dados) quando não há nenhuma refeição registrada ontem pra se basear.</li>" +
+          "<li><b>De onde vem a reserva inicial:</b> quando NÃO dá pra simular a partir de ontem (nenhuma refeição registrada no dia anterior), a 1ª refeição de hoje conta com uma reserva de glicogênio do fígado (até ~400 kcal de referência) -- cheia se o seu saldo calórico médio (consumido − gasto, de todo o seu histórico na Aderência à meta calórica) for positivo, menor ou zerada quanto maior for o seu déficit médio. Essa reserva só entra na 1ª refeição do dia -- nunca é reposta por refeições seguintes (reserva sempre decrescente, nunca some de novo, pra manter o cálculo simples).</li>" +
         "</ul>" +
       "</div>" +
       '<div class="nutrient-info-secao"><h3>Por que 00h-23:59h, sem recorte</h3>' +
-        '<p style="margin:0;font-size:13.5px;line-height:1.5;color:#3d5a4f">O período antes da sua 1ª refeição registrada hoje aparece sem cor (sem dados) -- a madrugada depende de quando você dormiu e do que sobrou do dia anterior, informação que não temos com confiança, então preferimos não arriscar um palpite.</p>' +
+        '<p style="margin:0;font-size:13.5px;line-height:1.5;color:#3d5a4f">O período antes da sua 1ª refeição registrada hoje só aparece sem cor (sem dados) quando também não há nenhuma refeição registrada no dia anterior pra servir de base -- nesse caso, não temos como saber com confiança o que aconteceu, então preferimos não arriscar um palpite.</p>' +
       "</div>" +
       '<div class="nutrient-info-secao"><h3>Fontes acadêmicas</h3>' +
         '<ul class="nutrient-info-lista">' +
@@ -9982,6 +9983,19 @@ function proximoDia(dateStr) {
   const dia = String(d.getDate()).padStart(2, "0");
   return ano + "-" + mes + "-" + dia;
 }
+// Mesma ideia de proximoDia() acima, só que pro dia ANTERIOR -- usada por
+// resumoAutonomiaKcalRestanteAoVirarODia() (autonomia energética) pra achar a data de ontem e simular se
+// a última refeição registrada ontem "atravessou" a virada do dia ainda digerindo ou não.
+function diaAnterior(dateStr) {
+  const partes = String(dateStr || "").split("-").map(Number);
+  if (partes.length !== 3 || partes.some((n) => isNaN(n))) return null;
+  const d = new Date(partes[0], partes[1] - 1, partes[2]);
+  d.setDate(d.getDate() - 1);
+  const ano = d.getFullYear();
+  const mes = String(d.getMonth() + 1).padStart(2, "0");
+  const dia = String(d.getDate()).padStart(2, "0");
+  return ano + "-" + mes + "-" + dia;
+}
 // Peso em jejum registrado num dia específico (só considera medidas de peso com jejum=true -- ver
 // MEDIDA_TIPOS_COM_JEJUM/acaoSalvarMedida()) -- usado pra comparar o peso em jejum de um dia com o do dia
 // seguinte na Análise do objetivo do Diário de Kcal (diarioKcalAnaliseObjetivoTemplate()). Quando há mais
@@ -10560,10 +10574,12 @@ function resumoAutonomiaReservaInicial() {
 // sedentária, sem o treino, então somar o treino em cima não é dupla contagem) sua própria taxa
 // (caloriasQueimadas/duracaoMin) só durante a janela horaInicio-horaFim dele. Retorna uma lista ordenada
 // de { de, ate, taxa } (minutos desde 00h) cobrindo o dia inteiro (0 a 1440), pra
-// resumoAutonomiaAvancar() percorrer.
-function resumoAutonomiaSegmentosTaxa(taxaBase) {
+// resumoAutonomiaAvancar() percorrer. "treinosDoDia" é opcional (default: treinos de HOJE, via
+// todayTreinos() -- único uso até então) -- parametrizado pra resumoAutonomiaKcalRestanteAoVirarODia()
+// conseguir montar os MESMOS segmentos pro dia de ONTEM (treinos de ontem), reaproveitando a função.
+function resumoAutonomiaSegmentosTaxa(taxaBase, treinosDoDia) {
   const pontos = new Set([0, 1440]);
-  const janelas = todayTreinos()
+  const janelas = (treinosDoDia || todayTreinos())
     .filter((tr) => tr.duracaoMin > 0 && tr.horaInicio && tr.horaFim)
     .map((tr) => {
       const de = Math.max(0, Math.min(1440, horaParaDecimal(tr.horaInicio) * 60));
@@ -10581,6 +10597,18 @@ function resumoAutonomiaSegmentosTaxa(taxaBase) {
     segmentos.push({ de: de, ate: ate, taxa: taxaBase + extra });
   }
   return segmentos;
+}
+// Soma quantas kcal os segmentos de taxa (ver acima) representam entre "deMin" e "ateMin" -- usada pra
+// converter um trecho de tempo em gordura (resumoAutonomiaInfo() abaixo) no kcal real gasto nele,
+// respeitando a taxa de cada pedaço (que sobe durante um treino registrado, não é sempre a mesma).
+function resumoAutonomiaKcalPeriodo(segmentos, deMin, ateMin) {
+  let total = 0;
+  for (const seg of segmentos) {
+    const inicio = Math.max(seg.de, deMin);
+    const fim = Math.min(seg.ate, ateMin);
+    if (fim > inicio) total += seg.taxa * (fim - inicio);
+  }
+  return total;
 }
 // Avança pelos segmentos de taxa (ver acima) a partir do minuto "deMin", consumindo "kcalDisponivel" (o
 // que resta da última refeição, já somada a reserva de glicogênio quando for a 1ª do dia) -- para no
@@ -10606,6 +10634,34 @@ function autonomiaMinutosParaHora(min) {
   const h = Math.floor(m / 60), mm = m % 60;
   return (h < 10 ? "0" : "") + h + ":" + (mm < 10 ? "0" : "") + mm;
 }
+// Quanto sobrou (em kcal) da ÚLTIMA refeição de ONTEM no instante exato da virada do dia (00h) --
+// pra resumoAutonomiaInfo() conseguir simular com confiança o trecho ANTES da 1ª refeição de hoje, em
+// vez de marcá-lo sempre como "sem dados" (era assim até o usuário notar que, tendo comido pela última
+// vez na noite anterior, a régua deveria sim já estar mostrando gordura de manhã -- o app TEM o horário
+// daquela última refeição, então dá pra calcular isso com a mesma simulação, só que atravessando a
+// virada do dia). Reaproveita resumoAutonomiaAvancar()/resumoAutonomiaKcalPeriodo() com os segmentos de
+// taxa de ONTEM (treinos de ontem, mesma taxaBase -- o GET não é guardado por data em outro lugar do
+// app, então aqui também não) a partir do horário daquela refeição até as 24h.
+// Retorna: null quando não há NENHUMA refeição registrada ontem (aí sim, sem dado nenhum pra se basear
+// -- mantém o "sem dados" de antes); 0 quando a última refeição de ontem já tinha esgotado antes da
+// virada do dia (hoje já começa 100% em gordura); ou o kcal que ainda restava às 00h (continua sendo
+// "digerido" durante a madrugada de hoje).
+function resumoAutonomiaKcalRestanteAoVirarODia(taxaBase) {
+  const ontem = diaAnterior(today());
+  if (!ontem) return null;
+  const refeicoesOntem = state.meals.filter((m) => m.date === ontem && m.calories > 0).sort((a, b) => horaParaDecimal(a.time) - horaParaDecimal(b.time));
+  if (!refeicoesOntem.length) return null; // sem refeição ontem -- não dá pra saber, mantém "sem dados"
+  const ultimaOntem = refeicoesOntem[refeicoesOntem.length - 1];
+  const horaOntem = horaParaDecimal(ultimaOntem.time) * 60;
+  // Reserva de glicogênio só entra se essa também foi a 1ª (e única) refeição de ontem -- mesma regra de
+  // resumoAutonomiaInfo() pro dia de hoje.
+  const reservaOntem = refeicoesOntem.length === 1 ? resumoAutonomiaReservaInicial() : 0;
+  const kcalDisponivel = ultimaOntem.calories + reservaOntem;
+  const segmentosTaxaOntem = resumoAutonomiaSegmentosTaxa(taxaBase, state.treinos.filter((tr) => tr.date === ontem));
+  const fimComidaOntem = resumoAutonomiaAvancar(segmentosTaxaOntem, horaOntem, kcalDisponivel, 1440);
+  if (fimComidaOntem != null) return 0; // esgotou ainda ontem -- nada sobra pra hoje
+  return Math.max(0, kcalDisponivel - resumoAutonomiaKcalPeriodo(segmentosTaxaOntem, horaOntem, 1440));
+}
 // Monta a simulação completa do dia de hoje -- uma lista de trechos coloridos { de, ate, tipo }
 // ("comida"/"gordura"/"semdados", em minutos desde 00h, sempre cobrindo 0-1440 sem buracos), as refeições
 // de hoje (pros marcadores acima da régua) e o status atual (pra legenda abaixo) -- ver
@@ -10628,14 +10684,31 @@ function resumoAutonomiaInfo() {
   const agora = new Date();
   const agoraMin = agora.getHours() * 60 + agora.getMinutes();
   const trechos = [];
-  if (!refeicoes.length) {
-    trechos.push({ de: 0, ate: 1440, tipo: "semdados" });
+  // Trecho ANTES da 1ª refeição de hoje (ou o dia inteiro, se ainda não há nenhuma refeição registrada
+  // hoje) -- antes sempre "sem dados"; agora, quando dá pra simular a partir da última refeição de ontem
+  // (ver resumoAutonomiaKcalRestanteAoVirarODia() acima), vira comida/gordura de verdade, e só cai em
+  // "sem dados" quando realmente não há nenhuma refeição de ontem registrada pra se basear.
+  const limiteSegmentoInicial = refeicoes.length ? refeicoes[0].hora : 1440;
+  const kcalRestanteOntem = resumoAutonomiaKcalRestanteAoVirarODia(taxaBase);
+  if (kcalRestanteOntem == null) {
+    trechos.push({ de: 0, ate: limiteSegmentoInicial, tipo: "semdados" });
+  } else if (kcalRestanteOntem === 0) {
+    trechos.push({ de: 0, ate: limiteSegmentoInicial, tipo: "gordura" });
   } else {
-    // Antes da 1ª refeição: sem dados -- não dá pra saber com confiança se a pessoa ainda estava com
-    // reserva de ontem ou já em gordura durante a madrugada (pedido do usuário, implícito na remoção da
-    // cor de "baixa confiança": só mostrar o que o dado garante). Ver autonomiaInfoModalTemplate().
-    trechos.push({ de: 0, ate: refeicoes[0].hora, tipo: "semdados" });
-    const reservaInicial = resumoAutonomiaReservaInicial();
+    const fimCarryOver = resumoAutonomiaAvancar(segmentosTaxa, 0, kcalRestanteOntem, limiteSegmentoInicial);
+    if (fimCarryOver == null) {
+      trechos.push({ de: 0, ate: limiteSegmentoInicial, tipo: "comida" });
+    } else {
+      trechos.push({ de: 0, ate: fimCarryOver, tipo: "comida" });
+      trechos.push({ de: fimCarryOver, ate: limiteSegmentoInicial, tipo: "gordura" });
+    }
+  }
+  if (refeicoes.length) {
+    // A reserva de glicogênio (ver resumoAutonomiaReservaInicial()) é uma estimativa pro caso de NÃO
+    // termos como saber o que aconteceu antes da 1ª refeição de hoje -- quando já simulamos isso de
+    // verdade a partir de ontem (kcalRestanteOntem != null, seja 0 ou >0), ela fica redundante/
+    // incoerente com o dado real e por isso não entra.
+    const reservaInicial = kcalRestanteOntem == null ? resumoAutonomiaReservaInicial() : 0;
     for (let i = 0; i < refeicoes.length; i++) {
       const r = refeicoes[i];
       const limite = i + 1 < refeicoes.length ? refeicoes[i + 1].hora : 1440;
@@ -10651,10 +10724,24 @@ function resumoAutonomiaInfo() {
   }
   let idxAtual = trechos.findIndex((t) => agoraMin >= t.de && agoraMin < t.ate);
   if (idxAtual === -1) idxAtual = trechos.length - 1;
+  // Total de gordura já decorrido HOJE, até agora -- de propósito nunca inclui trechos "gordura" que
+  // ainda estão no futuro (ex.: a projeção "segue em gordura até o fim do dia" quando statusAtual já é
+  // gordura): cada trecho é cortado em agoraMin antes de somar, pra só contar tempo que já passou de
+  // verdade. kcal via resumoAutonomiaKcalPeriodo() (não um kcal/min fixo), pra refletir corretamente
+  // qualquer treino que tenha elevado a taxa de gasto durante parte do trecho.
+  let totalGorduraMin = 0, totalGorduraKcal = 0;
+  for (const t of trechos) {
+    if (t.tipo !== "gordura") continue;
+    const ate = Math.min(t.ate, agoraMin);
+    if (ate <= t.de) continue;
+    totalGorduraMin += ate - t.de;
+    totalGorduraKcal += resumoAutonomiaKcalPeriodo(segmentosTaxa, t.de, ate);
+  }
   return {
     trechos: trechos, refeicoes: refeicoes, agoraMin: agoraMin,
     statusAtual: trechos[idxAtual].tipo,
     proximaTransicao: idxAtual + 1 < trechos.length ? trechos[idxAtual + 1] : null,
+    totalGorduraMin: totalGorduraMin, totalGorduraKcal: totalGorduraKcal,
   };
 }
 // Cores dos 2 estados do dia (ver resumoAutonomiaInfo()) -- reaproveita EXATAMENTE cores já usadas em
@@ -10676,6 +10763,12 @@ function resumoAutonomiaLegendaTexto(info) {
       : " · volta a <b>comida</b> a partir das <b>" + horaTransicao + "</b>";
   } else if (info.statusAtual === "gordura") {
     texto += ", e segue assim até o fim do dia se não comer mais nada";
+  }
+  // Total acumulado de gordura HOJE (ver resumoAutonomiaInfo()) -- só aparece quando já houve pelo
+  // menos 1 min nessa condição; reaproveita formatarDuracao() (treinos) e kcalComKg() (Análise de
+  // Treinos) pra manter o mesmo formato "Xh Ymin" e "~N kg" já usados no resto do app.
+  if (info.totalGorduraMin > 0) {
+    texto += " · hoje, já são <b>" + formatarDuracao(Math.round(info.totalGorduraMin)) + "</b> em gordura (" + kcalComKg(info.totalGorduraKcal) + ")";
   }
   return texto;
 }
