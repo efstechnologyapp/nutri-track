@@ -189,11 +189,19 @@ svg{ display: block; }
    SEMPRE 00h-23:59h (pedido do usuário -- nenhuma janela/corte de horário arbitrário). Tamanhos em px
    pequenos de propósito (8-11px), calibrados pra caber nesse espaço reduzido sem cortar nada. */
 .autonomia-chartzone{ margin-top:9px; position:relative; z-index:1; }
-.autonomia-marks{ position:relative; height:24px; }
-.autonomia-mark{ position:absolute; transform:translateX(-50%); text-align:center; }
+/* Marcadores em 2 "andares" alternados (par/ímpar, ver resumoAutonomiaCorpoTemplate()) -- corrige um bug
+   relatado pelo usuário: com 3+ refeições, ou duas refeições registradas perto uma da outra, os rótulos
+   (nome + horário + kcal) ficavam largos o bastante pra se sobrepor quando ficavam todos numa linha só.
+   Alternando andar por ordem (nunca dois vizinhos no tempo no mesmo andar), dois rótulos adjacentes nunca
+   dividem a mesma linha, então nunca mais colidem, nem quando as refeições são registradas poucos minutos
+   uma da outra -- sem precisar medir a largura real do texto. altura dobrada (de 24px pra 48px) pra caber
+   os 2 andares.*/
+.autonomia-marks{ position:relative; height:48px; }
+.autonomia-mark{ position:absolute; top:0; transform:translateX(-50%); text-align:center; }
+.autonomia-mark.andar2{ top:24px; }
 .autonomia-mark-dot{ width:5px; height:5px; border-radius:999px; background:#1d4b3d; margin:0 auto 2px; }
-.autonomia-mark-txt{ font-size:8.6px; font-weight:700; color:#2b3a33; white-space:nowrap; line-height:1.15; }
-.autonomia-mark-sub{ font-size:8px; color:#6f8d67; white-space:nowrap; }
+.autonomia-mark-txt{ font-size:8px; font-weight:700; color:#2b3a33; white-space:nowrap; line-height:1.15; }
+.autonomia-mark-sub{ font-size:7.4px; color:#6f8d67; white-space:nowrap; }
 .autonomia-track{ height:12px; border-radius:6px; background:rgba(255,255,255,.55); overflow:hidden; display:flex; position:relative; }
 .autonomia-seg{ height:100%; }
 .autonomia-now{ position:absolute; top:-3px; width:2px; height:18px; background:#1d4b3d; }
@@ -10676,8 +10684,11 @@ function resumoAutonomiaCorpoTemplate(info) {
     return '<p class="resumo-aderencia-nota">Registre uma Calorimetria (TMB/GET) em Bioimpedância e Calorimetria para calcular sua autonomia energética.</p>';
   }
   const min2pct = (min) => (min / 1440) * 100;
-  const marcadores = info.refeicoes.map((r) =>
-    '<div class="autonomia-mark" style="left:' + min2pct(r.hora) + '%">' +
+  // Alterna os rótulos entre 2 "andares" por ordem (par/ímpar) -- nunca duas refeições vizinhas no tempo
+  // no mesmo andar, então os rótulos nunca se sobrepõem, mesmo quando duas refeições são registradas
+  // poucos minutos uma da outra (ver .autonomia-mark.andar2 no CSS).
+  const marcadores = info.refeicoes.map((r, i) =>
+    '<div class="autonomia-mark' + (i % 2 ? " andar2" : "") + '" style="left:' + min2pct(r.hora) + '%">' +
       '<div class="autonomia-mark-dot"></div>' +
       '<div class="autonomia-mark-txt">' + esc(r.nome) + " " + esc(r.label) + "</div>" +
       '<div class="autonomia-mark-sub">' + formatNumber(r.kcal) + " kcal</div>" +
