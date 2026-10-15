@@ -758,8 +758,14 @@ svg{ display: block; }
 .dashboard-grid > .treino-card-flip-wrap{ margin-top:0; }
 /* "Seu resumo de hoje" não é um card virável dentro de uma dashboard-grid com margin-top extra, mas sim o
    PRÓPRIO conteúdo de .hero (ver nutricaoTabTemplate()) -- sem margem extra em cima, mesmo espírito do
-   ajuste acima pro card de Treinos. */
-.hero .summary-card-flip-wrap{ margin-top:0; }
+   ajuste acima pro card de Treinos. min-width:0 CORRIGE um bug relatado pelo usuário (card saindo da tela,
+   "desproporcional"): .hero é um grid sem grid-template-columns definido no mobile (só a partir de
+   1024px), então o item do grid tenta se dimensionar pelo CONTEÚDO -- e o conteúdo aqui dentro tem uma
+   faixa de 300% de largura (.summary-card-track, ver comentário acima), que sem essa trava "vaza" esse
+   tamanho de volta pro item do grid (e daí pra página inteira). Os outros cards com o mesmo mecanismo
+   (Bioimpedância/Medidas/Treinos) não têm esse problema porque não estão dentro de um grid sem colunas
+   definidas -- só "Seu resumo de hoje" está, por morar em .hero. */
+.hero .summary-card-flip-wrap{ margin-top:0; min-width:0; }
 /* touch-action:manipulation -- mesma correção/mesmo motivo de .nutrient-card-flip acima (ver comentário
    lá): evita que um toque rápido num desses cards pra passar de página seja confundido pelo navegador com
    um double-tap de zoom. */
