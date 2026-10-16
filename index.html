@@ -7648,9 +7648,9 @@ function autonomiaInfoModalTemplate() {
         '<ul class="nutrient-info-lista">' +
           "<li><b>Taxa de gasto:</b> seu GET (Gasto Energético Total, da Calorimetria mais recente) dividido pelos 1.440 minutos do dia -- quanto você gasta, em repouso, a cada minuto. Se você registrou algum treino hoje, a taxa dele soma à base só durante a janela do treino (início-fim), nunca substituindo o GET -- confirmado com você: o GET já é só a rotina sedentária do dia a dia, então o treino é sempre um \"gasto extra\" de verdade, sem contar nada duas vezes.</li>" +
           "<li><b>Depósito de cada refeição:</b> ao comer, as calorias daquela refeição ficam disponíveis e são \"gastas\" primeiro -- você está em <b>comida</b> enquanto esse depósito ainda não foi todo consumido pela sua taxa de gasto (calculada no passo acima).</li>" +
-          "<li><b>Fim do depósito = gordura:</b> quando as calorias da última refeição se esgotam, você passa a queimar reservas do próprio corpo (<b>gordura</b>) até a próxima refeição -- e assim até o fim do dia, se não comer mais nada.</li>" +
+          "<li><b>Reserva de glicogênio (só na 1ª refeição do dia):</b> quando as calorias da sua 1ª refeição se esgotam, e você ainda tem reserva de glicogênio do fígado disponível (até ~400 kcal de referência -- cheia se o seu saldo calórico médio, de todo o histórico na Aderência à meta calórica, for positivo; menor ou zerada quanto maior for o seu déficit médio), você entra numa fase intermediária de <b>glicogênio</b>, consumida DEPOIS da refeição, antes de virar gordura -- por isso tem cor própria na régua. Com déficit médio grande o suficiente, essa reserva já fica em zero e essa fase simplesmente não aparece. Só entra na 1ª refeição do dia -- nunca é reposta por refeições seguintes (reserva sempre decrescente, nunca some de novo, pra manter o cálculo simples).</li>" +
+          "<li><b>Fim de tudo = gordura:</b> quando a refeição (e, na 1ª do dia, também a reserva de glicogênio, se houver) se esgotam, você passa a queimar reservas do próprio corpo (<b>gordura</b>) até a próxima refeição -- e assim até o fim do dia, se não comer mais nada.</li>" +
           "<li><b>Antes da 1ª refeição de hoje:</b> continuamos a mesma simulação a partir da sua última refeição registrada ONTEM, atravessando a virada do dia -- se ela já tinha esgotado antes da meia-noite, você já começa o dia em gordura; se ainda sobrava depósito, a madrugada conta como comida até ele acabar. Só mostramos sem cor (sem dados) quando não há nenhuma refeição registrada ontem pra se basear.</li>" +
-          "<li><b>De onde vem a reserva inicial:</b> quando NÃO dá pra simular a partir de ontem (nenhuma refeição registrada no dia anterior), a 1ª refeição de hoje conta com uma reserva de glicogênio do fígado (até ~400 kcal de referência) -- cheia se o seu saldo calórico médio (consumido − gasto, de todo o seu histórico na Aderência à meta calórica) for positivo, menor ou zerada quanto maior for o seu déficit médio. Essa reserva só entra na 1ª refeição do dia -- nunca é reposta por refeições seguintes (reserva sempre decrescente, nunca some de novo, pra manter o cálculo simples).</li>" +
         "</ul>" +
       "</div>" +
       '<div class="nutrient-info-secao"><h3>Por que 00h-23:59h, sem recorte</h3>' +
@@ -10663,14 +10663,21 @@ function resumoAutonomiaKcalRestanteAoVirarODia(taxaBase) {
   return Math.max(0, kcalDisponivel - resumoAutonomiaKcalPeriodo(segmentosTaxaOntem, horaOntem, 1440));
 }
 // Monta a simulação completa do dia de hoje -- uma lista de trechos coloridos { de, ate, tipo }
-// ("comida"/"gordura"/"semdados", em minutos desde 00h, sempre cobrindo 0-1440 sem buracos), as refeições
-// de hoje (pros marcadores acima da régua) e o status atual (pra legenda abaixo) -- ver
-// resumoAutonomiaCardTemplate()/autonomiaInfoModalTemplate(). null quando ainda não há Calorimetria
-// registrada (sem GET não há taxa de gasto pra calcular nada).
-// Só 2 cores (comida/gordura) -- de propósito: uma 3ª cor (glicogênio/"baixa confiança", que existia num
-// protótipo anterior) foi removida a pedido do usuário ("qual a necessidade dela?") porque, com a reserva
-// inicial podendo chegar a zero, não dava pra distinguir com confiança uma fase "ainda no glicogênio" de
-// "já em gordura" -- ambas são, na prática, "já esgotou o que comeu, queimando reserva do corpo".
+// ("comida"/"glicogenio"/"gordura"/"semdados", em minutos desde 00h, sempre cobrindo 0-1440 sem
+// buracos), as refeições de hoje (pros marcadores acima da régua) e o status atual (pra legenda
+// abaixo) -- ver resumoAutonomiaCardTemplate()/autonomiaInfoModalTemplate(). null quando ainda não há
+// Calorimetria registrada (sem GET não há taxa de gasto pra calcular nada).
+// "glicogenio" (3ª cor, pedido do usuário: "vamos por a legenda de glicogênio pra pessoa entender cada
+// passo a passo") só aparece na 1ª refeição do dia, e só quando ela própria entra com uma reserva de
+// glicogênio (reservaInicial > 0, ver resumoAutonomiaReservaInicial() abaixo) -- ou seja, continua
+// dinâmica: pra quem tem déficit histórico grande (reserva ~0), essa fase simplesmente não aparece,
+// igual sempre foi. Uma versão anterior dessa 3ª cor já tinha existido e sido removida a pedido do
+// próprio usuário, porque o modelo de então não sabia separar "ainda no glicogênio" de "já em gordura"
+// (a reserva só entrava misturada ao depósito da refeição, consumida junto, sem fronteira visível).
+// Agora dá pra separar de verdade: a refeição (glicose do que você comeu) é consumida PRIMEIRO -- só
+// depois que ela esgota é que a reserva de glicogênio entra, e só depois que ESSA também esgota é que
+// vira gordura -- a mesma sequência descrita na fonte acadêmica já citada no modal de info (Anton et
+// al. 2018, "Flipping the Metabolic Switch": glicose/glicogênio primeiro, gordura depois).
 function resumoAutonomiaInfo() {
   const ultimoCalo = ultimaCalorimetria();
   const get = ultimoCalo && ultimoCalo.get ? Number(ultimoCalo.get) : null;
@@ -10712,13 +10719,31 @@ function resumoAutonomiaInfo() {
     for (let i = 0; i < refeicoes.length; i++) {
       const r = refeicoes[i];
       const limite = i + 1 < refeicoes.length ? refeicoes[i + 1].hora : 1440;
-      const kcalDisponivel = r.kcal + (i === 0 ? reservaInicial : 0);
-      const fimComida = resumoAutonomiaAvancar(segmentosTaxa, r.hora, kcalDisponivel, limite);
-      if (fimComida == null) {
-        trechos.push({ de: r.hora, ate: limite, tipo: "comida" });
+      if (i === 0 && reservaInicial > 0) {
+        // 1ª refeição COM reserva de glicogênio: 3 fases em sequência -- primeiro consome só as kcal da
+        // própria refeição ("comida"), só então a reserva de glicogênio ("glicogenio"), e só depois que
+        // as duas esgotarem é que vira "gordura" -- ver comentário acima de resumoAutonomiaInfo().
+        const fimComidaPura = resumoAutonomiaAvancar(segmentosTaxa, r.hora, r.kcal, limite);
+        if (fimComidaPura == null) {
+          trechos.push({ de: r.hora, ate: limite, tipo: "comida" }); // a refeição sozinha já cobre até a próxima/fim do dia -- reserva nem chega a ser usada
+        } else {
+          trechos.push({ de: r.hora, ate: fimComidaPura, tipo: "comida" });
+          const fimGlicogenio = resumoAutonomiaAvancar(segmentosTaxa, fimComidaPura, reservaInicial, limite);
+          if (fimGlicogenio == null) {
+            trechos.push({ de: fimComidaPura, ate: limite, tipo: "glicogenio" });
+          } else {
+            trechos.push({ de: fimComidaPura, ate: fimGlicogenio, tipo: "glicogenio" });
+            trechos.push({ de: fimGlicogenio, ate: limite, tipo: "gordura" });
+          }
+        }
       } else {
-        trechos.push({ de: r.hora, ate: fimComida, tipo: "comida" });
-        trechos.push({ de: fimComida, ate: limite, tipo: "gordura" });
+        const fimComida = resumoAutonomiaAvancar(segmentosTaxa, r.hora, r.kcal, limite);
+        if (fimComida == null) {
+          trechos.push({ de: r.hora, ate: limite, tipo: "comida" });
+        } else {
+          trechos.push({ de: r.hora, ate: fimComida, tipo: "comida" });
+          trechos.push({ de: fimComida, ate: limite, tipo: "gordura" });
+        }
       }
     }
   }
@@ -10740,28 +10765,54 @@ function resumoAutonomiaInfo() {
   return {
     trechos: trechos, refeicoes: refeicoes, agoraMin: agoraMin,
     statusAtual: trechos[idxAtual].tipo,
+    // Minuto (desde 00h) em que o status ATUAL começou -- pra legenda abaixo conseguir dizer "desde as
+    // HH:MM" (pedido do usuário: o horário exato da transição pra gordura/comida tem que ficar claro, não
+    // só a duração). Vem do próprio início do trecho atual, não do horário da refeição -- funciona mesmo
+    // quando o trecho atual é o "carry-over" de ontem (começa às 00h, sem refeição nenhuma hoje ainda).
+    trechoAtualDe: trechos[idxAtual].de,
     proximaTransicao: idxAtual + 1 < trechos.length ? trechos[idxAtual + 1] : null,
     totalGorduraMin: totalGorduraMin, totalGorduraKcal: totalGorduraKcal,
   };
 }
-// Cores dos 2 estados do dia (ver resumoAutonomiaInfo()) -- reaproveita EXATAMENTE cores já usadas em
+// Cores dos 3 estados do dia (ver resumoAutonomiaInfo()) -- reaproveita EXATAMENTE cores já usadas em
 // nutrientMeta, de propósito (consistência visual com o resto do app, sem inventar uma paleta nova):
 // verde (#4b7048) é a mesma cor "positiva"/de destaque usada em todo o card "Seu resumo de hoje"
 // (summary-edit-btn, summary-card-dot.active etc.) -- aqui representa "comida": ainda digerindo/
-// absorvendo o que comeu. Rosa-amarronzado (#b27691) é a MESMA cor de "Gorduras" em nutrientMeta -- aqui
-// representa literalmente "em gordura": já esgotou o que comeu, queimando reservas do corpo.
-const AUTONOMIA_COR = { comida: "#4b7048", gordura: "#b27691" };
+// absorvendo o que comeu. Âmbar (#d29a45) é a MESMA cor de "Carboidratos" em nutrientMeta -- faz
+// sentido de propósito aqui também: glicogênio É carboidrato guardado no fígado, então reaproveitar
+// essa cor em vez de inventar uma nova reforça a conexão. Rosa-amarronzado (#b27691) é a MESMA cor de
+// "Gorduras" em nutrientMeta -- aqui representa literalmente "em gordura": já esgotou o que comeu E a
+// reserva de glicogênio, queimando reservas do corpo.
+const AUTONOMIA_COR = { comida: "#4b7048", glicogenio: "#d29a45", gordura: "#b27691" };
 const AUTONOMIA_EIXO_HORAS = ["00h", "06h", "12h", "18h", "24h"];
 function resumoAutonomiaLegendaTexto(info) {
   const agoraLabel = autonomiaMinutosParaHora(info.agoraMin);
-  const textoEstado = { comida: "ainda digerindo a última refeição", gordura: "já em gordura, queimando reservas do corpo", semdados: "sem refeição registrada hoje suficiente pra calcular" };
+  const textoEstado = {
+    comida: "ainda digerindo a última refeição",
+    glicogenio: "já consumiu a refeição e está usando a reserva de <b>glicogênio</b> do fígado",
+    gordura: "já em gordura, queimando reservas do corpo",
+    semdados: "sem refeição registrada hoje suficiente pra calcular",
+  };
   let texto = "<b>Agora (" + agoraLabel + "):</b> " + textoEstado[info.statusAtual];
-  if (info.proximaTransicao && info.proximaTransicao.tipo !== "semdados") {
+  // Horário exato em que o status ATUAL começou -- pedido do usuário: só a duração ("1h24min em
+  // gordura") não deixava claro A PARTIR DE QUE HORAS isso começou, então agora o próprio começo da
+  // frase já cita o horário da transição (trechoAtualDe, ver resumoAutonomiaInfo()), não só o total lá
+  // embaixo. Não aparece em "semdados" (não há transição nenhuma pra datar).
+  if (info.statusAtual !== "semdados") {
+    texto += " desde as <b>" + autonomiaMinutosParaHora(info.trechoAtualDe) + "</b>";
+  }
+  // Texto da PRÓXIMA transição -- 3 variações agora (antes só comida/gordura): entrar em glicogênio
+  // (depois de esgotar a própria refeição), entrar em gordura (depois de esgotar comida OU glicogênio,
+  // dependendo de qual veio antes) ou voltar a comida (próxima refeição).
+  const proximaTexto = {
+    glicogenio: "passa a usar a reserva de <b>glicogênio</b> após",
+    gordura: "entra em <b>gordura</b> após",
+    comida: "volta a <b>comida</b> a partir das",
+  };
+  if (info.proximaTransicao && proximaTexto[info.proximaTransicao.tipo]) {
     const horaTransicao = autonomiaMinutosParaHora(info.proximaTransicao.de);
-    texto += info.proximaTransicao.tipo === "gordura"
-      ? " · entra em gordura após <b>" + horaTransicao + "</b>"
-      : " · volta a <b>comida</b> a partir das <b>" + horaTransicao + "</b>";
-  } else if (info.statusAtual === "gordura") {
+    texto += " · " + proximaTexto[info.proximaTransicao.tipo] + " <b>" + horaTransicao + "</b>";
+  } else if (info.statusAtual === "gordura" || info.statusAtual === "glicogenio") {
     texto += ", e segue assim até o fim do dia se não comer mais nada";
   }
   // Total acumulado de gordura HOJE (ver resumoAutonomiaInfo()) -- só aparece quando já houve pelo
@@ -10799,6 +10850,7 @@ function resumoAutonomiaCorpoTemplate(info) {
     "</div>" +
     '<div class="autonomia-legend">' +
       '<span><i class="autonomia-sw" style="background:' + AUTONOMIA_COR.comida + '"></i>Comida</span>' +
+      '<span><i class="autonomia-sw" style="background:' + AUTONOMIA_COR.glicogenio + '"></i>Glicogênio</span>' +
       '<span><i class="autonomia-sw" style="background:' + AUTONOMIA_COR.gordura + '"></i>Gordura</span>' +
     "</div>" +
     '<p class="autonomia-caption">' + resumoAutonomiaLegendaTexto(info) + "</p>";
