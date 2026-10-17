@@ -7648,9 +7648,10 @@ function autonomiaInfoModalTemplate() {
         '<ul class="nutrient-info-lista">' +
           "<li><b>Taxa de gasto:</b> seu GET (Gasto Energético Total, da Calorimetria mais recente) dividido pelos 1.440 minutos do dia -- quanto você gasta, em repouso, a cada minuto. Se você registrou algum treino hoje, a taxa dele soma à base só durante a janela do treino (início-fim), nunca substituindo o GET -- confirmado com você: o GET já é só a rotina sedentária do dia a dia, então o treino é sempre um \"gasto extra\" de verdade, sem contar nada duas vezes.</li>" +
           "<li><b>Depósito de cada refeição:</b> ao comer, as calorias daquela refeição ficam disponíveis e são \"gastas\" primeiro -- você está em <b>comida</b> enquanto esse depósito ainda não foi todo consumido pela sua taxa de gasto (calculada no passo acima).</li>" +
-          "<li><b>Reserva de glicogênio (só na 1ª refeição do dia):</b> quando as calorias da sua 1ª refeição se esgotam, e você ainda tem reserva de glicogênio do fígado disponível (até ~400 kcal de referência -- cheia se o seu saldo calórico médio, de todo o histórico na Aderência à meta calórica, for positivo; menor ou zerada quanto maior for o seu déficit médio), você entra numa fase intermediária de <b>glicogênio</b>, consumida DEPOIS da refeição, antes de virar gordura -- por isso tem cor própria na régua. Com déficit médio grande o suficiente, essa reserva já fica em zero e essa fase simplesmente não aparece. Só entra na 1ª refeição do dia -- nunca é reposta por refeições seguintes (reserva sempre decrescente, nunca some de novo, pra manter o cálculo simples).</li>" +
-          "<li><b>Fim de tudo = gordura:</b> quando a refeição (e, na 1ª do dia, também a reserva de glicogênio, se houver) se esgotam, você passa a queimar reservas do próprio corpo (<b>gordura</b>) até a próxima refeição -- e assim até o fim do dia, se não comer mais nada.</li>" +
-          "<li><b>Antes da 1ª refeição de hoje:</b> continuamos a mesma simulação a partir da sua última refeição registrada ONTEM, atravessando a virada do dia -- se ela já tinha esgotado antes da meia-noite, você já começa o dia em gordura; se ainda sobrava depósito, a madrugada conta como comida até ele acabar. Só mostramos sem cor (sem dados) quando não há nenhuma refeição registrada ontem pra se basear.</li>" +
+          "<li><b>Refeições somam, nunca reiniciam:</b> se você come de novo enquanto ainda havia depósito sobrando de uma refeição anterior, as calorias da nova refeição SOMAM ao que restava, em vez de substituir -- 2 refeições próximas (ex.: janta e ceia registradas quase juntas) se comportam como uma só maior, do jeito que realmente aconteceu.</li>" +
+          "<li><b>Reserva de glicogênio:</b> assim que o depósito de comida pendente chega a zero, se você ainda tem reserva de glicogênio do fígado disponível (até ~400 kcal de referência -- cheia se o seu saldo calórico médio, de todo o histórico na Aderência à meta calórica, for positivo; menor ou zerada quanto maior for o seu déficit médio), você entra numa fase intermediária de <b>glicogênio</b>, consumida antes de virar gordura -- por isso tem cor própria na régua. Com déficit médio grande o suficiente, essa reserva já fica em zero e essa fase simplesmente não aparece. É uma reserva ÚNICA do dia (nunca é reposta por nenhuma refeição -- sempre decrescente, pra manter o cálculo simples), mas pode entrar depois de QUALQUER refeição, não só a 1ª -- só depende de quando o depósito de comida pendente realmente zera.</li>" +
+          "<li><b>Fim de tudo = gordura:</b> quando o depósito de comida pendente E a reserva de glicogênio (se houver) se esgotam, você passa a queimar reservas do próprio corpo (<b>gordura</b>) até a próxima refeição -- e assim até o fim do dia, se não comer mais nada.</li>" +
+          "<li><b>Antes da 1ª refeição de hoje:</b> quando há pelo menos 1 refeição registrada ONTEM, simulamos o dia de ontem INTEIRO com essas mesmas regras (refeições somando, reserva de glicogênio no início dele) só pra saber com que saldo ontem termina às 23:59 -- e hoje começa de lá, atravessando a virada do dia de verdade. Só mostramos sem cor (sem dados) quando não há nenhuma refeição registrada ontem pra se basear.</li>" +
         "</ul>" +
       "</div>" +
       '<div class="nutrient-info-secao"><h3>Por que 00h-23:59h, sem recorte</h3>' +
@@ -9983,9 +9984,9 @@ function proximoDia(dateStr) {
   const dia = String(d.getDate()).padStart(2, "0");
   return ano + "-" + mes + "-" + dia;
 }
-// Mesma ideia de proximoDia() acima, só que pro dia ANTERIOR -- usada por
-// resumoAutonomiaKcalRestanteAoVirarODia() (autonomia energética) pra achar a data de ontem e simular se
-// a última refeição registrada ontem "atravessou" a virada do dia ainda digerindo ou não.
+// Mesma ideia de proximoDia() acima, só que pro dia ANTERIOR -- usada por resumoAutonomiaInfo()
+// (autonomia energética) pra achar a data de ontem e simular o dia inteiro dele, só pra saber com que
+// saldo de comida/glicogênio ontem "termina" às 23:59 -- ponto de partida real de hoje.
 function diaAnterior(dateStr) {
   const partes = String(dateStr || "").split("-").map(Number);
   if (partes.length !== 3 || partes.some((n) => isNaN(n))) return null;
@@ -10575,8 +10576,8 @@ function resumoAutonomiaReservaInicial() {
 // (caloriasQueimadas/duracaoMin) só durante a janela horaInicio-horaFim dele. Retorna uma lista ordenada
 // de { de, ate, taxa } (minutos desde 00h) cobrindo o dia inteiro (0 a 1440), pra
 // resumoAutonomiaAvancar() percorrer. "treinosDoDia" é opcional (default: treinos de HOJE, via
-// todayTreinos() -- único uso até então) -- parametrizado pra resumoAutonomiaKcalRestanteAoVirarODia()
-// conseguir montar os MESMOS segmentos pro dia de ONTEM (treinos de ontem), reaproveitando a função.
+// todayTreinos()) -- parametrizado pra resumoAutonomiaInfo() conseguir montar os MESMOS segmentos pro
+// dia de ONTEM (treinos de ontem), reaproveitando a função pra simular o dia anterior inteiro.
 function resumoAutonomiaSegmentosTaxa(taxaBase, treinosDoDia) {
   const pontos = new Set([0, 1440]);
   const janelas = (treinosDoDia || todayTreinos())
@@ -10634,50 +10635,64 @@ function autonomiaMinutosParaHora(min) {
   const h = Math.floor(m / 60), mm = m % 60;
   return (h < 10 ? "0" : "") + h + ":" + (mm < 10 ? "0" : "") + mm;
 }
-// Quanto sobrou (em kcal) da ÚLTIMA refeição de ONTEM no instante exato da virada do dia (00h) --
-// pra resumoAutonomiaInfo() conseguir simular com confiança o trecho ANTES da 1ª refeição de hoje, em
-// vez de marcá-lo sempre como "sem dados" (era assim até o usuário notar que, tendo comido pela última
-// vez na noite anterior, a régua deveria sim já estar mostrando gordura de manhã -- o app TEM o horário
-// daquela última refeição, então dá pra calcular isso com a mesma simulação, só que atravessando a
-// virada do dia). Reaproveita resumoAutonomiaAvancar()/resumoAutonomiaKcalPeriodo() com os segmentos de
-// taxa de ONTEM (treinos de ontem, mesma taxaBase -- o GET não é guardado por data em outro lugar do
-// app, então aqui também não) a partir do horário daquela refeição até as 24h.
-// Retorna: null quando não há NENHUMA refeição registrada ontem (aí sim, sem dado nenhum pra se basear
-// -- mantém o "sem dados" de antes); 0 quando a última refeição de ontem já tinha esgotado antes da
-// virada do dia (hoje já começa 100% em gordura); ou o kcal que ainda restava às 00h (continua sendo
-// "digerido" durante a madrugada de hoje).
-function resumoAutonomiaKcalRestanteAoVirarODia(taxaBase) {
-  const ontem = diaAnterior(today());
-  if (!ontem) return null;
-  const refeicoesOntem = state.meals.filter((m) => m.date === ontem && m.calories > 0).sort((a, b) => horaParaDecimal(a.time) - horaParaDecimal(b.time));
-  if (!refeicoesOntem.length) return null; // sem refeição ontem -- não dá pra saber, mantém "sem dados"
-  const ultimaOntem = refeicoesOntem[refeicoesOntem.length - 1];
-  const horaOntem = horaParaDecimal(ultimaOntem.time) * 60;
-  // Reserva de glicogênio só entra se essa também foi a 1ª (e única) refeição de ontem -- mesma regra de
-  // resumoAutonomiaInfo() pro dia de hoje.
-  const reservaOntem = refeicoesOntem.length === 1 ? resumoAutonomiaReservaInicial() : 0;
-  const kcalDisponivel = ultimaOntem.calories + reservaOntem;
-  const segmentosTaxaOntem = resumoAutonomiaSegmentosTaxa(taxaBase, state.treinos.filter((tr) => tr.date === ontem));
-  const fimComidaOntem = resumoAutonomiaAvancar(segmentosTaxaOntem, horaOntem, kcalDisponivel, 1440);
-  if (fimComidaOntem != null) return 0; // esgotou ainda ontem -- nada sobra pra hoje
-  return Math.max(0, kcalDisponivel - resumoAutonomiaKcalPeriodo(segmentosTaxaOntem, horaOntem, 1440));
+// Simula uma janela de tempo [deMin, ateMin) consumindo um saldo de 2 "camadas" sempre nessa ordem de
+// prioridade -- "comida" (soma das calorias de refeições ainda não totalmente digeridas) primeiro, só
+// depois "glicogenio" (reserva do fígado, nunca reposta) -- e só cai em "gordura" quando as 2 zeram.
+// Cada refeição de "refeicoes" (lista com { hora, kcal }, dentro da janela) SOMA ao saldo de comida no
+// exato minuto em que foi registrada -- NUNCA reseta o que já tinha pendente, nem da própria comida nem
+// do glicogênio. Pedido do usuário, depois de relatar um caso real: "se quando uma refeição for
+// registrada ainda houver saldo remanescente de gasto energético da outra refeição, uma refeição deve
+// somar com o que resta de kcal da outra" -- o modelo antigo tratava cada refeição como um evento que
+// REINICIAVA o cálculo (só pras kcal dela), então jantar (882kcal) e ceia (404kcal) registradas quase
+// no mesmo horário faziam o app descartar o jantar inteiro e calcular só a partir da ceia sozinha, que
+// esgotava rápido -- mostrando "gordura" já à meia-noite, fisiologicamente implausível pra quem acabou
+// de fazer uma refeição grande. Agora as duas somam (882+404=1286kcal) no mesmo saldo de comida, e a
+// régua reflete o que realmente aconteceu. Isso também deixa a reserva de glicogênio disponível a
+// qualquer momento em que o saldo de comida zerar (não só depois da 1ª refeição do dia) -- mais
+// coerente com "reserva sempre decrescente, nunca reposta".
+// Retorna { trechos, saldoComidaFinal, saldoGlicogenioFinal } -- trechos cobre exatamente [deMin,
+// ateMin) com { de, ate, tipo }; os saldos finais servem pra "continuar" a simulação no dia seguinte
+// (ver resumoAutonomiaInfo() abaixo, que simula ontem inteiro só pra pegar esse estado final).
+function resumoAutonomiaSimularJanela(segmentosTaxa, refeicoes, saldoComidaInicial, saldoGlicogenioInicial, deMin, ateMin) {
+  const trechos = [];
+  let saldoComida = saldoComidaInicial;
+  let saldoGlicogenio = saldoGlicogenioInicial;
+  let cursor = deMin;
+  function consumirAte(limite) {
+    while (cursor < limite) {
+      const camada = saldoComida > 0 ? "comida" : saldoGlicogenio > 0 ? "glicogenio" : "gordura";
+      if (camada === "gordura") {
+        trechos.push({ de: cursor, ate: limite, tipo: "gordura" });
+        cursor = limite;
+        continue;
+      }
+      const saldo = camada === "comida" ? saldoComida : saldoGlicogenio;
+      const fim = resumoAutonomiaAvancar(segmentosTaxa, cursor, saldo, limite);
+      if (fim == null) {
+        trechos.push({ de: cursor, ate: limite, tipo: camada });
+        const consumido = resumoAutonomiaKcalPeriodo(segmentosTaxa, cursor, limite);
+        if (camada === "comida") saldoComida = Math.max(0, saldoComida - consumido);
+        else saldoGlicogenio = Math.max(0, saldoGlicogenio - consumido);
+        cursor = limite;
+      } else {
+        trechos.push({ de: cursor, ate: fim, tipo: camada });
+        if (camada === "comida") saldoComida = 0; else saldoGlicogenio = 0;
+        cursor = fim;
+      }
+    }
+  }
+  refeicoes.filter((r) => r.hora >= deMin && r.hora < ateMin).sort((a, b) => a.hora - b.hora).forEach((r) => {
+    consumirAte(r.hora);
+    saldoComida += r.kcal;
+  });
+  consumirAte(ateMin);
+  return { trechos: trechos, saldoComidaFinal: saldoComida, saldoGlicogenioFinal: saldoGlicogenio };
 }
 // Monta a simulação completa do dia de hoje -- uma lista de trechos coloridos { de, ate, tipo }
 // ("comida"/"glicogenio"/"gordura"/"semdados", em minutos desde 00h, sempre cobrindo 0-1440 sem
 // buracos), as refeições de hoje (pros marcadores acima da régua) e o status atual (pra legenda
 // abaixo) -- ver resumoAutonomiaCardTemplate()/autonomiaInfoModalTemplate(). null quando ainda não há
 // Calorimetria registrada (sem GET não há taxa de gasto pra calcular nada).
-// "glicogenio" (3ª cor, pedido do usuário: "vamos por a legenda de glicogênio pra pessoa entender cada
-// passo a passo") só aparece na 1ª refeição do dia, e só quando ela própria entra com uma reserva de
-// glicogênio (reservaInicial > 0, ver resumoAutonomiaReservaInicial() abaixo) -- ou seja, continua
-// dinâmica: pra quem tem déficit histórico grande (reserva ~0), essa fase simplesmente não aparece,
-// igual sempre foi. Uma versão anterior dessa 3ª cor já tinha existido e sido removida a pedido do
-// próprio usuário, porque o modelo de então não sabia separar "ainda no glicogênio" de "já em gordura"
-// (a reserva só entrava misturada ao depósito da refeição, consumida junto, sem fronteira visível).
-// Agora dá pra separar de verdade: a refeição (glicose do que você comeu) é consumida PRIMEIRO -- só
-// depois que ela esgota é que a reserva de glicogênio entra, e só depois que ESSA também esgota é que
-// vira gordura -- a mesma sequência descrita na fonte acadêmica já citada no modal de info (Anton et
-// al. 2018, "Flipping the Metabolic Switch": glicose/glicogênio primeiro, gordura depois).
 function resumoAutonomiaInfo() {
   const ultimoCalo = ultimaCalorimetria();
   const get = ultimoCalo && ultimoCalo.get ? Number(ultimoCalo.get) : null;
@@ -10690,62 +10705,27 @@ function resumoAutonomiaInfo() {
     .sort((a, b) => a.hora - b.hora);
   const agora = new Date();
   const agoraMin = agora.getHours() * 60 + agora.getMinutes();
-  const trechos = [];
-  // Trecho ANTES da 1ª refeição de hoje (ou o dia inteiro, se ainda não há nenhuma refeição registrada
-  // hoje) -- antes sempre "sem dados"; agora, quando dá pra simular a partir da última refeição de ontem
-  // (ver resumoAutonomiaKcalRestanteAoVirarODia() acima), vira comida/gordura de verdade, e só cai em
-  // "sem dados" quando realmente não há nenhuma refeição de ontem registrada pra se basear.
-  const limiteSegmentoInicial = refeicoes.length ? refeicoes[0].hora : 1440;
-  const kcalRestanteOntem = resumoAutonomiaKcalRestanteAoVirarODia(taxaBase);
-  if (kcalRestanteOntem == null) {
-    trechos.push({ de: 0, ate: limiteSegmentoInicial, tipo: "semdados" });
-  } else if (kcalRestanteOntem === 0) {
-    trechos.push({ de: 0, ate: limiteSegmentoInicial, tipo: "gordura" });
+  // Trecho ANTES da 1ª refeição de hoje -- quando há pelo menos 1 refeição registrada ONTEM, simula o
+  // dia de ontem INTEIRO (0h-23:59h, com as próprias refeições de ontem e a reserva de glicogênio
+  // entrando no início dele -- ver resumoAutonomiaSimularJanela() acima) só pra pegar o saldo de
+  // comida/glicogênio com que ontem "termina" às 23:59, e usa esse saldo real como ponto de partida de
+  // hoje. Só cai em "sem dados" quando NÃO há nenhuma refeição registrada ontem pra se basear -- aí sim
+  // não tem como saber com confiança o que aconteceu antes da 1ª refeição de hoje.
+  const ontem = diaAnterior(today());
+  const temRefeicaoOntem = ontem != null && state.meals.some((m) => m.date === ontem && m.calories > 0);
+  let trechos;
+  if (temRefeicaoOntem) {
+    const segmentosTaxaOntem = resumoAutonomiaSegmentosTaxa(taxaBase, state.treinos.filter((tr) => tr.date === ontem));
+    const refeicoesOntem = state.meals.filter((m) => m.date === ontem && m.calories > 0)
+      .map((m) => ({ hora: horaParaDecimal(m.time) * 60, kcal: m.calories }));
+    const fimOntem = resumoAutonomiaSimularJanela(segmentosTaxaOntem, refeicoesOntem, 0, resumoAutonomiaReservaInicial(), 0, 1440);
+    trechos = resumoAutonomiaSimularJanela(segmentosTaxa, refeicoes, fimOntem.saldoComidaFinal, fimOntem.saldoGlicogenioFinal, 0, 1440).trechos;
+  } else if (refeicoes.length) {
+    const limiteSegmentoInicial = refeicoes[0].hora;
+    trechos = [{ de: 0, ate: limiteSegmentoInicial, tipo: "semdados" }]
+      .concat(resumoAutonomiaSimularJanela(segmentosTaxa, refeicoes, 0, resumoAutonomiaReservaInicial(), limiteSegmentoInicial, 1440).trechos);
   } else {
-    const fimCarryOver = resumoAutonomiaAvancar(segmentosTaxa, 0, kcalRestanteOntem, limiteSegmentoInicial);
-    if (fimCarryOver == null) {
-      trechos.push({ de: 0, ate: limiteSegmentoInicial, tipo: "comida" });
-    } else {
-      trechos.push({ de: 0, ate: fimCarryOver, tipo: "comida" });
-      trechos.push({ de: fimCarryOver, ate: limiteSegmentoInicial, tipo: "gordura" });
-    }
-  }
-  if (refeicoes.length) {
-    // A reserva de glicogênio (ver resumoAutonomiaReservaInicial()) é uma estimativa pro caso de NÃO
-    // termos como saber o que aconteceu antes da 1ª refeição de hoje -- quando já simulamos isso de
-    // verdade a partir de ontem (kcalRestanteOntem != null, seja 0 ou >0), ela fica redundante/
-    // incoerente com o dado real e por isso não entra.
-    const reservaInicial = kcalRestanteOntem == null ? resumoAutonomiaReservaInicial() : 0;
-    for (let i = 0; i < refeicoes.length; i++) {
-      const r = refeicoes[i];
-      const limite = i + 1 < refeicoes.length ? refeicoes[i + 1].hora : 1440;
-      if (i === 0 && reservaInicial > 0) {
-        // 1ª refeição COM reserva de glicogênio: 3 fases em sequência -- primeiro consome só as kcal da
-        // própria refeição ("comida"), só então a reserva de glicogênio ("glicogenio"), e só depois que
-        // as duas esgotarem é que vira "gordura" -- ver comentário acima de resumoAutonomiaInfo().
-        const fimComidaPura = resumoAutonomiaAvancar(segmentosTaxa, r.hora, r.kcal, limite);
-        if (fimComidaPura == null) {
-          trechos.push({ de: r.hora, ate: limite, tipo: "comida" }); // a refeição sozinha já cobre até a próxima/fim do dia -- reserva nem chega a ser usada
-        } else {
-          trechos.push({ de: r.hora, ate: fimComidaPura, tipo: "comida" });
-          const fimGlicogenio = resumoAutonomiaAvancar(segmentosTaxa, fimComidaPura, reservaInicial, limite);
-          if (fimGlicogenio == null) {
-            trechos.push({ de: fimComidaPura, ate: limite, tipo: "glicogenio" });
-          } else {
-            trechos.push({ de: fimComidaPura, ate: fimGlicogenio, tipo: "glicogenio" });
-            trechos.push({ de: fimGlicogenio, ate: limite, tipo: "gordura" });
-          }
-        }
-      } else {
-        const fimComida = resumoAutonomiaAvancar(segmentosTaxa, r.hora, r.kcal, limite);
-        if (fimComida == null) {
-          trechos.push({ de: r.hora, ate: limite, tipo: "comida" });
-        } else {
-          trechos.push({ de: r.hora, ate: fimComida, tipo: "comida" });
-          trechos.push({ de: fimComida, ate: limite, tipo: "gordura" });
-        }
-      }
-    }
+    trechos = [{ de: 0, ate: 1440, tipo: "semdados" }];
   }
   let idxAtual = trechos.findIndex((t) => agoraMin >= t.de && agoraMin < t.ate);
   if (idxAtual === -1) idxAtual = trechos.length - 1;
