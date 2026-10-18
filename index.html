@@ -693,6 +693,9 @@ svg{ display: block; }
 .bioimpedancia-form-subtitulo{ margin:0 0 12px; font-size:14px; font-weight:700; color:#4b7048; text-transform:uppercase; letter-spacing:0.06em; }
 .bioimpedancia-form-grid{ margin-top:18px; display:grid; grid-template-columns:1fr; gap:12px; }
 @media (min-width: 560px){ .bioimpedancia-form-grid{ grid-template-columns:1fr 1fr; } }
+.produto-micro-estimar{ margin-top:18px; padding:12px; border-radius:12px; background:#f7f9f5; display:flex; flex-direction:column; gap:8px; }
+.produto-micro-estimar .field-label{ margin:0; }
+.produto-micro-estimar .calo-conclusao-dica{ margin:0; }
 .idade-metabolica-campo{ grid-column:1 / -1; }
 .idade-metabolica-calcular-btn{ margin-top:8px; display:inline-flex; align-items:center; gap:8px; border-radius:999px; border:none; background:var(--primary); padding:8px 16px; font-size:13px; font-weight:600; color:#fff; transition:opacity .15s; }
 .idade-metabolica-calcular-btn:hover{ opacity:.9; }
@@ -986,10 +989,14 @@ svg{ display: block; }
 .evolucao-nota-positiva{ background:#eaf4ee; color:#2a6b4b; }
 .evolucao-nota-negativa{ background:#fdf3e2; color:#8a5a12; }
 .evolucao-comparacao-list{ margin-top:14px; display:flex; flex-direction:column; gap:8px; }
-.evolucao-comparacao-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; border-radius:12px; background:#f7f9f5; padding:10px 12px; flex-wrap:wrap; }
+.evolucao-comparacao-row{ display:flex; flex-direction:column; gap:2px; border-radius:12px; background:#f7f9f5; padding:10px 12px; }
+.evolucao-comparacao-row-principal{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
 .evolucao-comparacao-label{ font-size:13px; font-weight:600; color:#3d6355; flex:1 1 140px; }
 .evolucao-comparacao-valores{ font-size:12.5px; color:#71857e; }
-.evolucao-comparacao-delta{ font-size:13px; font-weight:700; color:#5c7369; min-width:56px; text-align:right; }
+.evolucao-comparacao-delta{ font-size:13px; font-weight:700; color:#5c7369; text-align:left; }
+.evolucao-comparacao-header{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:0 12px; margin-top:12px; }
+.evolucao-comparacao-header-label{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.03em; color:#8a9c93; flex:1 1 140px; }
+.evolucao-comparacao-header-datas{ font-size:11px; font-weight:700; color:#8a9c93; }
 .evolucao-delta-positivo{ color:#1e88e5; }
 .evolucao-delta-negativo{ color:#c35e4b; }
 
@@ -2519,6 +2526,14 @@ const state = {
   produtoManualValores: {}, // valores digitados/lidos do rótulo, por chave de nutriente (string, como em bioFormValores)
   produtoManualPorcao: "", // peso/volume da porção (g ou ml) a que os valores acima se referem
   produtoRotuloLendo: false, // true enquanto a leitura automática (OCR) do rótulo está rodando
+  // Pedido do usuário: o rótulo de um produto industrializado quase nunca declara vitaminas/minerais
+  // (só é obrigatório em produto fortificado), mas o app já SABE o valor de potássio/cálcio/etc. de
+  // alimentos comuns (banana, mamão...) usados como ingrediente dele -- então, no modo "Digitar valores
+  // do rótulo", dá pra descrever só os ingredientes que contribuem micronutrientes (ex.: "1 banana, 100g
+  // de mamão") e estimar SÓ os campos de vitaminas/minerais a partir deles, mantendo calorias/macros/
+  // sódio exatamente como digitado do rótulo (ver acaoEstimarMicronutrientesProduto()).
+  produtoManualIngredientesMicro: "",
+  produtoManualMicroPreview: [], // ingredientes reconhecidos na última estimativa (só pra exibir o que foi usado)
   // Id (em state.produtosCustomizados -- ver comentário em novoProduto.id, mais abaixo) do produto
   // sendo EDITADO, ou null quando o modal está no modo normal de "novo produto" -- pedido do usuário:
   // ícone de editar ao lado do de remover, na lista de "Produtos já cadastrados" (ver
@@ -4182,6 +4197,8 @@ function acaoAbrirCadastrarProduto() {
   state.produtoManualPorcao = "";
   state.produtoRotuloLendo = false;
   state.produtoEditandoId = null;
+  state.produtoManualIngredientesMicro = "";
+  state.produtoManualMicroPreview = [];
   produtoRotuloArquivo = null;
   render();
 }
@@ -4205,6 +4222,8 @@ function acaoEditarProdutoCustomizado(id) {
   state.produtoManualValores = valores;
   state.produtoManualPorcao = p.grams != null ? String(p.grams) : "";
   state.produtoRotuloLendo = false;
+  state.produtoManualIngredientesMicro = "";
+  state.produtoManualMicroPreview = [];
   produtoRotuloArquivo = null;
   render();
   // captureFormState() (chamado no início do render() acima) recaptura os valores AINDA presentes no DOM
@@ -4238,6 +4257,37 @@ function acaoAnalisarIngredientesProduto() {
   if (!found.length) toastError("Não identifiquei ingredientes conhecidos nessa descrição.");
   else toastSuccess(found.length + " ingrediente" + (found.length > 1 ? "s" : "") + " identificado" + (found.length > 1 ? "s" : "") + ".");
   render();
+}
+// Campos de vitaminas/minerais estimáveis a partir de ingredientes (ver acaoEstimarMicronutrientesProduto()
+// logo abaixo) -- de propósito NÃO inclui calories/carbs/protein/fat/fiber/sodio: esses, no modo "Digitar
+// valores do rótulo", vêm do rótulo impresso (exatos) e nunca devem ser sobrescritos por uma estimativa.
+const PRODUTO_MICRO_CAMPOS = ["vitA", "vitC", "vitD", "vitB12", "calcio", "ferro", "magnesio", "potassio", "zinco"];
+// Pedido do usuário: o rótulo de um produto industrializado raramente declara vitaminas/minerais (só é
+// obrigatório em produto fortificado -- ver comentário em ROTULO_NUTRIENTES_OCR), mas o app já conhece o
+// valor desses nutrientes pra alimentos comuns usados como ingrediente (banana, mamão etc., ver
+// foodLibrary). Esta função reaproveita o MESMO detectFoods() do modo "Descrever ingredientes", só que
+// aplicando a soma APENAS aos campos de PRODUTO_MICRO_CAMPOS -- calorias/macros/sódio continuam
+// exatamente o que a pessoa digitou do rótulo, sem serem tocados.
+function acaoEstimarMicronutrientesProduto() {
+  const el = document.getElementById("produto-manual-ingredientes-micro");
+  const descricao = el ? el.value : "";
+  if (!descricao.trim()) { toastError("Descreva os ingredientes (ex.: \"1 banana, 100g de mamão\") pra estimarmos vitaminas e minerais."); return; }
+  const found = detectFoods(descricao);
+  if (!found.length) { toastError("Não identifiquei ingredientes conhecidos nessa descrição."); return; }
+  const total = found.reduce((sum, item) => addNutrients(sum, item.values), emptyNutrients);
+  const valores = Object.assign({}, state.produtoManualValores);
+  PRODUTO_MICRO_CAMPOS.forEach((chave) => { valores[chave] = String(Math.round(total[chave] * 10) / 10); });
+  state.produtoManualValores = valores;
+  state.produtoManualIngredientesMicro = descricao;
+  state.produtoManualMicroPreview = found;
+  toastSuccess("Vitaminas e minerais estimados a partir de " + found.length + " ingrediente" + (found.length > 1 ? "s" : "") + " -- confira os campos antes de salvar.");
+  render();
+  // Mesmo padrão de acaoEditarProdutoCustomizado()/acaoLerRotuloOCR(): escreve direto nos inputs depois
+  // do render(), pra garantir que os campos reflitam a estimativa que acabou de rodar.
+  PRODUTO_MICRO_CAMPOS.forEach((chave) => {
+    const campoEl = document.getElementById("produto-manual-" + chave);
+    if (campoEl) campoEl.value = valores[chave];
+  });
 }
 // Salva um produto customizado -- usado por acaoCadastrarProduto() (modo "ingredientes") e
 // acaoCadastrarProdutoManual() (modo "rótulo"), que só montam o objeto "novoProduto" (formato terms/
@@ -7845,6 +7895,28 @@ const PRODUTO_MANUAL_CAMPOS = [
 // reconhecido numa foto de embalagem curva/com brilho pode sair errado, por isso os campos continuam
 // editáveis e o aviso pede pra sempre conferir antes de salvar (opção escolhida pelo usuário, ciente
 // dessa limitação, em vez de uma IA de visão paga e mais confiável).
+// Bloco opcional, dentro do modo "Digitar valores do rótulo" -- pedido do usuário: o rótulo de um produto
+// industrializado costuma declarar só calorias/macros/sódio, sem vitaminas e minerais (só é obrigatório
+// em produto fortificado). Em vez de deixar esses campos zerados, dá pra descrever os ingredientes que
+// contribuem com eles (ex.: a banana e o mamão de um shake) e o app estima SÓ os campos de vitaminas/
+// minerais a partir da biblioteca de alimentos -- calorias/macros/sódio continuam os do rótulo, intocados
+// (ver PRODUTO_MICRO_CAMPOS/acaoEstimarMicronutrientesProduto()).
+function produtoEstimarMicroTemplate() {
+  const preview = state.produtoManualMicroPreview || [];
+  return '' +
+    '<div class="produto-micro-estimar">' +
+      '<label class="field-label">Vitaminas e minerais que o rótulo não declara (opcional)</label>' +
+      '<p class="calo-conclusao-dica">' + icon("help") + " Descreva os ingredientes que entram na receita (ex.: \"1 banana, 100g de mamão, 1 dose de whey de chocolate\") e estimamos só os campos de vitaminas/minerais abaixo a partir deles -- calorias, macros e sódio continuam os que você digitou do rótulo." + "</p>" +
+      '<textarea id="produto-manual-ingredientes-micro" class="field-input" style="resize:none;line-height:1.5" placeholder="Descreva os ingredientes que contribuem com vitaminas/minerais..." rows="2">' + esc(state.produtoManualIngredientesMicro) + "</textarea>" +
+      '<button type="button" class="btn-ghost-light btn-ghost-light-onlight" onclick="acaoEstimarMicronutrientesProduto()">' + icon("sparkles") + " Estimar vitaminas e minerais pelos ingredientes</button>" +
+      (preview.length ?
+        '<div class="meal-preview"><div class="meal-preview-head"><span>Ingredientes usados na estimativa</span>' + icon("check") + "</div>" +
+        '<div class="meal-preview-list">' + preview.map((f) =>
+          '<div class="meal-preview-row"><span class="food-label">' + esc(f.label) + ' <span class="food-amount">· ' + esc(f.amount) + "</span></span></div>"
+        ).join("") + "</div></div>"
+        : "") +
+    "</div>";
+}
 function produtoCadastroManualTemplate() {
   const valores = state.produtoManualValores || {};
   return '' +
@@ -7859,6 +7931,7 @@ function produtoCadastroManualTemplate() {
     '<p class="calo-conclusao-dica">' + icon("help") + " A leitura automática pode errar (foto torta, embalagem curva, brilho) -- sempre confira os valores abaixo antes de salvar. Se preferir, digite direto." + "</p>" +
     '<div><label class="field-label">Porção (o mesmo que está no rótulo, em g ou ml)</label>' +
       '<input id="produto-manual-porcao" type="number" min="0" step="0.1" class="field-input" value="' + esc(state.produtoManualPorcao) + '" placeholder="Ex.: 250"/></div>' +
+    produtoEstimarMicroTemplate() +
     '<div class="bioimpedancia-form-grid">' +
       PRODUTO_MANUAL_CAMPOS.map((c) =>
         '<div><label class="field-label">' + c.label + " (" + c.unidade + ")</label>" +
@@ -10945,19 +11018,36 @@ function evolucaoPeriodoFiltroTemplate() {
 // renomear (nenhuma mudança de conteúdo, só de onde é chamada).
 function evolucaoComposicaoCardTemplate() {
   const comparacao = evolucaoBioimpedanciaComparacao();
+  // Datas do primeiro e do último exame de Bioimpedância de todo o histórico (ver
+  // evolucaoBioimpedanciaSerie()) -- mostradas UMA ÚNICA VEZ, como cabeçalho da coluna de valores (pedido
+  // do usuário), em vez de repetidas em cada linha da comparação.
+  const serieBio = evolucaoBioimpedanciaSerie();
+  const dataInicial = serieBio.length ? serieBio[0].date : null;
+  const dataFinal = serieBio.length ? serieBio[serieBio.length - 1].date : null;
   return '' +
     '<div class="medidas-section">' +
       '<h2 class="medidas-section-title">' + icon("activity") + " Composição corporal</h2>" +
       (comparacao.length ?
         '<p class="imc-empty">Comparação entre o primeiro e o último registro de Bioimpedância de todo o histórico (não é afetado pelo filtro de período acima).</p>' +
+        '<div class="evolucao-comparacao-header">' +
+          '<span class="evolucao-comparacao-header-label"></span>' +
+          '<span class="evolucao-comparacao-header-datas">' + dataCurta(dataInicial) + " → " + dataCurta(dataFinal) + "</span>" +
+        "</div>" +
         '<div class="evolucao-comparacao-list">' +
           comparacao.map((c) => {
             const melhorSeDiminui = c.chave === "gordura" || c.chave === "gorduraVisceral";
             const neutro = c.delta === 0;
             const positivo = !neutro && (melhorSeDiminui ? c.delta < 0 : c.delta > 0);
+            // Linha principal (label + valores) e o delta ficam em blocos SEPARADOS (não dependendo de
+            // quebra automática do flex-wrap pela largura do texto) -- antes, com valores curtos (ex.:
+            // "Gordura visceral", sem "%"/"kg"), a linha inteira cabia numa única linha e o delta acabava
+            // ficando colado do lado direito dos valores, em vez de embaixo do rótulo como nas outras
+            // linhas (pedido do usuário: posição do delta sempre consistente).
             return '<div class="evolucao-comparacao-row">' +
-              '<span class="evolucao-comparacao-label">' + esc(c.label) + "</span>" +
-              '<span class="evolucao-comparacao-valores">' + formatNumber(c.inicial, c.digits) + c.unidade + " → " + formatNumber(c.atual, c.digits) + c.unidade + "</span>" +
+              '<div class="evolucao-comparacao-row-principal">' +
+                '<span class="evolucao-comparacao-label">' + esc(c.label) + "</span>" +
+                '<span class="evolucao-comparacao-valores">' + formatNumber(c.inicial, c.digits) + c.unidade + " → " + formatNumber(c.atual, c.digits) + c.unidade + "</span>" +
+              "</div>" +
               '<span class="evolucao-comparacao-delta ' + (neutro ? "" : positivo ? "evolucao-delta-positivo" : "evolucao-delta-negativo") + '">' + (c.delta > 0 ? "+" : "") + formatNumber(c.delta, c.digits) + c.unidade + "</span>" +
             "</div>";
           }).join("") +
@@ -11372,6 +11462,8 @@ function captureFormState() {
     });
     state.produtoManualValores = valores;
   }
+  const produtoManualIngredientesMicroEl = document.getElementById("produto-manual-ingredientes-micro");
+  if (produtoManualIngredientesMicroEl) state.produtoManualIngredientesMicro = produtoManualIngredientesMicroEl.value;
 
   // O formulário de bioimpedância/calorimetria também precisa sobreviver a um render() no meio do
   // preenchimento (ex.: ao escolher um anexo, que atualiza a prévia do arquivo chamando render()) —
