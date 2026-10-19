@@ -696,6 +696,18 @@ svg{ display: block; }
 .produto-micro-estimar{ margin-top:18px; padding:12px; border-radius:12px; background:#f7f9f5; display:flex; flex-direction:column; gap:8px; }
 .produto-micro-estimar .field-label{ margin:0; }
 .produto-micro-estimar .calo-conclusao-dica{ margin:0; }
+/* Lista "Ingredientes usados na estimativa" (ver produtoEstimarMicroTemplate()) -- NÃO reaproveita
+   .meal-preview/.food-label (pensadas pro texto quase-branco delas aparecer sobre o card ESCURO de "Nova
+   refeição"): aqui o fundo é claro (igual ao resto do modal de cadastro de produto), então o texto
+   ficava praticamente invisível (quase branco sobre fundo claro) -- bug relatado pelo usuário. Classes
+   próprias, com as MESMAS cores escuras já usadas em outras listas sobre fundo claro deste modal (ex.:
+   .meal-row-name/.meal-row-meta). */
+.produto-micro-preview{ margin-top:4px; border-radius:12px; background:#eef2ea; padding:12px; }
+.produto-micro-preview-head{ margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#6c8d68; }
+.produto-micro-preview-list{ display:flex; flex-direction:column; gap:6px; }
+.produto-micro-preview-row{ font-size:13px; }
+.produto-micro-preview-label{ color:#31564a; font-weight:600; }
+.produto-micro-preview-amount{ color:#71857e; font-weight:400; font-size:12px; }
 .idade-metabolica-campo{ grid-column:1 / -1; }
 .idade-metabolica-calcular-btn{ margin-top:8px; display:inline-flex; align-items:center; gap:8px; border-radius:999px; border:none; background:var(--primary); padding:8px 16px; font-size:13px; font-weight:600; color:#fff; transition:opacity .15s; }
 .idade-metabolica-calcular-btn:hover{ opacity:.9; }
@@ -1641,9 +1653,18 @@ const foodLibrary = [
   // Pedido do usuário. Asa de frango com pele, assada -- valores cruzados entre Yazio e fatsecret/USDA
   // (chicken wing, meat and skin, roasted), ambos convergindo pra ~290 kcal/26,8g proteína/19,5g gordura.
   { terms: ["asa de frango", "asinha de frango", "asinha", "asa"], label: "Asa de frango assada", baseAmount: "100 g", values: { calories: 290, protein: 26.9, carbs: 0, fat: 19.5, fiber: 0, vitA: 12, vitC: 0, vitD: 0.2, calcio: 15, ferro: 1, magnesio: 20, potassio: 195, zinco: 1.8, sodio: 82, vitB12: 0.3 }, grams: 100 },
+  // Pedido do usuário. Calorias/proteína/gordura da TACO (moela de galinha/frango cozida); os demais
+  // nutrientes (sem equivalente na TACO pra esse item) vêm do USDA (chicken gizzard, cooked, simmered),
+  // que bate de perto com a TACO nos campos em comum (proteína 30,4 g e gordura ~2,7 g nas duas fontes).
+  { terms: ["moela de frango", "moela de galinha", "moela"], label: "Moela de frango cozida", baseAmount: "100 g", values: { calories: 146, protein: 30.4, carbs: 0, fat: 2.7, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 17, ferro: 3.2, magnesio: 3, potassio: 179, zinco: 4.4, sodio: 56, vitB12: 1 }, grams: 100 },
   { terms: ["picanha", "picanha bovina"], label: "Picanha", baseAmount: "100 g", values: { calories: 289, protein: 26, carbs: 0, fat: 20, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 10, ferro: 2.1, magnesio: 20, potassio: 260, zinco: 4.5, sodio: 65, vitB12: 2.6 }, grams: 100 },
   { terms: ["carne moida refogada", "carne moida"], label: "Carne moída refogada", baseAmount: "100 g", values: { calories: 212, protein: 26, carbs: 0, fat: 11, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 12, ferro: 2.3, magnesio: 18, potassio: 250, zinco: 4, sodio: 90, vitB12: 2.5 }, grams: 100 },
   { terms: ["bife de patinho", "carne bovina magra", "patinho"], label: "Bife de patinho grelhado", baseAmount: "100 g", values: { calories: 205, protein: 32, carbs: 0, fat: 8, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 8, ferro: 2.5, magnesio: 22, potassio: 300, zinco: 4.2, sodio: 70, vitB12: 2.5 }, grams: 100 },
+  // Pedido do usuário. Carboidratos da TACO (fígado bovino grelhado); os demais nutrientes vêm do USDA
+  // (beef liver, cooked, braised), fonte com o perfil completo de micronutrientes. Vitamina A e B12 bem
+  // acima do normal de propósito -- fígado é mesmo uma fonte extremamente concentrada das duas (ver nota
+  // de toxicidade de vitamina A em NUTRIENT_INFO.vitA acima, que já cita fígado como fonte de risco).
+  { terms: ["figado bovino", "figado de boi", "figado grelhado", "figado"], label: "Fígado bovino grelhado", baseAmount: "100 g", values: { calories: 191, protein: 29, carbs: 4.2, fat: 5.3, fiber: 0, vitA: 9442, vitC: 1.9, vitD: 1.2, calcio: 6, ferro: 6.5, magnesio: 21, potassio: 352, zinco: 5.3, sodio: 79, vitB12: 70.6 }, grams: 100 },
   { terms: ["carne de sol"], label: "Carne de sol grelhada", baseAmount: "100 g", values: { calories: 199, protein: 32, carbs: 0, fat: 7, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 10, ferro: 3, magnesio: 22, potassio: 320, zinco: 5.5, sodio: 1200, vitB12: 3 }, grams: 100 },
   { terms: ["maminha"], label: "Maminha grelhada", baseAmount: "100 g", values: { calories: 163, protein: 28, carbs: 0, fat: 5, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 8, ferro: 2.2, magnesio: 21, potassio: 320, zinco: 4, sodio: 60, vitB12: 2.4 }, grams: 100 },
   { terms: ["cupim assado", "cupim"], label: "Cupim assado", baseAmount: "100 g", values: { calories: 280, protein: 24, carbs: 0, fat: 20, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 9, ferro: 2, magnesio: 19, potassio: 280, zinco: 4, sodio: 60, vitB12: 2.2 }, grams: 100 },
@@ -1651,6 +1672,11 @@ const foodLibrary = [
   { terms: ["file de tilapia", "peixe grelhado", "tilapia"], label: "Filé de tilápia grelhado", baseAmount: "100 g", values: { calories: 128, protein: 26, carbs: 0, fat: 2.7, fiber: 0, vitA: 5, vitC: 0, vitD: 1, calcio: 10, ferro: 0.5, magnesio: 27, potassio: 300, zinco: 0.4, sodio: 75, vitB12: 1.6 }, grams: 100 },
   { terms: ["salmao grelhado", "salmao"], label: "Salmão grelhado", baseAmount: "100 g", values: { calories: 208, protein: 22, carbs: 0, fat: 13, fiber: 0, vitA: 40, vitC: 0, vitD: 10, calcio: 12, ferro: 0.5, magnesio: 30, potassio: 380, zinco: 0.5, sodio: 65, vitB12: 2.8 }, grams: 100 },
   { terms: ["atum em lata", "atum"], label: "Atum em lata", baseAmount: "100 g", values: { calories: 116, protein: 26, carbs: 0, fat: 1, fiber: 0, vitA: 15, vitC: 0, vitD: 2, calcio: 10, ferro: 1.3, magnesio: 30, potassio: 250, zinco: 0.6, sodio: 350, vitB12: 2 }, grams: 100 },
+  // Pedido do usuário. Calorias/proteína/carboidratos/gordura: FatSecret Brasil (Gomes da Costa, Patê de
+  // Atum -- a versão tradicional, não a "light"). Fibra/sódio/micronutrientes não constavam na fonte --
+  // estimados por aproximação com o atum em lata (acima) e produtos similares de peixe processado com
+  // maionese (sódio mais alto que o atum puro, por causa do sal de conservação/tempero do patê).
+  { terms: ["pate de atum"], label: "Patê de atum", baseAmount: "100 g", values: { calories: 153, protein: 11, carbs: 5.8, fat: 9.3, fiber: 0, vitA: 10, vitC: 0, vitD: 1, calcio: 15, ferro: 0.5, magnesio: 10, potassio: 150, zinco: 0.3, sodio: 500, vitB12: 1.2 }, grams: 100 },
   { terms: ["camarao cozido", "camarao"], label: "Camarão cozido", baseAmount: "100 g", values: { calories: 99, protein: 24, carbs: 0.2, fat: 0.3, fiber: 0, vitA: 20, vitC: 2, vitD: 0.1, calcio: 60, ferro: 0.4, magnesio: 40, potassio: 260, zinco: 1.6, sodio: 180, vitB12: 1.5 }, grams: 100 },
   { terms: ["sardinha grelhada", "sardinha assada", "sardinha"], label: "Sardinha grelhada", baseAmount: "100 g", values: { calories: 185, protein: 24.6, carbs: 0, fat: 9.5, fiber: 0, vitA: 32, vitC: 0, vitD: 4.8, calcio: 30, ferro: 1.4, magnesio: 31, potassio: 380, zinco: 1.3, sodio: 100, vitB12: 8.9 }, grams: 100 },
   { terms: ["file de dourado", "dourado grelhado", "dourado"], label: "Filé de dourado grelhado", baseAmount: "100 g", values: { calories: 109, protein: 24, carbs: 0, fat: 1, fiber: 0, vitA: 15, vitC: 0, vitD: 2, calcio: 20, ferro: 1, magnesio: 30, potassio: 380, zinco: 0.6, sodio: 70, vitB12: 1.6 }, grams: 100 },
@@ -1685,6 +1711,11 @@ const foodLibrary = [
   { terms: ["linguica de porco", "linguica suina", "linguica de porco toscana", "linguica toscana"], label: "Linguiça de porco", baseAmount: "100 g", values: { calories: 320, protein: 13, carbs: 2, fat: 29, fiber: 0, vitA: 0, vitC: 0, vitD: 0.2, calcio: 10, ferro: 1, magnesio: 15, potassio: 200, zinco: 2, sodio: 980, vitB12: 1 }, grams: 100 },
   { terms: ["linguica de frango", "linguica de aves"], label: "Linguiça de frango", baseAmount: "100 g", values: { calories: 180, protein: 15, carbs: 2, fat: 12, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 8, ferro: 1, magnesio: 15, potassio: 210, zinco: 1.5, sodio: 850, vitB12: 0.5 }, grams: 100 },
   { terms: ["salsicha"], label: "Salsicha", baseAmount: "1 unidade (50 g)", values: { calories: 129, protein: 5.7, carbs: 1.5, fat: 11.3, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 5, ferro: 0.5, magnesio: 5, potassio: 70, zinco: 0.8, sodio: 435, vitB12: 0.25 }, grams: 50 },
+  // Pedido do usuário. Calorias/proteína/carboidratos/gordura: FatSecret Brasil (Patê de Frango, genérico)
+  // -- o patê cremoso comum (frango desfiado + maionese), não o patê de fígado estilo francês (o perfil
+  // com carboidratos, vindos da maionese/amido, bate com essa diferença). Fibra/sódio/micronutrientes não
+  // constavam na fonte -- estimados por aproximação com produtos similares (frango processado + maionese).
+  { terms: ["pate de frango"], label: "Patê de frango", baseAmount: "100 g", values: { calories: 201, protein: 13.45, carbs: 6.55, fat: 13.1, fiber: 0, vitA: 20, vitC: 0, vitD: 0.2, calcio: 15, ferro: 0.5, magnesio: 8, potassio: 120, zinco: 0.6, sodio: 550, vitB12: 0.3 }, grams: 100 },
   { terms: ["bacon"], label: "Bacon", baseAmount: "30 g", values: { calories: 150, protein: 10, carbs: 0, fat: 12, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 2, ferro: 0.3, magnesio: 5, potassio: 90, zinco: 0.6, sodio: 380, vitB12: 0.2 }, grams: 30 },
   { terms: ["peito de peru", "presunto de peru"], label: "Peito de peru fatiado", baseAmount: "2 fatias (30 g)", values: { calories: 35, protein: 6, carbs: 1, fat: 1, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 5, ferro: 0.2, magnesio: 6, potassio: 90, zinco: 0.4, sodio: 330, vitB12: 0.15 }, grams: 30 },
   { terms: ["presunto"], label: "Presunto", baseAmount: "2 fatias (30 g)", values: { calories: 60, protein: 8, carbs: 1, fat: 3, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 3, ferro: 0.2, magnesio: 5, potassio: 80, zinco: 0.4, sodio: 330, vitB12: 0.2 }, grams: 30 },
@@ -1793,6 +1824,20 @@ const foodLibrary = [
   { terms: ["abacate"], label: "Abacate", baseAmount: "100 g", values: { calories: 160, protein: 2, carbs: 8.5, fat: 14.7, fiber: 6.7, vitA: 7, vitC: 10, vitD: 0, calcio: 12, ferro: 0.6, magnesio: 29, potassio: 480, zinco: 0.6, sodio: 7, vitB12: 0 }, grams: 100 },
   { terms: ["melao"], label: "Melão", baseAmount: "100 g", values: { calories: 30, protein: 0.8, carbs: 7.5, fat: 0.1, fiber: 0.5, vitA: 5, vitC: 10, vitD: 0, calcio: 9, ferro: 0.2, magnesio: 10, potassio: 300, zinco: 0.1, sodio: 16, vitB12: 0 }, grams: 100 },
   { terms: ["mirtilo", "blueberry", "blueberries"], label: "Mirtilo (blueberry)", baseAmount: "100 g", values: { calories: 57, protein: 0.7, carbs: 14.5, fat: 0.3, fiber: 2.4, vitA: 3, vitC: 9.7, vitD: 0, calcio: 6, ferro: 0.3, magnesio: 6, potassio: 77, zinco: 0.2, sodio: 1, vitB12: 0 }, grams: 100 },
+  // Pedido do usuário. Fonte: TACO (Umbu cru, 100 g) -- cálcio/ferro/magnésio/potássio/zinco/vitamina C
+  // vêm direto da tabela. Sódio e vitamina A não constavam na fonte consultada -- estimados por baixo,
+  // por aproximação com outras frutas nativas (cajá/seriguela, abaixo).
+  { terms: ["umbu"], label: "Umbu", baseAmount: "100 g", values: { calories: 37, protein: 0.8, carbs: 9.4, fat: 0.1, fiber: 2, vitA: 3, vitC: 24, vitD: 0, calcio: 12, ferro: 0.1, magnesio: 11, potassio: 152, zinco: 0.4, sodio: 2, vitB12: 0 }, grams: 100 },
+  // Pedido do usuário. A TACO não tem entrada própria pra cajá (Spondias mombin) -- só "cajá-manga",
+  // espécie diferente (Spondias dulcis). Calorias/macros/cálcio/ferro/vitamina C vêm de Morton, "Fruits
+  // of Warm Climates" (referência acadêmica clássica pra frutas tropicais, com análises da
+  // Guatemala/África/Filipinas). Potássio/magnésio/zinco/sódio não constavam nessa fonte -- estimados por
+  // aproximação com outras frutas nativas da mesma família (umbu/seriguela, acima/abaixo).
+  { terms: ["caja", "cajazeira"], label: "Cajá", baseAmount: "100 g", values: { calories: 35, protein: 1.3, carbs: 9.3, fat: 0.3, fiber: 1.2, vitA: 4, vitC: 46, vitD: 0, calcio: 31, ferro: 2.8, magnesio: 15, potassio: 190, zinco: 0.2, sodio: 2, vitB12: 0 }, grams: 100 },
+  // Pedido do usuário. A TACO não tem entrada própria pra seriguela (Spondias purpurea) -- fonte:
+  // tuasaude.com ("jocote", mesmo fruto, nome usado em outros países de língua espanhola). Ferro/zinco/
+  // sódio/vitamina A não constavam nessa fonte -- estimados por aproximação com cajá/umbu (acima).
+  { terms: ["seriguela"], label: "Seriguela", baseAmount: "100 g", values: { calories: 76, protein: 1.4, carbs: 18.9, fat: 0.4, fiber: 3.9, vitA: 5, vitC: 27, vitD: 0, calcio: 27, ferro: 0.4, magnesio: 18, potassio: 258, zinco: 0.1, sodio: 2, vitB12: 0 }, grams: 100 },
   { terms: ["suco de laranja", "suco laranja"], label: "Suco de laranja", baseAmount: "300 ml", values: { calories: 135, protein: 2, carbs: 31, fat: 0.3, fiber: 0.5, vitA: 15, vitC: 90, vitD: 0, calcio: 30, ferro: 0.5, magnesio: 30, potassio: 500, zinco: 0.2, sodio: 6, vitB12: 0 }, ml: 300 },
   { terms: ["suco de limao", "suco limao", "limonada"], label: "Suco de limão (limonada)", baseAmount: "300 ml", values: { calories: 90, protein: 0.3, carbs: 23, fat: 0, fiber: 0.3, vitA: 0, vitC: 35, vitD: 0, calcio: 15, ferro: 0.2, magnesio: 10, potassio: 130, zinco: 0.1, sodio: 3, vitB12: 0 }, ml: 300 },
   { terms: ["suco de uva", "suco uva"], label: "Suco de uva", baseAmount: "300 ml", values: { calories: 150, protein: 0.6, carbs: 37, fat: 0, fiber: 0.3, vitA: 0, vitC: 3, vitD: 0, calcio: 25, ferro: 0.9, magnesio: 25, potassio: 300, zinco: 0.2, sodio: 9, vitB12: 0 }, ml: 300 },
@@ -7910,9 +7955,9 @@ function produtoEstimarMicroTemplate() {
       '<textarea id="produto-manual-ingredientes-micro" class="field-input" style="resize:none;line-height:1.5" placeholder="Descreva os ingredientes que contribuem com vitaminas/minerais..." rows="2">' + esc(state.produtoManualIngredientesMicro) + "</textarea>" +
       '<button type="button" class="btn-ghost-light btn-ghost-light-onlight" onclick="acaoEstimarMicronutrientesProduto()">' + icon("sparkles") + " Estimar vitaminas e minerais pelos ingredientes</button>" +
       (preview.length ?
-        '<div class="meal-preview"><div class="meal-preview-head"><span>Ingredientes usados na estimativa</span>' + icon("check") + "</div>" +
-        '<div class="meal-preview-list">' + preview.map((f) =>
-          '<div class="meal-preview-row"><span class="food-label">' + esc(f.label) + ' <span class="food-amount">· ' + esc(f.amount) + "</span></span></div>"
+        '<div class="produto-micro-preview"><div class="produto-micro-preview-head"><span>Ingredientes usados na estimativa</span>' + icon("check") + "</div>" +
+        '<div class="produto-micro-preview-list">' + preview.map((f) =>
+          '<div class="produto-micro-preview-row"><span class="produto-micro-preview-label">' + esc(f.label) + ' <span class="produto-micro-preview-amount">· ' + esc(f.amount) + "</span></span></div>"
         ).join("") + "</div></div>"
         : "") +
     "</div>";
