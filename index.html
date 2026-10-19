@@ -1894,6 +1894,17 @@ const foodLibrary = [
   // (ver NUTRIENT_META_CONGELADA_CHAVE/MICRO_GOALS), por isso fica de fora.
   { terms: ["azeite de oliva", "azeite"], label: "Azeite de oliva", baseAmount: "1 colher de sopa (13 g)", values: { calories: 115, protein: 0, carbs: 0, fat: 13, fiber: 0, vitA: 0, vitC: 0, vitD: 0, calcio: 0, ferro: 0.1, magnesio: 0, potassio: 0, zinco: 0, sodio: 0, vitB12: 0 }, grams: 13 },
   { terms: ["geleia de frutas", "geleia"], label: "Geleia de frutas", baseAmount: "1 colher de sopa (20 g)", values: { calories: 50, protein: 0.1, carbs: 13, fat: 0, fiber: 0.2, vitA: 1, vitC: 2, vitD: 0, calcio: 2, ferro: 0.1, magnesio: 1, potassio: 15, zinco: 0, sodio: 2, vitB12: 0 }, grams: 20 },
+  // Pedido do usuário. Fonte: FatSecret Brasil (Queensberry, Geleia de Morango linha Classic -- a versão
+  // comum, não a diet). Fibra/sódio/micronutrientes não constavam na fonte -- estimados bem próximos da
+  // "Geleia de frutas" genérica acima (perfil muito parecido, já que geleia é majoritariamente açúcar),
+  // com vitamina C um pouco mais alta por causa do morango (fruta naturalmente mais rica nesse nutriente).
+  { terms: ["geleia de morango"], label: "Geleia de morango", baseAmount: "1 colher de sopa (20 g)", values: { calories: 58, protein: 0, carbs: 14, fat: 0, fiber: 0.2, vitA: 1, vitC: 3, vitD: 0, calcio: 2, ferro: 0.1, magnesio: 1, potassio: 18, zinco: 0, sodio: 2, vitB12: 0 }, grams: 20 },
+  // Pedido do usuário. Calorias/carboidratos: FatSecret Brasil (Qualitá, Geleia de Frutas Vermelhas) --
+  // uma segunda fonte (Mercatto) trazia um valor bem mais baixo (50 kcal/100g) que não batia com sua
+  // própria conta de carboidratos, descartado por inconsistente. Fibra/sódio/demais micronutrientes
+  // estimados próximos da "Geleia de frutas" genérica acima, com vitamina C/potássio um pouco mais altos
+  // (mistura de frutas vermelhas -- morango, amora, framboesa -- naturalmente mais ricas nesses nutrientes).
+  { terms: ["geleia de frutas vermelhas"], label: "Geleia de frutas vermelhas", baseAmount: "1 colher de sopa (20 g)", values: { calories: 52, protein: 0, carbs: 13.5, fat: 0, fiber: 0.3, vitA: 1, vitC: 3, vitD: 0, calcio: 3, ferro: 0.2, magnesio: 2, potassio: 20, zinco: 0, sodio: 2, vitB12: 0 }, grams: 20 },
   { terms: ["mel"], label: "Mel", baseAmount: "1 colher de sopa (20 g)", values: { calories: 60, protein: 0.1, carbs: 16, fat: 0, fiber: 0, vitA: 0, vitC: 0.5, vitD: 0, calcio: 1, ferro: 0.1, magnesio: 0.4, potassio: 10, zinco: 0, sodio: 1, vitB12: 0 }, grams: 20 },
   // Pedido do usuário. Fonte: TACO (Goiaba, doce em pasta, 100 g: 269 kcal, 0,6 g proteína, 74,1 g
   // carboidratos, 0 g gordura) -- demais micronutrientes estimados a partir da goiaba in natura (retém
