@@ -2532,6 +2532,11 @@ const state = {
   // Pedido explícito do usuário depois de esquecer de registrar janta e treino de um dia que já tinha
   // virado -- ver acaoSalvarRefeicao()/sincronizarDiarioKcalDoDia().
   mealData: "",
+  // Horário da refeição -- por padrão vazio (nova refeição usa a hora atual do registro, igual sempre
+  // foi), mas o usuário pode informar um horário manual (ex.: registrando agora uma refeição que comeu
+  // mais cedo). Pedido do usuário. Só vale pra refeição NOVA -- editar uma já registrada preserva o
+  // horário original (ver comentário em acaoSalvarRefeicao()), então o campo nem aparece nesse modo.
+  mealHora: "",
   // Pedido do usuário: editar uma refeição já registrada no dia, em vez de só poder corrigir a data
   // (mealDetalheEditandoData) ou excluir (acaoRemoverRefeicao). Id da refeição sendo editada, ou null
   // quando o formulário está no modo normal de "nova refeição" -- ver acaoEditarRefeicao()/
@@ -4662,6 +4667,11 @@ function acaoSalvarRefeicao() {
   const dataEl = document.getElementById("meal-data");
   const dataRefeicao = dataEl && dataEl.value ? dataEl.value : today();
   if (dataRefeicao > today()) { toastError("A data da refeição não pode ser no futuro."); return; }
+  // Horário informado manualmente (ver campo #meal-hora em nutricaoTabTemplate()/state.mealHora) -- só
+  // existe no formulário de refeição NOVA (nunca na edição). Vazio = mantém o comportamento de sempre
+  // (hora do registro).
+  const horaEl = document.getElementById("meal-hora");
+  const horaInformada = horaEl && horaEl.value ? horaEl.value : "";
   const total = mealTotal();
   // Sem textarea de descrição no modo "Exposição Solar" (ver exposicaoSolarCamposTemplate()) -- a
   // descrição, nesse caso, já foi montada automaticamente em acaoCalcularExposicaoSolar() e guardada
@@ -4676,7 +4686,7 @@ function acaoSalvarRefeicao() {
   const novaRefeicao = Object.assign({}, total, {
     id: Date.now(), date: dataRefeicao, name: mealName, description: description,
     detected: state.preview.map((f) => f.label),
-    time: antiga ? antiga.time : new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+    time: antiga ? antiga.time : (horaInformada || new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })),
     // Guarda o detalhamento por alimento (nome, quantidade e todos os nutrientes daquele alimento
     // específico) — é o que permite abrir uma refeição no histórico e ver o que cada alimento
     // individualmente contribuiu, e não só o total da refeição.
@@ -4685,7 +4695,7 @@ function acaoSalvarRefeicao() {
   state.meals = state.meals.filter((meal) => meal.id !== editandoId).concat([novaRefeicao]);
   persistMeals();
   state.preview = [];
-  state.mealTipo = ""; state.mealNomeCustom = ""; state.mealDescription = ""; state.mealData = ""; state.mealEditandoId = null;
+  state.mealTipo = ""; state.mealNomeCustom = ""; state.mealDescription = ""; state.mealData = ""; state.mealHora = ""; state.mealEditandoId = null;
   acaoFecharSugestoesAlimento();
   state.exposicaoInicio = ""; state.exposicaoFim = ""; state.exposicaoCeu = "";
   state.exposicaoLocalizacaoStatus = "idle"; state.exposicaoUVHorario = null; state.exposicaoLocalizacaoTexto = null;
@@ -4756,7 +4766,7 @@ function acaoCancelarEdicaoRefeicao() {
   state.mealEditandoId = null;
   state.preview = [];
   acaoFecharSugestoesAlimento();
-  state.mealTipo = ""; state.mealNomeCustom = ""; state.mealDescription = ""; state.mealData = "";
+  state.mealTipo = ""; state.mealNomeCustom = ""; state.mealDescription = ""; state.mealData = ""; state.mealHora = "";
   state.exposicaoInicio = ""; state.exposicaoFim = ""; state.exposicaoCeu = "";
   state.exposicaoLocalizacaoStatus = "idle"; state.exposicaoUVHorario = null; state.exposicaoLocalizacaoTexto = null;
   render();
@@ -6713,7 +6723,6 @@ function historyDayCardTemplate(date) {
       '<div class="history-day-head history-day-head-btn" onclick="acaoAlternarDiaHistorico(\'' + date + '\')">' +
         '<span class="date">' + dateLabel(date) + (objetivoLabel ? " (" + objetivoLabel + ")" : "") + "</span>" +
         '<span class="history-day-head-direita"><span class="total">' + formatNumber(dayTotal) + " kcal" + percentualTexto + " - " + dayMeals.length + (dayMeals.length > 1 ? " refeições" : " refeição") + "</span>" +
-        '<button class="meal-row-delete" aria-label="Excluir refeições de ' + esc(dateLabel(date)) + '" onclick="event.stopPropagation(); acaoRemoverDiaHistorico(\'' + date + '\')">' + icon("trash") + "</button>" +
         icon("chevron", "history-day-chevron") + "</span>" +
       "</div>" +
       (expandido
@@ -7549,14 +7558,13 @@ function treinoHistoryDayCardTemplate(date) {
       '<div class="history-day-head history-day-head-btn" onclick="acaoAlternarDiaHistoricoTreinos(\'' + date + '\')">' +
         '<span class="date">' + dateLabel(date) + "</span>" +
         '<span class="history-day-head-direita"><span class="total">' + dayTreinos.length + " treino" + (dayTreinos.length > 1 ? "s" : "") + "</span>" +
-        '<button class="meal-row-delete" aria-label="Excluir treinos de ' + esc(dateLabel(date)) + '" onclick="event.stopPropagation(); acaoRemoverDiaHistoricoTreinos(\'' + date + '\')">' + icon("trash") + "</button>" +
         icon("chevron", "history-day-chevron") + "</span>" +
       "</div>" +
       treinoResumoModalidadesHtml(dayTreinos) +
       (expandido
         ? '<div class="history-day-meals">' + dayTreinos.map((t) =>
             '<div class="history-day-meal history-day-meal-static' + ((t.nota || t.distanciaKm || t.caloriasQueimadas || (t.gruposMusculares && t.gruposMusculares.length)) ? " history-day-meal-com-nota" : "") + '">' +
-              '<div class="history-day-meal-linha"><span>' + emojiEsporte(t.esporte) + " " + esc(nomeEsporteExibicao(t)) + " · " + esc(t.horaInicio) + "–" + esc(t.horaFim) + "</span><span>" + esc(formatarDuracao(t.duracaoMin)) + (t.fotoUrl ? ' <a class="history-day-meal-foto-link" href="' + esc(t.fotoUrl) + '" target="_blank" rel="noopener" aria-label="Ver foto do treino">' + icon("camera") + "</a>" : "") + ' <button class="history-day-meal-editar-link" aria-label="Editar treino" onclick="event.stopPropagation(); acaoEditarTreino(' + t.id + ')">' + icon("edit") + '</button> <button class="history-day-meal-remover-link" aria-label="Excluir treino" onclick="event.stopPropagation(); acaoRemoverTreino(' + t.id + ')">' + icon("trash") + "</button></span></div>" +
+              '<div class="history-day-meal-linha"><span>' + emojiEsporte(t.esporte) + " " + esc(nomeEsporteExibicao(t)) + " · " + esc(t.horaInicio) + "–" + esc(t.horaFim) + "</span><span>" + esc(formatarDuracao(t.duracaoMin)) + (t.fotoUrl ? ' <a class="history-day-meal-foto-link" href="' + esc(t.fotoUrl) + '" target="_blank" rel="noopener" aria-label="Ver foto do treino">' + icon("camera") + "</a>" : "") + ' <button class="history-day-meal-editar-link" aria-label="Editar treino" onclick="event.stopPropagation(); acaoEditarTreino(' + t.id + ')">' + icon("edit") + "</button></span></div>" +
               (t.distanciaKm ? '<p class="history-day-meal-distancia">' + esc(treinoDistanciaResumoTexto(t)) + "</p>" : "") +
               treinoGruposMuscularesListaHtml(t) +
               (t.caloriasQueimadas ? '<p class="history-day-meal-calorias-queimadas">' + esc(treinoCaloriasResumoTexto(t)) + " queimadas (estimativa)</p>" : "") +
@@ -11348,7 +11356,6 @@ function diarioKcalRegistroTemplate(r) {
       '<span class="diario-kcal-dia-head-direita"><span class="diario-kcal-dia-kcal">' + formatNumber(r.calories) + " kcal</span>" +
       '<button class="diario-kcal-recalcular-btn" aria-label="Recalcular registro de ' + esc(dateLabel(r.date)) + ' com as refeições daquele dia" title="Recalcular com as refeições daquele dia" onclick="event.stopPropagation(); acaoRecalcularDiarioKcal(' + r.id + ')">' + icon("rotate") + "</button>" +
       '<button class="diario-kcal-recalcular-btn" aria-label="Corrigir a data do registro de ' + esc(dateLabel(r.date)) + '" title="Corrigir data" onclick="event.stopPropagation(); acaoAbrirEdicaoDataDiarioKcal(' + r.id + ')">' + icon("edit") + "</button>" +
-      '<button class="meal-row-delete" aria-label="Excluir registro de ' + esc(dateLabel(r.date)) + '" onclick="event.stopPropagation(); acaoRemoverDiarioKcal(' + r.id + ')">' + icon("trash") + "</button>" +
       icon("chevron", "history-day-chevron") + "</span></div>" +
     (state.diarioKcalEditandoDataId === r.id
       ? '<div class="meal-detalhe-data-editar" onclick="event.stopPropagation()">' +
@@ -11449,6 +11456,7 @@ function nutricaoTabTemplate() {
           "</select>" +
           (state.mealTipo === "Outro" ? '<input id="meal-nome-custom" class="meal-input" placeholder="Nome da refeição" value="' + esc(state.mealNomeCustom) + '"/>' : "") +
           '<div><label class="meal-form-label">Data</label><input id="meal-data" type="date" class="meal-input" max="' + esc(today()) + '" value="' + esc(state.mealData || today()) + '"/></div>' +
+          (editandoRefeicao ? "" : '<div><label class="meal-form-label">Horário (opcional)</label><input id="meal-hora" type="time" class="meal-input" value="' + esc(state.mealHora) + '"/></div>') +
           (state.mealTipo === "Exposição Solar"
             ? exposicaoSolarCamposTemplate()
             : '<div class="meal-description-wrap">' +
@@ -11490,9 +11498,11 @@ function captureFormState() {
   const customEl = document.getElementById("meal-nome-custom");
   const descEl = document.getElementById("meal-description");
   const mealDataEl = document.getElementById("meal-data");
+  const mealHoraEl = document.getElementById("meal-hora");
   if (customEl) state.mealNomeCustom = customEl.value;
   if (descEl) state.mealDescription = descEl.value;
   if (mealDataEl) state.mealData = mealDataEl.value;
+  if (mealHoraEl) state.mealHora = mealHoraEl.value;
 
   const exposicaoInicioEl = document.getElementById("exposicao-inicio");
   if (exposicaoInicioEl) state.exposicaoInicio = exposicaoInicioEl.value;
