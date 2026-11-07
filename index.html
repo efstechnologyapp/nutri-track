@@ -1012,6 +1012,43 @@ svg{ display: block; }
 .evolucao-delta-positivo{ color:#1e88e5; }
 .evolucao-delta-negativo{ color:#c35e4b; }
 
+/* ===================== Recuperação (dados do Garmin) ===================== */
+.medidas-section-sub{ margin:3px 0 0 0; font-size:12.5px; color:var(--muted); }
+.garmin-day-nav{ margin-top:14px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.garmin-day-nav-label{ display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:#1b3f34; }
+.garmin-day-nav-btn{ display:flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:10px; background:#f7f9f5; border:1px solid #e2e9df; color:#3d6355; }
+.garmin-day-nav-btn:disabled{ opacity:.35; }
+.garmin-day-nav-btn-next .icon{ transform:scaleX(-1); }
+.garmin-stat-grid{ margin-top:16px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.garmin-stat-tile{ border-radius:14px; background:#f7f9f5; padding:12px 14px; }
+.garmin-stat-tile-label{ display:flex; align-items:center; gap:6px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:#9aa9a1; }
+.garmin-stat-tile-label .icon{ width:14px; height:14px; color:#6f9b59; }
+.garmin-stat-tile-value{ margin-top:6px; font-family:'Fraunces',serif; font-size:19px; font-weight:600; color:#1d4b3d; }
+.garmin-stat-tile-value.garmin-stat-tile-vazio{ font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500; color:#9aa9a1; }
+.garmin-stat-tile-sub{ margin-top:3px; font-size:11.5px; color:#8a9a85; line-height:1.4; }
+.garmin-sono-card{ margin-top:16px; border-radius:14px; background:#f7f9f5; padding:14px; }
+.garmin-sono-vazio{ display:flex; align-items:center; gap:8px; font-size:13px; color:#8a9a85; }
+.garmin-sono-head{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.garmin-sono-total{ display:flex; align-items:center; gap:7px; font-family:'Fraunces',serif; font-size:20px; font-weight:600; color:#1d4b3d; }
+.garmin-sono-score{ display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; color:#4b6b42; }
+.garmin-sleep-phases{ margin-top:12px; display:flex; gap:2px; height:12px; border-radius:6px; overflow:hidden; }
+.garmin-sleep-phase{ min-width:3px; }
+.garmin-sleep-legend{ margin-top:10px; display:flex; gap:12px; flex-wrap:wrap; font-size:11px; color:#5c6b61; }
+.garmin-sleep-legend span{ display:inline-flex; align-items:center; gap:5px; }
+.garmin-sw{ width:8px; height:8px; border-radius:2px; display:inline-block; }
+.garmin-sono-extra{ margin-top:10px; font-size:11.5px; color:#8a9a85; }
+.garmin-insight{ display:flex; align-items:flex-start; gap:10px; border-radius:16px; padding:13px 14px; font-size:12.8px; line-height:1.55; margin-top:10px; }
+.garmin-insight .icon{ margin-top:2px; flex-shrink:0; }
+.garmin-insight.warn{ background:#fff3ec; color:#7a5a45; }
+.garmin-insight.warn .icon{ color:#d5824f; }
+.garmin-insight.warn strong{ color:#5c4634; }
+.garmin-insight.ok{ background:#eef6e6; color:#4b6b42; }
+.garmin-insight.ok .icon{ color:#6f9b59; }
+.garmin-insight.ok strong{ color:#2e4a28; }
+.garmin-insight.info{ background:#f1f6fb; color:#4a6478; }
+.garmin-insight.info .icon{ color:#5c88a8; }
+.garmin-insight.info strong{ color:#2f4a5c; }
+
 .hidden{ display:none !important; }
 </style>
 </head>
@@ -1069,6 +1106,8 @@ const ICON_PATHS = {
   filter: '<path d="M4 5h16l-6.5 8v6l-3-1.5v-4.5L4 5Z"/>',
   trend: '<path d="M3 17l6-6 4 4 8-8"/><path d="M17 6h4v4"/>',
   home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/>',
+  alert: '<path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/>',
+  moon: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/>',
 };
 function icon(name, cls) {
   const p = ICON_PATHS[name] || "";
@@ -2487,6 +2526,11 @@ const CHAVE_ULTIMO_DIA_PROCESSADO = "nutri-track-ultimo-dia-processado";
 // dispositivo (não sincroniza com o Google) -- é apenas o "catálogo" pessoal de produtos prontos, não
 // um registro de consumo em si.
 const CHAVE_PRODUTOS_CUSTOMIZADOS = "nutri-track-produtos-customizados";
+// Dados diários do smartwatch Garmin (ver seção "Recuperação" -- recuperacaoTabTemplate()). Só o
+// backend grava aqui (gatilho automático no Apps Script, ver garminRodarSincronizacaoDiaria() no
+// Code.gs) -- o app nunca cria/edita isso localmente, só recebe e guarda em cache (igual meals/treinos
+// quando ainda não havia fila de pendentes: aqui nem precisa de fila, porque não há nada a reenviar).
+const CHAVE_GARMIN = "nutri-track-garmin";
 
 /* ===================== medidas e aferições ===================== */
 const medidaTipos = {
@@ -2668,6 +2712,13 @@ const state = {
   // cada vez que a pessoa clica em "Encerrar dia" (ver acaoEncerrarDia()). Só existe UM registro por data
   // -- clicar de novo no mesmo dia substitui o anterior, pra sempre refletir o total mais atualizado.
   diarioKcal: readStorage(CHAVE_DIARIO_KCAL, []),
+  // Dados diários do Garmin (HRV/Body Battery/sono) -- ver comentário em CHAVE_GARMIN. Cada item é
+  // { date, hrv, bodyBattery, sono, atualizadoEm }.
+  garmin: readStorage(CHAVE_GARMIN, []),
+  // Data (AAAA-MM-DD) do dia sendo exibido na aba Recuperação, ou null pra usar o dia mais recente com
+  // dado Garmin disponível (ver garminRegistroAtual()/acaoRecuperacaoDiaAnterior()/
+  // acaoRecuperacaoDiaSeguinte()).
+  recuperacaoDataSelecionada: null,
   // Data (AAAA-MM-DD) do último dia de calendário que a virada automática já processou -- ver
   // processarViradaDeDia(). Sem valor salvo ainda (primeira vez que essa versão do app roda num
   // aparelho), assume hoje, pra NÃO fechar retroativamente, do nada, dias antigos que já passaram
@@ -2897,6 +2948,7 @@ function persistExerciciosCustomizados() { writeStorage(CHAVE_EXERCICIOS_CUSTOMI
 function persistEsportesCustomizados() { writeStorage(CHAVE_ESPORTES_CUSTOMIZADOS, state.esportesCustomizados); }
 function persistProdutosCustomizados() { writeStorage(CHAVE_PRODUTOS_CUSTOMIZADOS, state.produtosCustomizados); }
 function persistDiarioKcal() { writeStorage(CHAVE_DIARIO_KCAL, state.diarioKcal); }
+function persistGarmin() { writeStorage(CHAVE_GARMIN, state.garmin); }
 // Grava de volta os ids preenchidos pelo .map() de produtosCustomizados logo acima (comentário lá), pra
 // não ficar gerando um id novo pra esses produtos antigos a cada vez que o app abre.
 persistProdutosCustomizados();
@@ -4009,6 +4061,11 @@ async function sincronizarDoServidorInterno() {
     // Produtos cadastrados no cardápio (ver salvarProdutoCustomizado()) -- mesmo padrão de
     // mesclarComPendentes usado acima pros outros tipos de registro.
     state.produtosCustomizados = mesclarComPendentes(resposta.produtosCustomizados || [], "salvarProdutoCustomizadoGoogle"); persistProdutosCustomizados();
+    // Garmin: diferente dos demais, não tem mesclarComPendentes -- é só o backend quem grava (gatilho
+    // diário no Apps Script), o app nunca cria isso localmente, então é uma simples substituição pelo
+    // que veio do servidor (se vier undefined, ex.: planilha antiga sem a aba ainda, mantém o que já
+    // estava em cache local em vez de apagar).
+    if (resposta.garmin) { state.garmin = resposta.garmin; persistGarmin(); }
     render();
   } catch { /* falha de rede — mantém os dados locais e tenta de novo na próxima abertura */ }
 }
@@ -8106,6 +8163,7 @@ function homeTabsTemplate() {
     '<button class="home-tab' + (state.activeTab === "nutricao" ? " active" : "") + '" onclick="acaoTrocarAba(\'nutricao\')">' + icon("utensils") + " Nutrição</button>" +
     '<button class="home-tab' + (state.activeTab === "treinos" ? " active" : "") + '" onclick="acaoTrocarAba(\'treinos\')">' + icon("flame") + " Esportes</button>" +
     '<button class="home-tab' + (state.activeTab === "medidas" ? " active" : "") + '" onclick="acaoTrocarAba(\'medidas\')">' + icon("activity") + " Medidas</button>" +
+    '<button class="home-tab' + (state.activeTab === "recuperacao" ? " active" : "") + '" onclick="acaoTrocarAba(\'recuperacao\')">' + icon("heart") + " Recuperação</button>" +
     "</div>";
 }
 
@@ -9959,6 +10017,7 @@ function treinosTabTemplate() {
 function fullHomeTemplate() {
   if (state.activeTab === "medidas") return homeTabsTemplate() + medidasTabTemplate();
   if (state.activeTab === "treinos") return homeTabsTemplate() + treinosTabTemplate();
+  if (state.activeTab === "recuperacao") return homeTabsTemplate() + recuperacaoTabTemplate();
   return homeTabsTemplate() + nutricaoTabTemplate();
 }
 
@@ -11481,6 +11540,201 @@ function nutricaoTabTemplate() {
       )
     ) +
     "</main>";
+}
+
+/* ===================== Recuperação (dados do Garmin) ===================== */
+// Traduções pra alguns códigos conhecidos que a API da Garmin devolve. qualifierKey de sleepScores é
+// bem documentado (EXCELLENT/GOOD/FAIR/POOR); já o status/feedbackPhrase do HRV tem mais variações não
+// documentadas publicamente -- pra esses, humanizarCodigoGarmin() abaixo serve de rede de segurança
+// (mostra o próprio código "limpo" em vez de esconder a informação quando não temos uma tradução pronta).
+const GARMIN_HRV_STATUS_LABEL = { BALANCED: "Equilibrado", UNBALANCED: "Desequilibrado", LOW: "Baixo", NONE: "Calibrando" };
+const GARMIN_QUALIDADE_SONO_LABEL = { EXCELLENT: "Excelente", GOOD: "Boa", FAIR: "Regular", POOR: "Ruim" };
+function humanizarCodigoGarmin(codigo) {
+  if (!codigo) return "";
+  const limpo = String(codigo).replace(/_/g, " ").toLowerCase();
+  return limpo.charAt(0).toUpperCase() + limpo.slice(1);
+}
+function formatHoras(segundos) {
+  if (segundos == null) return "--";
+  const h = Math.floor(segundos / 3600);
+  const m = Math.round((segundos % 3600) / 60);
+  return h + "h" + String(m).padStart(2, "0");
+}
+// Lista de dias com dado Garmin, em ordem CRESCENTE de data (mais antigo primeiro) -- usada tanto pra
+// achar o dia mais recente (último da lista) quanto pra navegação anterior/seguinte abaixo.
+function garminRegistrosOrdenados() {
+  return state.garmin.slice().sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+}
+// Dia sendo exibido na aba Recuperação: o escolhido em state.recuperacaoDataSelecionada, se ainda
+// existir na lista, senão o mais recente disponível (ou null se não houver nenhum dado ainda).
+function garminRegistroAtual() {
+  const ordenados = garminRegistrosOrdenados();
+  if (!ordenados.length) return null;
+  if (state.recuperacaoDataSelecionada) {
+    const achado = ordenados.find((g) => g.date === state.recuperacaoDataSelecionada);
+    if (achado) return achado;
+  }
+  return ordenados[ordenados.length - 1];
+}
+function acaoRecuperacaoDiaAnterior() {
+  const ordenados = garminRegistrosOrdenados();
+  const atual = garminRegistroAtual();
+  if (!atual) return;
+  const indice = ordenados.findIndex((g) => g.date === atual.date);
+  if (indice > 0) { state.recuperacaoDataSelecionada = ordenados[indice - 1].date; render(); }
+}
+function acaoRecuperacaoDiaSeguinte() {
+  const ordenados = garminRegistrosOrdenados();
+  const atual = garminRegistroAtual();
+  if (!atual) return;
+  const indice = ordenados.findIndex((g) => g.date === atual.date);
+  if (indice !== -1 && indice < ordenados.length - 1) { state.recuperacaoDataSelecionada = ordenados[indice + 1].date; render(); }
+}
+function recuperacaoDiaNavTemplate(dia, ordenados) {
+  const indice = ordenados.findIndex((g) => g.date === dia.date);
+  const temAnterior = indice > 0;
+  const temSeguinte = indice !== -1 && indice < ordenados.length - 1;
+  return '<div class="garmin-day-nav">' +
+    '<button class="garmin-day-nav-btn" ' + (temAnterior ? 'onclick="acaoRecuperacaoDiaAnterior()"' : "disabled") + ' aria-label="Dia anterior">' + icon("chevronleft") + "</button>" +
+    '<span class="garmin-day-nav-label">' + icon("calendar") + " " + dateLabel(dia.date) + "</span>" +
+    '<button class="garmin-day-nav-btn garmin-day-nav-btn-next" ' + (temSeguinte ? 'onclick="acaoRecuperacaoDiaSeguinte()"' : "disabled") + ' aria-label="Próximo dia">' + icon("chevronleft") + "</button>" +
+  "</div>";
+}
+function recuperacaoHrvTemplate(dia) {
+  const resumo = dia.hrv && dia.hrv.hrvSummary;
+  if (!resumo) return '<div class="garmin-stat-tile"><div class="garmin-stat-tile-label">' + icon("heart") + " HRV</div><div class=\"garmin-stat-tile-value garmin-stat-tile-vazio\">Sem dado</div></div>";
+  const status = GARMIN_HRV_STATUS_LABEL[resumo.status] || humanizarCodigoGarmin(resumo.status) || "--";
+  return '<div class="garmin-stat-tile"><div class="garmin-stat-tile-label">' + icon("heart") + " HRV</div>" +
+    '<div class="garmin-stat-tile-value">' + (resumo.lastNightAvg != null ? resumo.lastNightAvg + " ms" : "--") + "</div>" +
+    '<div class="garmin-stat-tile-sub">Média da última noite · status: ' + esc(status) + (resumo.weeklyAvg != null ? " · média semanal " + resumo.weeklyAvg + " ms" : "") + "</div>" +
+  "</div>";
+}
+function recuperacaoBodyBatteryTemplate(dia) {
+  const bb = dia.bodyBattery && dia.bodyBattery[0];
+  if (!bb) return '<div class="garmin-stat-tile"><div class="garmin-stat-tile-label">' + icon("zap") + " Body Battery</div><div class=\"garmin-stat-tile-value garmin-stat-tile-vazio\">Sem dado</div></div>";
+  const valores = (bb.bodyBatteryValuesArray || []).map((v) => v[1]).filter((v) => v != null);
+  const minimo = valores.length ? Math.min.apply(null, valores) : null;
+  const maximo = valores.length ? Math.max.apply(null, valores) : null;
+  return '<div class="garmin-stat-tile"><div class="garmin-stat-tile-label">' + icon("zap") + " Body Battery</div>" +
+    '<div class="garmin-stat-tile-value">+' + (bb.charged != null ? bb.charged : "--") + " / -" + (bb.drained != null ? bb.drained : "--") + "</div>" +
+    '<div class="garmin-stat-tile-sub">Recarregou / gastou no dia' + (minimo != null ? " · variou entre " + minimo + " e " + maximo : "") + "</div>" +
+  "</div>";
+}
+function recuperacaoSonoTemplate(dia) {
+  const s = dia.sono;
+  if (!s) return '<div class="garmin-sono-vazio">' + icon("moon") + " Sem registro de sono para este dia.</div>";
+  const total = s.sleepTimeSeconds || 0;
+  // Ordem fixa (profundo, leve, REM, acordado) e cores fixas -- sempre nessa ordem, nunca reordenadas
+  // por tamanho, pra identidade de cada fase ficar sempre no mesmo lugar/cor na barra e na legenda.
+  const fases = [
+    { label: "Profundo", seg: s.deepSleepSeconds || 0, cor: "#1d4b3d" },
+    { label: "Leve", seg: s.lightSleepSeconds || 0, cor: "#8fbf78" },
+    { label: "REM", seg: s.remSleepSeconds || 0, cor: "#8d7ab0" },
+    { label: "Acordado", seg: s.awakeSleepSeconds || 0, cor: "#cfd6d0" },
+  ];
+  const totalFases = fases.reduce((soma, f) => soma + f.seg, 0) || 1;
+  const pontuacao = s.sleepScores && s.sleepScores.overall;
+  const qualidade = pontuacao ? (GARMIN_QUALIDADE_SONO_LABEL[pontuacao.qualifierKey] || humanizarCodigoGarmin(pontuacao.qualifierKey)) : "";
+  return '' +
+    '<div class="garmin-sono-head">' +
+      '<div class="garmin-sono-total">' + icon("moon") + " " + formatHoras(total) + "</div>" +
+      (pontuacao ? '<div class="garmin-sono-score">' + icon("sparkles") + " " + pontuacao.value + " pontos · " + esc(qualidade) + "</div>" : "") +
+    "</div>" +
+    '<div class="garmin-sleep-phases">' + fases.map((f) => '<div class="garmin-sleep-phase" style="flex:' + (f.seg / totalFases) + ";background:" + f.cor + '" title="' + f.label + ": " + formatHoras(f.seg) + '"></div>').join("") + "</div>" +
+    '<div class="garmin-sleep-legend">' + fases.map((f) => "<span><span class=\"garmin-sw\" style=\"background:" + f.cor + "\"></span>" + f.label + " " + formatHoras(f.seg) + "</span>").join("") + "</div>" +
+    (s.avgHeartRate || s.averageRespirationValue ? '<div class="garmin-sono-extra">' +
+      (s.avgHeartRate ? "FC média " + formatNumber(s.avgHeartRate, 0) + " bpm" : "") +
+      (s.avgHeartRate && s.averageRespirationValue ? " · " : "") +
+      (s.averageRespirationValue ? "Respiração média " + formatNumber(s.averageRespirationValue, 1) + " rpm" : "") +
+    "</div>" : "");
+}
+// Limiares usados pelos insights automáticos abaixo -- um primeiro critério razoável pra começar (não é
+// recomendação clínica), documentado aqui pra poder ajustar depois se não fizer sentido na prática:
+//  - "treino pesado": 60 minutos ou mais de duração, somando todos os treinos daquele dia.
+//  - "sono ruim": pontuação Garmin abaixo de 70 (abaixo da faixa "Boa").
+//  - "nutriente baixo": abaixo de 70% da meta (mesma referência VDR/ANVISA já usada no resto do app,
+//    ver MICRO_GOALS).
+const RECUPERACAO_TREINO_PESADO_MIN = 60;
+const RECUPERACAO_SONO_RUIM_PONTUACAO = 70;
+const RECUPERACAO_NUTRIENTE_BAIXO_FRACAO = 0.7;
+// Mesmo padrão de soma/subtração de data usado no resto do app (ver legendaContextoPesoReferencia() e
+// afins) -- meio-dia fixo evita o "dia virar" errado por causa de fuso horário.
+function diaAnterior(data) {
+  const d = new Date(data + "T12:00:00");
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+function minutosTreinoNoDia(data) {
+  return state.treinos.filter((t) => t.date === data).reduce((soma, t) => soma + (t.duracaoMin || 0), 0);
+}
+// Cruza o dia do Garmin sendo exibido com (1) o treino do dia ANTERIOR (é a recuperação da noite depois
+// do treino que a gente quer ver) e (2) o Diário de Kcal do MESMO dia (sódio/magnésio) -- ver pergunta
+// respondida pelo usuário: insights básicos cruzando treino do dia anterior e metas nutricionais.
+function recuperacaoInsights(dia) {
+  const insights = [];
+  if (!dia) return insights;
+  const ontem = diaAnterior(dia.date);
+  const minutosOntem = minutosTreinoNoDia(ontem);
+  const treinoPesadoOntem = minutosOntem >= RECUPERACAO_TREINO_PESADO_MIN;
+  const pontuacaoSono = dia.sono && dia.sono.sleepScores && dia.sono.sleepScores.overall ? dia.sono.sleepScores.overall.value : null;
+  const sonoRuim = pontuacaoSono != null && pontuacaoSono < RECUPERACAO_SONO_RUIM_PONTUACAO;
+  const hrvStatus = dia.hrv && dia.hrv.hrvSummary ? dia.hrv.hrvSummary.status : null;
+  const hrvBaixo = hrvStatus === "LOW" || hrvStatus === "UNBALANCED";
+
+  if (treinoPesadoOntem && (sonoRuim || hrvBaixo)) {
+    insights.push({ tipo: "warn", titulo: "Recuperação abaixo do esperado.",
+      texto: "Você treinou " + minutosOntem + " min ontem e " + (sonoRuim && hrvBaixo ? "o sono e o HRV de hoje vieram abaixo do normal" : sonoRuim ? "o sono de hoje veio abaixo do ideal" : "o HRV de hoje veio baixo") + " — pode valer a pena um treino mais leve ou um dia de descanso." });
+  } else if (treinoPesadoOntem) {
+    insights.push({ tipo: "ok", titulo: "Boa recuperação.",
+      texto: "Mesmo com " + minutosOntem + " min de treino ontem, os sinais de hoje (sono/HRV) estão dentro do esperado." });
+  }
+
+  const diarioHoje = state.diarioKcal.find((r) => r.date === dia.date);
+  if (sonoRuim && diarioHoje) {
+    const sodioAbaixo = (diarioHoje.sodio || 0) < MICRO_GOALS.sodio * RECUPERACAO_NUTRIENTE_BAIXO_FRACAO;
+    const magnesioAbaixo = (diarioHoje.magnesio || 0) < MICRO_GOALS.magnesio * RECUPERACAO_NUTRIENTE_BAIXO_FRACAO;
+    if (sodioAbaixo || magnesioAbaixo) {
+      insights.push({ tipo: "info", titulo: "Sono ruim e eletrólitos baixos.",
+        texto: "No dia desse registro de sono mais fraco, " + (sodioAbaixo && magnesioAbaixo ? "sódio e magnésio" : sodioAbaixo ? "o sódio" : "o magnésio") + " ficaram abaixo da meta — pode ser um fator a observar." });
+    } else {
+      insights.push({ tipo: "ok", titulo: "Eletrólitos em dia.",
+        texto: "Sódio e magnésio dentro da meta mesmo num dia de sono mais fraco — não parecem ser o fator limitante agora." });
+    }
+  }
+
+  if (!insights.length) {
+    insights.push({ tipo: "info", titulo: "Ainda reunindo dados.",
+      texto: "Conforme mais dias de treino e sono forem sincronizando, os insights vão aparecer aqui." });
+  }
+  return insights;
+}
+function recuperacaoInsightsTemplate(dia) {
+  return recuperacaoInsights(dia).map((ins) =>
+    '<div class="garmin-insight ' + ins.tipo + '">' + icon(ins.tipo === "warn" ? "alert" : ins.tipo === "ok" ? "check" : "info") +
+    "<div><strong>" + esc(ins.titulo) + "</strong> " + esc(ins.texto) + "</div></div>"
+  ).join("");
+}
+function recuperacaoTabTemplate() {
+  const ordenados = garminRegistrosOrdenados();
+  const dia = garminRegistroAtual();
+  return '<main>' +
+    '<section class="medidas-section">' +
+      '<h2 class="medidas-section-title">' + icon("heart") + " Recuperação</h2>" +
+      '<p class="medidas-section-sub">Dados do seu Garmin — HRV, Body Battery e sono</p>' +
+      (!dia
+        ? '<div class="meal-empty"><div class="meal-empty-icon">' + icon("heart") + "</div><p>Nenhum dado do Garmin ainda</p><p>Assim que a sincronização diária rodar pela primeira vez, os dados aparecem aqui.</p></div>"
+        : '' +
+          recuperacaoDiaNavTemplate(dia, ordenados) +
+          '<div class="garmin-stat-grid">' + recuperacaoHrvTemplate(dia) + recuperacaoBodyBatteryTemplate(dia) + "</div>" +
+          '<div class="garmin-sono-card">' + recuperacaoSonoTemplate(dia) + "</div>"
+      ) +
+    "</section>" +
+    (dia ? '<section class="medidas-section">' +
+      '<h2 class="medidas-section-title">' + icon("sparkles") + " Insights automáticos</h2>" +
+      '<p class="medidas-section-sub">Cruzando treino do dia anterior, sono/HRV e metas nutricionais</p>' +
+      recuperacaoInsightsTemplate(dia) +
+    "</section>" : "") +
+  "</main>";
 }
 
 function homeTemplate() {
