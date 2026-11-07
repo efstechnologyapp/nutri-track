@@ -1049,6 +1049,12 @@ svg{ display: block; }
 .garmin-insight.info .icon{ color:#5c88a8; }
 .garmin-insight.info strong{ color:#2f4a5c; }
 
+.recuperacao-info-fases{ display:flex; flex-direction:column; gap:10px; }
+.recuperacao-info-fase{ background:#f7f9f5; border-radius:12px; padding:10px 12px; }
+.recuperacao-info-fase-head{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; flex-wrap:wrap; font-size:14px; color:#2f4a3c; }
+.recuperacao-info-fase-head span{ font-size:12px; font-weight:600; color:#6f9b59; white-space:nowrap; }
+.recuperacao-info-fase p{ margin:4px 0 0; font-size:13px; line-height:1.4; color:#5a6a5a; }
+
 .avaliacao-nota-geral{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; padding:20px 12px; }
 .avaliacao-nota-numero{ font-size:48px; font-weight:700; color:#2f4a5c; line-height:1; }
 .avaliacao-nota-numero span{ font-size:20px; font-weight:500; color:#8a97a8; }
@@ -2801,6 +2807,9 @@ const state = {
   // padrão do de cima, só que pros campos de Bioimpedância e Calorimetria) está aberto -- ver
   // exameInfoModalTemplate()/acaoAbrirInfoExame().
   infoExameAberto: null,
+  // "hrv" | "bodyBattery" | "sono" | null -- qual modal de informação da aba Recuperação está aberto
+  // (mesmo padrão de infoExameAberto acima) -- ver recuperacaoInfoModalTemplate()/acaoAbrirInfoRecuperacao().
+  infoRecuperacaoAberto: null,
   mealDetalheId: null, // id da refeição aberta no modal de detalhamento, ou null
   // Controla se o campo de corrigir a data está visível dentro do modal de detalhamento -- ver
   // mealDetalheModalTemplate()/acaoAbrirEdicaoDataRefeicao(). Reseta toda vez que o modal abre/fecha.
@@ -4944,6 +4953,10 @@ function acaoFecharDetalheDiaAnalise() { state.analiseConsumoDiaAberto = null; r
 // exameInfoModalTemplate()/EXAME_INFO. Mesmo padrão de acaoAbrirInfoNutriente() acima.
 function acaoAbrirInfoExame(tipo) { state.infoExameAberto = tipo; render(); }
 function acaoFecharInfoExame() { state.infoExameAberto = null; render(); }
+// Abre/fecha o modal de informações de um card da aba Recuperação (HRV, Body Battery ou Sono) -- ver
+// recuperacaoInfoModalTemplate()/RECUPERACAO_INFO. Mesmo padrão de acaoAbrirInfoExame() acima.
+function acaoAbrirInfoRecuperacao(chave) { state.infoRecuperacaoAberto = chave; render(); }
+function acaoFecharInfoRecuperacao() { state.infoRecuperacaoAberto = null; render(); }
 function acaoAbrirDetalheRefeicao(id) { state.mealDetalheId = id; state.mealDetalheEditandoData = false; render(); }
 function acaoFecharDetalheRefeicao() { state.mealDetalheId = null; state.mealDetalheEditandoData = false; render(); }
 function acaoAbrirEdicaoDataRefeicao() { state.mealDetalheEditandoData = true; render(); }
@@ -11700,22 +11713,98 @@ function recuperacaoDiaNavTemplate(dia, ordenados) {
     '<button class="garmin-day-nav-btn garmin-day-nav-btn-next" ' + (temSeguinte ? 'onclick="acaoRecuperacaoDiaSeguinte()"' : "disabled") + ' aria-label="Próximo dia">' + icon("chevronleft") + "</button>" +
   "</div>";
 }
+// Conteúdo dos modais de informação da aba Recuperação (HRV, Body Battery, Sono) -- mesmo padrão/
+// template de EXAME_INFO (ver exameInfoModalTemplate() acima), com um conteúdo extra só pro Sono
+// (fases: fases.label/meta/texto -- ver recuperacaoInfoModalTemplate()) e uma seção específica ligando
+// o sono aos aspectos nutricionais/esportivos do usuário (treino pesado + déficit calórico), pedido
+// explícito do usuário. HRV e Body Battery são conceitualmente diferentes e por isso citam fontes
+// diferentes: HRV é um sinal fisiológico estudado academicamente há décadas (sem "meta" universal --
+// o que importa é a tendência em relação à própria média, não um número fixo); Body Battery é uma
+// métrica PROPRIETÁRIA da Garmin (Firstbeat Analytics), não um método publicado/validado de forma
+// independente -- por isso o texto abaixo é explícito sobre essa diferença, pra não dar a entender que
+// os dois têm o mesmo nível de evidência científica.
+const RECUPERACAO_INFO = {
+  hrv: {
+    titulo: "HRV (Variabilidade da Frequência Cardíaca)",
+    icone: "heart", cor: "#a85a7a", corSuave: "#f6ebf0",
+    oQue: [
+      "HRV mede a variação, em milissegundos, do intervalo entre batimentos cardíacos consecutivos -- não a frequência cardíaca em si, mas o quanto esse intervalo varia de um batimento pro outro.",
+      "Reflete o equilíbrio entre os dois ramos do sistema nervoso autônomo: o simpático (\"acelerador\", ligado a esforço/estresse) e o parassimpático (\"freio\", ligado a descanso/recuperação). HRV mais alto costuma indicar maior predominância parassimpática -- um corpo mais recuperado e pronto pra absorver um novo estímulo de treino.",
+      "Por isso é um dos indicadores mais usados de prontidão em atletas: quedas de HRV em relação à SUA PRÓPRIA média costumam preceder fadiga acumulada, overreaching ou até doença. É um valor muito individual -- o que importa é a tendência, não o número absoluto comparado com o de outra pessoa (por isso o Garmin fala em \"status\": equilibrado, baixo etc., sempre relativo à sua linha de base).",
+    ],
+    fonte: "Shaffer F, Ginsberg JP — An Overview of Heart Rate Variability Metrics and Norms, Frontiers in Public Health (2017) · Plews DJ, et al. — Training Adaptation and Heart Rate Variability in Elite Endurance Athletes, Sports Medicine (2013).",
+  },
+  bodyBattery: {
+    titulo: "Body Battery",
+    icone: "zap", cor: "#d1a53b", corSuave: "#fbf3d9",
+    oQue: [
+      "Métrica proprietária da Garmin (tecnologia Firstbeat Analytics) que estima sua energia corporal disponível numa escala de 0 a 100, combinando HRV, nível de estresse (via frequência cardíaca), qualidade do sono recente e atividade física.",
+      "\"Carrega\" (sobe) principalmente durante sono de boa qualidade e períodos de descanso com baixo estresse; \"descarrega\" (cai) com atividade física, estresse mental e privação de sono.",
+      "Diferente do HRV (card ao lado), é uma estimativa PROPRIETÁRIA -- não um método publicado e validado de forma independente pela literatura acadêmica. Trate como um indicativo prático do dia a dia (\"tenho fôlego pra um treino forte hoje?\"), não como uma medida clínica.",
+    ],
+    fonte: "Garmin — Body Battery Energy Monitoring (documentação oficial do fabricante, tecnologia Firstbeat Analytics).",
+  },
+  sono: {
+    titulo: "Sono",
+    icone: "moon", cor: "#6b8f71", corSuave: "#eaf2ea",
+    oQue: [
+      "O sono alterna, em ciclos de ~90 minutos ao longo da noite, entre sono leve, sono profundo e sono REM, intercalados por pequenos despertares (a maioria imperceptível) -- não é um estado único.",
+      "Adultos de 18 a 64 anos precisam, em média, de 7 a 9 horas de sono por noite pra funções físicas e cognitivas normais -- repetidamente dormir menos que isso cria uma \"dívida de sono\" cumulativa, com efeito sobre humor, atenção e recuperação física.",
+    ],
+    fases: [
+      { label: "Sono profundo (ondas lentas / N3)", meta: "13-23% do tempo total de sono", texto: "A fase mais associada à recuperação FÍSICA: é quando ocorre o pico de liberação do hormônio do crescimento (GH), ligado ao reparo de músculos e tecidos -- especialmente relevante pra quem treina pesado (musculação, jiu-jitsu) e, mais ainda, pra quem está em déficit calórico, cenário em que a recuperação muscular já fica mais desafiada." },
+      { label: "Sono REM", meta: "20-25% do tempo total de sono", texto: "Ligado a consolidação de memória, aprendizado motor e regulação emocional. Um estudo mostrou que a fase REM da madrugada é especialmente importante pra consolidar o aprendizado de uma nova sequência de movimentos -- relevante pra quem está aprendendo ou refinando técnica esportiva (ex.: jiu-jitsu)." },
+      { label: "Sono leve (N1+N2)", meta: "o restante (tipicamente ~45-55%)", texto: "Faz a transição entre as outras fases e também contribui pra consolidação de memória, com um papel individualmente menos crítico que o do sono profundo ou do REM." },
+      { label: "Acordado durante a noite", meta: "eficiência do sono (tempo dormindo ÷ tempo na cama) acima de ~85%", texto: "Pequenos despertares ao longo da noite são normais -- ninguém dorme 100% do tempo na cama. O que importa acompanhar é a eficiência geral do sono, não zerar os despertares." },
+    ],
+    esportivoNutricional: "Pra quem treina pesado (ex.: jiu-jitsu, musculação) e/ou está em déficit calórico: sono insuficiente, ou com pouco sono profundo, reduz a síntese de proteína muscular e piora a tolerância à glicose/apetite no dia seguinte -- dificultando tanto a recuperação do treino quanto o controle do próprio plano alimentar. Um estudo com atletas universitários mostrou que ESTENDER o sono (mais horas na cama) melhorou tempo de sprint, precisão de arremesso, tempo de reação e humor -- ou seja, sono não é só \"descanso passivo\", é parte do treino.",
+    fonte: "Hirshkowitz M, et al. — National Sleep Foundation's Sleep Time Duration Recommendations, Sleep Health (2015) · Ohayon MM, et al. — Meta-analysis of Quantitative Sleep Parameters from Childhood to Old Age, Sleep (2004) · Walker MP, et al. — Practice with Sleep Makes Perfect: Sleep-Dependent Motor Skill Learning, Neuron (2002) · Mah CD, et al. — The Effects of Sleep Extension on the Athletic Performance of Collegiate Basketball Players, Sleep (2011).",
+  },
+};
+function recuperacaoInfoBtnTemplate(chave, label) {
+  return '<button class="nutrient-info-btn" aria-label="Informações sobre ' + esc(label) + '" onclick="event.stopPropagation(); acaoAbrirInfoRecuperacao(\'' + chave + '\')">' + icon("info") + "</button>";
+}
+function recuperacaoInfoModalTemplate() {
+  const chave = state.infoRecuperacaoAberto;
+  if (!chave) return "";
+  const info = RECUPERACAO_INFO[chave];
+  if (!info) return "";
+  return '' +
+    '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharInfoRecuperacao();}">' +
+    '<div class="modal-card nutrient-info-modal">' +
+      '<div class="meal-detalhe-head"><div class="nutrient-info-modal-title">' +
+        '<div class="nutrient-icon" style="background:' + info.corSuave + ";color:" + info.cor + '">' + icon(info.icone) + "</div>" +
+        "<h2>" + esc(info.titulo) + "</h2>" +
+      "</div>" +
+      '<button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharInfoRecuperacao()">' + icon("x") + "</button></div>" +
+      '<div class="nutrient-info-secao"><h3>O que é / por que importa</h3>' +
+        '<ul class="nutrient-info-lista">' + info.oQue.map((f) => "<li>" + esc(f) + "</li>").join("") + "</ul>" +
+      "</div>" +
+      (info.fases ? '<div class="nutrient-info-secao"><h3>Fases do sono: função e metas</h3>' +
+        '<div class="recuperacao-info-fases">' + info.fases.map((f) =>
+          '<div class="recuperacao-info-fase"><div class="recuperacao-info-fase-head"><strong>' + esc(f.label) + "</strong><span>" + esc(f.meta) + "</span></div><p>" + esc(f.texto) + "</p></div>"
+        ).join("") + "</div>" +
+      "</div>" : "") +
+      (info.esportivoNutricional ? '<div class="nutrient-info-secao"><h3>Pra quem treina pesado / está em déficit calórico</h3><p>' + esc(info.esportivoNutricional) + "</p></div>" : "") +
+      '<p class="nutrient-info-fonte">' + icon("help") + " Fonte: " + esc(info.fonte) + "</p>" +
+    "</div></div>";
+}
 function recuperacaoHrvTemplate(dia) {
   const resumo = dia.hrv && dia.hrv.hrvSummary;
-  if (!resumo) return '<div class="garmin-stat-tile"><div class="garmin-stat-tile-label">' + icon("heart") + " HRV</div><div class=\"garmin-stat-tile-value garmin-stat-tile-vazio\">Sem dado</div></div>";
+  if (!resumo) return '<div class="garmin-stat-tile"><div class="garmin-stat-tile-label">' + icon("heart") + " HRV" + recuperacaoInfoBtnTemplate("hrv", "HRV") + "</div><div class=\"garmin-stat-tile-value garmin-stat-tile-vazio\">Sem dado</div></div>";
   const status = GARMIN_HRV_STATUS_LABEL[resumo.status] || humanizarCodigoGarmin(resumo.status) || "--";
-  return '<div class="garmin-stat-tile"><div class="garmin-stat-tile-label">' + icon("heart") + " HRV</div>" +
+  return '<div class="garmin-stat-tile"><div class="garmin-stat-tile-label">' + icon("heart") + " HRV" + recuperacaoInfoBtnTemplate("hrv", "HRV") + "</div>" +
     '<div class="garmin-stat-tile-value">' + (resumo.lastNightAvg != null ? resumo.lastNightAvg + " ms" : "--") + "</div>" +
     '<div class="garmin-stat-tile-sub">Média da última noite · status: ' + esc(status) + (resumo.weeklyAvg != null ? " · média semanal " + resumo.weeklyAvg + " ms" : "") + "</div>" +
   "</div>";
 }
 function recuperacaoBodyBatteryTemplate(dia) {
   const bb = dia.bodyBattery && dia.bodyBattery[0];
-  if (!bb) return '<div class="garmin-stat-tile"><div class="garmin-stat-tile-label">' + icon("zap") + " Body Battery</div><div class=\"garmin-stat-tile-value garmin-stat-tile-vazio\">Sem dado</div></div>";
+  if (!bb) return '<div class="garmin-stat-tile"><div class="garmin-stat-tile-label">' + icon("zap") + " Body Battery" + recuperacaoInfoBtnTemplate("bodyBattery", "Body Battery") + "</div><div class=\"garmin-stat-tile-value garmin-stat-tile-vazio\">Sem dado</div></div>";
   const valores = (bb.bodyBatteryValuesArray || []).map((v) => v[1]).filter((v) => v != null);
   const minimo = valores.length ? Math.min.apply(null, valores) : null;
   const maximo = valores.length ? Math.max.apply(null, valores) : null;
-  return '<div class="garmin-stat-tile"><div class="garmin-stat-tile-label">' + icon("zap") + " Body Battery</div>" +
+  return '<div class="garmin-stat-tile"><div class="garmin-stat-tile-label">' + icon("zap") + " Body Battery" + recuperacaoInfoBtnTemplate("bodyBattery", "Body Battery") + "</div>" +
     '<div class="garmin-stat-tile-value">+' + (bb.charged != null ? bb.charged : "--") + " / -" + (bb.drained != null ? bb.drained : "--") + "</div>" +
     '<div class="garmin-stat-tile-sub">Recarregou / gastou no dia' + (minimo != null ? " · variou entre " + minimo + " e " + maximo : "") + "</div>" +
   "</div>";
@@ -11737,7 +11826,7 @@ function recuperacaoSonoTemplate(dia) {
   const qualidade = pontuacao ? (GARMIN_QUALIDADE_SONO_LABEL[pontuacao.qualifierKey] || humanizarCodigoGarmin(pontuacao.qualifierKey)) : "";
   return '' +
     '<div class="garmin-sono-head">' +
-      '<div class="garmin-sono-total">' + icon("moon") + " " + formatHoras(total) + "</div>" +
+      '<div class="garmin-sono-total">' + icon("moon") + " " + formatHoras(total) + recuperacaoInfoBtnTemplate("sono", "Sono") + "</div>" +
       (pontuacao ? '<div class="garmin-sono-score">' + icon("sparkles") + " " + pontuacao.value + " pontos · " + esc(qualidade) + "</div>" : "") +
     "</div>" +
     '<div class="garmin-sleep-phases">' + fases.map((f) => '<div class="garmin-sleep-phase" style="flex:' + (f.seg / totalFases) + ";background:" + f.cor + '" title="' + f.label + ": " + formatHoras(f.seg) + '"></div>').join("") + "</div>" +
@@ -12151,7 +12240,7 @@ function homeTemplate() {
   return '' +
     '<div class="app-shell">' +
     '<button class="hamburger-btn" onclick="acaoAbrirSidebar()" aria-label="Abrir menu"><span></span></button>' +
-    sidebarTemplate() + editarPerfilTemplate() + mealDetalheModalTemplate() + nutrientInfoModalTemplate() + exameInfoModalTemplate() + cadastrarProdutoModalTemplate() + analiseConsumoDiaModalTemplate() + autonomiaInfoModalTemplate() +
+    sidebarTemplate() + editarPerfilTemplate() + mealDetalheModalTemplate() + nutrientInfoModalTemplate() + exameInfoModalTemplate() + recuperacaoInfoModalTemplate() + cadastrarProdutoModalTemplate() + analiseConsumoDiaModalTemplate() + autonomiaInfoModalTemplate() +
     '<div class="home-content"><div class="home-inner">' +
     (state.account ? fullHomeTemplate() : lockedTemplate()) +
     "</div></div></div>";
