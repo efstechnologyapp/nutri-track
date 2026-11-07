@@ -1142,7 +1142,7 @@ function pct(value, goal) { return goal ? Math.min(100, Math.max(0, (value / goa
 // derivada de Object.keys(nutrientMeta/micronutrientMeta)) de propósito: addNutrients soma tanto
 // `food.values` (só nutrientes) quanto registros de refeição inteiros (que têm outros campos, como
 // id/name/description) — somar só as chaves conhecidas evita tentar somar "id" ou concatenar "name".
-const NUTRIENT_KEYS = ["calories", "protein", "carbs", "fat", "fiber", "vitA", "vitC", "vitD", "vitB12", "calcio", "ferro", "magnesio", "potassio", "zinco", "sodio", "folato", "selenio"];
+const NUTRIENT_KEYS = ["calories", "protein", "carbs", "fat", "fiber", "vitA", "vitC", "vitD", "vitB12", "calcio", "ferro", "magnesio", "potassio", "zinco", "sodio", "folato", "selenio", "biotina", "omega3"];
 function addNutrients(a, b) { const out = {}; NUTRIENT_KEYS.forEach((k) => { out[k] = (a[k] || 0) + (b[k] || 0); }); return out; }
 function scale(values, m) { const out = {}; for (const k of Object.keys(values)) out[k] = values[k] * m; return out; }
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
@@ -1374,6 +1374,8 @@ const micronutrientMeta = {
   sodio: { label: "Sódio", unit: "mg", color: "#7a95a6", soft: "#eaf1f3", icon: "salt" },
   folato: { label: "Folato (Vitamina B9)", unit: "mcg", color: "#b8935a", soft: "#f6efe2", icon: "wheat" },
   selenio: { label: "Selênio", unit: "mcg", color: "#9a7a6b", soft: "#f3ece8", icon: "rotate" },
+  biotina: { label: "Biotina (Vitamina B7)", unit: "mcg", color: "#c77b5f", soft: "#f8ebe6", icon: "sparkles" },
+  omega3: { label: "Ômega-3", unit: "mg", color: "#4f8fa8", soft: "#e6f1f4", icon: "droplet" },
 };
 // Vitamina D também é comumente informada em UI (Unidades Internacionais) -- é como aparece no rótulo
 // dos frascos de suplemento (ex.: "5000 UI"), diferente das demais vitaminas/minerais daqui, que só
@@ -1392,8 +1394,11 @@ function formatVitaminaDComUI(mcg, digitsMcg) {
 // já batiam com os dois padrões (não mudaram entre as duas normas). Sódio (2.000mg) e vitamina B12
 // (2,4mcg) seguem o mesmo Anexo II.
 // folato (400mcg DFE) e selenio (60mcg) acrescentados depois, mesma fonte (IN 75/2020, Anexo II).
-const MICRO_GOALS = { vitA: 800, vitC: 100, vitD: 15, vitB12: 2.4, calcio: 1000, ferro: 14, magnesio: 420, potassio: 3500, zinco: 11, sodio: 2000, folato: 400, selenio: 60 };
-const emptyNutrients = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, vitB12: 0, calcio: 0, ferro: 0, magnesio: 0, potassio: 0, zinco: 0, sodio: 0, folato: 0, selenio: 0 };
+// biotina (30mcg) e omega3 (4.000mg) acrescentados depois também, mesma fonte -- VDR de rotulagem, não
+// uma recomendação de dose ideal (sobretudo o de ômega-3, que é um valor alto, pensado pra alegações de
+// rótulo, não uma meta diária realista de se bater só com alimento).
+const MICRO_GOALS = { vitA: 800, vitC: 100, vitD: 15, vitB12: 2.4, calcio: 1000, ferro: 14, magnesio: 420, potassio: 3500, zinco: 11, sodio: 2000, folato: 400, selenio: 60, biotina: 30, omega3: 4000 };
+const emptyNutrients = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, vitA: 0, vitC: 0, vitD: 0, vitB12: 0, calcio: 0, ferro: 0, magnesio: 0, potassio: 0, zinco: 0, sodio: 0, folato: 0, selenio: 0, biotina: 0, omega3: 0 };
 
 // Conteúdo educativo (função no organismo + principais fontes alimentares) mostrado no modal de
 // informações de cada card de macro/micronutriente -- ver nutrientInfoModalTemplate()/
@@ -1567,6 +1572,25 @@ const NUTRIENT_INFO = {
     fontes: ["Castanha-do-pará", "Peixes e frutos do mar", "Carnes e ovos", "Grãos integrais (variam conforme o solo onde foram cultivados)"],
     fonte: "NIH Office of Dietary Supplements · ANVISA — Instrução Normativa nº 75/2020 (Anexo II).",
   },
+  biotina: {
+    funcoes: [
+      "Atuar como coenzima no metabolismo de carboidratos, gorduras e proteínas (ajuda a converter alimento em energia).",
+      "Participar da síntese de ácidos graxos, relevante para a saúde da pele.",
+      "Ligada à manutenção da estrutura de cabelo e unhas — base da fama (pouco sustentada em pessoas sem deficiência) de \"vitamina da beleza\".",
+    ],
+    fontes: ["Ovos (gema cozida -- a clara crua tem avidina, que bloqueia sua absorção)", "Oleaginosas e sementes", "Fígado", "Leite e derivados"],
+    fonte: "NIH Office of Dietary Supplements · ANVISA — Instrução Normativa nº 75/2020 (Anexo II).",
+  },
+  omega3: {
+    funcoes: [
+      "Compor as membranas celulares, incluindo as dos neurônios -- papel relevante em cognição e humor.",
+      "Ter efeito anti-inflamatório, relevante para recuperação muscular/articular em quem treina pesado.",
+      "Contribuir para a saúde cardiovascular (triglicerídeos).",
+      "Contribuir para a hidratação e barreira da pele.",
+    ],
+    fontes: ["Peixes de água fria e gordurosos (salmão, sardinha, atum)", "Chia e linhaça", "Nozes", "Azeite e óleos vegetais (fonte de ALA, a forma vegetal, de conversão limitada em EPA/DHA)"],
+    fonte: "NIH Office of Dietary Supplements · ANVISA — Instrução Normativa nº 75/2020 (Anexo II).",
+  },
 };
 
 // Motor de análise embutido/offline da aba "Análise de Consumo" (ver analiseConsumoTabTemplate()/
@@ -1675,6 +1699,20 @@ const NUTRIENTE_ANALISE_REF = {
     abaixo: "Carência de selênio é rara na maior parte do mundo, mas em populações com solo muito pobre no mineral já foi associada a problemas cardíacos (doença de Keshan) e à função da tireoide.",
     acima: "Excesso de selênio (selenose), mais comum por suplementação em dose alta, pode causar queda de cabelo, unhas quebradiças, sintomas gastrointestinais, irritabilidade e um característico hálito/suor com cheiro de alho.",
   },
+  biotina: {
+    ulTolerado: null, // sem UL estabelecido -- não há toxicidade conhecida por excesso de biotina via
+    // alimento ou suplementação oral em pessoa saudável.
+    abaixo: "Carência de biotina é rara (o corpo precisa de pouco e bactérias do intestino também produzem um pouco), mas quando ocorre pode causar queda de cabelo, uma erupção cutânea característica ao redor dos olhos/nariz/boca e unhas quebradiças -- geralmente associada a consumo excessivo de clara de ovo crua (que contém avidina, bloqueando a absorção) ou a certos medicamentos/condições, não à dieta comum.",
+    acima: "Não há toxicidade conhecida por excesso de biotina via alimento ou suplemento em pessoa saudável -- o principal cuidado prático é que doses altas de suplemento podem interferir em alguns exames laboratoriais (de tireoide, por exemplo), gerando resultados falsos -- vale avisar o laboratório se estiver suplementando.",
+  },
+  omega3: {
+    ulTolerado: null, // sem UL numérico estabelecido pelas DRIs -- o cuidado prático citado por
+    // agências regulatórias (FDA/EFSA) é não ultrapassar ~2-3g/dia de EPA+DHA combinados só por
+    // SUPLEMENTO, pelo possível efeito sobre a coagulação -- não é comparável ao total de dieta usado
+    // aqui, então não entra como teto genérico (mesmo caso do magnésio, acima).
+    abaixo: "Ingestão cronicamente baixa de ômega-3 (comum em dietas com pouco peixe) é associada, na literatura, a pior perfil cardiovascular e possível relação com humor/cognição -- a causalidade exata ainda é debatida, mas a adequação costuma ser recomendada por segurança.",
+    acima: "Ômega-3 de alimento tem baixíssimo risco de excesso. Só em doses muito altas de SUPLEMENTO (bem acima do que se consegue só com peixe/sementes) existe um possível efeito sobre a coagulação sanguínea -- relevante sobretudo para quem usa anticoagulantes ou vai passar por cirurgia, caso em que vale orientação médica.",
+  },
 };
 
 const foodLibrary = [
@@ -1714,10 +1752,11 @@ const foodLibrary = [
   // prato (milho de canjica/mungunzá + leite + açúcar + coco), cruzando "Milho cozido" e "Leite integral"
   // (acima) na proporção de receita, com um pouco de gordura/fibra a mais pelo coco.
   { terms: ["canjica"], label: "Canjica", baseAmount: "1 tigela (200 g)", values: { calories: 240, protein: 5, carbs: 40, fat: 6, fiber: 2.4, vitA: 15, vitC: 2, vitD: 0.2, calcio: 90, ferro: 1, magnesio: 35, potassio: 220, zinco: 0.8, sodio: 40, vitB12: 0.15 }, grams: 200 },
-  { terms: ["ovo frito", "ovo de galinha frito", "ovo"], label: "Ovo frito", baseAmount: "1 unidade", values: { calories: 90, protein: 6.3, carbs: 0.4, fat: 7, fiber: 0, vitA: 90, vitC: 0, vitD: 1, calcio: 25, ferro: 0.9, magnesio: 5, potassio: 65, zinco: 0.6, sodio: 95, vitB12: 0.55 }, count: 1 },
-  { terms: ["ovo cozido"], label: "Ovo cozido", baseAmount: "1 unidade", values: { calories: 78, protein: 6.3, carbs: 0.6, fat: 5.3, fiber: 0, vitA: 80, vitC: 0, vitD: 1, calcio: 25, ferro: 0.9, magnesio: 5, potassio: 65, zinco: 0.6, sodio: 70, vitB12: 0.55 }, count: 1 },
-  { terms: ["ovo de codorna", "ovos de codorna", "codorna"], label: "Ovo de codorna", baseAmount: "1 unidade", values: { calories: 14, protein: 1.2, carbs: 0.1, fat: 1, fiber: 0, vitA: 14, vitC: 0, vitD: 0.1, calcio: 6, ferro: 0.3, magnesio: 1, potassio: 12, zinco: 0.1, sodio: 13, vitB12: 0.15 }, count: 1 },
-  { terms: ["omelete"], label: "Omelete", baseAmount: "2 ovos", values: { calories: 190, protein: 13, carbs: 1.5, fat: 15, fiber: 0, vitA: 160, vitC: 0, vitD: 2, calcio: 50, ferro: 1.8, magnesio: 10, potassio: 130, zinco: 1.2, sodio: 180, vitB12: 1.1 }, count: 2 },
+  // biotina acrescentada depois (NIH ODS: 1 ovo cozido inteiro -- 10 mcg).
+  { terms: ["ovo frito", "ovo de galinha frito", "ovo"], label: "Ovo frito", baseAmount: "1 unidade", values: { calories: 90, protein: 6.3, carbs: 0.4, fat: 7, fiber: 0, vitA: 90, vitC: 0, vitD: 1, calcio: 25, ferro: 0.9, magnesio: 5, potassio: 65, zinco: 0.6, sodio: 95, vitB12: 0.55, biotina: 10 }, count: 1 },
+  { terms: ["ovo cozido"], label: "Ovo cozido", baseAmount: "1 unidade", values: { calories: 78, protein: 6.3, carbs: 0.6, fat: 5.3, fiber: 0, vitA: 80, vitC: 0, vitD: 1, calcio: 25, ferro: 0.9, magnesio: 5, potassio: 65, zinco: 0.6, sodio: 70, vitB12: 0.55, biotina: 10 }, count: 1 },
+  { terms: ["ovo de codorna", "ovos de codorna", "codorna"], label: "Ovo de codorna", baseAmount: "1 unidade", values: { calories: 14, protein: 1.2, carbs: 0.1, fat: 1, fiber: 0, vitA: 14, vitC: 0, vitD: 0.1, calcio: 6, ferro: 0.3, magnesio: 1, potassio: 12, zinco: 0.1, sodio: 13, vitB12: 0.15, biotina: 2 }, count: 1 },
+  { terms: ["omelete"], label: "Omelete", baseAmount: "2 ovos", values: { calories: 190, protein: 13, carbs: 1.5, fat: 15, fiber: 0, vitA: 160, vitC: 0, vitD: 2, calcio: 50, ferro: 1.8, magnesio: 10, potassio: 130, zinco: 1.2, sodio: 180, vitB12: 1.1, biotina: 20 }, count: 2 },
   { terms: ["peito de frango", "frango grelhado", "frango"], label: "Peito de frango", baseAmount: "100 g", values: { calories: 165, protein: 31, carbs: 0, fat: 3.6, fiber: 0, vitA: 5, vitC: 0, vitD: 0.1, calcio: 6, ferro: 0.4, magnesio: 25, potassio: 220, zinco: 0.7, sodio: 75, vitB12: 0.36 }, grams: 100 },
   // Pedido do usuário. Sobrecoxa sem pele, assada -- valores cruzados entre USDA/nutritionvalue.org
   // (chicken thigh, meat only, roasted) e fatsecret/USDA. Naturalmente mais calórica/gordurosa que o peito
@@ -1743,15 +1782,18 @@ const foodLibrary = [
   { terms: ["cupim assado", "cupim"], label: "Cupim assado", baseAmount: "100 g", values: { calories: 280, protein: 24, carbs: 0, fat: 20, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 9, ferro: 2, magnesio: 19, potassio: 280, zinco: 4, sodio: 60, vitB12: 2.2 }, grams: 100 },
   { terms: ["alcatra"], label: "Alcatra grelhada", baseAmount: "100 g", values: { calories: 179, protein: 30, carbs: 0, fat: 6, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 8, ferro: 2.3, magnesio: 22, potassio: 320, zinco: 4.3, sodio: 55, vitB12: 2.5 }, grams: 100 },
   { terms: ["file de tilapia", "peixe grelhado", "tilapia"], label: "Filé de tilápia grelhado", baseAmount: "100 g", values: { calories: 128, protein: 26, carbs: 0, fat: 2.7, fiber: 0, vitA: 5, vitC: 0, vitD: 1, calcio: 10, ferro: 0.5, magnesio: 27, potassio: 300, zinco: 0.4, sodio: 75, vitB12: 1.6 }, grams: 100 },
-  { terms: ["salmao grelhado", "salmao"], label: "Salmão grelhado", baseAmount: "100 g", values: { calories: 208, protein: 22, carbs: 0, fat: 13, fiber: 0, vitA: 40, vitC: 0, vitD: 10, calcio: 12, ferro: 0.5, magnesio: 30, potassio: 380, zinco: 0.5, sodio: 65, vitB12: 2.8 }, grams: 100 },
-  { terms: ["atum em lata", "atum"], label: "Atum em lata", baseAmount: "100 g", values: { calories: 116, protein: 26, carbs: 0, fat: 1, fiber: 0, vitA: 15, vitC: 0, vitD: 2, calcio: 10, ferro: 1.3, magnesio: 30, potassio: 250, zinco: 0.6, sodio: 350, vitB12: 2 }, grams: 100 },
+  // omega3 (EPA+DHA) acrescentado depois (USDA: salmão grelhado ~100g tem em torno de 2.000mg).
+  { terms: ["salmao grelhado", "salmao"], label: "Salmão grelhado", baseAmount: "100 g", values: { calories: 208, protein: 22, carbs: 0, fat: 13, fiber: 0, vitA: 40, vitC: 0, vitD: 10, calcio: 12, ferro: 0.5, magnesio: 30, potassio: 380, zinco: 0.5, sodio: 65, vitB12: 2.8, omega3: 2000 }, grams: 100 },
+  // omega3 do atum enlatado é bem mais baixo que o de peixe fresco (USDA: atum em água, ~100g, ~300mg).
+  { terms: ["atum em lata", "atum"], label: "Atum em lata", baseAmount: "100 g", values: { calories: 116, protein: 26, carbs: 0, fat: 1, fiber: 0, vitA: 15, vitC: 0, vitD: 2, calcio: 10, ferro: 1.3, magnesio: 30, potassio: 250, zinco: 0.6, sodio: 350, vitB12: 2, omega3: 300 }, grams: 100 },
   // Pedido do usuário. Calorias/proteína/carboidratos/gordura: FatSecret Brasil (Gomes da Costa, Patê de
   // Atum -- a versão tradicional, não a "light"). Fibra/sódio/micronutrientes não constavam na fonte --
   // estimados por aproximação com o atum em lata (acima) e produtos similares de peixe processado com
   // maionese (sódio mais alto que o atum puro, por causa do sal de conservação/tempero do patê).
   { terms: ["pate de atum"], label: "Patê de atum", baseAmount: "100 g", values: { calories: 153, protein: 11, carbs: 5.8, fat: 9.3, fiber: 0, vitA: 10, vitC: 0, vitD: 1, calcio: 15, ferro: 0.5, magnesio: 10, potassio: 150, zinco: 0.3, sodio: 500, vitB12: 1.2 }, grams: 100 },
   { terms: ["camarao cozido", "camarao"], label: "Camarão cozido", baseAmount: "100 g", values: { calories: 99, protein: 24, carbs: 0.2, fat: 0.3, fiber: 0, vitA: 20, vitC: 2, vitD: 0.1, calcio: 60, ferro: 0.4, magnesio: 40, potassio: 260, zinco: 1.6, sodio: 180, vitB12: 1.5 }, grams: 100 },
-  { terms: ["sardinha grelhada", "sardinha assada", "sardinha"], label: "Sardinha grelhada", baseAmount: "100 g", values: { calories: 185, protein: 24.6, carbs: 0, fat: 9.5, fiber: 0, vitA: 32, vitC: 0, vitD: 4.8, calcio: 30, ferro: 1.4, magnesio: 31, potassio: 380, zinco: 1.3, sodio: 100, vitB12: 8.9 }, grams: 100 },
+  // omega3 (USDA: sardinha, ~100g, ~1.500mg).
+  { terms: ["sardinha grelhada", "sardinha assada", "sardinha"], label: "Sardinha grelhada", baseAmount: "100 g", values: { calories: 185, protein: 24.6, carbs: 0, fat: 9.5, fiber: 0, vitA: 32, vitC: 0, vitD: 4.8, calcio: 30, ferro: 1.4, magnesio: 31, potassio: 380, zinco: 1.3, sodio: 100, vitB12: 8.9, omega3: 1500 }, grams: 100 },
   { terms: ["file de dourado", "dourado grelhado", "dourado"], label: "Filé de dourado grelhado", baseAmount: "100 g", values: { calories: 109, protein: 24, carbs: 0, fat: 1, fiber: 0, vitA: 15, vitC: 0, vitD: 2, calcio: 20, ferro: 1, magnesio: 30, potassio: 380, zinco: 0.6, sodio: 70, vitB12: 1.6 }, grams: 100 },
   { terms: ["file de pescada amarela", "peixe pescada amarela", "pescada amarela", "pescada"], label: "Pescada amarela grelhada", baseAmount: "100 g", values: { calories: 108, protein: 21, carbs: 0, fat: 2, fiber: 0, vitA: 5, vitC: 0, vitD: 1, calcio: 15, ferro: 0.5, magnesio: 28, potassio: 320, zinco: 0.5, sodio: 70, vitB12: 1.4 }, grams: 100 },
   // Pedido do usuário. No Brasil "bacalhau" quase sempre significa o peixe salgado e seco, dessalgado
@@ -1969,8 +2011,11 @@ const foodLibrary = [
   // sempre vence (ver comentário perto de "coca cola zero"/detectFoods()), então "castanha de caju"
   // continua batendo aqui, e "castanha" sozinha continua batendo na Castanha-do-pará, sem ambiguidade.
   { terms: ["castanha de caju", "castanha caju"], label: "Castanha de caju", baseAmount: "8 unidades (15 g)", values: { calories: 83, protein: 2.7, carbs: 4.5, fat: 6.6, fiber: 0.5, vitA: 0, vitC: 0.1, vitD: 0, calcio: 6, ferro: 1, magnesio: 44, potassio: 100, zinco: 0.9, sodio: 2, vitB12: 0 }, grams: 15 },
-  { terms: ["chia", "semente de chia"], label: "Semente de chia", baseAmount: "1 colher de sopa (12 g)", values: { calories: 58, protein: 2, carbs: 5, fat: 3.7, fiber: 4, vitA: 0, vitC: 0, vitD: 0, calcio: 76, ferro: 0.9, magnesio: 40, potassio: 49, zinco: 0.5, sodio: 2, vitB12: 0 }, grams: 12 },
-  { terms: ["linhaca", "semente de linhaca", "farinha de linhaca"], label: "Linhaça", baseAmount: "1 colher de sopa (10 g)", values: { calories: 53, protein: 1.8, carbs: 2.9, fat: 4.2, fiber: 2.7, vitA: 0, vitC: 0, vitD: 0, calcio: 26, ferro: 0.6, magnesio: 39, potassio: 81, zinco: 0.4, sodio: 3, vitB12: 0 }, grams: 10 },
+  // omega3 aqui é majoritariamente ALA (forma vegetal, de conversão limitada em EPA/DHA no corpo) --
+  // USDA: 1 colher de sopa de chia (~12g) tem em torno de 2.100mg de ALA.
+  { terms: ["chia", "semente de chia"], label: "Semente de chia", baseAmount: "1 colher de sopa (12 g)", values: { calories: 58, protein: 2, carbs: 5, fat: 3.7, fiber: 4, vitA: 0, vitC: 0, vitD: 0, calcio: 76, ferro: 0.9, magnesio: 40, potassio: 49, zinco: 0.5, sodio: 2, vitB12: 0, omega3: 2100 }, grams: 12 },
+  // omega3 (ALA) -- USDA: 1 colher de sopa de linhaça (~10g) tem em torno de 2.350mg.
+  { terms: ["linhaca", "semente de linhaca", "farinha de linhaca"], label: "Linhaça", baseAmount: "1 colher de sopa (10 g)", values: { calories: 53, protein: 1.8, carbs: 2.9, fat: 4.2, fiber: 2.7, vitA: 0, vitC: 0, vitD: 0, calcio: 26, ferro: 0.6, magnesio: 39, potassio: 81, zinco: 0.4, sodio: 3, vitB12: 0, omega3: 2350 }, grams: 10 },
   { terms: ["amendoim"], label: "Amendoim", baseAmount: "30 g", values: { calories: 170, protein: 7.3, carbs: 6, fat: 14.5, fiber: 2.5, vitA: 0, vitC: 0, vitD: 0, calcio: 20, ferro: 0.6, magnesio: 48, potassio: 200, zinco: 0.9, sodio: 50, vitB12: 0 }, grams: 30 },
   { terms: ["pipoca"], label: "Pipoca", baseAmount: "30 g", values: { calories: 110, protein: 2.3, carbs: 22, fat: 1.5, fiber: 4, vitA: 1, vitC: 0, vitD: 0, calcio: 2, ferro: 0.3, magnesio: 30, potassio: 70, zinco: 0.3, sodio: 140, vitB12: 0 }, grams: 30 },
   { terms: ["manteiga"], label: "Manteiga", baseAmount: "1 colher de chá (5 g)", values: { calories: 36, protein: 0, carbs: 0, fat: 4, fiber: 0, vitA: 35, vitC: 0, vitD: 0.1, calcio: 1, ferro: 0, magnesio: 0, potassio: 1, zinco: 0, sodio: 40, vitB12: 0 }, grams: 5 },
