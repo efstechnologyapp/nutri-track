@@ -1049,6 +1049,12 @@ svg{ display: block; }
 .garmin-insight.info .icon{ color:#5c88a8; }
 .garmin-insight.info strong{ color:#2f4a5c; }
 
+.avaliacao-nota-geral{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; padding:20px 12px; }
+.avaliacao-nota-numero{ font-size:48px; font-weight:700; color:#2f4a5c; line-height:1; }
+.avaliacao-nota-numero span{ font-size:20px; font-weight:500; color:#8a97a8; }
+.avaliacao-nota-label{ font-size:18px; font-weight:600; color:#4a6478; }
+.avaliacao-nota-sub{ font-size:13px; color:#8a97a8; max-width:320px; }
+
 .hidden{ display:none !important; }
 </style>
 </head>
@@ -8256,6 +8262,7 @@ function homeTabsTemplate() {
     '<button class="home-tab' + (state.activeTab === "treinos" ? " active" : "") + '" onclick="acaoTrocarAba(\'treinos\')">' + icon("flame") + " Esportes</button>" +
     '<button class="home-tab' + (state.activeTab === "medidas" ? " active" : "") + '" onclick="acaoTrocarAba(\'medidas\')">' + icon("activity") + " Medidas</button>" +
     '<button class="home-tab' + (state.activeTab === "recuperacao" ? " active" : "") + '" onclick="acaoTrocarAba(\'recuperacao\')">' + icon("heart") + " Recuperação</button>" +
+    '<button class="home-tab' + (state.activeTab === "avaliacao" ? " active" : "") + '" onclick="acaoTrocarAba(\'avaliacao\')">' + icon("sparkles") + " Avaliação</button>" +
     "</div>";
 }
 
@@ -10110,6 +10117,7 @@ function fullHomeTemplate() {
   if (state.activeTab === "medidas") return homeTabsTemplate() + medidasTabTemplate();
   if (state.activeTab === "treinos") return homeTabsTemplate() + treinosTabTemplate();
   if (state.activeTab === "recuperacao") return homeTabsTemplate() + recuperacaoTabTemplate();
+  if (state.activeTab === "avaliacao") return homeTabsTemplate() + avaliacaoTabTemplate();
   return homeTabsTemplate() + nutricaoTabTemplate();
 }
 
@@ -11826,6 +11834,316 @@ function recuperacaoTabTemplate() {
       '<p class="medidas-section-sub">Cruzando treino do dia anterior, sono/HRV e metas nutricionais</p>' +
       recuperacaoInsightsTemplate(dia) +
     "</section>" : "") +
+  "</main>";
+}
+
+// ===== AVALIAÇÃO GERAL (checkup 0-10 + classificação qualitativa) =====
+// Pedido do usuário: um "raio-x" cruzando metabolismo, composição corporal, nutrição diária, exercícios
+// e sono, com uma nota de 0 a 10 por área + uma nota geral, e duas notas DERIVADAS (combinando várias
+// áreas) convertidas numa classificação qualitativa -- péssima/ruim/regular/boa/ótima/excelente -- pra
+// fertilidade e pra cognição/disposição esportiva. Mesmo espírito da aba Recuperação (ver
+// RECUPERACAO_TREINO_PESADO_MIN acima): 100% local/offline, sem IA nem chamada de rede, com regras
+// simples e documentadas aqui -- um primeiro critério razoável, não uma validação clínica. Isto NÃO é
+// diagnóstico médico nem substitui acompanhamento profissional (endocrinologista, urologista,
+// nutricionista) -- só organiza o que o próprio app já vem coletando. Pedido explícito do usuário: usar
+// a MÉDIA dos últimos 30 dias como janela (em vez de só o dia de hoje), pra suavizar dias isolados.
+const AVALIACAO_JANELA_DIAS = 30;
+function avaliacaoClassificarNota(nota) {
+  if (nota == null) return null;
+  if (nota < 2) return "Péssima";
+  if (nota < 4) return "Ruim";
+  if (nota < 6) return "Regular";
+  if (nota < 7.5) return "Boa";
+  if (nota < 9) return "Ótima";
+  return "Excelente";
+}
+function avaliacaoDataLimite() {
+  const d = new Date(today() + "T12:00:00");
+  d.setDate(d.getDate() - (AVALIACAO_JANELA_DIAS - 1));
+  return d.toISOString().slice(0, 10);
+}
+function avaliacaoDiarioKcalNaJanela() {
+  const limite = avaliacaoDataLimite();
+  return state.diarioKcal.filter((r) => r.date >= limite && r.date <= today());
+}
+function avaliacaoTreinosNaJanela() {
+  const limite = avaliacaoDataLimite();
+  return state.treinos.filter((t) => t.date >= limite && t.date <= today());
+}
+function avaliacaoGarminNaJanela() {
+  const limite = avaliacaoDataLimite();
+  return state.garmin.filter((g) => g.date >= limite && g.date <= today());
+}
+function avaliacaoPesoSerieNaJanela() {
+  const limite = avaliacaoDataLimite();
+  return state.medidas.filter((m) => m.tipo === "peso" && m.date >= limite && m.date <= today())
+    .slice().sort((a, b) => (a.date === b.date ? a.id - b.id : a.date < b.date ? -1 : 1));
+}
+// Média (capada em 1 por dia, pra um dia de excesso não "compensar" a falta de outro) da fração batida
+// de uma meta de nutriente, nos dias do Diário de Kcal que tiverem esse campo preenchido (campos de
+// registros antigos, de antes do nutriente existir, ficam em 0 -- ver comentário em NUTRIENT_KEYS -- por
+// isso só entram aqui os dias com o campo de fato preenchido, pra não penalizar um nutriente novo contra
+// dias de antes dele existir). null = sem nenhum dia com esse dado no período (diferente de 0 = bateu
+// zero da meta nos dias que existem).
+function avaliacaoMediaFracaoMeta(dias, chave, meta) {
+  if (!meta) return null;
+  const comDado = dias.filter((d) => d[chave] != null);
+  if (!comDado.length) return null;
+  const soma = comDado.reduce((s, d) => s + Math.min((d[chave] || 0) / meta, 1), 0);
+  return soma / comDado.length;
+}
+// Chaves de MICRO_GOALS usadas na "adequação geral de micronutrientes" da Nutrição diária -- EXCLUINDO
+// sodio (é um TETO a não ultrapassar, não uma meta a bater -- ver comentário de micronutrientMeta; bater
+// 100% dele seria o OPOSTO de uma coisa boa) e omega3 (VDR de rotulagem de 4.000mg/dia, valor alto
+// demais pra ser uma meta diária realista só de alimento -- ver comentário em MICRO_GOALS -- incluir
+// aqui penalizaria injustamente quem come normalmente, já que pouquíssimos alimentos da biblioteca têm
+// esse campo preenchido ainda).
+const AVALIACAO_CHAVES_MICRO_SCORE = Object.keys(MICRO_GOALS).filter((k) => k !== "sodio" && k !== "omega3");
+function avaliacaoNotaNutricao() {
+  const dias = avaliacaoDiarioKcalNaJanela();
+  if (!dias.length) return { nota: null, detalhe: "Ainda sem nenhum dia fechado no Diário de Kcal (\"Encerrar dia\") nos últimos " + AVALIACAO_JANELA_DIAS + " dias." };
+  const fracCalorias = dias.reduce((s, d) => {
+    const meta = d.metaCalorias != null ? d.metaCalorias : state.goals.calories;
+    if (!meta) return s;
+    return s + Math.max(0, 1 - Math.abs(d.calories - meta) / meta);
+  }, 0) / dias.length;
+  const fracProteina = dias.reduce((s, d) => {
+    const meta = d.metaProtein != null ? d.metaProtein : state.goals.protein;
+    if (!meta) return s;
+    return s + Math.min((d.protein || 0) / meta, 1);
+  }, 0) / dias.length;
+  const fracsMicro = AVALIACAO_CHAVES_MICRO_SCORE.map((k) => avaliacaoMediaFracaoMeta(dias, k, MICRO_GOALS[k])).filter((f) => f != null);
+  const fracMicro = fracsMicro.length ? fracsMicro.reduce((s, f) => s + f, 0) / fracsMicro.length : null;
+  // micronutrientes contam em dobro (mais pontos de dado por dia -- uma dúzia de nutrientes, não só 2).
+  const partes = fracMicro != null ? [fracCalorias, fracProteina, fracMicro, fracMicro] : [fracCalorias, fracProteina];
+  const nota = Math.min((partes.reduce((s, f) => s + f, 0) / partes.length) * 10, 10);
+  return {
+    nota: Math.round(nota * 10) / 10,
+    detalhe: dias.length + " dia(s) fechado(s) no período · calorias próximas da meta em " + Math.round(fracCalorias * 100) + "% · proteína em " + Math.round(fracProteina * 100) + "% da meta" + (fracMicro != null ? " · micronutrientes em média " + Math.round(fracMicro * 100) + "% da meta" : ""),
+  };
+}
+function avaliacaoNotaComposicao() {
+  const comp = evolucaoBioimpedanciaComparacao();
+  const gordura = comp.find((c) => c.chave === "gordura");
+  const musculo = comp.find((c) => c.chave === "massaMuscular");
+  if (!gordura && !musculo) return { nota: null, detalhe: "Precisa de pelo menos 2 registros de Bioimpedância (com % de gordura ou massa muscular) pra ver uma tendência." };
+  let notaGordura = null;
+  if (gordura) {
+    const objetivo = state.goals.objetivo;
+    const direcaoDesejadaBaixar = objetivo !== "ganho_massa"; // emagrecimento/definição/manutenção: gordura estável ou caindo é bom
+    const favoravel = direcaoDesejadaBaixar ? gordura.delta <= 0.3 : gordura.delta >= -0.3;
+    const magnitude = Math.min(Math.abs(gordura.delta) / 2, 1); // 2 pontos percentuais de gordura já conta "cheio"
+    notaGordura = favoravel ? 6 + magnitude * 4 : Math.max(0, 6 - magnitude * 6);
+  }
+  let notaMusculo = null;
+  if (musculo) {
+    // Perder massa muscular é sempre um sinal de atenção (sobretudo em déficit calórico + treino
+    // pesado, o cenário do usuário) -- manter ou ganhar é sempre bom, independe do objetivo.
+    notaMusculo = musculo.delta >= -0.2 ? 10 : musculo.delta >= -1 ? 6 : 3;
+  }
+  const partes = [notaGordura, notaMusculo].filter((n) => n != null);
+  const nota = partes.reduce((s, n) => s + n, 0) / partes.length;
+  const detalhe = [
+    gordura ? "Gordura corporal: " + (gordura.delta > 0 ? "+" : "") + formatNumber(gordura.delta, 1) + " p.p. (de " + formatNumber(gordura.inicial, 1) + "% pra " + formatNumber(gordura.atual, 1) + "%)" : null,
+    musculo ? "Massa muscular: " + (musculo.delta > 0 ? "+" : "") + formatNumber(musculo.delta, 1) + " kg" : null,
+  ].filter(Boolean).join(" · ");
+  return { nota: Math.round(nota * 10) / 10, detalhe: detalhe + " (comparando 1º x último registro de Bioimpedância de toda a história, mesmo padrão da Evolução)" };
+}
+// Referência genérica de consistência (não é uma prescrição médica -- OMS/ACSM falam em minutos, não
+// "sessões"; 3x/semana é só uma referência comum pra quem já combina esporte + musculação).
+const AVALIACAO_ALVO_SESSOES_SEMANA = 3;
+function avaliacaoNotaExercicio() {
+  if (!state.treinos.length) return { nota: null, detalhe: "Nenhum treino registrado ainda." };
+  const dias = avaliacaoTreinosNaJanela();
+  const semanas = AVALIACAO_JANELA_DIAS / 7;
+  const sessoesPorSemana = dias.length / semanas;
+  const nota = Math.min((sessoesPorSemana / AVALIACAO_ALVO_SESSOES_SEMANA) * 10, 10);
+  const minutos = dias.reduce((s, t) => s + (t.duracaoMin || 0), 0);
+  return {
+    nota: Math.round(nota * 10) / 10,
+    detalhe: dias.length + " treino(s) nos últimos " + AVALIACAO_JANELA_DIAS + " dias (~" + formatNumber(sessoesPorSemana, 1) + "/semana) · " + formatNumber(minutos, 0) + " min no total",
+  };
+}
+function avaliacaoNotaSono() {
+  const diasSono = avaliacaoGarminNaJanela().filter((g) => g.sono && g.sono.sleepScores && g.sono.sleepScores.overall);
+  if (!diasSono.length) return { nota: null, detalhe: "Sem dados de sono do Garmin nesse período." };
+  const mediaScore = diasSono.reduce((s, g) => s + g.sono.sleepScores.overall.value, 0) / diasSono.length;
+  const diasHrv = avaliacaoGarminNaJanela().filter((g) => g.hrv && g.hrv.hrvSummary && g.hrv.hrvSummary.status);
+  const fracaoHrvBaixo = diasHrv.length ? diasHrv.filter((g) => g.hrv.hrvSummary.status === "LOW" || g.hrv.hrvSummary.status === "UNBALANCED").length / diasHrv.length : 0;
+  const nota = Math.max(0, Math.min(10, mediaScore / 10 - fracaoHrvBaixo * 1.5));
+  return {
+    nota: Math.round(nota * 10) / 10,
+    detalhe: diasSono.length + " noite(s) com sono registrado · pontuação média " + Math.round(mediaScore) + "/100" + (diasHrv.length ? " · HRV baixo/desequilibrado em " + Math.round(fracaoHrvBaixo * 100) + "% dos dias" : ""),
+  };
+}
+// Ritmo de variação de peso considerado saudável, como % do peso corporal POR SEMANA -- referência comum
+// de literatura de nutrição esportiva pra perda de peso preservando massa magra (ex.: Helms et al.,
+// 2014): 0,25%-1%/semana. Mais rápido que isso aumenta o risco de perder músculo junto com a gordura;
+// mais devagar/estagnado não é "ruim" (só mais lento que o ideal); ganhar peso indo na direção contrária
+// ao objetivo é o que mais puxa a nota pra baixo. Não é uma recomendação médica, só um primeiro critério.
+function avaliacaoNotaMetabolica() {
+  const diasComGasto = avaliacaoDiarioKcalNaJanela().filter((d) => diarioKcalGastoTotalInfo(d).gastoTotal != null);
+  let notaAderencia = null;
+  if (diasComGasto.length) {
+    const atingidos = diasComGasto.filter((d) => {
+      const info = diarioKcalGastoTotalInfo(d);
+      const saldo = d.calories - info.gastoTotal;
+      const objetivoChave = d.metaCalorias != null ? d.objetivo : state.goals.objetivo;
+      return diarioKcalMetaAtingida(saldo, objetivoChave);
+    }).length;
+    notaAderencia = (atingidos / diasComGasto.length) * 10;
+  }
+  const pesos = avaliacaoPesoSerieNaJanela();
+  let notaRitmo = null;
+  let detalheRitmo = "";
+  if (pesos.length >= 2) {
+    const inicial = Number(pesos[0].valor);
+    const atual = Number(pesos[pesos.length - 1].valor);
+    const dias = Math.max((new Date(pesos[pesos.length - 1].date + "T12:00:00") - new Date(pesos[0].date + "T12:00:00")) / 86400000, 1);
+    const semanas = Math.max(dias / 7, 0.5);
+    const percentSemana = inicial ? ((atual - inicial) / inicial) * 100 / semanas : 0;
+    const objetivo = state.goals.objetivo;
+    if (objetivo === "emagrecimento" || objetivo === "definicao") {
+      if (percentSemana <= -0.25 && percentSemana >= -1) notaRitmo = 10;
+      else if (percentSemana < 0 && percentSemana > -0.25) notaRitmo = 7;
+      else if (percentSemana < -1 && percentSemana >= -1.5) notaRitmo = 7;
+      else if (percentSemana < -1.5) notaRitmo = 4; // rápido demais -- risco de perder músculo junto
+      else notaRitmo = 3; // estagnado ou indo na direção contrária ao objetivo
+    } else if (objetivo === "ganho_massa") {
+      if (percentSemana >= 0.1 && percentSemana <= 0.5) notaRitmo = 10;
+      else if (percentSemana > 0 && percentSemana < 0.1) notaRitmo = 7;
+      else if (percentSemana > 0.5) notaRitmo = 6; // ganhando rápido demais, tende a vir mais gordura
+      else notaRitmo = 3;
+    } else {
+      notaRitmo = Math.abs(percentSemana) <= 0.5 ? 10 : Math.abs(percentSemana) <= 1 ? 6 : 3;
+    }
+    detalheRitmo = "peso variou " + (percentSemana > 0 ? "+" : "") + formatNumber(percentSemana, 2) + "%/semana no período (" + formatNumber(inicial, 1) + " → " + formatNumber(atual, 1) + " kg)";
+  }
+  const partes = [notaAderencia, notaRitmo].filter((n) => n != null);
+  if (!partes.length) return { nota: null, detalhe: "Sem calorimetria + Diário fechado, nem pesagens suficientes no período, pra avaliar." };
+  const nota = partes.reduce((s, n) => s + n, 0) / partes.length;
+  const detalhePartes = [];
+  if (notaAderencia != null) detalhePartes.push("saldo calórico dentro do objetivo em " + Math.round((notaAderencia / 10) * 100) + "% dos dias fechados");
+  if (detalheRitmo) detalhePartes.push(detalheRitmo);
+  return { nota: Math.round(nota * 10) / 10, detalhe: detalhePartes.join(" · ") };
+}
+function avaliacaoCalcular() {
+  const nutricao = avaliacaoNotaNutricao();
+  const composicao = avaliacaoNotaComposicao();
+  const exercicio = avaliacaoNotaExercicio();
+  const sono = avaliacaoNotaSono();
+  const metabolica = avaliacaoNotaMetabolica();
+  const dominios = [
+    { chave: "metabolica", label: "Metabólico", icone: "flame", info: metabolica },
+    { chave: "composicao", label: "Composição corporal", icone: "ruler", info: composicao },
+    { chave: "nutricao", label: "Nutrição diária", icone: "utensils", info: nutricao },
+    { chave: "exercicio", label: "Exercícios", icone: "activity", info: exercicio },
+    { chave: "sono", label: "Sono/Recuperação", icone: "moon", info: sono },
+  ];
+  const comDado = dominios.filter((d) => d.info.nota != null);
+  const notaGeral = comDado.length >= 2 ? Math.round((comDado.reduce((s, d) => s + d.info.nota, 0) / comDado.length) * 10) / 10 : null;
+  return { notaGeral: notaGeral, dominiosComDado: comDado.length, dominios: dominios, nutricao: nutricao, sono: sono, exercicio: exercicio };
+}
+// Nota derivada de fertilidade -- cruza (1) aderência à suplementação prescrita pelo urologista
+// (procura o rótulo "Suplemento urológico..." nas refeições já fechadas no Diário de Kcal daquele dia),
+// (2) adequação média de zinco/selênio/folato/B12 (nutrientes com papel documentado em fertilidade
+// masculina -- ver NUTRIENT_INFO) e (3) sono (sono ruim crônico é associado a queda de testosterona).
+// NÃO considera a saúde da esposa nem exames (espermograma etc.) -- só a parte que o próprio app
+// consegue enxergar do lado do usuário -- deixado explícito no próprio fator exibido, pra não dar a
+// entender que é uma avaliação de fertilidade completa do casal.
+function avaliacaoNotaFertilidade(r) {
+  const dias = avaliacaoDiarioKcalNaJanela();
+  let fracaoSuplemento = null;
+  if (dias.length) {
+    const comSuplemento = dias.filter((d) => (d.refeicoes || []).some((ref) => (ref.alimentos || []).some((a) => String(a).indexOf("Suplemento urológico") === 0))).length;
+    fracaoSuplemento = comSuplemento / dias.length;
+  }
+  const fracsNutrientes = ["zinco", "selenio", "folato", "vitB12"].map((k) => avaliacaoMediaFracaoMeta(dias, k, MICRO_GOALS[k])).filter((f) => f != null);
+  const notaNutrientes = fracsNutrientes.length ? (fracsNutrientes.reduce((s, f) => s + f, 0) / fracsNutrientes.length) * 10 : null;
+  const partes = [];
+  if (fracaoSuplemento != null) partes.push(fracaoSuplemento * 10);
+  if (notaNutrientes != null) partes.push(notaNutrientes);
+  if (r.sono.nota != null) partes.push(r.sono.nota);
+  if (!partes.length) return { nota: null, label: null, fatores: [] };
+  const nota = partes.reduce((s, n) => s + n, 0) / partes.length;
+  const fatores = [];
+  if (fracaoSuplemento != null) fatores.push("Suplementação prescrita pelo urologista registrada em " + Math.round(fracaoSuplemento * 100) + "% dos dias fechados.");
+  if (notaNutrientes != null) fatores.push("Zinco, selênio, folato e B12 em média " + Math.round((notaNutrientes / 10) * 100) + "% da meta diária.");
+  if (r.sono.nota != null) fatores.push("Sono (" + avaliacaoClassificarNota(r.sono.nota) + ") -- sono ruim crônico é associado a queda de testosterona.");
+  fatores.push("Não considera a saúde da sua esposa nem exames (espermograma etc.) -- só a parte que o app consegue enxergar do seu lado.");
+  return { nota: Math.round(nota * 10) / 10, label: avaliacaoClassificarNota(nota), fatores: fatores };
+}
+// Nota derivada de cognição e disposição esportiva -- cruza (1) sono/HRV (maior fator de base que a
+// literatura liga a cognição e desempenho físico, por isso pesa em dobro aqui), (2) adequação de
+// carboidrato (combustível de cérebro e esporte) + ferro/B12/magnésio (fadiga/cognição) e (3)
+// consistência de treino. NÃO mede concentração/desempenho diretamente -- só os fatores de base que mais
+// influenciam os dois, deixado explícito no fator exibido.
+function avaliacaoNotaCognicaoDisposicao(r) {
+  const dias = avaliacaoDiarioKcalNaJanela();
+  const fracCarbo = dias.length ? dias.reduce((s, d) => {
+    const meta = d.metaCarbs != null ? d.metaCarbs : state.goals.carbs;
+    if (!meta) return s;
+    return s + Math.min((d.carbs || 0) / meta, 1);
+  }, 0) / dias.length : null;
+  const fracsEnergia = [fracCarbo, avaliacaoMediaFracaoMeta(dias, "ferro", MICRO_GOALS.ferro), avaliacaoMediaFracaoMeta(dias, "vitB12", MICRO_GOALS.vitB12), avaliacaoMediaFracaoMeta(dias, "magnesio", MICRO_GOALS.magnesio)].filter((f) => f != null);
+  const notaEnergia = fracsEnergia.length ? (fracsEnergia.reduce((s, f) => s + f, 0) / fracsEnergia.length) * 10 : null;
+  const partes = [];
+  if (r.sono.nota != null) partes.push(r.sono.nota, r.sono.nota);
+  if (notaEnergia != null) partes.push(notaEnergia);
+  if (r.exercicio.nota != null) partes.push(r.exercicio.nota);
+  if (!partes.length) return { nota: null, label: null, fatores: [] };
+  const nota = partes.reduce((s, n) => s + n, 0) / partes.length;
+  const fatores = [];
+  if (r.sono.nota != null) fatores.push("Sono/HRV: " + avaliacaoClassificarNota(r.sono.nota) + " -- maior fator de base que o app enxerga pra cognição e desempenho.");
+  if (notaEnergia != null) fatores.push("Carboidrato, ferro, B12 e magnésio em média " + Math.round((notaEnergia / 10) * 100) + "% da meta diária.");
+  if (r.exercicio.nota != null) fatores.push("Consistência de treino: " + avaliacaoClassificarNota(r.exercicio.nota) + ".");
+  fatores.push("Não mede concentração/desempenho diretamente -- só os fatores de base (sono, nutrientes, treino) mais ligados aos dois.");
+  return { nota: Math.round(nota * 10) / 10, label: avaliacaoClassificarNota(nota), fatores: fatores };
+}
+function avaliacaoNotaGeralTemplate(r) {
+  if (r.notaGeral == null) return '<div class="meal-empty"><div class="meal-empty-icon">' + icon("sparkles") + "</div><p>Ainda sem dados suficientes</p><p>Registre alguns dias de Diário de Kcal, treino, sono (Garmin) ou Bioimpedância pra a avaliação aparecer.</p></div>";
+  return '<div class="avaliacao-nota-geral">' +
+    '<div class="avaliacao-nota-numero">' + formatNumber(r.notaGeral, 1) + "<span>/10</span></div>" +
+    '<div class="avaliacao-nota-label">' + esc(avaliacaoClassificarNota(r.notaGeral)) + "</div>" +
+    '<div class="avaliacao-nota-sub">Baseado em ' + r.dominiosComDado + " de 5 áreas com dado suficiente nos últimos " + AVALIACAO_JANELA_DIAS + " dias</div>" +
+  "</div>";
+}
+function avaliacaoDominioCardTemplate(d) {
+  return '<div class="garmin-stat-tile">' +
+    '<div class="garmin-stat-tile-label">' + icon(d.icone) + " " + esc(d.label) + "</div>" +
+    '<div class="garmin-stat-tile-value' + (d.info.nota == null ? " garmin-stat-tile-vazio" : "") + '">' + (d.info.nota != null ? formatNumber(d.info.nota, 1) + "/10 · " + esc(avaliacaoClassificarNota(d.info.nota)) : "Sem dado") + "</div>" +
+    '<div class="garmin-stat-tile-sub">' + esc(d.info.detalhe || "") + "</div>" +
+  "</div>";
+}
+function avaliacaoDerivadaTemplate(info) {
+  if (info.nota == null) return '<div class="garmin-sono-vazio">' + icon("info") + " Ainda sem dados suficientes pra essa avaliação.</div>";
+  return '<div class="garmin-insight info">' + icon("sparkles") +
+    "<div><strong>" + formatNumber(info.nota, 1) + "/10 · " + esc(info.label) + "</strong><br>" +
+    info.fatores.map((f) => esc(f)).join("<br>") +
+  "</div></div>";
+}
+function avaliacaoTabTemplate() {
+  const r = avaliacaoCalcular();
+  const fertilidade = avaliacaoNotaFertilidade(r);
+  const cognicaoDisposicao = avaliacaoNotaCognicaoDisposicao(r);
+  return '<main>' +
+    '<section class="medidas-section">' +
+      '<h2 class="medidas-section-title">' + icon("sparkles") + " Avaliação Geral</h2>" +
+      '<p class="medidas-section-sub">Com base nos últimos ' + AVALIACAO_JANELA_DIAS + " dias de dados do app -- não é um diagnóstico médico, só um retrato do que você mesmo vem registrando.</p>" +
+      avaliacaoNotaGeralTemplate(r) +
+    "</section>" +
+    '<section class="medidas-section">' +
+      '<h2 class="medidas-section-title">' + icon("activity") + " Por área</h2>" +
+      '<div class="garmin-stat-grid">' + r.dominios.map(avaliacaoDominioCardTemplate).join("") + "</div>" +
+    "</section>" +
+    '<section class="medidas-section">' +
+      '<h2 class="medidas-section-title">' + icon("heart") + " Fertilidade</h2>" +
+      avaliacaoDerivadaTemplate(fertilidade) +
+    "</section>" +
+    '<section class="medidas-section">' +
+      '<h2 class="medidas-section-title">' + icon("zap") + " Cognição e disposição esportiva</h2>" +
+      avaliacaoDerivadaTemplate(cognicaoDisposicao) +
+    "</section>" +
   "</main>";
 }
 
