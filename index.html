@@ -12133,23 +12133,16 @@ function avaliacaoCalcular() {
   const notaGeral = comDado.length >= 2 ? Math.round((comDado.reduce((s, d) => s + d.info.nota, 0) / comDado.length) * 10) / 10 : null;
   return { notaGeral: notaGeral, dominiosComDado: comDado.length, dominios: dominios, nutricao: nutricao, sono: sono, exercicio: exercicio };
 }
-// Nota derivada de fertilidade -- cruza (1) aderência à suplementação prescrita pelo urologista
-// (procura o rótulo "Suplemento urológico..." nas refeições já fechadas no Diário de Kcal daquele dia),
-// (2) adequação média de zinco/selênio/folato/B12 (nutrientes com papel documentado em fertilidade
-// masculina -- ver NUTRIENT_INFO) e (3) sono (sono ruim crônico é associado a queda de testosterona).
-// NÃO considera a saúde da esposa nem exames (espermograma etc.) -- só a parte que o próprio app
-// consegue enxergar do lado do usuário -- deixado explícito no próprio fator exibido, pra não dar a
-// entender que é uma avaliação de fertilidade completa do casal.
-// Correção pedida pelo usuário: a versão anterior entrava com "registrou o sachê numa refeição fechada
-// hoje" como 1/3 da nota, o que podia derrubar a nota mesmo em dias em que os NÍVEIS reais de zinco/
-// selênio/folato/B12 estavam ok (vindos de outras fontes, ou do próprio sachê registrado num dia ainda
-// aberto) -- um proxy de "registrou o produto" não é o mesmo que "está com o nível adequado desse
-// nutriente", que é o que importa de fato pra fertilidade. Agora a nota é dirigida pelos NÍVEIS reais
-// (zinco/selênio/folato/B12, pesando o dobro -- é a medida central aqui) + sono como fator secundário
-// (relação sono-testosterona). A aderência à suplementação continua aparecendo, mas só como observação
-// INFORMATIVA (não entra mais na nota) -- até porque o sachê é hoje a maior fonte concentrada desses
-// nutrientes pro usuário, então o efeito de não tomá-lo já aparece naturalmente nos níveis, sem precisar
-// contar a mesma coisa duas vezes.
+// Nota derivada de fertilidade -- cruza (1) adequação média de zinco/selênio/folato/B12 (nutrientes com
+// papel documentado em fertilidade masculina -- ver NUTRIENT_INFO), pesando o dobro por ser a medida
+// central aqui, e (2) sono (sono ruim crônico é associado a queda de testosterona) como fator
+// secundário. NÃO considera a saúde da parceira nem exames (espermograma etc.) -- só a parte que o
+// próprio app consegue enxergar do lado do usuário -- deixado explícito no próprio fator exibido, pra
+// não dar a entender que é uma avaliação de fertilidade completa do casal.
+// Pedido explícito do usuário: a análise tem que ser OBJETIVA e genérica -- aplicável a qualquer pessoa
+// usando o app, não só a quem tenha um suplemento específico prescrito (ex.: por um urologista). Por
+// isso esta nota olha só pros NÍVEIS reais de nutriente (o que de fato importa pra fertilidade),
+// independente de qual alimento/suplemento os supre -- sem presumir ou citar nenhum produto específico.
 function avaliacaoNotaFertilidade(r) {
   const dias = avaliacaoDiarioKcalNaJanela();
   const fracsNutrientes = ["zinco", "selenio", "folato", "vitB12"].map((k) => avaliacaoMediaFracaoMeta(dias, k, MICRO_GOALS[k])).filter((f) => f != null);
@@ -12162,11 +12155,7 @@ function avaliacaoNotaFertilidade(r) {
   const fatores = [];
   if (notaNutrientes != null) fatores.push("Zinco, selênio, folato e B12 (nutrientes com papel documentado em fertilidade masculina) em média " + Math.round((notaNutrientes / 10) * 100) + "% da meta diária -- é o principal fator desta nota.");
   if (r.sono.nota != null) fatores.push("Sono (" + avaliacaoClassificarNota(r.sono.nota) + ") -- sono ruim crônico é associado a queda de testosterona.");
-  if (dias.length) {
-    const comSuplemento = dias.filter((d) => (d.refeicoes || []).some((ref) => (ref.alimentos || []).some((a) => String(a).indexOf("Suplemento urológico") === 0))).length;
-    fatores.push("Suplementação prescrita pelo urologista registrada em " + Math.round((comSuplemento / dias.length) * 100) + "% dos dias fechados (informativo -- NÃO entra na nota; o que conta é o nível real dos nutrientes acima, suplemento incluso quando registrado).");
-  }
-  fatores.push("Não considera a saúde da sua esposa nem exames (espermograma etc.) -- só a parte que o app consegue enxergar do seu lado.");
+  fatores.push("Não considera a saúde da sua parceira nem exames (espermograma etc.) -- só a parte que o app consegue enxergar do seu lado.");
   return { nota: Math.round(nota * 10) / 10, label: avaliacaoClassificarNota(nota), fatores: fatores };
 }
 // Nota derivada de cognição e disposição esportiva -- cruza (1) sono/HRV (maior fator de base que a
