@@ -1220,6 +1220,9 @@ const authApi = {
   removerProdutoCustomizadoGoogle: (email, id) => chamarApi("removerProdutoCustomizadoGoogle", { email, id }),
   salvarDiarioKcalGoogle: (email, registro) => chamarApi("salvarDiarioKcalGoogle", { email, registro }),
   removerDiarioKcalGoogle: (email, id) => chamarApi("removerDiarioKcalGoogle", { email, id }),
+  // Ver acaoAtualizarGarminAgora() / sincronizarGarminAgora() no Code.gs -- botão "Atualizar agora" da
+  // aba Recuperação, busca o dia de hoje na Garmin na hora em vez de esperar o gatilho automático.
+  sincronizarGarminAgora: (email) => chamarApi("sincronizarGarminAgora", { email }),
 };
 
 /* ===================== conexão com Google (Google Identity Services) ===================== */
@@ -2826,6 +2829,10 @@ const state = {
   // dado Garmin disponível (ver garminRegistroAtual()/acaoRecuperacaoDiaAnterior()/
   // acaoRecuperacaoDiaSeguinte()).
   recuperacaoDataSelecionada: null,
+  // Controla o botão "Atualizar agora" da aba Recuperação -- true enquanto a chamada a
+  // sincronizarGarminAgora() está em andamento (ver acaoAtualizarGarminAgora()), só pra mostrar um
+  // spinner e evitar cliques duplicados; nunca persistido (sempre começa false a cada carregamento).
+  garminAtualizando: false,
   // Data (AAAA-MM-DD) do último dia de calendário que a virada automática já processou -- ver
   // processarViradaDeDia(). Sem valor salvo ainda (primeira vez que essa versão do app roda num
   // aparelho), assume hoje, pra NÃO fechar retroativamente, do nada, dias antigos que já passaram
@@ -11703,6 +11710,26 @@ function acaoRecuperacaoDiaSeguinte() {
   const indice = ordenados.findIndex((g) => g.date === atual.date);
   if (indice !== -1 && indice < ordenados.length - 1) { state.recuperacaoDataSelecionada = ordenados[indice + 1].date; render(); }
 }
+// Botão "Atualizar agora" (ver recuperacaoTabTemplate()) -- chama sincronizarGarminAgora() no backend,
+// que busca HOJE na Garmin na hora (sem esperar o gatilho automático das ~9h, ver comentário em
+// garminRodarSincronizacaoDiaria() no Code.gs) e devolve a lista de Garmin já atualizada. Pedido do
+// usuário: além do gatilho passar a incluir hoje (resolve o atraso estrutural), este botão cobre o "quero
+// ver agora", a qualquer hora do dia -- útil sobretudo pro Body Battery, que muda ao longo do dia.
+async function acaoAtualizarGarminAgora() {
+  if (state.garminAtualizando) return;
+  if (!state.usuario) { toastError("Entre na sua conta pra atualizar."); return; }
+  state.garminAtualizando = true; render();
+  try {
+    const resposta = await authApi.sincronizarGarminAgora(state.usuario.email);
+    if (!resposta.ok) { toastError(resposta.erro || "Não foi possível atualizar os dados do Garmin agora."); return; }
+    if (resposta.garmin) { state.garmin = resposta.garmin; persistGarmin(); }
+    toastSuccess("Dados do Garmin atualizados.");
+  } catch (err) {
+    toastError("Falha de conexão ao atualizar o Garmin. Tente de novo.");
+  } finally {
+    state.garminAtualizando = false; render();
+  }
+}
 function recuperacaoDiaNavTemplate(dia, ordenados) {
   const indice = ordenados.findIndex((g) => g.date === dia.date);
   const temAnterior = indice > 0;
@@ -11908,7 +11935,12 @@ function recuperacaoTabTemplate() {
   const dia = garminRegistroAtual();
   return '<main>' +
     '<section class="medidas-section">' +
-      '<h2 class="medidas-section-title">' + icon("heart") + " Recuperação</h2>" +
+      '<div class="medidas-section-title-row"><h2 class="medidas-section-title">' + icon("heart") + " Recuperação</h2>" +
+      '<div class="medidas-section-title-actions">' +
+        '<button class="bioimpedancia-btn-secundario" onclick="acaoAtualizarGarminAgora()" ' + (state.garminAtualizando ? "disabled" : "") + ">" +
+          icon("rotate", state.garminAtualizando ? "spin" : "") + " " + (state.garminAtualizando ? "Atualizando…" : "Atualizar agora") +
+        "</button>" +
+      "</div></div>" +
       '<p class="medidas-section-sub">Dados do seu Garmin — HRV, Body Battery e sono</p>' +
       (!dia
         ? '<div class="meal-empty"><div class="meal-empty-icon">' + icon("heart") + "</div><p>Nenhum dado do Garmin ainda</p><p>Assim que a sincronização diária rodar pela primeira vez, os dados aparecem aqui.</p></div>"
