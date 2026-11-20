@@ -1950,6 +1950,21 @@ const foodLibrary = [
   // cruzados com USDA (garlic, raw), por não constarem completos na TACO consultada. Quantidade-base
   // pequena (poucos dentes), igual ao padrão já usado pra temperos/condimentos (ver "Azeite de oliva" acima).
   { terms: ["alho"], label: "Alho", baseAmount: "3 dentes (9 g)", values: { calories: 10, protein: 0.6, carbs: 2.2, fat: 0, fiber: 0.4, vitA: 0, vitC: 0.7, vitD: 0, calcio: 1.3, ferro: 0.1, magnesio: 1.9, potassio: 30, zinco: 0.1, sodio: 0.5, vitB12: 0 }, grams: 9 },
+  // Pedido do usuário (ingrediente de "cachorro-quente completo"). Fonte: USDA SR Legacy (olives, ripe,
+  // canned, jumbo-super colossal, 100 g: 145 kcal, 0,84 g proteína, 3,84 g carboidratos, 15,32 g gordura,
+  // 3,3 g fibra, 735 mg sódio, 52 mg cálcio, 3,3 mg ferro -- valor alto de ferro É esperado: azeitona
+  // preta em conserva costuma ser fortificada com gluconato ferroso no processamento --, 8 mg potássio,
+  // 4 mg magnésio, 20 mcg vitamina A). Sódio bem alto por causa da salmoura -- vale lembrar no
+  // detalhamento, já que o app trata sódio como teto, não meta a bater (ver MICRO_GOALS). Quantidade-base
+  // pequena (1 unidade grande), mesmo padrão de "Alho" acima.
+  { terms: ["azeitona"], label: "Azeitona", baseAmount: "1 unidade grande (4 g)", values: { calories: 6, protein: 0.03, carbs: 0.15, fat: 0.6, fiber: 0.1, vitA: 1, vitC: 0, vitD: 0, calcio: 2, ferro: 0.13, magnesio: 0.2, potassio: 0.3, zinco: 0.01, sodio: 29, vitB12: 0 }, grams: 4 },
+  // Pedido do usuário (ingrediente de "vinagrete"/"cachorro-quente completo"). Fonte: USDA SR Legacy
+  // (coriander/cilantro leaves, raw, 100 g: 23 kcal, 2,13 g proteína, 3,67 g carboidratos, 0,52 g
+  // gordura, 2,8 g fibra, 46 mg sódio, 67 mg cálcio, 1,77 mg ferro, 26 mg magnésio, 521 mg potássio, 0,5
+  // mg zinco, 337 mcg vitamina A, 27 mg vitamina C) -- a TACO só lista a versão desidratada (bem mais
+  // concentrada, não representativa de coentro fresco picado), por isso a fonte aqui é USDA. Quantidade-
+  // base pequena (1 colher de sopa picado), igual ao padrão de temperos/ervas frescas usado acima.
+  { terms: ["coentro"], label: "Coentro", baseAmount: "1 colher de sopa, picado (3 g)", values: { calories: 0.7, protein: 0.06, carbs: 0.11, fat: 0.02, fiber: 0.08, vitA: 10, vitC: 0.8, vitD: 0, calcio: 2, ferro: 0.05, magnesio: 0.8, potassio: 15.6, zinco: 0.02, sodio: 1.4, vitB12: 0 }, grams: 3 },
   // Pedido do usuário. Fonte: TACO (Cebola, crua, 100 g: 39 kcal, 1,7 g proteína, 8,9 g carboidratos, 0,1 g
   // gordura, 2,2 g fibra) -- demais micronutrientes aproximados por composição típica de alimentos
   // similares (cebolinha/alho-poró na própria TACO), já que a fonte consultada não trouxe a tabela
@@ -2444,7 +2459,16 @@ function nomeEsporteExibicao(t) {
   return t.esporte + " (" + t.ciclismoModalidade + intensidade + ")";
 }
 
-function normalizeText(value) { return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
+// Al\u00e9m de min\u00fasculas/sem acento, tamb\u00e9m troca h\u00edfen por espa\u00e7o (e colapsa espa\u00e7os duplicados) -- sem
+// isso, um produto customizado cadastrado com h\u00edfen no nome (ex.: "Cachorro-quente completo") nunca era
+// reconhecido depois numa refei\u00e7\u00e3o descrita sem h\u00edfen (ex.: "comi um cachorro quente completo", forma
+// bem mais natural de digitar/falar) porque detectFoods() procura o termo como substring EXATA -- h\u00edfen
+// e espa\u00e7o s\u00e3o caracteres diferentes. A biblioteca embutida (foodLibrary) j\u00e1 contornava isso manualmente
+// nos poucos itens com nome composto (ver "Castanha-do-par\u00e1", cujo term \u00e9 "castanha do para", sem
+// h\u00edfen), mas um produto customizado tem o term gerado automaticamente a partir do nome digitado (ver
+// acaoCadastrarProduto()/acaoCadastrarProdutoManual()), ent\u00e3o precisa desse mesmo tratamento aqui, de
+// forma gen\u00e9rica, pra funcionar com QUALQUER nome que a pessoa escolher.
+function normalizeText(value) { return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/-/g, " ").replace(/\s+/g, " ").trim(); }
 
 // Portugu\u00eas pluraliza de formas variadas -- a maioria s\u00f3 acrescenta letras no fim (regular: banana/
 // bananas, arroz/arrozes, franc\u00eas/franceses), mas algumas mudam o final da palavra (irregular: p\u00e3o/p\u00e3es,
@@ -8191,7 +8215,7 @@ function cadastrarProdutoModalTemplate() {
   return '' +
     '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharCadastrarProduto();}">' +
     '<div class="modal-card modal-card-produto">' +
-      '<div class="meal-detalhe-head"><h2>' + (editando ? "Editar produto do cardápio" : "Cadastrar produto no cardápio") + '</h2>' +
+      '<div class="meal-detalhe-head"><h2>' + (editando ? "Editar prato ou produto do cardápio" : "Cadastrar prato ou produto no cardápio") + '</h2>' +
       '<button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharCadastrarProduto()">' + icon("x") + "</button></div>" +
       '<div class="bioimpedancia-form-tabs">' +
         '<button class="bioimpedancia-form-tab' + (modo === "ingredientes" ? " active" : "") + '" onclick="acaoTrocarModoCadastroProduto(\'ingredientes\')">Descrever ingredientes</button>' +
@@ -8199,7 +8223,7 @@ function cadastrarProdutoModalTemplate() {
       "</div>" +
       (modo === "manual"
         ? '<p class="sub">Pra produtos que já vêm com a tabela nutricional impressa: informe o nome, a porção e os valores do rótulo (ou tire uma foto e deixe o app tentar preencher os campos).</p>'
-        : '<p class="sub">Descreva os ingredientes que compõem o produto (ex.: “100g de camarão, 50g de trigo, 10g de molho de tomate”) e calculamos os nutrientes e o peso total automaticamente, como fazemos com uma refeição comum.</p>') +
+        : '<p class="sub">Descreva os ingredientes que compõem o produto (ex.: “100g de camarão, 50g de trigo, 10g de molho de tomate”) e calculamos os nutrientes e o peso total automaticamente, como fazemos com uma refeição comum. Ótimo também pra pratos caseiros que você repete sempre com os mesmos ingredientes (ex.: “cachorro-quente completo”) -- cadastre uma vez e, depois, é só escrever o nome do prato na refeição, sem repetir ingrediente por ingrediente.</p>') +
       '<div class="modal-body">' +
         '<div><label class="field-label">Nome do produto</label><input id="produto-nome" class="field-input" placeholder="Ex.: Pastel de Camarão" value="' + esc(state.produtoNome) + '"/></div>' +
         (modo === "manual" ? produtoCadastroManualTemplate() : '' +
@@ -11627,7 +11651,7 @@ function nutricaoTabTemplate() {
           ? "Informe o horário de início e fim da exposição e como estava o céu — calculamos uma estimativa da vitamina D sintetizada pela pele."
           : "Escreva naturalmente. Ex.: “1 pão francês, 1 ovo frito e 300 ml de suco de laranja”.") + "</p>" +
         (state.mealTipo === "Exposição Solar" ? "" :
-          '<button type="button" class="produto-cadastrar-btn" onclick="acaoAbrirCadastrarProduto()">' + icon("plus") + " Cadastrar produto no cardápio</button>") +
+          '<button type="button" class="produto-cadastrar-btn" onclick="acaoAbrirCadastrarProduto()">' + icon("plus") + " Cadastrar prato ou produto no cardápio</button>") +
         '<div class="meal-form">' +
           '<select id="meal-tipo-select" class="meal-select" onchange="acaoSelecionarTipoRefeicao(this.value)">' +
             '<option value="">Selecione a refeição...</option>' +
