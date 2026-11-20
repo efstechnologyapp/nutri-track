@@ -405,6 +405,7 @@ svg{ display: block; }
 .meal-sugestao-item{ display:flex; align-items:center; gap:8px; width:100%; text-align:left; border:none; background:transparent; color:#fff; font-size:13px; padding:8px 10px; border-radius:8px; cursor:pointer; }
 .meal-sugestao-item:hover, .meal-sugestao-item:focus{ background:rgba(255,255,255,.1); }
 .meal-sugestao-item svg{ width:14px; height:14px; flex-shrink:0; color:#c5dfa9; }
+.meal-sugestao-amount{ font-size:12px; color:#9fbeb0; }
 .meal-select{ appearance:none; -webkit-appearance:none; cursor:pointer; background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239fbeb0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; background-size:16px; padding-right:40px; }
 .meal-select option{ color:#18352d; background:#fff; }
 .meal-form-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
@@ -4363,7 +4364,14 @@ function sugestoesDeAlimentos(fragmento) {
       }
     }
     if (melhor) {
-      const entry = { label: food.label, prioridade: melhor.prioridade, palavras: melhor.palavras };
+      // baseAmount (ex.: "260 g", "1 unidade grande") vai só pra EXIBIÇÃO na sugestão (ver
+      // mealSugestoesListaHtml()) -- pedido do usuário: ao digitar só o nome do produto (ex.: "nutren"),
+      // a sugestão mostra também a quantidade padrão já cadastrada (ex.: "Nutren · 260 g"), igual aparece
+      // em qualquer outra lista de alimento do app, em vez de só o nome puro como estava. A inserção em
+      // si continua só com o nome (ver acaoSelecionarSugestaoAlimento()) -- a pessoa ainda pode digitar
+      // uma quantidade diferente antes/depois, e o padrão só vale quando nenhuma for informada (ver
+      // amountForFood()).
+      const entry = { label: food.label, baseAmount: food.baseAmount, prioridade: melhor.prioridade, palavras: melhor.palavras };
       if (melhor.prioridade === "inicio") prioritarios.push(entry); else outros.push(entry);
       vistos.add(food.label);
     }
@@ -4373,7 +4381,9 @@ function sugestoesDeAlimentos(fragmento) {
 function mealSugestoesListaHtml() {
   if (!state.mealSugestoes.length) return "";
   return state.mealSugestoes.map((s) =>
-    '<button type="button" class="meal-sugestao-item" data-label="' + esc(s.label) + '" data-palavras="' + s.palavras + '" onmousedown="event.preventDefault(); acaoSelecionarSugestaoAlimento(this.dataset.label, this.dataset.palavras)">' + icon("plus") + " " + esc(s.label) + "</button>"
+    '<button type="button" class="meal-sugestao-item" data-label="' + esc(s.label) + '" data-palavras="' + s.palavras + '" onmousedown="event.preventDefault(); acaoSelecionarSugestaoAlimento(this.dataset.label, this.dataset.palavras)">' + icon("plus") +
+      '<span>' + esc(s.label) + (s.baseAmount ? ' <span class="meal-sugestao-amount">· ' + esc(s.baseAmount) + "</span>" : "") + "</span>" +
+    "</button>"
   ).join("");
 }
 // Atualiza as sugestões a cada tecla digitada -- escreve só no container das sugestões, direto no DOM, e
