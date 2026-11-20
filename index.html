@@ -708,6 +708,24 @@ svg{ display: block; }
 .produto-micro-preview-row{ font-size:13px; }
 .produto-micro-preview-label{ color:#31564a; font-weight:600; }
 .produto-micro-preview-amount{ color:#71857e; font-weight:400; font-size:12px; }
+/* Lista "Ingredientes identificados" no modo "Descrever ingredientes" (ver cadastrarProdutoModalTemplate())
+   e o rótulo "Produtos já cadastrados" logo abaixo -- MESMO bug/fix do bloco .produto-micro-preview* acima
+   (texto quase invisível, quase branco sobre fundo claro): não reaproveita .meal-preview/.food-label
+   (pensadas pro fundo ESCURO de "Nova refeição"), já que aqui o fundo é claro -- bug relatado pelo usuário.
+   Cores escuras equivalentes às de .meal-preview*, pra manter o mesmo visual do card de "Total do
+   produto"/macros, só que legível sobre fundo claro. */
+.produto-preview{ margin-top:20px; border-radius:16px; background:#eef2ea; padding:16px; }
+.produto-preview-head{ margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#6c8d68; }
+.produto-preview-list{ display:flex; flex-direction:column; gap:8px; }
+.produto-preview-row{ display:flex; justify-content:space-between; font-size:14px; }
+.produto-preview-row .food-label{ color:#31564a; }
+.produto-preview-row .food-amount{ font-size:12px; color:#71857e; }
+.produto-preview-row .food-kcal{ color:#1b3f34; font-weight:600; }
+.produto-preview-total{ margin-top:12px; border-top:1px solid #dde5d8; padding-top:12px; }
+.produto-preview-total-row{ display:flex; align-items:flex-end; justify-content:space-between; }
+.produto-preview-total-row .label{ font-size:14px; font-weight:600; color:#1b3f34; }
+.produto-preview-total-row .value{ font-family:'Fraunces',serif; font-size:24px; font-weight:600; color:#1b3f34; }
+.produto-preview-macros{ margin-top:4px; text-align:right; font-size:12px; color:#5c6b62; }
 .idade-metabolica-campo{ grid-column:1 / -1; }
 .idade-metabolica-calcular-btn{ margin-top:8px; display:inline-flex; align-items:center; gap:8px; border-radius:999px; border:none; background:var(--primary); padding:8px 16px; font-size:13px; font-weight:600; color:#fff; transition:opacity .15s; }
 .idade-metabolica-calcular-btn:hover{ opacity:.9; }
@@ -2773,14 +2791,15 @@ const state = {
   // Id (em state.produtosCustomizados -- ver comentário em novoProduto.id, mais abaixo) do produto
   // sendo EDITADO, ou null quando o modal está no modo normal de "novo produto" -- pedido do usuário:
   // ícone de editar ao lado do de remover, na lista de "Produtos já cadastrados" (ver
-  // cadastrarProdutoModalTemplate()/acaoEditarProdutoCustomizado()). Abre o MESMO modal, sempre
-  // pré-preenchido no modo "Digitar valores do rótulo" (com os valores finais já salvos do produto) --
-  // não dá pra reconstruir a descrição de ingredientes original a partir só dos valores agregados, então
-  // editar pelos valores exatos é o caminho mais simples e sempre funciona, não importa se o produto
-  // tinha sido cadastrado originalmente por ingredientes ou por rótulo. Era guardado como ÍNDICE no
-  // array antes dos produtos sincronizarem com o backend -- virou id (igual refeições/medidas/treinos)
-  // porque um índice pode apontar pro produto errado se uma sincronização em segundo plano reordenar a
-  // lista enquanto o modal está aberto (ver formularioDeEdicaoAberto()).
+  // cadastrarProdutoModalTemplate()/acaoEditarProdutoCustomizado()). Abre o MESMO modal, no modo em que o
+  // produto foi originalmente cadastrado: "Descrever ingredientes" (com a descrição original de volta no
+  // campo -- ver p.ingredientesTexto em acaoCadastrarProduto() -- e já reanalisada, pra poder editar os
+  // ingredientes de verdade, não só os valores finais já somados) quando o produto tiver essa descrição
+  // salva, ou "Digitar valores do rótulo" (com os valores finais) como alternativa pra produtos
+  // cadastrados assim, ou cadastrados antes dessa descrição passar a ser salva. Era guardado como ÍNDICE
+  // no array antes dos produtos sincronizarem com o backend -- virou id (igual refeições/medidas/
+  // treinos) porque um índice pode apontar pro produto errado se uma sincronização em segundo plano
+  // reordenar a lista enquanto o modal está aberto (ver formularioDeEdicaoAberto()).
   produtoEditandoId: null,
   showGoals: false,
   showHistory: false,
@@ -4459,28 +4478,43 @@ function acaoAbrirCadastrarProduto() {
   render();
 }
 function acaoFecharCadastrarProduto() { state.showCadastrarProduto = false; state.produtoEditandoId = null; render(); }
-// Abre o mesmo modal de cadastro, mas pré-preenchido com os valores do produto de id informado, no
-// modo "Digitar valores do rótulo" (ver comentário de state.produtoEditandoId acima) -- pedido do
-// usuário: ícone de editar ao lado do de remover, na lista de "Produtos já cadastrados"
+// Abre o mesmo modal de cadastro, mas pré-preenchido com os dados do produto de id informado -- pedido
+// do usuário: ícone de editar ao lado do de remover, na lista de "Produtos já cadastrados"
 // (cadastrarProdutoModalTemplate()). acaoCadastrarProdutoManual()/acaoCadastrarProduto() detectam
-// produtoEditandoId e SUBSTITUEM o produto daquele id em vez de criar um novo.
+// produtoEditandoId e SUBSTITUEM o produto daquele id em vez de criar um novo. Reabre no mesmo MODO em
+// que o produto foi cadastrado (ver comentário de state.produtoEditandoId acima): "ingredientes", com a
+// descrição original de volta e reanalisada (bug relatado pelo usuário -- antes disso, editar um produto
+// cadastrado por "Descrever ingredientes" sempre caía no modo "Digitar valores do rótulo", sem ingrediente
+// nenhum aparecendo pra editar, só os valores finais já somados), ou "manual" como alternativa pra
+// produtos cadastrados por rótulo, ou cadastrados antes de a descrição passar a ser salva (ver
+// p.ingredientesTexto em acaoCadastrarProduto()) -- esses continuam só editáveis pelos valores finais,
+// não tem como reconstruir a descrição original a partir só dos valores já agregados.
 function acaoEditarProdutoCustomizado(id) {
   const p = state.produtosCustomizados.find((item) => item.id === id);
   if (!p) return;
   state.showCadastrarProduto = true;
   state.produtoEditandoId = id;
   state.produtoNome = p.label;
-  state.produtoIngredientes = "";
-  state.produtoPreview = [];
-  state.produtoModoCadastro = "manual";
-  const valores = {};
-  PRODUTO_MANUAL_CAMPOS.forEach((c) => { valores[c.id] = p.values && p.values[c.id] ? p.values[c.id] : ""; });
-  state.produtoManualValores = valores;
-  state.produtoManualPorcao = p.grams != null ? String(p.grams) : "";
   state.produtoRotuloLendo = false;
   state.produtoManualIngredientesMicro = "";
   state.produtoManualMicroPreview = [];
   produtoRotuloArquivo = null;
+  const usaModoIngredientes = !!(p.ingredientesTexto && p.ingredientesTexto.trim());
+  if (usaModoIngredientes) {
+    state.produtoModoCadastro = "ingredientes";
+    state.produtoIngredientes = p.ingredientesTexto;
+    state.produtoPreview = detectFoods(p.ingredientesTexto);
+    state.produtoManualValores = {};
+    state.produtoManualPorcao = "";
+  } else {
+    state.produtoModoCadastro = "manual";
+    state.produtoIngredientes = "";
+    state.produtoPreview = [];
+    const valores = {};
+    PRODUTO_MANUAL_CAMPOS.forEach((c) => { valores[c.id] = p.values && p.values[c.id] ? p.values[c.id] : ""; });
+    state.produtoManualValores = valores;
+    state.produtoManualPorcao = p.grams != null ? String(p.grams) : "";
+  }
   render();
   // captureFormState() (chamado no início do render() acima) recaptura os valores AINDA presentes no DOM
   // de antes desse preenchimento (o campo "Nome do produto" existe nos dois modos do modal, então já
@@ -4494,12 +4528,17 @@ function acaoEditarProdutoCustomizado(id) {
   const nomeEl = document.getElementById("produto-nome");
   if (nomeEl) nomeEl.value = p.label;
   state.produtoNome = p.label;
-  const porcaoEl = document.getElementById("produto-manual-porcao");
-  if (porcaoEl) porcaoEl.value = state.produtoManualPorcao;
-  PRODUTO_MANUAL_CAMPOS.forEach((c) => {
-    const el = document.getElementById("produto-manual-" + c.id);
-    if (el) el.value = valores[c.id];
-  });
+  if (usaModoIngredientes) {
+    const ingredientesEl = document.getElementById("produto-ingredientes");
+    if (ingredientesEl) ingredientesEl.value = state.produtoIngredientes;
+  } else {
+    const porcaoEl = document.getElementById("produto-manual-porcao");
+    if (porcaoEl) porcaoEl.value = state.produtoManualPorcao;
+    PRODUTO_MANUAL_CAMPOS.forEach((c) => {
+      const el = document.getElementById("produto-manual-" + c.id);
+      if (el) el.value = state.produtoManualValores[c.id];
+    });
+  }
 }
 // Alterna entre descrever ingredientes (estimativa via detectFoods(), como já existia) e digitar/ler os
 // valores exatos de um rótulo impresso (ver cadastrarProdutoModalTemplate()) -- pedido do usuário.
@@ -4594,7 +4633,16 @@ function acaoCadastrarProduto() {
   // como peso padrão, só pra não deixar o produto com peso zero (o que quebraria a conversão de gramas
   // quando alguém digitar uma quantidade desse produto numa refeição futura).
   const pesoTotal = Math.round(state.produtoPreview.reduce((soma, item) => soma + (item.gramsEstimados || 0), 0)) || 100;
-  const novoProduto = { terms: [normalizeText(nome)], label: nome, baseAmount: pesoTotal + " g", values: totalValues, grams: pesoTotal };
+  // ingredientesTexto: guarda a descrição original digitada (não só os valores já somados), pra
+  // acaoEditarProdutoCustomizado() poder reabrir no modo "Descrever ingredientes" com os ingredientes de
+  // volta no campo, prontos pra editar de novo -- sem isso, editar um produto cadastrado por aqui não
+  // tinha como mostrar os ingredientes, só os valores finais (ver comentário em
+  // acaoEditarProdutoCustomizado()). Lê direto do campo (não de state.produtoIngredientes) pelo mesmo
+  // motivo de acaoAnalisarIngredientesProduto() logo acima: garante o texto mais atual, mesmo que
+  // captureFormState() ainda não tenha rodado de novo desde a última tecla digitada.
+  const descricaoEl = document.getElementById("produto-ingredientes");
+  const ingredientesTexto = descricaoEl ? descricaoEl.value.trim() : "";
+  const novoProduto = { terms: [normalizeText(nome)], label: nome, baseAmount: pesoTotal + " g", values: totalValues, grams: pesoTotal, ingredientesTexto: ingredientesTexto };
   if (salvarProdutoCustomizado(novoProduto, nome)) render();
 }
 function acaoRemoverProdutoCustomizado(id) {
@@ -8232,17 +8280,17 @@ function cadastrarProdutoModalTemplate() {
         "</div>" +
         '<button class="btn-ghost-light btn-ghost-light-onlight" onclick="acaoAnalisarIngredientesProduto()">' + icon("sparkles") + " Analisar ingredientes</button>" +
         (preview.length ?
-          '<div class="meal-preview"><div class="meal-preview-head"><span>Ingredientes identificados</span>' + icon("check") + "</div>" +
-          '<div class="meal-preview-list">' + preview.map((f) =>
-            '<div class="meal-preview-row"><span class="food-label">' + esc(f.label) + ' <span class="food-amount">· ' + esc(f.amount) + "</span></span>" +
+          '<div class="produto-preview"><div class="produto-preview-head"><span>Ingredientes identificados</span>' + icon("check") + "</div>" +
+          '<div class="produto-preview-list">' + preview.map((f) =>
+            '<div class="produto-preview-row"><span class="food-label">' + esc(f.label) + ' <span class="food-amount">· ' + esc(f.amount) + "</span></span>" +
             '<span class="food-kcal">' + formatNumber(f.values.calories) + " kcal</span></div>"
           ).join("") + "</div>" +
-          '<div class="meal-preview-total"><div class="meal-preview-total-row"><span class="label">Total do produto</span><span class="value">' + formatNumber(totalValues.calories) + " kcal</span></div>" +
-          '<div class="meal-preview-macros">Peso estimado: ' + formatNumber(pesoTotal, 0) + " g · P " + formatNumber(totalValues.protein, 1) + " · C " + formatNumber(totalValues.carbs, 1) + " · G " + formatNumber(totalValues.fat, 1) + " · F " + formatNumber(totalValues.fiber, 1) + "</div></div>"
+          '<div class="produto-preview-total"><div class="produto-preview-total-row"><span class="label">Total do produto</span><span class="value">' + formatNumber(totalValues.calories) + " kcal</span></div>" +
+          '<div class="produto-preview-macros">Peso estimado: ' + formatNumber(pesoTotal, 0) + " g · P " + formatNumber(totalValues.protein, 1) + " · C " + formatNumber(totalValues.carbs, 1) + " · G " + formatNumber(totalValues.fat, 1) + " · F " + formatNumber(totalValues.fiber, 1) + "</div></div>"
           + "</div>"
           : "")) +
         (state.produtosCustomizados.length ?
-          '<div class="meal-preview-head" style="margin-top:18px"><span>Produtos já cadastrados</span></div>' +
+          '<div class="produto-preview-head" style="margin-top:18px"><span>Produtos já cadastrados</span></div>' +
           '<div class="meal-list">' + state.produtosCustomizados.map((p) =>
             '<div class="meal-row"><div><span class="food-label">' + esc(p.label) + '</span> <span class="food-amount">· ' + esc(p.baseAmount) + "</span></div>" +
             '<div class="meal-row-right">' +
