@@ -5926,7 +5926,7 @@ function submitPerfil() {
 /* ===================== templates ===================== */
 // Versão exibida no menu, na tela de login e em "Sobre o App" (mesmo padrão do Custódia Digital e do app
 // do escritório). Atualizar junto com o CACHE_NAME do sw.js a cada versão publicada.
-const APP_VERSAO = "2.30";
+const APP_VERSAO = "2.31";
 const APP_VERSAO_DATA = "21/11/2026";
 const DEV = { nome: "EFS Technology", lema: "Soluções digitais sob medida", tel: "83 9 99944-7957", wa: "5583999447957", email: "efstechnology.app@gmail.com" };
 function authVersaoTemplate() {
@@ -12795,7 +12795,7 @@ function resumoAderenciaCardTemplate() {
       // DOM, o que faria esses testes clicarem aqui por engano. "Encerrar dia" é o nome do botão que
       // efetivamente gera esses registros (ver acaoEncerrarDia()), então continua claro sem repetir o
       // nome da aba.
-      '<p class="resumo-aderencia-nota">Use "Encerrar dia" (com uma calorimetria registrada) para começar a ver sua aderência à meta calórica aqui.</p>'
+      '<p class="resumo-aderencia-nota">Os dias passam a aparecer aqui sozinhos, na virada da meia-noite (é preciso ter uma calorimetria registrada).</p>'
     );
 }
 
@@ -13470,7 +13470,6 @@ function diarioKcalRegistroTemplate(r) {
   return '<div class="diario-kcal-dia' + (expandido ? " history-day-expandido" : "") + '">' +
     '<div class="diario-kcal-dia-head history-day-head-btn" onclick="acaoAlternarDiaDiarioKcal(' + r.id + ')"><span class="diario-kcal-dia-data">' + icon("calendar") + " " + dateLabel(r.date) + "</span>" +
       '<span class="diario-kcal-dia-head-direita"><span class="diario-kcal-dia-kcal">' + (r.consumoEstimado ? (r.consumoEstimado.semDados ? "— kcal" : "~" + formatNumber(r.calories) + " kcal") : formatNumber(r.calories) + " kcal") + "</span>" +
-      '<button class="diario-kcal-recalcular-btn" aria-label="Recalcular registro de ' + esc(dateLabel(r.date)) + ' com as refeições daquele dia" title="Recalcular com as refeições daquele dia" onclick="event.stopPropagation(); acaoRecalcularDiarioKcal(' + r.id + ')">' + icon("rotate") + "</button>" +
       '<button class="diario-kcal-recalcular-btn" aria-label="Corrigir a data do registro de ' + esc(dateLabel(r.date)) + '" title="Corrigir data" onclick="event.stopPropagation(); acaoAbrirEdicaoDataDiarioKcal(' + r.id + ')">' + icon("edit") + "</button>" +
       icon("chevron", "history-day-chevron") + "</span></div>" +
     (state.diarioKcalEditandoDataId === r.id
@@ -13499,11 +13498,10 @@ function diarioKcalRegistroTemplate(r) {
 function diarioKcalTabTemplate() {
   const registros = state.diarioKcal.slice().sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
   return '<section class="diario-kcal-section">' +
-    '<button class="btn-primary-pill-lg diario-kcal-encerrar-btn" onclick="acaoEncerrarDia()">' + icon("check") + ' <span class="label">Encerrar dia</span></button>' +
     diarioKcalRegistroParcialTemplate() +
     (registros.length
       ? '<div class="diario-kcal-lista">' + registros.map(diarioKcalRegistroTemplate).join("") + "</div>"
-      : '<div class="meal-empty"><div class="meal-empty-icon">' + icon("calendar") + '</div><p>Nenhum dia consolidado ainda</p><p>Os dias anteriores aparecem aqui sozinhos, na virada da meia-noite -- ou clique em "Encerrar dia" pra fechar o dia atual mais cedo.</p></div>'
+      : '<div class="meal-empty"><div class="meal-empty-icon">' + icon("calendar") + '</div><p>Nenhum dia consolidado ainda</p><p>Os dias anteriores aparecem aqui sozinhos, na virada da meia-noite.</p></div>'
     ) +
   "</section>";
 }
@@ -14160,7 +14158,7 @@ function avaliacaoMediaFracaoMeta(dias, chave, meta) {
 const AVALIACAO_CHAVES_MICRO_SCORE = Object.keys(MICRO_GOALS).filter((k) => k !== "sodio" && k !== "omega3");
 function avaliacaoNotaNutricao() {
   const dias = avaliacaoDiarioKcalNaJanela();
-  if (!dias.length) return { nota: null, detalhe: "Ainda sem nenhum dia fechado no Diário de Kcal (\"Encerrar dia\") nos últimos " + AVALIACAO_JANELA_DIAS + " dias." };
+  if (!dias.length) return { nota: null, detalhe: "Ainda sem nenhum dia fechado no Diário de Kcal (os dias fecham sozinhos na virada da meia-noite) nos últimos " + AVALIACAO_JANELA_DIAS + " dias." };
   const fracCalorias = dias.reduce((s, d) => {
     const meta = d.metaCalorias != null ? d.metaCalorias : state.goals.calories;
     if (!meta) return s;
