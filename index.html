@@ -7782,7 +7782,6 @@ function acaoEditarTreino(id) {
 // depois se treinou ou não, e, ao tocar num treino do dia, ver o que comer antes/depois considerando o
 // que já comeu e a meta do dia. Treino planejado NUNCA entra no histórico/estatísticas: só o treino
 // registrado de verdade (aba Treinos) conta.
-const PLANO_INTENSIDADES = ["leve", "moderada", "intensa"];
 const DIAS_SEMANA_CURTO = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 function somarDias(data, n) { const d = new Date(data + "T12:00:00"); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
 // Segunda-feira da semana de uma data (semana de segunda a domingo).
@@ -7861,7 +7860,7 @@ function acaoTreineiPlano(id) {
     state.treinoEsporteCustom = "";
     state.treinoData = p.date;
     state.treinoHoraInicio = p.hora || "";
-    state.treinoHoraFim = p.hora ? minParaHhmm(hhmmParaMin(p.hora) + (p.duracaoMin || 60)) : "";
+    state.treinoHoraFim = ""; // término é sempre o real, informado por quem treinou
     if (p.date !== today()) state.treinoModo = "manual";
   }
   render();
@@ -7891,15 +7890,13 @@ function acaoSalvarPlanejamento() {
   const dias = Array.from(document.querySelectorAll('input[name="planejar-dia"]:checked')).map((el) => Number(el.value));
   const esporte = (document.getElementById("planejar-esporte") || {}).value || "";
   const hora = (document.getElementById("planejar-hora") || {}).value || "";
-  const duracao = Number((document.getElementById("planejar-duracao") || {}).value) || 60;
-  const intensidade = (document.querySelector('input[name="planejar-intensidade"]:checked') || {}).value || "moderada";
   if (!esporte) { toastError("Escolha a modalidade."); return; }
   if (!dias.length) { toastError("Marque pelo menos um dia."); return; }
   const segunda = somarDias(inicioSemana(today()), semana === "atual" ? 0 : 7);
   const datas = dias.map((i) => somarDias(segunda, i)).filter((d) => d >= today());
   if (!datas.length) { toastError("Esses dias já passaram nesta semana."); return; }
   const base = Date.now();
-  datas.forEach((data, i) => salvarPlano({ id: base + i, date: data, esporte, hora, duracaoMin: duracao, intensidade, naoRealizado: false }));
+  datas.forEach((data, i) => salvarPlano({ id: base + i, date: data, esporte, hora, naoRealizado: false }));
   state.planejarAberto = false;
   toastSuccess(datas.length + " treino" + (datas.length > 1 ? "s" : "") + " adicionado" + (datas.length > 1 ? "s" : "") + " ao plano.");
   render();
@@ -7915,7 +7912,7 @@ function acaoRepetirSemanaPlano() {
   daSemana.forEach((p, i) => {
     const data = somarDias(p.date, 7);
     if (state.treinosPlanejados.some((x) => x.date === data && x.esporte === p.esporte && (x.hora || "") === (p.hora || ""))) return;
-    salvarPlano({ id: base + i, date: data, esporte: p.esporte, hora: p.hora || "", duracaoMin: p.duracaoMin, intensidade: p.intensidade, naoRealizado: false });
+    salvarPlano({ id: base + i, date: data, esporte: p.esporte, hora: p.hora || "", naoRealizado: false });
     n++;
   });
   toastSuccess(n ? n + " treino" + (n > 1 ? "s copiados" : " copiado") + " pra próxima semana." : "A próxima semana já tem esses treinos.");
@@ -7933,7 +7930,7 @@ function planoLinhaTemplate(p) {
   return '<div class="plano-row' + (p.date === today() ? " hoje" : "") + '"' + (clicavel ? ' role="button" onclick="acaoAbrirPlanoModal(' + p.id + ')"' : "") + ">" +
     '<div class="plano-emoji">' + emojiEsporte(p.esporte) + "</div>" +
     '<div class="plano-info"><div class="plano-nome">' + esc(p.esporte) + "</div>" +
-      '<div class="plano-meta">' + rotuloDiaPlano(p.date) + " · " + (p.hora ? esc(p.hora) : '<span class="sem-hora">sem horário</span>') + " · " + (p.duracaoMin || 60) + " min · " + esc(p.intensidade || "moderada") + "</div>" +
+      '<div class="plano-meta">' + rotuloDiaPlano(p.date) + " · " + (p.hora ? esc(p.hora) : '<span class="sem-hora">sem horário</span>') + "</div>" +
       (real ? '<div class="plano-meta plano-registrado">' + icon("check") + " Registrado: " + esc(real.horaInicio || "") + "–" + esc(real.horaFim || "") + (real.caloriasQueimadas ? " · " + formatNumber(real.caloriasQueimadas, 0) + " kcal" : "") + "</div>" : "") +
       acoes + "</div>" +
     '<span class="plano-chip ' + chip[0] + '">' + chip[1] + "</span>" +
@@ -7980,10 +7977,8 @@ function planejarTreinoModalTemplate() {
         '<label class="pm-chip-sel"><input type="radio" name="planejar-semana" value="proxima" checked/><span>Próxima semana</span></label></div>' +
       '<div><label class="field-label">Dias</label><div class="pm-chips-sel">' + dias.map((d) => '<label class="pm-chip-sel"><input type="checkbox" name="planejar-dia" value="' + d[1] + '"/><span>' + d[0] + "</span></label>").join("") + "</div></div>" +
       '<div><label class="field-label">Modalidade</label><select id="planejar-esporte" class="field-input"><option value="">Selecione...</option>' + esportes.map((e) => '<option value="' + esc(e) + '">' + esc(e) + "</option>").join("") + "</select></div>" +
-      '<div class="pm-grid2"><div><label class="field-label">Horário (opcional)</label><input id="planejar-hora" type="time" class="field-input"/></div>' +
-        '<div><label class="field-label">Duração (min)</label><input id="planejar-duracao" type="number" min="10" step="5" class="field-input" value="60"/></div></div>' +
-      '<p class="pm-nota">Sem horário? Deixe em branco: o app pergunta quando você tocar no treino no dia.</p>' +
-      '<div><label class="field-label">Intensidade</label><div class="pm-chips-sel">' + PLANO_INTENSIDADES.map((i) => '<label class="pm-chip-sel"><input type="radio" name="planejar-intensidade" value="' + i + '"' + (i === "moderada" ? " checked" : "") + "/><span>" + i.charAt(0).toUpperCase() + i.slice(1) + "</span></label>").join("") + "</div></div>" +
+      '<div><label class="field-label">Horário de início (opcional)</label><input id="planejar-hora" type="time" class="field-input"/></div>' +
+      '<p class="pm-nota">Sem horário? Deixe em branco: o app pergunta quando você tocar no treino no dia. Duração e intensidade você informa só ao registrar o treino, depois de terminar.</p>' +
     "</div>" +
     '<div class="pm-footer"><button class="bioimpedancia-btn-secundario" onclick="acaoFecharPlanejar()">Cancelar</button><button class="btn-primary" onclick="acaoSalvarPlanejamento()">' + icon("check") + " Adicionar ao plano</button></div>" +
   "</div></div>";
@@ -7999,8 +7994,14 @@ function pesoReferenciaKg() {
   return bio.length ? Number(bio[bio.length - 1].peso) : 75;
 }
 // Quantidades por momento (referências de nutrição esportiva, arredondadas pra ficar prático): proteína
-// ~0,35 g/kg antes e ~0,4 g/kg depois; carboidrato conforme a intensidade.
-const PLANO_CARBO = { refeicao: { leve: 25, moderada: 35, intensa: 45 }, lanche: { leve: 15, moderada: 25, intensa: 30 }, pos: { leve: 20, moderada: 35, intensa: 45 } };
+// ~0,35 g/kg antes e ~0,4 g/kg depois. Pedido do usuário: duração e intensidade NÃO são planejadas (a
+// rotina varia; só se sabe depois de treinar) -- então antes do treino as quantidades usam um treino
+// "típico", e o pós-treino usa o treino REAL registrado (duração e calorias), ver intensidadeDoTreino().
+const PLANO_CARBO = { refeicao: 35, lanche: 25, pos: { leve: 20, moderada: 35, intensa: 45 } };
+function intensidadeDoTreino(t) {
+  const kcal = t.caloriasQueimadas || 0, min = t.duracaoMin || 0;
+  return kcal >= 700 || min >= 90 ? "intensa" : kcal >= 350 || min >= 45 ? "moderada" : "leve";
+}
 const PLANO_DICA_ESPORTE = {
   "Jiu-jitsu": "Evite refeição volumosa nas 2h antes: a pressão no abdômen nas posições costuma dar desconforto.",
   "Muay Thai": "Evite refeição volumosa nas 2h antes: golpes e clinch no abdômen pesam com o estômago cheio.",
@@ -8016,9 +8017,8 @@ function planoTreinoModalTemplate() {
   if (!p) return "";
   const ehHoje = p.date === today();
   const real = planoTreinoRealizado(p);
-  const dur = p.duracaoMin || 60;
   const head = '<div class="meal-detalhe-head"><div><h2>' + emojiEsporte(p.esporte) + " " + esc(p.esporte) + "</h2>" +
-    '<div class="pm-sub">' + (ehHoje ? "Hoje" : rotuloDiaPlano(p.date)) + " · " + (real ? esc(real.horaInicio) + "–" + esc(real.horaFim) : p.hora ? esc(p.hora) : "sem horário") + " · " + dur + " min · " + esc(p.intensidade || "moderada") + (ehHoje ? " · agora são " + minParaHhmm(agoraMin()) : "") + "</div>" +
+    '<div class="pm-sub">' + (ehHoje ? "Hoje" : rotuloDiaPlano(p.date)) + " · " + (real ? esc(real.horaInicio) + "–" + esc(real.horaFim) + " · " + (real.duracaoMin || 0) + " min" + (real.caloriasQueimadas ? " · ~" + formatNumber(real.caloriasQueimadas, 0) + " kcal" : "") : p.hora ? "começa " + esc(p.hora) : "sem horário") + (ehHoje ? " · agora são " + minParaHhmm(agoraMin()) : "") + "</div>" +
     (real ? '<span class="pm-ok">' + icon("check") + " Treino registrado</span>" : "") + "</div>" +
     '<button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharPlanoModal()">' + icon("x") + "</button></div>";
   const rodapeConfirmar = !real && p.date <= today() ? '<div class="pm-footer"><button class="bioimpedancia-btn-secundario" onclick="acaoNaoTreineiPlano(' + p.id + ')">' + icon("x") + " Não treinei</button>" +
@@ -8040,15 +8040,15 @@ function planoTreinoModalTemplate() {
       '<div class="pm-grid2" style="margin-top:10px"><input id="plano-hora-input" type="time" class="field-input"/><button class="bioimpedancia-btn-secundario" onclick="acaoDefinirHoraPlano(' + p.id + ')">Ver sugestões</button></div></div>' +
       planoResumoDiaTemplate(), rodapeConfirmar);
   }
-  const intens = PLANO_INTENSIDADES.includes(p.intensidade) ? p.intensidade : "moderada";
+  const intens = real ? intensidadeDoTreino(real) : "moderada";
   const peso = pesoReferenciaKg();
   const ini = real ? hhmmParaMin(real.horaInicio) : hhmmParaMin(p.hora);
-  const fim = real ? hhmmParaMin(real.horaFim) : ini + dur;
+  const fim = real ? hhmmParaMin(real.horaFim) : null; // término só existe depois de registrar o treino
   const restante = remainingToday();
   const carboRestante = Math.max(0, Math.round(restante.carbs || 0));
   const protPre = Math.round(peso * 0.35), protPos = Math.round(peso * 0.4);
   const carboPos = PLANO_CARBO.pos[intens];
-  const fase = real || agora >= fim ? "pos" : agora >= ini ? "durante" : ini - agora >= 150 ? "refeicao" : ini - agora >= 30 ? "lanche" : "agua";
+  const fase = real ? "pos" : agora >= ini ? "durante" : ini - agora >= 150 ? "refeicao" : ini - agora >= 30 ? "lanche" : "agua";
   const falta = ini - agora;
   const faltaTxt = falta >= 60 ? Math.floor(falta / 60) + "h" + (falta % 60 ? String(falta % 60).padStart(2, "0") : "") : falta + " min";
   const refeicoesHoje = mealsDesdeUltimoEncerramento().slice().sort((a, b) => (a.time || "").localeCompare(b.time || ""));
@@ -8059,32 +8059,32 @@ function planoTreinoModalTemplate() {
   const comeuHaPouco = recentes.find((m) => agora - hhmmParaMin(m.time) <= 90);
   let agoraBloco, avisos = "";
   if (fase === "refeicao") {
-    const c = Math.min(PLANO_CARBO.refeicao[intens], Math.max(10, carboRestante - carboPos));
+    const c = Math.min(PLANO_CARBO.refeicao, Math.max(10, carboRestante - carboPos));
     agoraBloco = { rotulo: "Agora · faltam " + faltaTxt, titulo: "Refeição pré-treino", desc: "Dá tempo de digerir: refeição completa, com carboidrato lento e pouca gordura.", alvos: ["Proteína ~" + protPre + " g", "Carbo ~" + c + " g (lento)", "Gordura baixa"], ex: "arroz + feijão + frango, batata-doce + carne magra ou pão + ovos + fruta" };
   } else if (fase === "lanche" && !comeuHaPouco) {
-    const c = Math.min(PLANO_CARBO.lanche[intens], Math.max(10, carboRestante - carboPos));
+    const c = Math.min(PLANO_CARBO.lanche, Math.max(10, carboRestante - carboPos));
     agoraBloco = { rotulo: "Agora · faltam " + faltaTxt, titulo: "Lanche rápido e leve", desc: "Pouco tempo pra digerir: carboidrato de absorção rápida, sem fibra nem gordura.", alvos: ["Carbo ~" + c + " g (rápido)", "Proteína opcional ~10 g"], ex: "banana (com mel, se o treino for intenso), pão francês com geleia ou tapioca simples" };
   } else if (fase === "lanche" || fase === "agua") {
     agoraBloco = { rotulo: "Agora · faltam " + faltaTxt, titulo: "Não coma agora, só água", desc: comeuHaPouco ? "Você comeu há pouco e isso já cobre o pré-treino. Comer mais só aumenta o risco de desconforto." : "Falta pouco pro treino: comer agora mais atrapalha do que ajuda.", alvos: ["Água 300–500 ml"] };
   } else if (fase === "durante") {
-    agoraBloco = { rotulo: "Treino em andamento", titulo: "Hidrate-se", desc: dur > 90 ? "Treino longo: além de água, carboidrato de absorção rápida (bebida esportiva, fruta) ajuda a manter o rendimento até o fim." : "Até ~90 min, água é suficiente.", alvos: ["Água em goles, a cada 15–20 min"] };
+    agoraBloco = { rotulo: "Treino em andamento", titulo: "Hidrate-se", desc: "Até ~90 min, água é suficiente; se passar disso, carboidrato rápido durante (bebida esportiva, fruta). Ao terminar, registre o treino: o pós-treino aparece aqui, calculado pelo treino que você fez.", alvos: ["Água em goles, a cada 15–20 min"] };
   } else {
     const c = Math.min(carboPos, Math.max(0, carboRestante));
-    agoraBloco = { rotulo: "Pós-treino · até " + minParaHhmm(fim + 120), titulo: "Hora de repor e reconstruir", desc: "O músculo está mais receptivo agora: proteína pra reconstruir e carboidrato rápido pra repor o que o treino gastou.", alvos: ["Proteína ~" + protPos + " g", "Carbo ~" + c + " g (rápido)"], ex: "arroz + carne ou frango, pão + ovos, ou iogurte/whey + banana" };
+    agoraBloco = { rotulo: "Pós-treino · até " + minParaHhmm(fim + 120), titulo: "Hora de repor e reconstruir", desc: "O músculo está mais receptivo agora: proteína pra reconstruir e carboidrato rápido pra repor o que o treino gastou (quantidade calculada pelo seu treino: " + intens + ").", alvos: ["Proteína ~" + protPos + " g", "Carbo ~" + c + " g (rápido)"], ex: "arroz + carne ou frango, pão + ovos, ou iogurte/whey + banana" };
     if (carboRestante < carboPos) avisos += '<div class="pm-aviso">' + icon("alert") + "<div><b>Restam só " + carboRestante + " g de carboidrato na meta de hoje.</b> Depois de um treino " + intens + ", passar um pouco (15–20 g) pra recuperar bem não compromete o resultado: o app avisa, não proíbe.</div></div>";
   }
   if (gordurosa && fase !== "pos" && fase !== "durante") {
     avisos += '<div class="pm-aviso">' + icon("alert") + "<div><b>" + esc(gordurosa.name || "Refeição") + " das " + esc(gordurosa.time) + " teve bastante gordura (" + formatNumber(gordurosa.fat, 0) + " g):</b> a digestão é lenta. Se der, deixe pelo menos 2–3h até o treino.</div></div>";
   }
-  if ((fase === "refeicao" || fase === "lanche") && carboRestante < PLANO_CARBO[fase][intens] + carboPos) {
+  if ((fase === "refeicao" || fase === "lanche") && carboRestante < PLANO_CARBO[fase] + carboPos) {
     avisos += '<div class="pm-reserva">Carboidrato restante hoje: <b>' + carboRestante + " g</b>. Guarde a maior parte pro entorno do treino (antes e depois); nas outras refeições, prefira proteína e salada.</div>";
   }
   const dicaEsporte = PLANO_DICA_ESPORTE[p.esporte] && fase !== "pos" ? '<div class="pm-dica">' + icon("info") + "<div>" + esc(PLANO_DICA_ESPORTE[p.esporte]) + "</div></div>" : "";
   const dicaNoite = fase === "pos" && ini >= 18 * 60 ? '<div class="pm-dica">' + icon("moon") + "<div>Treino à noite: faça do pós-treino o seu jantar e evite cafeína. É no sono que o músculo se reconstrói.</div></div>" : "";
   const passos = [];
   if (fase === "refeicao" && ini - 60 > agora) passos.push([minParaHhmm(ini - 60) + "–" + minParaHhmm(ini - 30), "<b>Lanche rápido, só se tiver fome:</b> uma fruta (carboidrato rápido)."]);
-  if (fase !== "pos" && fase !== "durante") passos.push([minParaHhmm(ini) + "–" + minParaHhmm(fim), "<b>Treino.</b> Água" + (dur > 90 ? "; por ser longo, carboidrato durante." : ".")]);
-  if (fase !== "pos") passos.push(["Até " + minParaHhmm(fim + 120), "<b>Pós-treino:</b> ~" + protPos + " g de proteína + ~" + carboPos + " g de carboidrato rápido."]);
+  if (fase !== "pos" && fase !== "durante") passos.push(["A partir de " + minParaHhmm(ini), "<b>Treino.</b> Água; se passar de ~90 min, carboidrato durante."]);
+  if (fase !== "pos") passos.push(["Até 2h depois", "<b>Pós-treino:</b> ~" + protPos + " g de proteína + carboidrato rápido. A quantidade certa aparece aqui quando você registrar o treino (duração e calorias reais)."]);
   if (fase === "pos" && (restante.protein || 0) - protPos > 15) passos.push(["Antes de dormir", "<b>Ainda vai faltar proteína</b> (~" + Math.round(restante.protein - protPos) + " g): iogurte ou queijo cottage, de digestão lenta."]);
   if (fase === "pos") passos.push(["Amanhã", "<b>Recuperação:</b> confira o HRV e o Body Battery na aba Recuperação."]);
   const agoraHtml = '<div class="pm-agora"><div class="pm-bloco-titulo">' + icon("clock") + " " + agoraBloco.rotulo + "</div>" +
