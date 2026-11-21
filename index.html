@@ -499,6 +499,15 @@ body:has(.modal-overlay) .hamburger-btn{ display:none; }
 .rt-sub{ font-size:12px; color:#a9c6b7; }
 .rt-botoes{ display:flex; gap:8px; margin-top:6px; }
 .rt-botoes button{ flex:1; border-radius:999px; border:1px solid rgba(184,214,156,.35); background:rgba(255,255,255,.06); padding:7px 12px; font-size:13px; font-weight:600; color:#e3f2d3; }
+.garmin-ativ{ margin-top:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; border-radius:12px; border:1px dashed rgba(184,214,156,.35); background:rgba(255,255,255,.05); padding:8px 10px; font-size:12.5px; color:#e3f2d3; }
+.garmin-ativ .icon{ width:14px; height:14px; color:#b8d6a0; }
+.garmin-ativ span{ flex:1; min-width:160px; }
+.garmin-ativ button{ border-radius:999px; border:1px solid rgba(184,214,156,.45); background:rgba(255,255,255,.1); padding:5px 12px; font-size:12px; font-weight:600; color:#e3f2d3; white-space:nowrap; }
+.garmin-ativ.aplicado{ border-style:solid; background:rgba(159,215,127,.12); }
+.garmin-ativ.discreto{ border:none; background:none; padding:4px 0 0; color:#9fb5aa; }
+.garmin-ativ.discreto button{ border:none; background:none; padding:0; text-decoration:underline; color:#b8d6a0; font-weight:500; }
+.garmin-passos{ margin:0; padding-left:20px; font-size:13.5px; line-height:1.6; color:#3d5c48; }
+.garmin-passos a{ color:#1c4d3e; font-weight:600; }
 .esporte-chip{ display:inline-block; margin-left:6px; border-radius:999px; background:#e4efd9; color:#3d5c48; font-size:11px; font-weight:600; padding:2px 8px; vertical-align:1px; white-space:nowrap; }
 .app-ver{ margin-top:14px; text-align:center; font-size:10.5px; line-height:1.6; color:#8a9a91; }
 .app-ver .link-btn{ font-size:10.5px; color:#6c8d68; }
@@ -1421,6 +1430,9 @@ const authApi = {
   // Ver acaoAtualizarGarminAgora() / sincronizarGarminAgora() no Code.gs -- botão "Atualizar agora" da
   // aba Recuperação, busca o dia de hoje na Garmin na hora em vez de esperar o gatilho automático.
   sincronizarGarminAgora: (email) => chamarApi("sincronizarGarminAgora", { email }),
+  garminAtividades: (email, data) => chamarApi("garminAtividades", { email, data }),
+  salvarChaveGarmin: (email, chave) => chamarApi("salvarChaveGarmin", { email, chave }),
+  removerChaveGarmin: (email) => chamarApi("removerChaveGarmin", { email }),
 };
 
 /* ===================== conexão com Google (Google Identity Services) ===================== */
@@ -2898,6 +2910,7 @@ const CHAVE_PRODUTOS_CUSTOMIZADOS = "nutri-track-produtos-customizados";
 // Code.gs) -- o app nunca cria/edita isso localmente, só recebe e guarda em cache (igual meals/treinos
 // quando ainda não havia fila de pendentes: aqui nem precisa de fila, porque não há nada a reenviar).
 const CHAVE_GARMIN = "nutri-track-garmin";
+const CHAVE_GARMIN_CONECTADO = "nutri-track-garmin-conectado";
 
 /* ===================== medidas e aferições ===================== */
 const medidaTipos = {
@@ -2961,6 +2974,11 @@ const state = {
   planoRegistrandoId: null,
   sobreAberto: false,
   rtAnterior: null, rtAtual: null,
+  // Atividades do relógio Garmin do dia escolhido no formulário de treino (ver garminAtividadesLinhaTemplate()).
+  // semRelogio: a conta não tem Garmin (o app para de perguntar nesta sessão). treinoGarmin: a atividade
+  // cujos dados preencheram o formulário (calorias reais, FC...) até salvar.
+  garminAtiv: { data: "", status: "idle", lista: [], semRelogio: false },
+  treinoGarmin: null,
   // Sugestões de autocomplete pro alimento que a pessoa está digitando agora na descrição da refeição --
   // lista de labels (string), atualizada a cada tecla (ver acaoAtualizarSugestoesAlimento()) e mostrada
   // logo abaixo da textarea (mealSugestoesListaHtml()). Pedido do usuário. Fica fora do fluxo normal de
@@ -3094,6 +3112,9 @@ const state = {
   // Dados diários do Garmin (HRV/Body Battery/sono) -- ver comentário em CHAVE_GARMIN. Cada item é
   // { date, hrv, bodyBattery, sono, atualizadoEm }.
   garmin: readStorage(CHAVE_GARMIN, []),
+  // Relógio Garmin desta conta conectado (chave pessoal cadastrada pelo menu lateral, ver garminModalTemplate()).
+  garminConectado: readStorage(CHAVE_GARMIN_CONECTADO, false),
+  garminModalAberto: false, garminSalvando: false,
   // Data (AAAA-MM-DD) do dia sendo exibido na aba Recuperação, ou null pra usar o dia mais recente com
   // dado Garmin disponível (ver garminRegistroAtual()/acaoRecuperacaoDiaAnterior()/
   // acaoRecuperacaoDiaSeguinte()).
@@ -4460,6 +4481,7 @@ async function sincronizarDoServidorInterno() {
     // que veio do servidor (se vier undefined, ex.: planilha antiga sem a aba ainda, mantém o que já
     // estava em cache local em vez de apagar).
     if (resposta.garmin) { state.garmin = resposta.garmin; persistGarmin(); }
+    if (typeof resposta.garminConectado === "boolean") { state.garminConectado = resposta.garminConectado; writeStorage(CHAVE_GARMIN_CONECTADO, state.garminConectado); }
     // Plano de treinos: se vier undefined (backend ainda sem essa aba), mantém o que está no aparelho.
     if (resposta.treinosPlanejados) { state.treinosPlanejados = mesclarTreinosPlanejados(resposta.treinosPlanejados); persistTreinosPlanejados(); }
     render();
@@ -5741,11 +5763,64 @@ function submitPerfil() {
 /* ===================== templates ===================== */
 // Versão exibida no menu, na tela de login e em "Sobre o App" (mesmo padrão do Custódia Digital e do app
 // do escritório). Atualizar junto com o CACHE_NAME do sw.js a cada versão publicada.
-const APP_VERSAO = "2.17";
+const APP_VERSAO = "2.19";
 const APP_VERSAO_DATA = "21/11/2026";
 const DEV = { nome: "EFS Technology", lema: "Soluções digitais sob medida", tel: "83 9 99944-7957", wa: "5583999447957", email: "efstechnology.app@gmail.com" };
 function authVersaoTemplate() {
   return '<p class="auth-ver">versão ' + APP_VERSAO + " · © " + new Date().getFullYear() + " NutriTrack<br>Desenvolvido por <b>" + DEV.nome + "</b></p>";
+}
+// ===== conectar o relógio Garmin (chave pessoal de cada pessoa) =====
+function acaoAbrirGarminModal() {
+  if (!state.account) { toastError("Conecte primeiro a sua conta do Google: os dados do relógio ficam na sua planilha."); return; }
+  state.sidebarOpen = false; state.garminModalAberto = true; render();
+}
+function acaoFecharGarminModal() { if (state.garminSalvando) return; state.garminModalAberto = false; render(); }
+async function acaoSalvarChaveGarmin() {
+  const el = document.getElementById("garmin-chave");
+  const chave = el ? el.value.trim() : "";
+  if (!chave) { toastError("Cole a chave gerada no Garmin Connect."); return; }
+  state.garminSalvando = true; render();
+  try {
+    const r = await authApi.salvarChaveGarmin(state.usuario.email, chave);
+    if (!r.ok) { toastError(r.erro || "Não foi possível conectar o relógio."); return; }
+    state.garminConectado = true; writeStorage(CHAVE_GARMIN_CONECTADO, true);
+    if (r.garmin) { state.garmin = r.garmin; persistGarmin(); }
+    state.garminAtiv = { data: "", status: "idle", lista: [], semRelogio: false };
+    state.garminModalAberto = false;
+    toastSuccess("Relógio Garmin conectado. Os dados dos últimos dias já estão na aba Recuperação.");
+  } catch (err) {
+    toastError("Falha de conexão. Tente de novo.");
+  } finally {
+    state.garminSalvando = false; render();
+  }
+}
+async function acaoDesconectarGarmin() {
+  if (!confirm("Desconectar o relógio Garmin desta conta? Os dados já trazidos continuam salvos.")) return;
+  try {
+    const r = await authApi.removerChaveGarmin(state.usuario.email);
+    if (!r.ok) { toastError("Não foi possível desconectar agora."); return; }
+    state.garminConectado = false; writeStorage(CHAVE_GARMIN_CONECTADO, false);
+    state.garminAtiv = { data: "", status: "idle", lista: [], semRelogio: true };
+    toastSuccess("Relógio Garmin desconectado.");
+    render();
+  } catch (err) { toastError("Falha de conexão. Tente de novo."); }
+}
+function garminModalTemplate() {
+  if (!state.garminModalAberto) return "";
+  return '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharGarminModal();}"><div class="modal-card" style="max-height:90vh;overflow-y:auto">' +
+    '<div class="meal-detalhe-head"><div><h2>Conectar relógio Garmin</h2><p class="sub">Leva 1 minuto, uma vez só.</p></div>' +
+    '<button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharGarminModal()">' + icon("x") + "</button></div>" +
+    '<div class="modal-body">' +
+      '<ol class="garmin-passos">' +
+        '<li>Abra o <a href="https://connect.garmin.com/app/settings/personalApiToken" target="_blank" rel="noopener">Garmin Connect (Personal API token)</a> e entre com a conta do seu relógio.</li>' +
+        "<li>Gere uma chave nova (Personal API key) e copie.</li>" +
+        "<li>Cole aqui embaixo e toque em Conectar.</li>" +
+      "</ol>" +
+      '<div><label class="field-label">Chave da Garmin</label><input id="garmin-chave" type="password" class="field-input" autocomplete="off" placeholder="Cole a chave aqui"/></div>' +
+      '<p class="side-text">A chave fica guardada só no servidor do app, nunca na sua planilha, e serve apenas pra ler os dados do relógio. Dá pra desconectar quando quiser no menu.</p>' +
+    "</div>" +
+    '<div class="modal-footer"><button class="btn-primary" ' + (state.garminSalvando ? "disabled" : "") + ' onclick="acaoSalvarChaveGarmin()">' + icon("check") + (state.garminSalvando ? " Conectando e trazendo os dados…" : " Conectar") + "</button></div>" +
+  "</div></div>";
 }
 function acaoAbrirSobreApp() { state.sidebarOpen = false; state.sobreAberto = true; render(); }
 function acaoFecharSobreApp() { state.sobreAberto = false; render(); }
@@ -5857,6 +5932,14 @@ function sidebarTemplate() {
       '<p class="side-text">Conecte sua conta do Google para liberar o app e salvar seu histórico na nuvem.</p>' +
       '<button class="btn-primary-pill" ' + (state.syncing ? "disabled" : "") + ' onclick="acaoConectarGoogle()">' + icon("login") + " " + (state.syncing ? "Conectando..." : "Conectar Google") + "</button>"
     ) +
+    "</div>" +
+    '<div class="side-card-border"><div class="side-label">Relógio Garmin</div>' +
+    (state.garminConectado
+      ? '<div class="google-connected">' + icon("check") + "<span>Conectado</span></div>" +
+        '<p class="side-text">HRV, Body Battery, sono e atividades vêm do seu relógio.</p>' +
+        '<button class="btn-outline" onclick="acaoDesconectarGarmin()">' + icon("logout") + " Desconectar</button>"
+      : '<p class="side-text">Conecte seu relógio pra ver recuperação (HRV, Body Battery, sono) e usar as atividades nos treinos.</p>' +
+        '<button class="btn-outline" onclick="acaoAbrirGarminModal()">' + icon("activity") + " Conectar Garmin</button>") +
     "</div>" +
     '<button class="btn-danger-outline" onclick="acaoSair()">' + icon("logout") + " Sair da conta</button>" +
     '<div class="app-ver">versão ' + APP_VERSAO + " — NutriTrack<br>por " + DEV.nome + '<br><button class="link-btn" onclick="acaoAbrirSobreApp()">Sobre o App</button></div>' +
@@ -7312,6 +7395,7 @@ function acaoAlternarHistorico() {
 
 /* ===================== treinos/esportes ===================== */
 function acaoSelecionarEsporte(valor) {
+  if (valor !== state.treinoEsporte) state.treinoGarmin = null;
   state.treinoEsporte = valor;
   if (valor !== "Outro") state.treinoEsporteCustom = "";
   if (valor !== "Ciclismo") { state.treinoCiclismoModalidade = ""; state.treinoSpinningIntensidade = ""; }
@@ -8413,6 +8497,7 @@ function refeicaoTreinoTemplate(total) {
 }
 function acaoCancelarEdicaoTreino() {
   state.treinoEditandoId = null;
+  state.treinoGarmin = null;
   state.treinoEsporte = "";
   state.treinoEsporteCustom = "";
   state.treinoCiclismoModalidade = "";
@@ -8469,7 +8554,8 @@ function acaoSalvarTreino() {
     registro.duracaoMin = duracaoMin;
     registro.nota = nota;
     Object.assign(registro, camposDistancia);
-    registro.caloriasQueimadas = estimarCaloriasQueimadas(registro);
+    // Treino preenchido com dados do Garmin: mantém as calorias medidas pelo relógio (não volta pra estimativa).
+    if (!registro.garminId) registro.caloriasQueimadas = estimarCaloriasQueimadas(registro);
     const arquivoFoto = treinoFotoSelecionada;
     if (arquivoFoto) registro.fotoUrl = ""; // preenchida de novo quando o novo anexo terminar de enviar
     state.treinos = state.treinos.map((tr) => (tr.id === editandoId ? registro : tr));
@@ -8502,6 +8588,8 @@ function acaoSalvarTreino() {
   const gruposMusculares = obterGruposMuscularesParaSalvar();
   const novoTreino = Object.assign({ id: Date.now(), date: dataTreino, esporte, ciclismoModalidade, spinningIntensidade, ambiente: state.treinoAmbiente, horaInicio, horaFim, duracaoMin, fotoUrl: "", nota, gruposMusculares }, camposDistancia);
   novoTreino.caloriasQueimadas = estimarCaloriasQueimadas(novoTreino);
+  aplicarGarminNoTreino(novoTreino); // calorias reais do relógio, quando os dados vieram do Garmin
+  state.treinoGarmin = null;
   const arquivoFoto = treinoFotoSelecionada;
   state.treinos = state.treinos.concat([novoTreino]);
   persistTreinos();
@@ -8633,7 +8721,8 @@ function treinoListTemplate() {
     '<div class="meal-row-text"><div class="meal-row-name">' + emojiEsporte(t.esporte) + " " + esc(t.esporte) + chipModalidadeTreino(t) + '</div><div class="meal-row-meta">' + icon("clock") + " " + esc(t.horaInicio) + " – " + esc(t.horaFim) + "</div>" +
     (t.distanciaKm ? '<div class="meal-row-distancia">' + icon("zap") + " " + esc(treinoDistanciaResumoTexto(t)) + "</div>" : "") +
     (t.gruposMusculares && t.gruposMusculares.length ? '<div class="meal-row-grupos-musculares">' + icon("activity") + " " + esc(treinoGruposMuscularesResumoTexto(t)) + "</div>" : "") +
-    (t.caloriasQueimadas ? '<div class="meal-row-calorias-queimadas">' + icon("flame") + " " + esc(treinoCaloriasResumoTexto(t)) + " queimadas (estimativa)</div>" : "") +
+    (t.caloriasQueimadas ? '<div class="meal-row-calorias-queimadas">' + icon("flame") + " " + esc(treinoCaloriasResumoTexto(t)) + " queimadas " + (t.garminId ? "(Garmin)" : "(estimativa)") + "</div>" : "") +
+    (t.fcMedia ? '<div class="meal-row-meta">' + icon("heart") + " FC média " + t.fcMedia + (t.fcMax ? " · máx " + t.fcMax : "") + " bpm" + (t.teAerobico ? " · efeito aeróbico " + formatNumber(t.teAerobico, 1) : "") + "</div>" : "") +
     (t.nota ? '<div class="meal-row-nota">' + icon("help") + " " + esc(t.nota) + "</div>" : "") +
     "</div></div>" +
     '<div class="meal-row-right"><div class="meal-row-stat"><div class="meal-row-kcal">' + esc(formatarDuracao(t.duracaoMin)) + "</div></div>" +
@@ -8679,7 +8768,7 @@ function treinoHistoryDayCardTemplate(date) {
               '<div class="history-day-meal-linha"><span>' + emojiEsporte(t.esporte) + " " + esc(nomeEsporteExibicao(t)) + " · " + esc(t.horaInicio) + "–" + esc(t.horaFim) + "</span><span>" + esc(formatarDuracao(t.duracaoMin)) + (t.fotoUrl ? ' <a class="history-day-meal-foto-link" href="' + esc(t.fotoUrl) + '" target="_blank" rel="noopener" aria-label="Ver foto do treino">' + icon("camera") + "</a>" : "") + ' <button class="history-day-meal-editar-link" aria-label="Editar treino" onclick="event.stopPropagation(); acaoEditarTreino(' + t.id + ')">' + icon("edit") + "</button></span></div>" +
               (t.distanciaKm ? '<p class="history-day-meal-distancia">' + esc(treinoDistanciaResumoTexto(t)) + "</p>" : "") +
               treinoGruposMuscularesListaHtml(t) +
-              (t.caloriasQueimadas ? '<p class="history-day-meal-calorias-queimadas">' + esc(treinoCaloriasResumoTexto(t)) + " queimadas (estimativa)</p>" : "") +
+              (t.caloriasQueimadas ? '<p class="history-day-meal-calorias-queimadas">' + esc(treinoCaloriasResumoTexto(t)) + " queimadas " + (t.garminId ? "(Garmin)" : "(estimativa)") + "</p>" : "") +
               (t.nota ? '<p class="history-day-meal-nota">' + esc(t.nota) + "</p>" : "") +
             "</div>"
           ).join("") + "</div>"
@@ -10749,6 +10838,93 @@ function medidasTabTemplate() {
   return '<main>' + imcCardTemplate() + bioimpedanciaSectionTemplate() + medidasCardFlipWrapperTemplate() + "</main>";
 }
 
+// ===================== atividades do Garmin no formulário de treino =====================
+// Pedido do usuário: usar o próprio formulário de treino (sem aba/seção nova). Ao escolher o esporte,
+// aparecem as atividades daquele dia gravadas no relógio; "Usar estes dados" preenche início, término e
+// distância e guarda calorias reais e FC, que entram no treino ao salvar.
+function garminEsporteDoTipo(tipo) {
+  const t = String(tipo || "");
+  if (/run/.test(t)) return { esporte: "Corrida" };
+  if (/walk|hik/.test(t)) return { esporte: "Caminhada" };
+  if (t === "indoor_cycling" || t === "spinning") return { esporte: "Ciclismo", modalidade: "Spinning" };
+  if (/mountain/.test(t)) return { esporte: "Ciclismo", modalidade: "MTB" };
+  if (/gravel/.test(t)) return { esporte: "Ciclismo", modalidade: "Gravel" };
+  if (/track_cycling/.test(t)) return { esporte: "Ciclismo", modalidade: "Pista" };
+  if (/cycl|bik|ride/.test(t)) return { esporte: "Ciclismo", modalidade: "Estrada" };
+  if (/strength/.test(t)) return { esporte: "Musculação" };
+  if (/swim/.test(t)) return { esporte: "Natação" };
+  if (/box/.test(t)) return { esporte: "Boxe" };
+  if (/tennis/.test(t)) return { esporte: "Tênis" };
+  if (/soccer|football/.test(t)) return { esporte: "Futebol" };
+  return null;
+}
+async function carregarGarminAtividades(data, forcar) {
+  const g = state.garminAtiv;
+  if (!state.usuario || g.semRelogio || g.status === "carregando" || (!forcar && g.data === data)) return;
+  state.garminAtiv = { data: data, status: "carregando", lista: [], semRelogio: false };
+  try {
+    const r = await authApi.garminAtividades(state.usuario.email, data);
+    if (r.ok) state.garminAtiv = { data: data, status: "ok", lista: r.atividades || [], semRelogio: false };
+    else state.garminAtiv = { data: data, status: "erro", lista: [], semRelogio: !!r.semRelogio };
+  } catch (err) {
+    state.garminAtiv = { data: data, status: "erro", lista: [], semRelogio: false };
+  }
+  if (state.activeTab === "treinos") render();
+}
+function acaoBuscarGarminDeNovo() { carregarGarminAtividades(state.garminAtiv.data || today(), true); render(); }
+function garminResumoAtividade(a) {
+  return esc(a.inicio) + "–" + esc(a.fim) + (a.distanciaKm ? " · " + formatNumber(a.distanciaKm, 2) + " km" : "") +
+    (a.calorias ? " · " + formatNumber(a.calorias, 0) + " kcal" : "") + (a.fcMedia ? " · FC " + a.fcMedia : "");
+}
+function garminAtividadesLinhaTemplate() {
+  if (!state.garminConectado || state.treinoAtivo || state.treinoEditandoId != null || !state.treinoEsporte || state.garminAtiv.semRelogio) return "";
+  const tg = state.treinoGarmin;
+  if (tg) {
+    return '<div class="garmin-ativ aplicado">' + icon("check") + "<span>Dados do Garmin aplicados: " + garminResumoAtividade(tg) + "</span>" +
+      '<button type="button" onclick="acaoDesfazerGarminTreino()">Desfazer</button></div>';
+  }
+  const dataEl = document.getElementById("treino-data");
+  const data = state.treinoModo === "manual" ? (state.treinoData || (dataEl && dataEl.value) || today()) : today();
+  if (state.garminAtiv.data !== data) { setTimeout(() => carregarGarminAtividades(data), 0); return ""; }
+  if (state.garminAtiv.status === "carregando") return '<div class="garmin-ativ discreto">' + icon("clock") + "<span>Buscando atividades no Garmin…</span></div>";
+  if (state.garminAtiv.status !== "ok") return "";
+  const usados = new Set(state.treinos.filter((t) => t.garminId).map((t) => String(t.garminId)));
+  const doEsporte = state.garminAtiv.lista.filter((a) => { const m = garminEsporteDoTipo(a.tipo); return m && m.esporte === state.treinoEsporte && !usados.has(String(a.id)); });
+  if (!doEsporte.length) {
+    if (!state.garminAtiv.lista.some((a) => garminEsporteDoTipo(a.tipo))) return "";
+    return '<div class="garmin-ativ discreto"><span>Nenhuma atividade de ' + esc(state.treinoEsporte) + ' no Garmin nesse dia.</span><button type="button" onclick="acaoBuscarGarminDeNovo()">Buscar de novo</button></div>';
+  }
+  return doEsporte.map((a) => '<div class="garmin-ativ">' + icon("activity") + "<span><b>Garmin:</b> " + garminResumoAtividade(a) + "</span>" +
+    '<button type="button" onclick="acaoUsarAtividadeGarmin(\'' + esc(a.id) + '\')">Usar estes dados</button></div>').join("");
+}
+function acaoUsarAtividadeGarmin(id) {
+  const a = state.garminAtiv.lista.find((x) => String(x.id) === String(id));
+  if (!a) return;
+  const m = garminEsporteDoTipo(a.tipo) || {};
+  state.treinoGarmin = Object.assign({}, a, { esporte: m.esporte });
+  state.treinoModo = "manual";
+  state.treinoData = a.data;
+  state.treinoHoraInicio = a.inicio;
+  state.treinoHoraFim = a.fim;
+  state.treinoDistanciaKm = a.distanciaKm ? String(a.distanciaKm) : "";
+  if (m.esporte === "Ciclismo" && m.modalidade) state.treinoCiclismoModalidade = m.modalidade;
+  render();
+  // captureFormState() recaptura os inputs antigos no render -- grava direto no DOM (mesmo padrão de acaoTreineiPlano()).
+  const campos = { "treino-data": a.data, "treino-hora-inicio": a.inicio, "treino-hora-fim": a.fim, "treino-distancia": state.treinoDistanciaKm };
+  Object.keys(campos).forEach((k) => { const el = document.getElementById(k); if (el) el.value = campos[k]; });
+}
+function acaoDesfazerGarminTreino() { state.treinoGarmin = null; render(); }
+// Campos que vêm do Garmin no treino salvo (calorias reais no lugar da estimativa).
+function aplicarGarminNoTreino(treino) {
+  const g = state.treinoGarmin;
+  if (!g || g.esporte !== treino.esporte) return false;
+  treino.garminId = String(g.id);
+  if (g.calorias) treino.caloriasQueimadas = g.calorias;
+  treino.fcMedia = g.fcMedia || null; treino.fcMax = g.fcMax || null;
+  treino.teAerobico = g.teAerobico || null; treino.teAnaerobico = g.teAnaerobico || null;
+  return true;
+}
+
 // Mesmo layout de duas colunas da aba Nutrição (formulário + histórico do dia), aplicado a treinos.
 // Seletor de esporte reaproveitado tanto no modo cronômetro quanto no modo manual.
 function treinoSeletorEsporteTemplate() {
@@ -10766,6 +10942,7 @@ function treinoSeletorEsporteTemplate() {
   (state.treinoEsporte === "Outro"
     ? '<input id="treino-esporte-custom" class="meal-input" placeholder="Nome do esporte/atividade" value="' + esc(state.treinoEsporteCustom) + '"/>'
     : "") +
+  garminAtividadesLinhaTemplate() +
   treinoAmbienteCampoTemplate() +
   treinoCiclismoModalidadeCampoTemplate();
 }
@@ -13481,7 +13658,7 @@ function homeTemplate() {
   return '' +
     '<div class="app-shell">' +
     '<button class="hamburger-btn" onclick="acaoAbrirSidebar()" aria-label="Abrir menu"><span></span></button>' +
-    sidebarTemplate() + editarPerfilTemplate() + sobreAppTemplate() + mealDetalheModalTemplate() + nutrientInfoModalTemplate() + exameInfoModalTemplate() + recuperacaoInfoModalTemplate() + cadastrarProdutoModalTemplate() + analiseConsumoDiaModalTemplate() + autonomiaInfoModalTemplate() + planoTreinoModalTemplate() + planejarTreinoModalTemplate() +
+    sidebarTemplate() + editarPerfilTemplate() + sobreAppTemplate() + garminModalTemplate() + mealDetalheModalTemplate() + nutrientInfoModalTemplate() + exameInfoModalTemplate() + recuperacaoInfoModalTemplate() + cadastrarProdutoModalTemplate() + analiseConsumoDiaModalTemplate() + autonomiaInfoModalTemplate() + planoTreinoModalTemplate() + planejarTreinoModalTemplate() +
     '<div class="home-content"><div class="home-inner">' +
     (state.account ? fullHomeTemplate() : lockedTemplate()) +
     "</div></div></div>";
