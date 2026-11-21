@@ -1300,6 +1300,109 @@ body:has(.modal-overlay) .hamburger-btn{ display:none; }
 .avaliacao-nota-sub{ font-size:13px; color:#8a97a8; max-width:320px; }
 
 .hidden{ display:none !important; }
+/* ===== Relatório do período (aba Diário de Kcal) ===== */
+/* Pedido do usuário: um relatório do período, no mesmo espírito da Análise de Consumo, só que juntando
+   os dias do Diário de Kcal (meta, saldo, peso em jejum, macros, micros e treinos), com versão impressa/PDF. */
+.diario-kcal-historico{ margin-top:0; padding:16px; }
+.diario-kcal-scroll{ max-height:min(70vh, 740px); overflow-y:auto; padding-right:4px; margin-top:14px; }
+.rel-box{ border-radius:20px; border:1px solid #dce5db; background:#fff; padding:16px; display:flex; flex-direction:column; gap:12px; margin-bottom:18px; }
+.rel-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; font-family:'Fraunces',serif; font-size:19px; font-weight:600; color:#1b3f34; }
+.rel-head > span{ display:flex; align-items:center; gap:8px; }
+.rel-sub{ font-size:12.5px; color:#7c8c86; margin-top:-6px; line-height:1.45; }
+.rel-fechar{ font-family:'DM Sans',sans-serif; font-size:12px; font-weight:500; color:#7c8c86; text-decoration:underline; background:none; border:none; cursor:pointer; }
+.rel-badge{ align-self:flex-start; font-size:12px; font-weight:700; padding:5px 10px; border-radius:999px; background:#e4efd9; color:#2f6b3a; display:inline-flex; align-items:center; gap:5px; }
+.rel-badge.quase{ background:#fbf0dc; color:#a86a12; }
+.rel-badge.fora{ background:#f8e4df; color:#b0442f; }
+.rel-kpis{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.rel-kpi{ border-radius:12px; background:#f7f9f5; padding:10px; }
+.rel-kpi .n{ font-family:'Fraunces',serif; font-size:20px; font-weight:600; color:#1b3f34; }
+.rel-kpi .n.bom{ color:#2f6b3a; } .rel-kpi .n.ruim{ color:#a86a12; }
+.rel-kpi .l{ font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#8a9a91; }
+.rel-kpi .d{ font-size:11.5px; color:#557268; margin-top:2px; line-height:1.4; }
+.rel-legenda{ display:flex; gap:12px; flex-wrap:wrap; font-size:11.5px; color:#557268; }
+.rel-legenda i{ display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:4px; vertical-align:-1px; }
+.rel-p{ font-size:13px; line-height:1.55; color:#3d5c48; margin:0; }
+.rel-barra{ display:grid; grid-template-columns:78px 1fr 84px; gap:8px; align-items:center; font-size:12.5px; color:#3d5c48; }
+.rel-barra .t{ height:8px; border-radius:4px; background:#eef2ea; overflow:hidden; }
+.rel-barra .t span{ display:block; height:100%; border-radius:4px; background:#4f8f62; }
+.rel-barra .t span.baixo{ background:#d9922e; }
+.rel-tab{ width:100%; border-collapse:collapse; font-size:12.5px; color:#3d5c48; }
+.rel-tab td, .rel-tab th{ padding:6px 4px; border-bottom:1px solid #eef2ea; text-align:right; }
+.rel-tab th{ font-size:11px; color:#8a9a91; font-weight:700; }
+.rel-tab td:first-child, .rel-tab th:first-child{ text-align:left; }
+.rel-lista{ margin:0; padding-left:18px; font-size:13px; line-height:1.6; color:#3d5c48; }
+.rel-conclusao{ border-radius:12px; background:#1c4d3e; color:#e3f2d3; padding:12px 14px; font-size:13px; line-height:1.55; }
+.rel-conclusao b{ color:#fff; }
+.rel-card{ border-radius:16px; border:1px solid #e5ebe3; background:#fbfcfa; padding:14px; display:flex; flex-direction:column; gap:10px; }
+.rel-card-t{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#1b3f34; flex-wrap:wrap; }
+.rel-card-t .num{ width:22px; height:22px; border-radius:50%; background:#1c4d3e; color:#fff; font-size:11.5px; display:flex; align-items:center; justify-content:center; }
+.rel-card-t .ex{ font-weight:500; color:#8a9a91; font-size:12px; }
+.rel-nota{ font-size:11.5px; color:#8a9a91; line-height:1.45; margin:0; }
+.rel-micro{ display:grid; grid-template-columns:96px 1fr 46px; gap:8px; align-items:center; font-size:12.5px; color:#3d5c48; }
+.rel-micro .t{ height:7px; border-radius:4px; background:#eef2ea; overflow:hidden; }
+.rel-micro .t span{ display:block; height:100%; border-radius:4px; }
+.rel-micro .p{ text-align:right; font-weight:600; }
+.rel-micro small{ font-size:10.5px; color:#8a9a91; }
+.rel-micro-cols{ display:flex; flex-direction:column; gap:10px; }
+.rel-micro-cols > div{ display:flex; flex-direction:column; gap:8px; }
+.rel-ok-bg{ background:#4f8f62; } .rel-med-bg{ background:#d9922e; } .rel-bx-bg{ background:#c8553d; }
+.rel-ok-tx{ color:#2f6b3a; } .rel-med-tx{ color:#a86a12; } .rel-bx-tx{ color:#b0442f; }
+.rel-sub2{ font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#8a9a91; margin-top:2px; }
+.rel-fontes{ font-size:12px; line-height:1.5; color:#557268; background:#f2f6ef; border-radius:10px; padding:8px 10px; }
+.rel-meta{ border-radius:12px; background:#1c4d3e; color:#e3f2d3; padding:12px 14px; display:flex; flex-direction:column; gap:6px; }
+.rel-meta .t{ font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#bfe0a6; }
+.rel-meta .kcal{ font-family:'Fraunces',serif; font-size:22px; font-weight:600; color:#fff; }
+.rel-meta .obj{ font-size:12.5px; color:#d5e8c4; }
+.rel-meta .macros{ display:flex; flex-wrap:wrap; gap:6px; }
+.rel-meta .macros span{ font-size:12px; font-weight:600; padding:3px 8px; border-radius:999px; background:rgba(255,255,255,.12); color:#e3f2d3; }
+.rel-meta .desde{ font-size:12.5px; line-height:1.5; color:#d5e8c4; }
+.rel-meta .desde b{ color:#fff; }
+.rel-hist{ font-size:12px; line-height:1.5; color:#d5e8c4; border-top:1px solid rgba(255,255,255,.15); padding-top:6px; }
+.rel-hist .seg{ display:flex; justify-content:space-between; gap:8px; padding:2px 0; }
+.rel-esp{ display:flex; flex-direction:column; gap:8px; }
+.rel-esp-row{ display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:center; }
+.rel-esp-nome{ font-size:13px; font-weight:600; color:#1b3f34; }
+.rel-esp-kcal{ font-size:13px; font-weight:700; color:#1b3f34; text-align:right; }
+.rel-esp-det{ grid-column:1 / -1; font-size:11.5px; color:#7c8c86; }
+.rel-esp-bar{ grid-column:1 / -1; height:6px; border-radius:3px; background:#eef2ea; overflow:hidden; }
+.rel-esp-bar span{ display:block; height:100%; border-radius:3px; background:#4f8f62; }
+.rel-pdf{ align-self:stretch; display:flex; justify-content:center; align-items:center; gap:8px; border-radius:999px; border:1px solid #dce5db; background:#fff; padding:10px; font-size:13px; font-weight:600; color:#1c4d3e; cursor:pointer; }
+.rel-chart{ display:block; width:100%; height:auto; }
+.rel-vazio{ font-size:13px; color:#7c8c86; line-height:1.5; margin:0; }
+#print-root{ display:none; }
+@media (min-width: 900px){
+  .rel-kpis{ grid-template-columns:repeat(3,1fr); }
+  .rel-micro-cols{ display:grid; grid-template-columns:1fr 1fr; gap:4px 22px; align-items:start; }
+}
+/* Versão impressa / PDF: só o #print-root aparece (montado em acaoImprimirRelatorioDiario()). */
+@media print{
+  body.rel-imprimindo > *:not(#print-root){ display:none !important; }
+  html:has(body.rel-imprimindo), body.rel-imprimindo{ background:#fff !important; }
+  body.rel-imprimindo #print-root{ display:block; }
+  #print-root *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  #print-root{ font-family:'DM Sans',system-ui,sans-serif; color:#1b3f34; }
+  #print-root .rel-box{ border:none; padding:0; gap:10px; margin:0; }
+  #print-root .rel-card, #print-root .rel-meta, #print-root .rel-conclusao, #print-root .pr-pessoa{ break-inside:avoid; }
+  #print-root .rel-kpis{ grid-template-columns:repeat(3,1fr); }
+  #print-root .rel-micro-cols{ display:grid; grid-template-columns:1fr 1fr; gap:4px 22px; align-items:start; }
+}
+.pr-top{ display:flex; justify-content:space-between; align-items:center; gap:16px; padding-bottom:10px; border-bottom:2px solid #1c4d3e; }
+.pr-brand{ display:flex; align-items:center; gap:10px; }
+.pr-brand .nm{ font-family:'Fraunces',serif; font-size:24px; font-weight:600; color:#1c4d3e; line-height:1; }
+.pr-brand .nm span{ color:#6c9a6e; }
+.pr-brand .sl{ font-size:11px; color:#7c8c86; margin-top:3px; }
+.pr-doc{ text-align:right; }
+.pr-doc .t{ font-size:15px; font-weight:700; color:#1b3f34; }
+.pr-doc .p{ font-size:11.5px; color:#557268; margin-top:2px; line-height:1.45; }
+.pr-pessoa{ margin:12px 0 14px; border:1px solid #dce5db; border-radius:12px; padding:10px 12px; background:#f7f9f5; }
+.pr-pessoa .h{ font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#6c8d68; margin-bottom:6px; }
+.pr-grid{ display:grid; grid-template-columns:2.2fr 1fr 1fr 1fr; gap:8px 14px; }
+.pr-grid .c{ display:flex; flex-direction:column; gap:1px; }
+.pr-grid .l{ font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#8a9a91; }
+.pr-grid .v{ font-size:13px; font-weight:600; color:#1b3f34; }
+.pr-grid .s{ font-size:11px; color:#557268; }
+.pr-grid .full{ grid-column:1 / 3; }
+.pr-aviso{ font-size:9.5px; color:#8a9a91; line-height:1.45; margin-top:8px; }
 </style>
 </head>
 <body>
@@ -3167,6 +3270,8 @@ const state = {
   analiseFiltroDe: "",
   analiseFiltroAte: "",
   analiseGerada: null, // { key, de, ate } | null
+  // Relatório do período da aba Diário de Kcal (ver relatorioDiarioFormTemplate()).
+  relDiarioDe: "", relDiarioAte: "", relDiarioAtalho: "30", relDiarioGerado: null, // { de, ate } | null
   // { date, key } do dia clicado no gráfico diário da Análise de Consumo, com o modal de detalhe aberto,
   // ou null -- ver analiseConsumoDiaModalTemplate()/acaoAbrirDetalheDiaAnalise().
   analiseConsumoDiaAberto: null,
@@ -5926,7 +6031,7 @@ function submitPerfil() {
 /* ===================== templates ===================== */
 // Versão exibida no menu, na tela de login e em "Sobre o App" (mesmo padrão do Custódia Digital e do app
 // do escritório). Atualizar junto com o CACHE_NAME do sw.js a cada versão publicada.
-const APP_VERSAO = "2.31";
+const APP_VERSAO = "2.32";
 const APP_VERSAO_DATA = "21/11/2026";
 const DEV = { nome: "EFS Technology", lema: "Soluções digitais sob medida", tel: "83 9 99944-7957", wa: "5583999447957", email: "efstechnology.app@gmail.com" };
 function authVersaoTemplate() {
@@ -13491,16 +13596,579 @@ function diarioKcalRegistroTemplate(r) {
     diarioKcalAnaliseObjetivoTemplate(r) +
   "</div>";
 }
-// Aba "Diário de Kcal" da página de Nutrição -- ver acaoTrocarAbaNutricao(). O botão "Encerrar dia" fica
-// sempre no topo, seguido do resumo parcial de hoje (diarioKcalRegistroParcialTemplate(), sempre visível,
+/* ===================== Relatório do período (aba Diário de Kcal) ===================== */
+// Pedido do usuário: um relatório do Diário de Kcal pra um período escolhido, no mesmo espírito da
+// Análise de Consumo -- meta do período (e há quantos dias é a mesma), visão geral (meta atingida, saldo,
+// consumo, gasto, peso em jejum e ritmo), energia e peso, macros, micros, treinos por modalidade,
+// destaques e um resumo -- com versão impressa/PDF (cabeçalho com logo, dados do usuário e rodapé da EFS).
+// Usa só os dias JÁ CONSOLIDADOS: hoje (em andamento) entra depois da meia-noite. Reaproveita as contas
+// do próprio Diário (diarioKcalGastoTotalInfo()/diarioKcalMetaAtingida()) e da Análise de Consumo
+// (calcularAnaliseConsumo()), pra os números baterem com o que já aparece no resto do app.
+const REL_DIARIO_MAX_BARRAS = 62;
+const REL_DIA_SEMANA = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+function relData(dateStr) { const p = String(dateStr).split("-").map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+function relIso(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+function relSomarDias(dateStr, n) { const d = relData(dateStr); d.setDate(d.getDate() + n); return relIso(d); }
+function relDiasEntre(a, b) { return Math.round((relData(b) - relData(a)) / 86400000); }
+function relListaDatas(de, ate) { const lista = []; for (let d = de; d <= ate; d = relSomarDias(d, 1)) lista.push(d); return lista; }
+function relDiaMes(dateStr) { const p = String(dateStr).split("-"); return p[2] + "/" + p[1]; }
+function relDiaSemana(dateStr) { return REL_DIA_SEMANA[relData(dateStr).getDay()]; }
+function relComSemana(dateStr) { return relDiaSemana(dateStr) + " " + relDiaMes(dateStr); }
+// Número com o sinal de menos tipográfico (−) e, opcionalmente, "+" nos positivos.
+function relNum(v, digits, comMais) {
+  const t = formatNumber(Math.abs(v), digits || 0);
+  if (v < 0 && Math.abs(v) >= Math.pow(10, -(digits || 0)) / 2) return "−" + t;
+  return (comMais && v > 0 ? "+" : "") + t;
+}
+function relHoras(min) {
+  min = Math.round(min || 0);
+  if (min < 60) return min + " min";
+  return Math.floor(min / 60) + "h" + String(min % 60).padStart(2, "0");
+}
+function relMedia(lista) { return lista.length ? lista.reduce((s, v) => s + v, 0) / lista.length : 0; }
+// "deficit" (emagrecimento/definição), "superavit" (ganho) ou "equilibrio" (os demais) -- mesmo
+// agrupamento de diarioKcalMetaAtingida().
+function relTipoObjetivo(obj) {
+  if (!obj || !OBJETIVOS_META[obj]) return null;
+  if (obj === "emagrecimento" || obj === "definicao") return "deficit";
+  if (obj === "ganho_massa") return "superavit";
+  return "equilibrio";
+}
+function relMetaDoRegistro(r) {
+  const g = state.goals;
+  if (!r || r.metaCalorias == null) return { calorias: g.calories, protein: g.protein, carbs: g.carbs, fat: g.fat, fiber: g.fiber, objetivo: g.objetivo || "" };
+  return {
+    calorias: r.metaCalorias, objetivo: r.objetivo || "",
+    protein: r.metaProtein != null ? r.metaProtein : g.protein, carbs: r.metaCarbs != null ? r.metaCarbs : g.carbs,
+    fat: r.metaFat != null ? r.metaFat : g.fat, fiber: r.metaFiber != null ? r.metaFiber : g.fiber,
+  };
+}
+function relMesmaMeta(a, b) { return Math.round(a.calorias) === Math.round(b.calorias) && (a.objetivo || "") === (b.objetivo || ""); }
+function relOrdenarPorData(a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : (a.id || 0) - (b.id || 0); }
+
+function calcularRelatorioDiario(de, ate) {
+  const hoje = today();
+  const hojeNoPeriodo = ate >= hoje;
+  const fim = hojeNoPeriodo ? diaAnterior(hoje) : ate;
+  const rel = { de: de, ate: ate, fim: fim, hojeNoPeriodo: hojeNoPeriodo, temDados: false };
+  if (fim < de) return rel;
+  const registros = state.diarioKcal.filter((r) => r.date >= de && r.date <= fim).slice().sort(relOrdenarPorData);
+  if (!registros.length) return rel;
+  rel.temDados = true;
+  rel.nDias = relDiasEntre(de, fim) + 1;
+  rel.comRefeicoes = registros.filter((r) => !r.consumoEstimado).length;
+  rel.estimados = registros.filter((r) => r.consumoEstimado && !r.consumoEstimado.semDados).length;
+  rel.semDados = Math.max(0, rel.nDias - rel.comRefeicoes - rel.estimados);
+
+  // ----- meta do período e há quantos dias é a mesma -----
+  const ultimoReg = registros[registros.length - 1];
+  const meta = hojeNoPeriodo ? relMetaDoRegistro(null) : relMetaDoRegistro(ultimoReg);
+  const ultimoDiaMeta = hojeNoPeriodo ? hoje : ultimoReg.date;
+  let inicioMeta = ultimoDiaMeta;
+  state.diarioKcal.filter((r) => r.date <= ultimoDiaMeta).slice().sort(relOrdenarPorData).reverse().some((r) => {
+    if (r.metaCalorias == null || !relMesmaMeta(relMetaDoRegistro(r), meta)) return true;
+    inicioMeta = r.date;
+    return false;
+  });
+  rel.meta = meta;
+  rel.metaInicio = inicioMeta;
+  rel.metaFim = ultimoDiaMeta;
+  rel.metaDias = relDiasEntre(inicioMeta, ultimoDiaMeta) + 1;
+  // Trechos com metas diferentes dentro do período (só mostrados quando houver mais de um).
+  const trechos = [];
+  registros.forEach((r) => {
+    const m = relMetaDoRegistro(r);
+    const ult = trechos[trechos.length - 1];
+    if (ult && relMesmaMeta(ult.meta, m)) { ult.fim = r.date; ult.dias++; }
+    else trechos.push({ meta: m, inicio: r.date, fim: r.date, dias: 1 });
+  });
+  rel.trechos = trechos;
+  rel.tipoObjetivo = relTipoObjetivo(meta.objetivo);
+
+  // ----- dias com consumo (registrado ou estimado) -----
+  const dias = registros.filter(diarioTemConsumo).map((r) => {
+    const info = diarioKcalGastoTotalInfo(r);
+    const m = relMetaDoRegistro(r);
+    const saldo = info.gastoTotal != null ? (r.calories || 0) - info.gastoTotal : null;
+    return {
+      date: r.date, consumo: r.calories || 0, meta: m.calorias, get: info.get, atividades: info.atividades, gasto: info.gastoTotal,
+      saldo: saldo, atingida: saldo == null ? null : diarioKcalMetaAtingida(saldo, m.objetivo), estimado: !!r.consumoEstimado,
+      treinos: state.treinos.filter((t) => t.date === r.date),
+    };
+  });
+  rel.dias = dias;
+  const comSaldo = dias.filter((d) => d.saldo != null);
+  rel.comSaldo = comSaldo;
+  rel.avaliados = comSaldo.filter((d) => d.atingida != null).length;
+  rel.atingidos = comSaldo.filter((d) => d.atingida === true).length;
+  rel.saldoTotal = comSaldo.reduce((s, d) => s + d.saldo, 0);
+  rel.saldoMedio = comSaldo.length ? rel.saldoTotal / comSaldo.length : 0;
+  rel.consumoMedio = relMedia(dias.map((d) => d.consumo));
+  rel.metaMedia = relMedia(dias.map((d) => d.meta));
+  rel.gastoMedio = relMedia(comSaldo.map((d) => d.gasto));
+  rel.getMedio = relMedia(comSaldo.map((d) => d.get));
+  rel.atividadesMedio = relMedia(comSaldo.map((d) => d.atividades));
+
+  // ----- peso em jejum (pesagens do período inteiro, hoje incluído: a pesagem da manhã já vale) -----
+  const pesos = state.medidas.filter((m) => m.tipo === "peso" && m.jejum === true && m.date >= de && m.date <= ate && Number(m.valor) > 0).slice().sort(relOrdenarPorData);
+  if (pesos.length) {
+    const primeiro = pesos[0];
+    const ultimaData = pesos[pesos.length - 1].date;
+    const ultimo = pesos.find((m) => m.date === ultimaData);
+    const p = { n: pesos.length, ini: Number(primeiro.valor), fim: Number(ultimo.valor), iniDate: primeiro.date, fimDate: ultimo.date };
+    p.delta = p.fim - p.ini;
+    p.diasEntre = relDiasEntre(p.iniDate, p.fimDate);
+    if (p.diasEntre >= 7) {
+      p.kgSemana = p.delta / p.diasEntre * 7;
+      p.pctSemana = p.ini ? (p.kgSemana / p.ini) * 100 : 0;
+    }
+    // Saldo dos dias entre as duas pesagens (o saldo de um dia aparece na balança do dia seguinte).
+    const entre = comSaldo.filter((d) => d.date >= p.iniDate && d.date < p.fimDate);
+    if (p.diasEntre >= 1 && entre.length) p.esperadoKg = entre.reduce((s, d) => s + d.saldo, 0) / KCAL_POR_KG_GORDURA;
+    const tipo = rel.tipoObjetivo;
+    p.direcaoOk = p.delta === 0 || tipo === "equilibrio" || !tipo ? null : (tipo === "deficit" ? p.delta < 0 : p.delta > 0);
+    rel.peso = p;
+  }
+
+  // ----- macros e micros (mesmo cálculo da Análise de Consumo) -----
+  rel.macros = ["protein", "carbs", "fat", "fiber"].map((k) => Object.assign({ key: k }, calcularAnaliseConsumo(k, de, fim))).filter((m) => m.temDados);
+  rel.micros = Object.keys(micronutrientMeta).map((k) => Object.assign({ key: k }, calcularAnaliseConsumo(k, de, fim))).filter((m) => m.temDados);
+  rel.micros.forEach((m) => {
+    if (m.ehSodio) m.classe = m.percentual <= 100 ? "ok" : "bx";
+    else if (m.faixa === "acima_limite") m.classe = "bx";
+    else m.classe = m.percentual >= 90 ? "ok" : m.percentual >= 60 ? "med" : "bx";
+  });
+
+  // ----- treinos por modalidade -----
+  const treinos = state.treinos.filter((t) => t.date >= de && t.date <= fim);
+  const porEsporte = {};
+  treinos.forEach((t) => {
+    const e = porEsporte[t.esporte] || (porEsporte[t.esporte] = { esporte: t.esporte, datas: {}, treinos: 0, min: 0, kcal: 0, km: 0, modalidades: {} });
+    e.datas[t.date] = true; e.treinos++; e.min += Number(t.duracaoMin) || 0; e.kcal += Number(t.caloriasQueimadas) || 0; e.km += Number(t.distanciaKm) || 0;
+    if (t.esporte === "Ciclismo" && t.ciclismoModalidade) e.modalidades[t.ciclismoModalidade] = true;
+  });
+  rel.treinos = {
+    total: treinos.length,
+    dias: Object.keys(treinos.reduce((o, t) => { o[t.date] = true; return o; }, {})).length,
+    kcal: treinos.reduce((s, t) => s + (Number(t.caloriasQueimadas) || 0), 0),
+    min: treinos.reduce((s, t) => s + (Number(t.duracaoMin) || 0), 0),
+    esportes: Object.keys(porEsporte).map((k) => porEsporte[k]).sort((a, b) => b.kcal - a.kcal || b.treinos - a.treinos),
+  };
+  const comTreino = dias.filter((d) => d.treinos.length > 0 || d.atividades > 0);
+  const semTreino = dias.filter((d) => !(d.treinos.length > 0 || d.atividades > 0));
+  const grupo = (lista) => ({ n: lista.length, consumo: relMedia(lista.map((d) => d.consumo)), saldo: relMedia(lista.filter((d) => d.saldo != null).map((d) => d.saldo)), temSaldo: lista.some((d) => d.saldo != null) });
+  rel.comTreino = grupo(comTreino);
+  rel.semTreino = grupo(semTreino);
+  return rel;
+}
+
+// Selo do topo: "No caminho" quando 70%+ dos dias bateram a meta e a balança não foi na direção oposta.
+function relSelo(rel) {
+  if (!rel.avaliados) return null;
+  const pct = rel.atingidos / rel.avaliados;
+  const pesoContra = rel.peso && rel.peso.direcaoOk === false;
+  if (pct >= 0.7 && !pesoContra) return { classe: "", texto: "No caminho do objetivo", icone: "check" };
+  if (pct >= 0.5) return { classe: "quase", texto: "Parcialmente no caminho", icone: "alert" };
+  return { classe: "fora", texto: "Fora do caminho do objetivo", icone: "alert" };
+}
+function relPalavraSaldo(tipo) { return tipo === "superavit" ? "superávit" : tipo === "equilibrio" ? "equilíbrio" : "déficit"; }
+function relRitmoTexto(p, tipo) {
+  if (p.kgSemana == null) return "";
+  const pct = Math.abs(p.pctSemana);
+  if (tipo === "deficit") {
+    if (p.kgSemana > 0.05) return "peso subindo, contrário ao objetivo";
+    if (p.kgSemana >= -0.05) return "peso estável";
+    return pct <= 1 ? "faixa segura pra preservar músculo" : "rápido: risco de perder músculo";
+  }
+  if (tipo === "superavit") {
+    if (p.kgSemana < -0.05) return "peso caindo, contrário ao objetivo";
+    if (p.kgSemana <= 0.05) return "peso estável";
+    return pct <= 0.5 ? "ganho controlado" : "rápido: tende a ganhar mais gordura";
+  }
+  return Math.abs(p.kgSemana) <= 0.25 ? "peso estável" : "peso variando";
+}
+
+// Gráfico do saldo de cada dia (barras pra baixo = déficit, pra cima = superávit; hachurado = estimado).
+function relSaldoChartSvg(serie, W, H, idPadrao) {
+  const pontos = serie.slice(-REL_DIARIO_MAX_BARRAS);
+  const pad = { l: 36, r: 6, t: 10, b: 20 };
+  const valores = pontos.map((p) => p.saldo);
+  const passo = [100, 200, 250, 500, 1000, 2000].find((s) => (Math.max(200, Math.max.apply(null, valores)) - Math.min(-200, Math.min.apply(null, valores))) / s <= 5) || 2000;
+  const max = Math.ceil(Math.max(passo, Math.max.apply(null, valores)) / passo) * passo;
+  const min = Math.floor(Math.min(-passo, Math.min.apply(null, valores)) / passo) * passo;
+  const y = (v) => pad.t + (max - v) / (max - min) * (H - pad.t - pad.b);
+  const bw = (W - pad.l - pad.r) / pontos.length;
+  let s = '<svg class="rel-chart" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Saldo de kcal de cada dia do período">';
+  s += '<defs><pattern id="' + idPadrao + '" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="4" height="4" fill="#cfe3c6"/><line x1="0" y1="0" x2="0" y2="4" stroke="#6c9a6e" stroke-width="1.4"/></pattern></defs>';
+  for (let v = min; v <= max; v += passo) {
+    s += '<line x1="' + pad.l + '" x2="' + (W - pad.r) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '" stroke="' + (v === 0 ? "#8a9a91" : "#e5ebe3") + '" stroke-width="1"/>' +
+      '<text x="' + (pad.l - 4) + '" y="' + (y(v) + 3).toFixed(1) + '" font-size="8" text-anchor="end" fill="#8a9a91">' + relNum(v, 0, true) + "</text>";
+  }
+  pontos.forEach((p, i) => {
+    const x = pad.l + i * bw + Math.min(1, bw * 0.15), w = Math.max(1, bw - 2 * Math.min(1, bw * 0.15)), y0 = y(0), y1 = y(p.saldo);
+    const fill = p.estimado ? "url(#" + idPadrao + ")" : p.saldo <= 0 ? "#4f8f62" : "#d9922e";
+    s += '<rect x="' + x.toFixed(1) + '" y="' + Math.min(y0, y1).toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + Math.max(1, Math.abs(y1 - y0)).toFixed(1) + '" rx="' + Math.min(2, w / 2).toFixed(1) + '" fill="' + fill + '"><title>' + esc(relComSemana(p.date)) + ": " + relNum(p.saldo, 0, true) + " kcal" + (p.estimado ? " (estimado)" : "") + "</title></rect>";
+  });
+  s += '<text x="' + pad.l + '" y="' + (H - 5) + '" font-size="8" fill="#8a9a91">' + relDiaMes(pontos[0].date) + "</text>" +
+    '<text x="' + (W - pad.r) + '" y="' + (H - 5) + '" font-size="8" text-anchor="end" fill="#8a9a91">' + relDiaMes(pontos[pontos.length - 1].date) + "</text></svg>";
+  return { svg: s, recortado: serie.length > pontos.length };
+}
+
+// "Do que você já come": alimentos que a pessoa registrou no período e que são fontes do nutriente.
+function relFontesDoQueCome(key, de, fim) {
+  const contagem = {};
+  state.diarioKcal.filter((r) => r.date >= de && r.date <= fim).forEach((r) => (r.refeicoes || []).forEach((ref) => (ref.alimentos || []).forEach((a) => { contagem[a] = (contagem[a] || 0) + 1; })));
+  // Só alimentos que são fonte de verdade (pelo menos 10% da referência diária na porção base).
+  const comidos = foodLibrary.filter((f) => contagem[f.label] && (f.values[key] || 0) >= 0.1 * (MICRO_GOALS[key] || 0) && (f.values[key] || 0) > 0)
+    .map((f) => ({ label: f.label, ef: f.values.calories > 0 ? f.values[key] / f.values.calories : f.values[key] }))
+    .sort((a, b) => b.ef - a.ef).slice(0, 3).map((f) => f.label.toLowerCase());
+  if (comidos.length) return { tipo: "come", lista: comidos };
+  if (key === "vitD") return { tipo: "sol", lista: [] };
+  return { tipo: "sugere", lista: alimentosSugeridosParaNutriente(key, 3).map((f) => f.label.toLowerCase()) };
+}
+function relNomeMicroMinusculo(key) {
+  const nome = micronutrientMeta[key].label.replace(/ \(Vitamina B\d+\)/, "");
+  return nome.charAt(0).toLowerCase() + nome.slice(1);
+}
+function relMicroLinha(m) {
+  const meta = micronutrientMeta[m.key];
+  const nome = meta.label.replace(/ \(Vitamina B\d+\)/, "");
+  const extra = m.ehSodio ? " <small>(teto)</small>" : m.faixa === "acima_limite" ? " <small>(acima do UL)</small>" : "";
+  return '<div class="rel-micro"><span>' + esc(nome) + extra + '</span><div class="t"><span class="rel-' + m.classe + '-bg" style="width:' + Math.min(100, Math.max(2, m.percentual)).toFixed(0) + '%"></span></div><span class="p rel-' + m.classe + '-tx">' + formatNumber(m.percentual, 0) + "%</span></div>";
+}
+
+function relDestaques(rel) {
+  const itens = [];
+  const tipo = rel.tipoObjetivo;
+  const nomesTreinos = (d) => Array.from(new Set(d.treinos.map((t) => t.esporte.toLowerCase()))).join(" + ");
+  if (rel.comSaldo.length) {
+    const alvo = rel.comSaldo.slice().sort((a, b) => tipo === "superavit" ? b.saldo - a.saldo : a.saldo - b.saldo)[0];
+    if ((tipo === "superavit" && alvo.saldo > 0) || (tipo !== "superavit" && alvo.saldo < 0)) {
+      itens.push((tipo === "superavit" ? "Maior superávit: " : "Maior déficit: ") + relComSemana(alvo.date) + " (" + relNum(alvo.saldo, 0, true) + " kcal" + (alvo.treinos.length ? ", " + esc(nomesTreinos(alvo)) : "") + ").");
+    }
+    if (tipo === "deficit" || tipo === "superavit") {
+      const contrarios = rel.comSaldo.filter((d) => d.atingida === false);
+      if (contrarios.length && contrarios.length <= 5) {
+        const palavra = tipo === "deficit" ? "superávit" : "déficit";
+        const dias = contrarios.map((d) => relDiaMes(d.date)).join(", ").replace(/, ([^,]*)$/, " e $1");
+        const mesmoDia = contrarios.length > 1 && contrarios.every((d) => relData(d.date).getDay() === relData(contrarios[0].date).getDay());
+        const nomeDia = ["domingos", "segundas", "terças", "quartas", "quintas", "sextas", "sábados"][relData(contrarios[0].date).getDay()];
+        itens.push(contrarios.length === 1 ? "Só 1 dia de " + palavra + ": " + relComSemana(contrarios[0].date) + "."
+          : "Os " + contrarios.length + " dias de " + palavra + " foram " + (mesmoDia ? nomeDia + " (" + dias + ")" : dias) + ".");
+      } else if (!contrarios.length && rel.avaliados >= 3) {
+        itens.push("Nenhum dia fora da meta no período.");
+      }
+    }
+  }
+  const fds = rel.dias.filter((d) => [0, 6].includes(relData(d.date).getDay()));
+  const uteis = rel.dias.filter((d) => ![0, 6].includes(relData(d.date).getDay()));
+  if (fds.length >= 2 && uteis.length >= 2) {
+    const mFds = relMedia(fds.map((d) => d.consumo)), mUteis = relMedia(uteis.map((d) => d.consumo));
+    const dif = mUteis ? (mFds - mUteis) / mUteis * 100 : 0;
+    if (Math.abs(dif) >= 8) rel.fdsDif = dif, itens.push("No fim de semana você come ~" + formatNumber(Math.abs(dif), 0) + "% " + (dif > 0 ? "mais" : "menos") + " que nos dias úteis.");
+  }
+  // Melhor sequência de dias seguidos com a meta atingida.
+  let melhor = { n: 0 }, atual = { n: 0 };
+  rel.comSaldo.forEach((d) => {
+    if (d.atingida === true && atual.n && relDiasEntre(atual.fim, d.date) === 1) { atual.n++; atual.fim = d.date; }
+    else if (d.atingida === true) atual = { n: 1, ini: d.date, fim: d.date };
+    else atual = { n: 0 };
+    if (atual.n > melhor.n) melhor = Object.assign({}, atual);
+  });
+  if (melhor.n >= 3) itens.push("Melhor sequência: " + melhor.n + " dias seguidos com a meta atingida (" + relDiaMes(melhor.ini) + " a " + relDiaMes(melhor.fim) + ").");
+  return itens;
+}
+
+function relResumo(rel) {
+  const partes = [];
+  const tipo = rel.tipoObjetivo;
+  if (rel.avaliados) {
+    const pct = rel.atingidos / rel.avaliados;
+    const palavra = relPalavraSaldo(tipo);
+    partes.push(pct >= 0.7 ? palavra + " consistente (" + formatNumber(pct * 100, 0) + "% dos dias)" : palavra + " em " + formatNumber(pct * 100, 0) + "% dos dias");
+  }
+  if (rel.peso && rel.peso.kgSemana != null) partes.push((rel.peso.kgSemana < 0 ? "perda" : "variação") + " de ~" + formatNumber(Math.abs(rel.peso.kgSemana), 1) + " kg/semana, " + relRitmoTexto(rel.peso, tipo));
+  else if (rel.peso && rel.peso.n >= 2) partes.push("peso em jejum " + relNum(rel.peso.delta, 1, true) + " kg");
+  const atencao = [];
+  rel.macros.filter((m) => m.percentual < 90).forEach((m) => atencao.push(nutrientMeta[m.key].label.toLowerCase() + " (" + formatNumber(m.percentual, 0) + "%)"));
+  const microsBaixos = rel.micros.filter((m) => !m.ehSodio && m.classe !== "ok" && m.faixa !== "acima_limite").sort((a, b) => a.percentual - b.percentual);
+  microsBaixos.slice(0, 4).forEach((m) => atencao.push(relNomeMicroMinusculo(m.key) + " (" + formatNumber(m.percentual, 0) + "%)"));
+  const sodio = rel.micros.find((m) => m.ehSodio && m.classe !== "ok");
+  if (sodio) atencao.push("sódio acima do limite");
+  let txt = "<b>Resumo:</b> " + (partes.length ? partes.join("; ") + "." : "sem calorimetria (GET) registrada, o saldo do período não pôde ser calculado.");
+  if (atencao.length) txt += " <b>Atenção:</b> " + atencao.join(", ").replace(/, ([^,]*)$/, " e $1") + ".";
+  if (rel.fdsDif != null && rel.fdsDif >= 8) txt += " Os fins de semana concentram mais consumo.";
+  return txt;
+}
+
+// Corpo do relatório (mesmo HTML na tela e no PDF; impressao=true só muda o gráfico e o id do padrão).
+function relatorioDiarioCorpoHtml(rel, impressao) {
+  const tipo = rel.tipoObjetivo;
+  const m = rel.meta;
+  const objetivoLabel = m.objetivo && OBJETIVOS_META[m.objetivo] ? OBJETIVOS_META[m.objetivo].label : "sem objetivo definido";
+  const selo = relSelo(rel);
+  const ehHoje = rel.metaFim === today();
+  let h = selo ? '<span class="rel-badge ' + selo.classe + '">' + icon(selo.icone) + " " + selo.texto + "</span>" : "";
+  // Meta do período
+  h += '<div class="rel-meta"><div class="t">Meta do período</div><div class="kcal">' + formatNumber(m.calorias) + ' kcal/dia</div>' +
+    '<div class="obj">Objetivo: ' + esc(objetivoLabel) + "</div>" +
+    '<div class="macros"><span>Proteína ' + formatNumber(m.protein) + " g</span><span>Carbo " + formatNumber(m.carbs) + " g</span><span>Gordura " + formatNumber(m.fat) + " g</span><span>Fibra " + formatNumber(m.fiber) + " g</span></div>" +
+    '<div class="desde">Mesma meta há <b>' + rel.metaDias + (rel.metaDias === 1 ? " dia" : " dias") + "</b>: do 1º dia, <b>" + relDiaSemana(rel.metaInicio) + " " + dataCurta(rel.metaInicio) + "</b>, até o último, <b>" + relDiaSemana(rel.metaFim) + " " + dataCurta(rel.metaFim) + "</b>" + (ehHoje ? " (hoje)" : "") + ".</div>" +
+    (rel.trechos.length > 1 ? '<div class="rel-hist">Metas usadas no período:' + rel.trechos.map((t) => '<div class="seg"><span>' + relDiaMes(t.inicio) + (t.fim !== t.inicio ? " a " + relDiaMes(t.fim) : "") + " · " + t.dias + (t.dias === 1 ? " dia" : " dias") + "</span><span>" + formatNumber(t.meta.calorias) + " kcal" + (t.meta.objetivo && OBJETIVOS_META[t.meta.objetivo] ? " · " + esc(OBJETIVOS_META[t.meta.objetivo].label.split(" / ")[0]) : "") + "</span></div>").join("") + "</div>" : "") +
+  "</div>";
+
+  // 1 Visão geral
+  const p = rel.peso;
+  const kpi = (l, n, d, classe) => '<div class="rel-kpi"><div class="l">' + l + '</div><div class="n' + (classe ? " " + classe : "") + '">' + n + '</div><div class="d">' + d + "</div></div>";
+  let kpis = "";
+  kpis += rel.avaliados
+    ? kpi("Meta atingida", rel.atingidos + " de " + rel.avaliados, formatNumber(rel.atingidos / rel.avaliados * 100, 0) + "% dos dias em " + relPalavraSaldo(tipo))
+    : kpi("Meta atingida", "—", "sem calorimetria (GET) pra calcular o saldo");
+  kpis += rel.comSaldo.length
+    ? kpi("Saldo total", relNum(rel.saldoTotal, 0, true), "kcal · ≈ " + formatNumber(Math.abs(rel.saldoTotal) / KCAL_POR_KG_GORDURA, 1) + " kg de gordura" + (rel.saldoTotal < 0 ? " a menos" : " a mais"))
+    : kpi("Saldo total", "—", "sem calorimetria (GET)");
+  kpis += kpi("Consumo médio", formatNumber(rel.consumoMedio), "kcal/dia · " + formatNumber(rel.metaMedia ? rel.consumoMedio / rel.metaMedia * 100 : 0, 0) + "% da meta");
+  kpis += rel.comSaldo.length
+    ? kpi("Gasto médio", formatNumber(rel.gastoMedio), "kcal/dia · GET " + formatNumber(rel.getMedio) + " + treinos " + formatNumber(rel.atividadesMedio))
+    : kpi("Gasto médio", "—", "sem calorimetria (GET)");
+  if (p && p.n >= 2 && p.fimDate !== p.iniDate) {
+    kpis += kpi("Peso em jejum", relNum(p.delta, 1, true) + " kg", formatNumber(p.ini, 1) + " → " + formatNumber(p.fim, 1) + " kg<br>" + relComSemana(p.iniDate) + " → " + relComSemana(p.fimDate), p.direcaoOk === true ? "bom" : p.direcaoOk === false ? "ruim" : "");
+    kpis += p.kgSemana != null
+      ? kpi("Ritmo", relNum(p.kgSemana, 2, true), "kg/semana · " + relRitmoTexto(p, tipo))
+      : kpi("Ritmo", "—", "precisa de pesagens com 7 dias ou mais de distância");
+  } else {
+    kpis += kpi("Peso em jejum", p ? formatNumber(p.ini, 1) + " kg" : "—", p ? "só 1 pesagem em jejum no período (" + relComSemana(p.iniDate) + ")" : "nenhuma pesagem em jejum no período");
+    kpis += kpi("Ritmo", "—", "precisa de 2 pesagens em jejum");
+  }
+  const notaDias = rel.nDias + (rel.nDias === 1 ? " dia" : " dias") + ": " + rel.comRefeicoes + " com refeições registradas · " + rel.estimados + " com consumo estimado (treino sem refeição) · " + rel.semDados + " sem dados" + (rel.hojeNoPeriodo ? " · hoje entra depois da meia-noite" : "") + ".";
+  h += '<div class="rel-card"><div class="rel-card-t"><span class="num">1</span> Visão geral</div><div class="rel-kpis">' + kpis + '</div><p class="rel-nota">' + notaDias + "</p></div>";
+
+  // 2 Energia e peso
+  if (rel.comSaldo.length) {
+    // Tela larga (e PDF): gráfico mais largo e baixo, pra não ficar gigante.
+    const largo = impressao || window.innerWidth >= 700;
+    const g = relSaldoChartSvg(rel.comSaldo, largo ? 720 : 340, largo ? 150 : 170, impressao ? "rel-hach-pdf" : "rel-hach");
+    let txt = "Saldo médio de <b>" + relNum(rel.saldoMedio, 0, true) + " kcal/dia</b>.";
+    if (p && p.n >= 2 && p.fimDate !== p.iniDate) {
+      txt += " Peso em jejum: " + formatNumber(p.ini, 1) + " → <b>" + formatNumber(p.fim, 1) + " kg</b> (" + relNum(p.delta, 1, true) + " kg)";
+      if (p.esperadoKg != null && Math.abs(p.esperadoKg) >= 0.2) {
+        txt += "; pelo saldo, o esperado era " + relNum(p.esperadoKg, 1, true) + " kg. ";
+        const mesmaDirecao = (p.delta < 0) === (p.esperadoKg < 0) && p.delta !== 0;
+        const razao = p.esperadoKg ? Math.abs(p.delta / p.esperadoKg) : 0;
+        txt += mesmaDirecao && razao >= 0.5 && razao <= 2 ? "<b>A balança acompanha o saldo ✓</b>"
+          : mesmaDirecao ? "A balança vai na mesma direção do saldo, em ritmo diferente: água, glicogênio e horário da pesagem pesam no curto prazo."
+          : "A balança ainda não acompanha o saldo: água, glicogênio e horário da pesagem pesam no curto prazo.";
+      } else txt += ".";
+    }
+    h += '<div class="rel-card"><div class="rel-card-t"><span class="num">2</span> Energia e peso</div>' + g.svg +
+      '<div class="rel-legenda"><span><i style="background:#4f8f62"></i>déficit</span><span><i style="background:#d9922e"></i>superávit</span>' + (rel.comSaldo.some((d) => d.estimado) ? '<span><i style="background:repeating-linear-gradient(45deg,#cfe3c6 0 2px,#6c9a6e 2px 3px)"></i>estimado</span>' : "") + "</div>" +
+      (g.recortado ? '<p class="rel-nota">O gráfico mostra os últimos ' + REL_DIARIO_MAX_BARRAS + " dias do período.</p>" : "") +
+      '<p class="rel-p">' + txt + "</p></div>";
+  }
+
+  // 3 Macronutrientes
+  if (rel.macros.length) {
+    h += '<div class="rel-card"><div class="rel-card-t"><span class="num">3</span> Macronutrientes <span class="ex">· média por dia x meta</span></div>' +
+      rel.macros.map((mm) => '<div class="rel-barra"><span>' + esc(nutrientMeta[mm.key].label.split(" ")[0]) + '</span><div class="t"><span' + (mm.percentual < 90 ? ' class="baixo"' : "") + ' style="width:' + Math.min(100, mm.percentual).toFixed(0) + '%"></span></div><span>' + formatNumber(mm.real) + "/" + formatNumber(mm.esperado) + " g</span></div>").join("") +
+    "</div>";
+  }
+
+  // 4 Micronutrientes
+  if (rel.micros.length) {
+    const atencao = rel.micros.filter((mm) => mm.classe !== "ok").sort((a, b) => (a.ehSodio ? 1 : 0) - (b.ehSodio ? 1 : 0) || a.percentual - b.percentual);
+    const emDia = rel.micros.filter((mm) => mm.classe === "ok").sort((a, b) => a.percentual - b.percentual);
+    const baixos = atencao.filter((mm) => !mm.ehSodio && mm.faixa !== "acima_limite").slice(0, 3);
+    const fontes = baixos.map((mm) => {
+      const f = relFontesDoQueCome(mm.key, rel.de, rel.fim);
+      const nome = "<b>" + esc(relNomeMicroMinusculo(mm.key)) + "</b>";
+      if (f.tipo === "sol") return nome + " → sol (registre em Exposição Solar) ou suplemento";
+      return nome + " → " + f.lista.map(esc).join(", ") + (f.tipo === "sugere" ? " (boas fontes)" : " (você já come)");
+    });
+    const sodio = rel.micros.find((mm) => mm.ehSodio);
+    const notas = [];
+    if (sodio) notas.push("Sódio é um teto, não uma meta: média de " + formatNumber(sodio.real) + " mg/dia" + (sodio.percentual > 100 ? ", " + formatNumber(sodio.percentual - 100, 0) + "% acima do limite de " + formatNumber(sodio.esperado) + " mg" : ", dentro do limite de " + formatNumber(sodio.esperado) + " mg") + ".");
+    if (rel.estimados) notas.push("Os " + rel.estimados + (rel.estimados === 1 ? " dia estimado não entra" : " dias estimados não entram") + " nos micronutrientes.");
+    h += '<div class="rel-card"><div class="rel-card-t"><span class="num">4</span> Micronutrientes <span class="ex">· média por dia x referência (IDR)</span></div>' +
+      '<div class="rel-micro-cols">' +
+        (atencao.length ? '<div><div class="rel-sub2">Precisam de atenção</div>' + atencao.map(relMicroLinha).join("") + (fontes.length ? '<div class="rel-fontes">Pra reforçar: ' + fontes.join(" · ") + ".</div>" : "") + "</div>" : "") +
+        (emDia.length ? '<div><div class="rel-sub2">Em dia</div>' + emDia.map(relMicroLinha).join("") + "</div>" : "") +
+      "</div>" +
+      (notas.length ? '<p class="rel-nota">' + notas.join(" ") + "</p>" : "") +
+    "</div>";
+  }
+
+  // 5 Treinos
+  const t = rel.treinos;
+  if (t.total) {
+    const linhas = t.esportes.map((e) => {
+      const mods = Object.keys(e.modalidades);
+      const nDias = Object.keys(e.datas).length;
+      const det = nDias + (nDias === 1 ? " dia" : " dias") + " · " + e.treinos + (e.treinos === 1 ? " treino" : " treinos") + (e.min ? " · " + relHoras(e.min) : "") + (e.km > 0 ? " · " + formatNumber(e.km, 1) + " km" : "") + (e.treinos ? " · média " + formatNumber(e.kcal / e.treinos) + " kcal/treino" : "");
+      return '<div class="rel-esp-row"><span class="rel-esp-nome">' + emojiEsporte(e.esporte) + " " + esc(e.esporte) + (mods.length ? " · " + esc(mods.join(", ")) : "") + '</span><span class="rel-esp-kcal">' + formatNumber(e.kcal) + ' kcal</span><span class="rel-esp-det">' + det + '</span><div class="rel-esp-bar"><span style="width:' + (t.kcal ? Math.max(2, e.kcal / t.kcal * 100) : 0).toFixed(0) + '%"></span></div></div>';
+    }).join("");
+    const linhaGrupo = (nome, gg) => gg.n ? "<tr><td>" + nome + "</td><td>" + gg.n + "</td><td>" + formatNumber(gg.consumo) + " kcal</td><td>" + (gg.temSaldo ? relNum(gg.saldo, 0, true) : "—") + "</td></tr>" : "";
+    h += '<div class="rel-card"><div class="rel-card-t"><span class="num">5</span> Treinos</div>' +
+      '<div class="rel-kpis">' +
+        kpi("Dias com treino", t.dias + " de " + rel.nDias, t.total + (t.total === 1 ? " treino no total" : " treinos no total")) +
+        kpi("Kcal em treino", formatNumber(t.kcal), "média " + formatNumber(t.kcal / rel.nDias) + " kcal/dia" + (t.min ? " · " + relHoras(t.min) + " de treino" : "")) +
+      "</div>" +
+      '<div class="rel-sub2">Por modalidade</div><div class="rel-esp">' + linhas + "</div>" +
+      '<p class="rel-nota">Barras = parte das kcal de treino do período. Dias com mais de uma modalidade contam em cada uma.</p>' +
+      (rel.comTreino.n && rel.semTreino.n ? '<div class="rel-sub2">Alimentação em dia com e sem treino</div><table class="rel-tab"><tr><th></th><th>Dias</th><th>Consumo</th><th>Saldo</th></tr>' + linhaGrupo("Com treino", rel.comTreino) + linhaGrupo("Sem treino", rel.semTreino) + "</table>" : "") +
+    "</div>";
+  } else {
+    h += '<div class="rel-card"><div class="rel-card-t"><span class="num">5</span> Treinos</div><p class="rel-vazio">Nenhum treino registrado no período.</p></div>';
+  }
+
+  // 6 Destaques + Resumo
+  const destaques = relDestaques(rel);
+  if (destaques.length) h += '<div class="rel-card"><div class="rel-card-t"><span class="num">6</span> Destaques</div><ul class="rel-lista">' + destaques.map((d) => "<li>" + d + "</li>").join("") + "</ul></div>";
+  h += '<div class="rel-conclusao">' + relResumo(rel) + "</div>";
+  return h;
+}
+
+function relCabecalhoPeriodo(rel) {
+  return "Seu período: " + relDiaMes(rel.de) + " a " + relDiaMes(rel.fim);
+}
+function relatorioDiarioResultadoTemplate() {
+  const g = state.relDiarioGerado;
+  const rel = calcularRelatorioDiario(g.de, g.ate);
+  if (!rel.temDados) {
+    return '<div class="rel-box"><div class="rel-head"><span>Relatório do período</span><button class="rel-fechar" onclick="acaoFecharRelatorioDiario()">Fechar</button></div>' +
+      '<p class="rel-vazio">' + (rel.fim < rel.de ? "Hoje ainda está em andamento: o relatório usa os dias já consolidados (até ontem). Escolha um período que comece antes de hoje." : "Nenhum dia consolidado no Diário de Kcal dentro desse período.") + "</p></div>";
+  }
+  return '<div class="rel-box" id="rel-resultado">' +
+    '<div class="rel-head"><span>' + relCabecalhoPeriodo(rel) + '</span><button class="rel-fechar" onclick="acaoFecharRelatorioDiario()">Fechar</button></div>' +
+    '<div class="rel-sub">' + rel.nDias + (rel.nDias === 1 ? " dia" : " dias") + " · de " + relComSemana(rel.de) + " a " + relComSemana(rel.fim) + (rel.hojeNoPeriodo ? " · hoje entra depois da meia-noite" : "") + "</div>" +
+    relatorioDiarioCorpoHtml(rel, false) +
+    '<button class="rel-pdf" onclick="acaoImprimirRelatorioDiario()">' + icon("download") + " Imprimir / salvar em PDF</button>" +
+  "</div>";
+}
+const REL_ATALHOS = [["7", "7 dias"], ["15", "15 dias"], ["30", "30 dias"], ["mes", "Este mês"]];
+function relGarantirPeriodoPadrao() {
+  if (!state.relDiarioAte) state.relDiarioAte = today();
+  if (!state.relDiarioDe) state.relDiarioDe = relSomarDias(today(), -29);
+}
+function relatorioDiarioFormTemplate() {
+  relGarantirPeriodoPadrao();
+  const invalida = state.relDiarioDe > state.relDiarioAte;
+  return '<div class="rel-box">' +
+    '<div class="rel-head"><span>' + icon("file") + " Relatório do período</span></div>" +
+    '<div class="rel-sub">Junta os dias do Diário de Kcal num resumo: meta, saldo, peso, macros, micros e treinos.</div>' +
+    '<div class="evolucao-periodo-filtro medida-filtro-periodo">' +
+      '<div><label class="field-label">De</label><input type="date" class="field-input" max="' + esc(today()) + '" value="' + esc(state.relDiarioDe) + '" onchange="acaoRelDiarioData(\'de\', this.value)"/></div>' +
+      '<div><label class="field-label">Até</label><input type="date" class="field-input" max="' + esc(today()) + '" value="' + esc(state.relDiarioAte) + '" onchange="acaoRelDiarioData(\'ate\', this.value)"/></div>' +
+    "</div>" +
+    '<div class="mt-chips">' + REL_ATALHOS.map((a) => '<button type="button" class="mt-chip' + (state.relDiarioAtalho === a[0] ? " on" : "") + '" onclick="acaoRelDiarioAtalho(\'' + a[0] + '\')">' + a[1] + "</button>").join("") + "</div>" +
+    (invalida ? '<p class="imc-empty analise-consumo-erro">A data "De" precisa ser antes (ou igual à) data "Até".</p>' : "") +
+    '<button class="btn-primary-pill-lg analise-consumo-gerar-btn" ' + (invalida ? "disabled" : "") + ' onclick="acaoGerarRelatorioDiario()">' + icon("sparkles") + ' <span class="label">Gerar relatório</span></button>' +
+  "</div>";
+}
+function acaoRelDiarioAtalho(k) {
+  const hoje = today();
+  state.relDiarioAtalho = k;
+  state.relDiarioAte = hoje;
+  state.relDiarioDe = k === "mes" ? hoje.slice(0, 8) + "01" : relSomarDias(hoje, -(Number(k) - 1));
+  render();
+}
+function acaoRelDiarioData(campo, valor) {
+  if (!valor) return;
+  if (campo === "de") state.relDiarioDe = valor; else state.relDiarioAte = valor;
+  state.relDiarioAtalho = "";
+  render();
+}
+function acaoGerarRelatorioDiario() {
+  relGarantirPeriodoPadrao();
+  if (state.relDiarioDe > state.relDiarioAte) return;
+  state.relDiarioGerado = { de: state.relDiarioDe, ate: state.relDiarioAte };
+  render();
+}
+function acaoFecharRelatorioDiario() { state.relDiarioGerado = null; render(); }
+
+// ----- versão impressa / PDF -----
+const REL_LOGO_SVG = '<svg viewBox="0 0 192 192" width="44" height="44" aria-hidden="true"><rect width="192" height="192" rx="44" fill="#1c4d3e"/><path d="M56 116c32 5 63-12 72-53-32-5-63 12-72 53Z" fill="none" stroke="#d3e9b9" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M58 139c19-28 40-47 66-65" fill="none" stroke="#d3e9b9" stroke-width="9" stroke-linecap="round"/></svg>';
+const REL_SEXO_LABEL = { feminino: "Feminino", masculino: "Masculino", prefiro_nao_informar: "Prefiro não informar" };
+function relIdadeTexto(dataNascimento) {
+  const i = calcularIdadeExata(dataNascimento);
+  if (!i) return "";
+  return i.anos + (i.anos === 1 ? " ano" : " anos") + ", " + i.meses + (i.meses === 1 ? " mês" : " meses") + " e " + i.dias + (i.dias === 1 ? " dia" : " dias");
+}
+function relDadosUsuarioHtml(rel) {
+  const u = state.usuario || {};
+  const naoInf = '<span class="v" style="color:#8a9a91;font-weight:500">não informado</span>';
+  let peso = naoInf, pesoSub = "";
+  if (rel.peso) { peso = '<span class="v">' + formatNumber(rel.peso.fim, 1) + " kg</span>"; pesoSub = "em jejum · " + dataCurta(rel.peso.fimDate); }
+  else {
+    const ult = state.medidas.filter((m) => m.tipo === "peso" && Number(m.valor) > 0).slice().sort(relOrdenarPorData).pop();
+    if (ult) { peso = '<span class="v">' + formatNumber(Number(ult.valor), 1) + " kg</span>"; pesoSub = "última pesagem · " + dataCurta(ult.date); }
+  }
+  const altura = Number(state.altura) > 0 ? '<span class="v">' + formatNumber(Number(state.altura) / 100, 2) + " m</span>" : naoInf;
+  const nasc = u.dataNascimento ? '<span class="v">' + dataCurta(u.dataNascimento) + (relIdadeTexto(u.dataNascimento) ? " · " + relIdadeTexto(u.dataNascimento) : "") + "</span>" : naoInf;
+  return '<div class="pr-pessoa"><div class="h">Dados do usuário</div><div class="pr-grid">' +
+    '<div class="c"><span class="l">Nome</span><span class="v">' + esc(u.nome || "") + "</span></div>" +
+    '<div class="c"><span class="l">Sexo</span>' + (REL_SEXO_LABEL[u.sexo] ? '<span class="v">' + REL_SEXO_LABEL[u.sexo] + "</span>" : naoInf) + "</div>" +
+    '<div class="c"><span class="l">Peso</span>' + peso + (pesoSub ? '<span class="s">' + pesoSub + "</span>" : "") + "</div>" +
+    '<div class="c"><span class="l">Altura</span>' + altura + "</div>" +
+    '<div class="c full"><span class="l">Data de nascimento</span>' + nasc + "</div>" +
+  "</div></div>";
+}
+function relatorioImpressaoHtml(rel) {
+  const agora = new Date();
+  const emitido = dataCurta(today()) + " às " + String(agora.getHours()).padStart(2, "0") + ":" + String(agora.getMinutes()).padStart(2, "0");
+  const css = (s) => String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  const rodapeEsq = css(DEV.nome + " ©  ·  " + DEV.lema) + "\\A " + css(DEV.email + "  ·  WhatsApp " + DEV.tel);
+  const rodapeDir = css("NutriTrack · versão " + APP_VERSAO) + '\\A Página " counter(page) " de " counter(pages) "';
+  return "<style>@page{ size:A4; margin:14mm 13mm 20mm 13mm;" +
+      " @bottom-left{ width:68%; content:\"" + rodapeEsq + "\"; white-space:pre; font-family:'DM Sans',sans-serif; font-size:8pt; color:#557268; border-top:1px solid #dce5db; vertical-align:top; padding-top:6px; }" +
+      " @bottom-right{ width:32%; content:\"" + rodapeDir + "\"; white-space:pre; text-align:right; font-family:'DM Sans',sans-serif; font-size:8pt; color:#557268; border-top:1px solid #dce5db; vertical-align:top; padding-top:6px; } }</style>" +
+    '<div class="pr-top"><div class="pr-brand">' + REL_LOGO_SVG + '<div><div class="nm">Nutri<span>Track</span></div><div class="sl">seu dia, no seu ritmo</div></div></div>' +
+      '<div class="pr-doc"><div class="t">Relatório do Diário de Kcal</div><div class="p">Período: ' + dataCurta(rel.de) + " a " + dataCurta(rel.fim) + " (" + rel.nDias + (rel.nDias === 1 ? " dia" : " dias") + ")<br>Emitido em " + emitido + "</div></div></div>" +
+    relDadosUsuarioHtml(rel) +
+    '<div class="rel-box">' + relatorioDiarioCorpoHtml(rel, true) + "</div>" +
+    '<p class="pr-aviso">As referências nutricionais deste relatório são gerais e não substituem a orientação de nutricionista ou médico. Dados registrados pelo próprio usuário no NutriTrack.</p>';
+}
+function acaoImprimirRelatorioDiario() {
+  const g = state.relDiarioGerado;
+  if (!g) return;
+  const rel = calcularRelatorioDiario(g.de, g.ate);
+  if (!rel.temDados) return;
+  let root = document.getElementById("print-root");
+  if (!root) { root = document.createElement("div"); root.id = "print-root"; document.body.appendChild(root); }
+  root.innerHTML = relatorioImpressaoHtml(rel);
+  document.body.classList.add("rel-imprimindo");
+  // Nome sugerido do arquivo ao salvar em PDF (o navegador usa o título da página).
+  const tituloAntes = document.title;
+  document.title = "Relatório NutriTrack " + dataCurta(rel.de).replace(/\//g, "-") + " a " + dataCurta(rel.fim).replace(/\//g, "-");
+  const restaurarTitulo = () => { document.title = tituloAntes; window.removeEventListener("afterprint", restaurarTitulo); };
+  window.addEventListener("afterprint", restaurarTitulo);
+  setTimeout(() => window.print(), 60);
+}
+// Chamada em render(): o conteúdo de impressão só fica montado enquanto o relatório está aberto na tela
+// (no celular a impressão é assíncrona, então não dá pra limpar logo depois do window.print()).
+function sincronizarImpressaoRelatorio() {
+  const aberto = state.relDiarioGerado && state.activeTab === "nutricao" && state.nutricaoAba === "diario";
+  if (aberto || !document.body.classList.contains("rel-imprimindo")) return;
+  document.body.classList.remove("rel-imprimindo");
+  const root = document.getElementById("print-root");
+  if (root) root.innerHTML = "";
+}
+/* =============== fim Relatório do período =============== */
+
+// Aba "Diário de Kcal" da página de Nutrição -- ver acaoTrocarAbaNutricao(). No topo, o Relatório do
+// período (relatorioDiarioFormTemplate()), seguido do resumo parcial de hoje (diarioKcalRegistroParcialTemplate(), sempre visível,
 // mesmo sem nenhum dia fechado ainda -- pedido do usuário) e, por fim, os dias já fechados (mais recente
 // primeiro).
 function diarioKcalTabTemplate() {
   const registros = state.diarioKcal.slice().sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
   return '<section class="diario-kcal-section">' +
+    relatorioDiarioFormTemplate() +
+    (state.relDiarioGerado ? relatorioDiarioResultadoTemplate() : "") +
     diarioKcalRegistroParcialTemplate() +
+    // Pedido do usuário: a lista de dias ficava muito extensa -- rolagem própria, como no Histórico de
+    // treinos (a posição da rolagem é mantida entre renders, ver data-keep-scroll em render()).
     (registros.length
-      ? '<div class="diario-kcal-lista">' + registros.map(diarioKcalRegistroTemplate).join("") + "</div>"
+      ? '<div class="medidas-section diario-kcal-historico"><h2 class="medidas-section-title">' + icon("history") + ' Histórico do Diário</h2>' +
+        '<div class="diario-kcal-scroll" data-keep-scroll="diario-kcal"><div class="diario-kcal-lista">' + registros.map(diarioKcalRegistroTemplate).join("") + "</div></div></div>"
       : '<div class="meal-empty"><div class="meal-empty-icon">' + icon("calendar") + '</div><p>Nenhum dia consolidado ainda</p><p>Os dias anteriores aparecem aqui sozinhos, na virada da meia-noite.</p></div>'
     ) +
   "</section>";
@@ -14541,7 +15209,12 @@ function captureFormState() {
 }
 function render() {
   captureFormState();
+  // Listas com rolagem própria marcadas com data-keep-scroll mantêm a posição depois de recriadas.
+  const rolagens = {};
+  document.querySelectorAll("[data-keep-scroll]").forEach((el) => { rolagens[el.getAttribute("data-keep-scroll")] = el.scrollTop; });
   document.getElementById("app").innerHTML = state.usuario ? homeTemplate() : authTemplate();
+  Object.keys(rolagens).forEach((k) => { const el = document.querySelector('[data-keep-scroll="' + k + '"]'); if (el) el.scrollTop = rolagens[k]; });
+  sincronizarImpressaoRelatorio();
   ajustarAlturaBioCard();
   ajustarAlturaMedidaCard();
   ajustarAlturaTreinoCard();
