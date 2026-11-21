@@ -936,6 +936,9 @@ body:has(.modal-overlay) .hamburger-btn{ display:none; }
 .nutrient-info-modal-title h2{ font-size:18px; }
 .nutrient-info-secao{ margin-top:18px; }
 .nutrient-info-secao h3{ margin:0 0 8px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.09em; color:#9aa9a1; }
+/* Parágrafo solto numa seção (ex.: "Pra quem treina pesado" no info do sono, "Para o seu objetivo" nos
+   macros) -- sem esta regra herdava o tamanho padrão e ficava bem maior que o resto do modal. */
+.nutrient-info-secao > p{ margin:0; font-size:13px; line-height:1.5; color:#5a6a5a; }
 .nutrient-info-lista{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:7px; }
 .nutrient-info-lista li{ position:relative; padding-left:15px; font-size:13.5px; line-height:1.5; color:#3d5a4f; }
 .nutrient-info-lista li::before{ content:""; position:absolute; left:0; top:7px; width:5px; height:5px; border-radius:999px; background:#a7c19b; }
@@ -1059,6 +1062,8 @@ body:has(.modal-overlay) .hamburger-btn{ display:none; }
 .garmin-sleep-legend span{ display:inline-flex; align-items:center; gap:5px; }
 .garmin-sw{ width:8px; height:8px; border-radius:2px; display:inline-block; }
 .garmin-sono-extra{ margin-top:10px; font-size:11.5px; color:#8a9a85; }
+.rx-sigla{ text-transform:none; letter-spacing:0; font-weight:500; }
+.rx-card .garmin-sleep-phases{ margin-top:14px; }
 /* Cards detalhados de HRV e Body Battery (escala + leituras + causas recolhidas) -- ver
    recuperacaoHrvTemplate()/recuperacaoBodyBatteryTemplate(). Pedido do usuário: mesmo espírito do card
    de sono, com uma escala de ruim a excelente pra conferir o número do dia. */
@@ -1194,8 +1199,13 @@ body:has(.modal-overlay) .hamburger-btn{ display:none; }
 .recuperacao-info-fases{ display:flex; flex-direction:column; gap:10px; }
 .recuperacao-info-fase{ background:#f7f9f5; border-radius:12px; padding:10px 12px; }
 .recuperacao-info-fase-head{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; flex-wrap:wrap; font-size:14px; color:#2f4a3c; }
-.recuperacao-info-fase-head span{ font-size:12px; font-weight:600; color:#6f9b59; white-space:nowrap; }
+.recuperacao-info-fase-head span{ font-size:12px; font-weight:600; color:#6f9b59; }
 .recuperacao-info-fase p{ margin:4px 0 0; font-size:13px; line-height:1.4; color:#5a6a5a; }
+/* Legenda de dicas no fim dos cards de Sono profundo/REM (pedido do usuário: todas as dicas, mas em letra
+   bem menor, sem virar uma seção nova) -- 10.5px ainda legível no celular. */
+.recuperacao-info-fase-dica{ margin-top:6px; padding-top:6px; border-top:1px dashed #dfe7da; font-size:10.5px; line-height:1.4; color:#6c8466; }
+.recuperacao-info-fase-dica b{ font-weight:700; color:#5c7a56; }
+.recuperacao-info-fase-dica ul{ margin:2px 0 0; padding-left:14px; }
 
 .avaliacao-nota-geral{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; padding:20px 12px; }
 .avaliacao-nota-numero{ font-size:48px; font-weight:700; color:#2f4a5c; line-height:1; }
@@ -12445,8 +12455,8 @@ const RECUPERACAO_INFO = {
       "Adultos de 18 a 64 anos precisam, em média, de 7 a 9 horas de sono por noite pra funções físicas e cognitivas normais -- repetidamente dormir menos que isso cria uma \"dívida de sono\" cumulativa, com efeito sobre humor, atenção e recuperação física.",
     ],
     fases: [
-      { label: "Sono profundo (ondas lentas / N3)", meta: "13-23% do tempo total de sono", texto: "A fase mais associada à recuperação FÍSICA: é quando ocorre o pico de liberação do hormônio do crescimento (GH), ligado ao reparo de músculos e tecidos -- especialmente relevante pra quem treina pesado (musculação, jiu-jitsu) e, mais ainda, pra quem está em déficit calórico, cenário em que a recuperação muscular já fica mais desafiada." },
-      { label: "Sono REM", meta: "20-25% do tempo total de sono", texto: "Ligado a consolidação de memória, aprendizado motor e regulação emocional. Um estudo mostrou que a fase REM da madrugada é especialmente importante pra consolidar o aprendizado de uma nova sequência de movimentos -- relevante pra quem está aprendendo ou refinando técnica esportiva (ex.: jiu-jitsu)." },
+      { label: "Sono profundo (ondas lentas / N3)", meta: "13-23% do tempo total de sono", dicas: ["Treino físico regular; os intensos, até 2–3h antes de deitar", "Quarto fresco (18–21 °C), escuro e silencioso", "Banho morno 1–2h antes de deitar", "Cafeína só até ~14h", "Nada de álcool à noite", "Jantar leve, 2–3h antes de deitar", "Cochilo só curto (20–30 min) e antes das 15h", "Luz do sol pela manhã (10–20 min)", "Dia ativo, com pouco tempo parado"], texto: "A fase mais associada à recuperação FÍSICA: é quando ocorre o pico de liberação do hormônio do crescimento (GH), ligado ao reparo de músculos e tecidos -- especialmente relevante pra quem treina pesado (musculação, jiu-jitsu) e, mais ainda, pra quem está em déficit calórico, cenário em que a recuperação muscular já fica mais desafiada." },
+      { label: "Sono REM", meta: "20-25% do tempo total de sono", dicas: ["Durma o tempo completo: o REM se concentra no fim da noite", "Acorde sempre no mesmo horário, inclusive no fim de semana", "Evite álcool e maconha (suprimem o REM)", "Alguns remédios reduzem o REM: converse com o médico, nunca mude por conta própria", "Desacelere 30–60 min antes de deitar (luz baixa, sem trabalho)", "Sem soneca no despertador nem celular no meio da noite", "Pouca tela e luz forte perto de deitar", "Pros dois: ronco alto ou acordar cansado podem ser apneia (procure avaliação); horários regulares valem mais que qualquer truque"], texto: "Ligado a consolidação de memória, aprendizado motor e regulação emocional. Um estudo mostrou que a fase REM da madrugada é especialmente importante pra consolidar o aprendizado de uma nova sequência de movimentos -- relevante pra quem está aprendendo ou refinando técnica esportiva (ex.: jiu-jitsu)." },
       { label: "Sono leve (N1+N2)", meta: "o restante (tipicamente ~45-55%)", texto: "Faz a transição entre as outras fases e também contribui pra consolidação de memória, com um papel individualmente menos crítico que o do sono profundo ou do REM." },
       { label: "Acordado durante a noite", meta: "eficiência do sono (tempo dormindo ÷ tempo na cama) acima de ~85%", texto: "Pequenos despertares ao longo da noite são normais -- ninguém dorme 100% do tempo na cama. O que importa acompanhar é a eficiência geral do sono, não zerar os despertares." },
     ],
@@ -12475,7 +12485,7 @@ function recuperacaoInfoModalTemplate() {
       "</div>" +
       (info.fases ? '<div class="nutrient-info-secao"><h3>Fases do sono: função e metas</h3>' +
         '<div class="recuperacao-info-fases">' + info.fases.map((f) =>
-          '<div class="recuperacao-info-fase"><div class="recuperacao-info-fase-head"><strong>' + esc(f.label) + "</strong><span>" + esc(f.meta) + "</span></div><p>" + esc(f.texto) + "</p></div>"
+          '<div class="recuperacao-info-fase"><div class="recuperacao-info-fase-head"><strong>' + esc(f.label) + "</strong><span>" + esc(f.meta) + "</span></div><p>" + esc(f.texto) + "</p>" + (f.dicas ? '<div class="recuperacao-info-fase-dica"><b>Pra aumentar:</b><ul>' + f.dicas.map((t) => "<li>" + esc(t) + "</li>").join("") + "</ul></div>" : "") + "</div>"
         ).join("") + "</div>" +
       "</div>" : "") +
       (info.esportivoNutricional ? '<div class="nutrient-info-secao"><h3>Pra quem treina pesado / está em déficit calórico</h3><p>' + esc(info.esportivoNutricional) + "</p></div>" : "") +
@@ -12501,7 +12511,9 @@ function rxEscalaTemplate(min, max, segs, pins) {
       return '<div class="rx-pin' + (p.sec ? " sec" : "") + '" style="left:' + x.toFixed(1) + '%"><span style="transform:' + desloc + '">' + esc(p.rotulo) + "</span><i></i></div>";
     }).join("") +
     '<div class="rx-barra">' + barras.map((b) => '<div class="rx-seg" style="width:' + b.w + "%;background:" + b.s.cor + '"></div>').join("") + "</div>" +
-    '<div class="rx-rotulos">' + barras.map((b) => '<div class="rx-rotulo" style="width:' + b.w + '%"><b>' + b.s.nome + "</b>" + b.s.faixa + "</div>").join("") + "</div>" +
+    // Faixa estreita demais (ex.: "Deseq. ↓" de só 2 ms, ou "Excelente" no celular) ficava com o rótulo
+    // espremido/sobreposto -- nesses casos o rótulo some (a cor e o marcador continuam).
+    '<div class="rx-rotulos">' + barras.map((b) => '<div class="rx-rotulo" style="width:' + b.w + '%">' + (b.w >= 9 ? "<b>" + b.s.nome + "</b>" + b.s.faixa : "") + "</div>").join("") + "</div>" +
     "</div>";
 }
 const rxLinha = (rotulo, valor, classe, texto) => '<div class="rx-linha"><span>' + rotulo + "</span><span><b>" + valor + "</b>" + (texto ? ' · <span class="rx-' + classe + '">' + texto + "</span>" : "") + "</span></div>";
@@ -12531,7 +12543,7 @@ function rxLinhaBaseHrv(resumo) {
 const RX_HRV_BADGE = { BALANCED: ["#e3f0dc", "#2f6b3a"], UNBALANCED: ["#fdf1dc", "#9a6512"], LOW: ["#fbe3df", "#b0362b"], POOR: ["#fbe3df", "#b0362b"] };
 function recuperacaoHrvTemplate(dia) {
   const resumo = dia.hrv && dia.hrv.hrvSummary;
-  const titulo = '<div class="garmin-stat-tile-label">' + icon("heart") + " HRV" + recuperacaoInfoBtnTemplate("hrv", "HRV") + "</div>";
+  const titulo = '<div class="garmin-stat-tile-label">' + icon("heart") + ' HRV <span class="rx-sigla">(variabilidade da frequência cardíaca)</span>' + recuperacaoInfoBtnTemplate("hrv", "HRV") + "</div>";
   if (!resumo || resumo.lastNightAvg == null) return '<div class="rx-card">' + titulo + '<div class="garmin-stat-tile-value garmin-stat-tile-vazio">Sem dado de HRV nesta noite.</div></div>';
   const noite = resumo.lastNightAvg;
   const semanal = resumo.weeklyAvg;
@@ -12563,7 +12575,7 @@ function recuperacaoHrvTemplate(dia) {
     const fcMedia = Math.round(rxMedia(fcAnteriores));
     const d = Math.round(fcNoite - fcMedia);
     const c = d >= 6 ? ["ruim", "bem acima do seu normal"] : d >= 3 ? ["atencao", "um pouco acima"] : ["ok", "normal"];
-    linhas += rxLinha("FC durante o sono (sua média " + fcMedia + " bpm)", formatNumber(fcNoite, 0) + " bpm", c[0], c[1]);
+    linhas += rxLinha("FC (frequência cardíaca) no sono · sua média " + fcMedia + " bpm (batimentos/min)", formatNumber(fcNoite, 0) + " bpm", c[0], c[1]);
   }
   const noites = historico.slice(-7).filter((g) => g.hrv && g.hrv.hrvSummary && g.hrv.hrvSummary.lastNightAvg != null);
   if (noites.length >= 2) {
@@ -12655,9 +12667,14 @@ function recuperacaoBodyBatteryTemplate(dia) {
       "Escala de 0 a 100 da Garmin. Referência pra acompanhar tendência, não é diagnóstico.") +
   "</div>";
 }
+// Card de sono no mesmo formato dos cards de HRV/Body Battery (pedido do usuário: "a escala do sono
+// tá solta, perdida na aba"): valor + selo de qualidade, escala da pontuação Garmin, barra das fases,
+// leituras comparadas às metas (ver RECUPERACAO_INFO.sono.fases), últimas noites e causas recolhidas.
+const RX_SONO_BADGE = { EXCELLENT: ["#dcefd8", "#245c34"], GOOD: ["#e3f0dc", "#2f6b3a"], FAIR: ["#fdf1dc", "#9a6512"], POOR: ["#fbe3df", "#b0362b"] };
 function recuperacaoSonoTemplate(dia) {
   const s = dia.sono;
-  if (!s) return '<div class="garmin-sono-vazio">' + icon("moon") + " Sem registro de sono para este dia.</div>";
+  const titulo = '<div class="garmin-stat-tile-label">' + icon("moon") + " Sono" + recuperacaoInfoBtnTemplate("sono", "Sono") + "</div>";
+  if (!s) return '<div class="rx-card">' + titulo + '<div class="garmin-stat-tile-value garmin-stat-tile-vazio">Sem registro de sono para este dia.</div></div>';
   const total = s.sleepTimeSeconds || 0;
   // Ordem fixa (profundo, leve, REM, acordado) e cores fixas -- sempre nessa ordem, nunca reordenadas
   // por tamanho, pra identidade de cada fase ficar sempre no mesmo lugar/cor na barra e na legenda.
@@ -12670,18 +12687,61 @@ function recuperacaoSonoTemplate(dia) {
   const totalFases = fases.reduce((soma, f) => soma + f.seg, 0) || 1;
   const pontuacao = s.sleepScores && s.sleepScores.overall;
   const qualidade = pontuacao ? (GARMIN_QUALIDADE_SONO_LABEL[pontuacao.qualifierKey] || humanizarCodigoGarmin(pontuacao.qualifierKey)) : "";
-  return '' +
-    '<div class="garmin-sono-head">' +
-      '<div class="garmin-sono-total">' + icon("moon") + " " + formatHoras(total) + recuperacaoInfoBtnTemplate("sono", "Sono") + "</div>" +
-      (pontuacao ? '<div class="garmin-sono-score">' + icon("sparkles") + " " + pontuacao.value + " pontos · " + esc(qualidade) + "</div>" : "") +
-    "</div>" +
+  const badge = pontuacao ? (RX_SONO_BADGE[pontuacao.qualifierKey] || ["#eef0ee", "#5c6b62"]) : null;
+  const historico = garminHistoricoAte(dia.date, 7).filter((g) => g.sono && g.sono.sleepScores && g.sono.sleepScores.overall);
+  const mediaPontos = historico.length >= 2 ? Math.round(rxMedia(historico.map((g) => g.sono.sleepScores.overall.value))) : null;
+  // Faixas da pontuação de sono da Garmin: Ruim < 60, Regular 60–79, Boa 80–89, Excelente 90–100.
+  const escala = pontuacao ? rxEscalaTemplate(0, 100, [
+    { ate: 60, nome: "Ruim", faixa: "< 60", cor: RX_COR.ruim },
+    { ate: 80, nome: "Regular", faixa: "60–79", cor: RX_COR.alerta },
+    { ate: 90, nome: "Boa", faixa: "80–89", cor: RX_COR.bom },
+    { ate: 100, nome: "Excelente", faixa: "90+", cor: "#2f7a4f" },
+  ], [{ valor: mediaPontos, rotulo: "Média " + mediaPontos, sec: true }, { valor: pontuacao.value, rotulo: "Noite " + pontuacao.value }]) : "";
+  // Leituras comparadas às metas das fases (as mesmas do "i" do sono).
+  const pct = (seg) => (total ? Math.round((seg / total) * 100) : 0);
+  let linhas = "";
+  const horas = total / 3600;
+  linhas += rxLinha("Duração (meta 7–9h)", formatHoras(total), horas >= 7 ? "ok" : horas >= 6 ? "atencao" : "ruim", horas >= 7 ? (horas > 9.5 ? "acima da meta" : "dentro da meta") : horas >= 6 ? "um pouco curto" : "curto");
+  const pProf = pct(fases[0].seg);
+  linhas += rxLinha("Sono profundo (meta 13–23%)", formatHoras(fases[0].seg) + " · " + pProf + "%", pProf >= 13 ? "ok" : pProf >= 9 ? "atencao" : "ruim", pProf >= 13 ? "ótimo" : pProf >= 9 ? "um pouco abaixo" : "abaixo");
+  const pRem = pct(fases[2].seg);
+  linhas += rxLinha("Sono REM (meta 20–25%)", formatHoras(fases[2].seg) + " · " + pRem + "%", pRem >= 20 ? "ok" : pRem >= 14 ? "atencao" : "ruim", pRem >= 20 ? "ótimo" : pRem >= 14 ? "um pouco abaixo" : "bem abaixo");
+  const naCama = total + (s.awakeSleepSeconds || 0);
+  if (naCama) {
+    const ef = Math.round((total / naCama) * 100);
+    linhas += rxLinha("Eficiência (tempo dormindo ÷ tempo na cama, meta 85%+)", ef + "%", ef >= 85 ? "ok" : ef >= 75 ? "atencao" : "ruim", ef >= 85 ? "boa" : ef >= 75 ? "um pouco baixa" : "baixa");
+  }
+  if (historico.length >= 2) {
+    const dias = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    linhas += '<div class="rx-linha" style="flex-direction:column;align-items:stretch"><span>Pontuação nas últimas noites</span><div class="rx-noites">' +
+      historico.map((g) => {
+        const v = g.sono.sleepScores.overall.value;
+        const cor = v >= 80 ? RX_COR.bom : v >= 60 ? RX_COR.alerta : RX_COR.ruim;
+        return '<div class="rx-noite">' + v + '<div style="height:' + Math.max(3, Math.round((v / 100) * 26)) + "px;background:" + cor + '"></div>' + dias[new Date(g.date + "T12:00:00").getDay()] + "</div>";
+      }).join("") + "</div></div>";
+  }
+  return '<div class="rx-card">' +
+    '<div class="rx-head"><div>' + titulo + '<div class="rx-valor">' + formatHoras(total) + "<small>dormidos" + (pontuacao ? " · " + pontuacao.value + " pontos" : "") + "</small></div></div>" +
+      (badge ? '<span class="rx-badge" style="background:' + badge[0] + ";color:" + badge[1] + '">' + esc(qualidade) + "</span>" : "") + "</div>" +
+    escala +
     '<div class="garmin-sleep-phases">' + fases.map((f) => '<div class="garmin-sleep-phase" style="flex:' + (f.seg / totalFases) + ";background:" + f.cor + '" title="' + f.label + ": " + formatHoras(f.seg) + '"></div>').join("") + "</div>" +
     '<div class="garmin-sleep-legend">' + fases.map((f) => "<span><span class=\"garmin-sw\" style=\"background:" + f.cor + "\"></span>" + f.label + " " + formatHoras(f.seg) + "</span>").join("") + "</div>" +
+    '<div class="rx-linhas">' + linhas + "</div>" +
     (s.avgHeartRate || s.averageRespirationValue ? '<div class="garmin-sono-extra">' +
-      (s.avgHeartRate ? "FC média " + formatNumber(s.avgHeartRate, 0) + " bpm" : "") +
+      (s.avgHeartRate ? "FC (frequência cardíaca) média " + formatNumber(s.avgHeartRate, 0) + " bpm (batimentos por minuto)" : "") +
       (s.avgHeartRate && s.averageRespirationValue ? " · " : "") +
-      (s.averageRespirationValue ? "Respiração média " + formatNumber(s.averageRespirationValue, 1) + " rpm" : "") +
-    "</div>" : "");
+      (s.averageRespirationValue ? "Respiração média " + formatNumber(s.averageRespirationValue, 1) + " rpm (respirações por minuto)" : "") +
+    "</div>" : "") +
+    rxDetalhes(["↓ O que costuma piorar o sono", "↑ O que costuma melhorar o sono"],
+      ["Álcool à noite", "Cafeína depois de ~14h", "Horários irregulares de dormir e acordar", "Tela e luz forte perto de deitar", "Jantar pesado ou tarde", "Treino intenso muito perto de deitar", "Estresse, ansiedade", "Quarto quente ou barulhento"],
+      ["Horários regulares, inclusive no fim de semana", "Quarto fresco, escuro e silencioso", "Treino físico regular", "Luz do sol pela manhã", "Desacelerar 30–60 min antes de deitar", "Dicas de cada fase no ⓘ do sono"],
+      ["<b>Apneia do sono</b>: ronco alto, pausas na respiração, acordar cansado mesmo dormindo 7–8h. Derruba o sono profundo e o REM — procure avaliação.",
+        "<b>Hipertireoidismo</b>: dificuldade pra pegar no sono, despertares, calor à noite e FC (frequência cardíaca) alta no sono.",
+        "<b>Insônia, ansiedade, depressão</b>: dificuldade pra dormir ou despertar muito cedo por semanas.",
+        "<b>Refluxo, dor, vontade de urinar à noite</b>: fragmentam o sono (aparece como tempo acordado alto).",
+        "<b>Remédios</b>: alguns antidepressivos, remédios pra dormir e estimulantes mudam as fases do sono."],
+      "Pontuação e fases calculadas pelo Garmin. Referência pra acompanhar tendência, não é diagnóstico.") +
+  "</div>";
 }
 // Limiares usados pelos insights automáticos abaixo -- um primeiro critério razoável pra começar (não é
 // recomendação clínica), documentado aqui pra poder ajustar depois se não fizer sentido na prática:
@@ -12763,7 +12823,7 @@ function recuperacaoTabTemplate() {
         : '' +
           recuperacaoDiaNavTemplate(dia, ordenados) +
           recuperacaoHrvTemplate(dia) + recuperacaoBodyBatteryTemplate(dia) +
-          '<div class="garmin-sono-card">' + recuperacaoSonoTemplate(dia) + "</div>"
+          recuperacaoSonoTemplate(dia)
       ) +
     "</section>" +
     (dia ? '<section class="medidas-section">' +
