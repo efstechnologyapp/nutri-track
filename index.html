@@ -2929,6 +2929,9 @@ const state = {
   // Resposta a "Essa refeição é seu pós-treino?" (treino planejado já começou, mas ainda não registrado):
   // "" = ainda não respondeu, "sim" / "nao". Zera ao salvar/cancelar a refeição.
   mealPosResposta: "",
+  // Treino planejado em que a pessoa tocou "Treinei" e cujo registro ainda não foi salvo (só na tela,
+  // não vai pra planilha): o card mostra "Falta salvar" até o treino ser salvo e casar com o planejado.
+  planoRegistrandoId: null,
   // Sugestões de autocomplete pro alimento que a pessoa está digitando agora na descrição da refeição --
   // lista de labels (string), atualizada a cada tecla (ver acaoAtualizarSugestoesAlimento()) e mostrada
   // logo abaixo da textarea (mealSugestoesListaHtml()). Pedido do usuário. Fica fora do fluxo normal de
@@ -7720,7 +7723,9 @@ function acaoEncerrarTreino() {
   if (notaEl) notaEl.value = ""; // ver comentário em acaoSalvarTreino sobre limpar o DOM diretamente
   if (distanciaEl) distanciaEl.value = "";
   limparFotoTreinoSelecionada();
-  toastSuccess(arquivoFoto ? "Treino registrado. Enviando a foto em segundo plano..." : "Treino registrado.");
+  const concluiuPlano = state.planoRegistrandoId != null && state.treinosPlanejados.some((p) => p.id === state.planoRegistrandoId && planoTreinoRealizado(p));
+  state.planoRegistrandoId = null;
+  toastSuccess((concluiuPlano ? "Treino concluído e registrado." : "Treino registrado.") + (arquivoFoto ? " Enviando a foto em segundo plano..." : ""));
   const promessaRegistroBase = state.account ? enviarComFila("salvarTreinoGoogle", [state.usuario.email, novoTreino]) : Promise.resolve();
   render();
   if (arquivoFoto) processarFotoTreinoEmSegundoPlano(novoTreino.id, arquivoFoto, promessaRegistroBase);
@@ -7819,10 +7824,11 @@ function planoTreinoRealizado(p) {
 function planoStatus(p) {
   if (p.naoRealizado) return "nao";
   if (planoTreinoRealizado(p)) return "realizado";
+  if (state.planoRegistrandoId === p.id) return "registrando";
   if (p.date === today()) return "hoje";
   return p.date < today() ? "pendente" : "planejado";
 }
-const PLANO_CHIP = { realizado: ["chip-realizado", "Realizado"], nao: ["chip-nao", "Não realizado"], pendente: ["chip-pendente", "Confirmar"], hoje: ["chip-hoje", "Hoje"], planejado: ["chip-planejado", "Planejado"] };
+const PLANO_CHIP = { realizado: ["chip-realizado", "✓ Concluído"], registrando: ["chip-pendente", "Falta salvar"], nao: ["chip-nao", "Não realizado"], pendente: ["chip-pendente", "Confirmar"], hoje: ["chip-hoje", "Hoje"], planejado: ["chip-planejado", "Planejado"] };
 // Junta o que veio do servidor com o que ainda está a caminho dele (fila/envios em andamento): um
 // "salvar" pendente ganha da versão do servidor (é mais novo) e um "remover" pendente tira o item -- sem
 // isso, marcar "Não treinei" e logo em seguida sincronizar faria o status piscar de volta.
@@ -7864,10 +7870,12 @@ function acaoDesfazerNaoTreineiPlano(id) {
 // escolhe se registra manualmente ou pelo cronômetro (pedido do usuário: "deixar a critério"). Treino
 // de outro dia só dá pra registrar manualmente. Assim que o treino é salvo, o plano vira "Realizado"
 // sozinho (ver planoTreinoRealizado()).
+function acaoCancelarRegistroPlano() { state.planoRegistrandoId = null; render(); }
 function acaoTreineiPlano(id) {
   const p = state.treinosPlanejados.find((x) => x.id === id);
   if (!p) return;
   state.planoModalId = null;
+  if (!state.treinoAtivo) state.planoRegistrandoId = id;
   state.activeTab = "treinos";
   state.treinosAba = "treinos";
   state.treinoCardPagina = 0;
@@ -7947,6 +7955,8 @@ function planoLinhaTemplate(p) {
   const acoes = status === "pendente"
     ? '<div class="plano-acoes-inline"><button class="plano-mini-btn primario" onclick="event.stopPropagation(); acaoTreineiPlano(' + p.id + ')">' + icon("check") + " Treinei</button>" +
       '<button class="plano-mini-btn" onclick="event.stopPropagation(); acaoNaoTreineiPlano(' + p.id + ')">' + icon("x") + " Não treinei</button></div>"
+    : status === "registrando" ? '<div class="plano-meta">Confira os horários no formulário abaixo e toque em <b>Salvar treino</b>.</div>' +
+      '<div class="plano-acoes-inline"><button class="plano-mini-btn" onclick="event.stopPropagation(); acaoCancelarRegistroPlano()">Cancelar</button></div>'
     : status === "nao" ? '<div class="plano-acoes-inline"><button class="plano-mini-btn" onclick="event.stopPropagation(); acaoDesfazerNaoTreineiPlano(' + p.id + ')">Desfazer</button></div>' : "";
   return '<div class="plano-row' + (p.date === today() ? " hoje" : "") + '"' + (clicavel ? ' role="button" onclick="acaoAbrirPlanoModal(' + p.id + ')"' : "") + ">" +
     '<div class="plano-emoji">' + emojiEsporte(p.esporte) + "</div>" +
@@ -8374,7 +8384,9 @@ function acaoSalvarTreino() {
   if (distanciaEl) distanciaEl.value = "";
   if (esporteCustomEl) esporteCustomEl.value = "";
   limparFotoTreinoSelecionada();
-  toastSuccess(arquivoFoto ? "Treino registrado. Enviando a foto em segundo plano..." : "Treino registrado.");
+  const concluiuPlano = state.planoRegistrandoId != null && state.treinosPlanejados.some((p) => p.id === state.planoRegistrandoId && planoTreinoRealizado(p));
+  state.planoRegistrandoId = null;
+  toastSuccess((concluiuPlano ? "Treino concluído e registrado." : "Treino registrado.") + (arquivoFoto ? " Enviando a foto em segundo plano..." : ""));
   const promessaRegistroBase = state.account ? enviarComFila("salvarTreinoGoogle", [state.usuario.email, novoTreino]) : Promise.resolve();
   // Mesmo motivo do sincronizarDiarioKcalDoDia() no modo edição acima: se dataTreino for um dia que já
   // tinha sido encerrado no Diário de Kcal (ex.: registrando agora um treino esquecido de um dia que já
