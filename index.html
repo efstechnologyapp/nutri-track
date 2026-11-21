@@ -503,6 +503,8 @@ body:has(.modal-overlay) .hamburger-btn{ display:none; }
 .garmin-ativ .icon{ width:14px; height:14px; color:#b8d6a0; }
 .garmin-ativ span{ flex:1; min-width:160px; }
 .garmin-ativ button{ border-radius:999px; border:1px solid rgba(184,214,156,.45); background:rgba(255,255,255,.1); padding:5px 12px; font-size:12px; font-weight:600; color:#e3f2d3; white-space:nowrap; }
+.garmin-anteriores{ margin-top:10px; }
+.garmin-anteriores summary{ cursor:pointer; font-size:12.5px; color:#b8d6a0; }
 .garmin-ativ.aplicado{ border-style:solid; background:rgba(159,215,127,.12); }
 .garmin-ativ.discreto{ border:none; background:none; padding:4px 0 0; color:#9fb5aa; }
 .garmin-ativ.discreto button{ border:none; background:none; padding:0; text-decoration:underline; color:#b8d6a0; font-weight:500; }
@@ -1430,7 +1432,7 @@ const authApi = {
   // Ver acaoAtualizarGarminAgora() / sincronizarGarminAgora() no Code.gs -- botão "Atualizar agora" da
   // aba Recuperação, busca o dia de hoje na Garmin na hora em vez de esperar o gatilho automático.
   sincronizarGarminAgora: (email) => chamarApi("sincronizarGarminAgora", { email }),
-  garminAtividades: (email, data) => chamarApi("garminAtividades", { email, data }),
+  garminAtividades: (email, dataInicio, dataFim) => chamarApi("garminAtividades", { email, dataInicio, dataFim }),
   salvarChaveGarmin: (email, chave) => chamarApi("salvarChaveGarmin", { email, chave }),
   removerChaveGarmin: (email) => chamarApi("removerChaveGarmin", { email }),
 };
@@ -5763,7 +5765,7 @@ function submitPerfil() {
 /* ===================== templates ===================== */
 // Versão exibida no menu, na tela de login e em "Sobre o App" (mesmo padrão do Custódia Digital e do app
 // do escritório). Atualizar junto com o CACHE_NAME do sw.js a cada versão publicada.
-const APP_VERSAO = "2.19";
+const APP_VERSAO = "2.20";
 const APP_VERSAO_DATA = "21/11/2026";
 const DEV = { nome: "EFS Technology", lema: "Soluções digitais sob medida", tel: "83 9 99944-7957", wa: "5583999447957", email: "efstechnology.app@gmail.com" };
 function authVersaoTemplate() {
@@ -10858,12 +10860,16 @@ function garminEsporteDoTipo(tipo) {
   if (/soccer|football/.test(t)) return { esporte: "Futebol" };
   return null;
 }
+// Busca de uma vez os últimos GARMIN_DIAS_BUSCA dias (pedido do usuário: as corridas de dias/semanas
+// anteriores também precisam aparecer). state.garminAtiv.data guarda o "hoje" da busca, pra refazer só
+// quando o dia virar ou a pessoa tocar em "Buscar de novo".
+const GARMIN_DIAS_BUSCA = 60;
 async function carregarGarminAtividades(data, forcar) {
   const g = state.garminAtiv;
   if (!state.usuario || g.semRelogio || g.status === "carregando" || (!forcar && g.data === data)) return;
   state.garminAtiv = { data: data, status: "carregando", lista: [], semRelogio: false };
   try {
-    const r = await authApi.garminAtividades(state.usuario.email, data);
+    const r = await authApi.garminAtividades(state.usuario.email, somarDias(data, -GARMIN_DIAS_BUSCA), data);
     if (r.ok) state.garminAtiv = { data: data, status: "ok", lista: r.atividades || [], semRelogio: false };
     else state.garminAtiv = { data: data, status: "erro", lista: [], semRelogio: !!r.semRelogio };
   } catch (err) {
@@ -10871,7 +10877,7 @@ async function carregarGarminAtividades(data, forcar) {
   }
   if (state.activeTab === "treinos") render();
 }
-function acaoBuscarGarminDeNovo() { carregarGarminAtividades(state.garminAtiv.data || today(), true); render(); }
+function acaoBuscarGarminDeNovo() { carregarGarminAtividades(today(), true); render(); }
 function garminResumoAtividade(a) {
   return esc(a.inicio) + "–" + esc(a.fim) + (a.distanciaKm ? " · " + formatNumber(a.distanciaKm, 2) + " km" : "") +
     (a.calorias ? " · " + formatNumber(a.calorias, 0) + " kcal" : "") + (a.fcMedia ? " · FC " + a.fcMedia : "");
@@ -10880,22 +10886,33 @@ function garminAtividadesLinhaTemplate() {
   if (!state.garminConectado || state.treinoAtivo || state.treinoEditandoId != null || !state.treinoEsporte || state.garminAtiv.semRelogio) return "";
   const tg = state.treinoGarmin;
   if (tg) {
-    return '<div class="garmin-ativ aplicado">' + icon("check") + "<span>Dados do Garmin aplicados: " + garminResumoAtividade(tg) + "</span>" +
+    return '<div class="garmin-ativ aplicado">' + icon("check") + "<span>Dados do Garmin aplicados: " + (tg.data !== today() ? rotuloDiaPlano(tg.data) + " · " : "") + garminResumoAtividade(tg) + "</span>" +
       '<button type="button" onclick="acaoDesfazerGarminTreino()">Desfazer</button></div>';
   }
-  const dataEl = document.getElementById("treino-data");
-  const data = state.treinoModo === "manual" ? (state.treinoData || (dataEl && dataEl.value) || today()) : today();
-  if (state.garminAtiv.data !== data) { setTimeout(() => carregarGarminAtividades(data), 0); return ""; }
+  const hoje = today();
+  if (state.garminAtiv.data !== hoje) { setTimeout(() => carregarGarminAtividades(hoje), 0); return ""; }
   if (state.garminAtiv.status === "carregando") return '<div class="garmin-ativ discreto">' + icon("clock") + "<span>Buscando atividades no Garmin…</span></div>";
-  if (state.garminAtiv.status !== "ok") return "";
+  if (state.garminAtiv.status !== "ok") return '<div class="garmin-ativ discreto"><span>Não foi possível buscar no Garmin agora.</span><button type="button" onclick="acaoBuscarGarminDeNovo()">Tentar de novo</button></div>';
+  // Fica de fora o que já está registrado: atividade já usada (garminId) ou um treino do mesmo esporte,
+  // no mesmo dia, com horário sobreposto (ex.: corrida antiga registrada à mão antes da integração).
   const usados = new Set(state.treinos.filter((t) => t.garminId).map((t) => String(t.garminId)));
-  const doEsporte = state.garminAtiv.lista.filter((a) => { const m = garminEsporteDoTipo(a.tipo); return m && m.esporte === state.treinoEsporte && !usados.has(String(a.id)); });
+  const jaRegistrado = (a) => state.treinos.some((t) => t.date === a.data && t.esporte === state.treinoEsporte && t.horaInicio && t.horaFim &&
+    hhmmParaMin(t.horaInicio) < hhmmParaMin(a.fim) && hhmmParaMin(a.inicio) < hhmmParaMin(t.horaFim));
+  const doEsporte = state.garminAtiv.lista
+    .filter((a) => { const m = garminEsporteDoTipo(a.tipo); return m && m.esporte === state.treinoEsporte && !usados.has(String(a.id)) && !jaRegistrado(a); })
+    .sort((a, b) => (b.data + b.inicio).localeCompare(a.data + a.inicio));
+  const nome = state.treinoEsporte.toLowerCase();
+  const linha = (a, comData) => '<div class="garmin-ativ">' + icon("activity") + "<span><b>Garmin" + (comData ? " · " + rotuloDiaPlano(a.data) : "") + ":</b> " + garminResumoAtividade(a) + "</span>" +
+    '<button type="button" onclick="acaoUsarAtividadeGarmin(\'' + esc(a.id) + '\')">Usar estes dados</button></div>';
+  const deHoje = doEsporte.filter((a) => a.data === hoje);
+  const anteriores = doEsporte.filter((a) => a.data !== hoje);
   if (!doEsporte.length) {
-    if (!state.garminAtiv.lista.some((a) => garminEsporteDoTipo(a.tipo))) return "";
-    return '<div class="garmin-ativ discreto"><span>Nenhuma atividade de ' + esc(state.treinoEsporte) + ' no Garmin nesse dia.</span><button type="button" onclick="acaoBuscarGarminDeNovo()">Buscar de novo</button></div>';
+    return '<div class="garmin-ativ discreto"><span>Nenhuma atividade nova de ' + esc(nome) + " no Garmin (últimos " + GARMIN_DIAS_BUSCA + ' dias).</span><button type="button" onclick="acaoBuscarGarminDeNovo()">Buscar de novo</button></div>';
   }
-  return doEsporte.map((a) => '<div class="garmin-ativ">' + icon("activity") + "<span><b>Garmin:</b> " + garminResumoAtividade(a) + "</span>" +
-    '<button type="button" onclick="acaoUsarAtividadeGarmin(\'' + esc(a.id) + '\')">Usar estes dados</button></div>').join("");
+  return deHoje.map((a) => linha(a, false)).join("") +
+    (anteriores.length ? '<details class="garmin-anteriores"' + (deHoje.length ? "" : " open") + "><summary>" + anteriores.length + " atividade" + (anteriores.length > 1 ? "s" : "") + " de " + esc(nome) + " de dias anteriores no Garmin, ainda não registrada" + (anteriores.length > 1 ? "s" : "") + "</summary>" +
+      anteriores.map((a) => linha(a, true)).join("") + "</details>" : "") +
+    '<div class="garmin-ativ discreto"><button type="button" onclick="acaoBuscarGarminDeNovo()">Buscar de novo no Garmin</button></div>';
 }
 function acaoUsarAtividadeGarmin(id) {
   const a = state.garminAtiv.lista.find((x) => String(x.id) === String(id));
