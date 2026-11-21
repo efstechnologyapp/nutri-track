@@ -86,6 +86,9 @@ svg{ display: block; }
 .hamburger-btn span::before{ top:-6px; }
 .hamburger-btn span::after{ top:6px; }
 
+/* Com um modal aberto, o botão do menu (z-index acima do modal) ficava por cima do canto do modal no
+   celular, cobrindo o título -- some enquanto houver modal na tela. */
+body:has(.modal-overlay) .hamburger-btn{ display:none; }
 .sidebar-overlay{ position:fixed; inset:0; background:rgba(15,32,26,.45); z-index:300; display:none; }
 .sidebar-overlay.open{ display:block; }
 .sidebar-panel{ position:fixed; top:0; left:0; bottom:0; width:84%; max-width:320px; background:#fff; box-shadow:6px 0 24px rgba(0,0,0,.18); padding:26px 22px; transform:translateX(-100%); transition:transform .22s ease-out; display:flex; flex-direction:column; gap:20px; overflow-y:auto; }
@@ -1056,6 +1059,126 @@ svg{ display: block; }
 .garmin-sleep-legend span{ display:inline-flex; align-items:center; gap:5px; }
 .garmin-sw{ width:8px; height:8px; border-radius:2px; display:inline-block; }
 .garmin-sono-extra{ margin-top:10px; font-size:11.5px; color:#8a9a85; }
+/* Cards detalhados de HRV e Body Battery (escala + leituras + causas recolhidas) -- ver
+   recuperacaoHrvTemplate()/recuperacaoBodyBatteryTemplate(). Pedido do usuário: mesmo espírito do card
+   de sono, com uma escala de ruim a excelente pra conferir o número do dia. */
+.rx-card{ margin-top:16px; border-radius:14px; background:#f7f9f5; padding:14px; }
+.rx-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.rx-valor{ margin-top:4px; font-family:'Fraunces',serif; font-size:22px; font-weight:600; color:#1d4b3d; }
+.rx-valor small{ font-family:'DM Sans',sans-serif; font-size:12.5px; font-weight:500; color:#71857e; margin-left:6px; }
+.rx-badge{ font-size:12px; font-weight:700; padding:5px 11px; border-radius:999px; white-space:nowrap; }
+.rx-escala{ position:relative; margin-top:66px; }
+.rx-barra{ display:flex; height:10px; border-radius:999px; overflow:hidden; }
+.rx-seg + .rx-seg{ border-left:2px solid #f7f9f5; }
+.rx-rotulos{ display:flex; margin-top:6px; }
+.rx-rotulo{ font-size:10px; line-height:1.25; color:#71857e; text-align:center; padding:0 1px; overflow:hidden; }
+.rx-rotulo b{ display:block; font-size:10.5px; color:#31564a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rx-pin{ position:absolute; top:-36px; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; }
+.rx-pin span{ font-size:11px; font-weight:700; color:#fff; background:#1d4b3d; padding:3px 8px; border-radius:999px; white-space:nowrap; }
+.rx-pin i{ width:2px; height:18px; background:#1d4b3d; }
+.rx-pin.sec{ top:-64px; }
+.rx-pin.sec span{ background:#fff; color:#1d4b3d; border:1px solid #1d4b3d; }
+.rx-pin.sec i{ height:46px; background:#7a9a88; }
+.rx-linhas{ margin-top:12px; display:flex; flex-direction:column; gap:6px; }
+.rx-linha{ display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:12.5px; color:#5c6b62; padding:8px 10px; background:#fff; border:1px solid #e5e9e1; border-radius:10px; }
+.rx-linha b{ color:#1b3f34; }
+.rx-linha > span:last-child{ text-align:right; }
+.rx-ok{ color:#2f6b3a; font-weight:700; }
+.rx-atencao{ color:#9a6512; font-weight:700; }
+.rx-ruim{ color:#b0362b; font-weight:700; }
+.rx-noites{ display:flex; gap:4px; align-items:flex-end; margin-top:6px; }
+.rx-noite{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:2px; font-size:9.5px; color:#8a9c93; }
+.rx-noite div{ width:100%; max-width:22px; border-radius:4px 4px 0 0; }
+.rx-detalhes{ margin-top:10px; }
+.rx-detalhes summary{ cursor:pointer; font-size:12.5px; font-weight:700; color:#3d6355; list-style:none; display:flex; align-items:center; gap:6px; }
+.rx-detalhes summary::-webkit-details-marker{ display:none; }
+.rx-detalhes summary::before{ content:"▸"; transition:transform .15s; }
+.rx-detalhes[open] summary::before{ transform:rotate(90deg); }
+.rx-legenda{ margin-top:10px; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+@media (max-width:560px){ .rx-legenda{ grid-template-columns:1fr; } }
+.rx-leg{ background:#fff; border:1px solid #e5e9e1; border-radius:12px; padding:10px 12px; }
+.rx-leg h4, .rx-clinico h4{ margin:0 0 6px; font-size:12px; font-weight:700; color:#1b3f34; }
+.rx-leg ul, .rx-clinico ul{ margin:0; padding-left:16px; font-size:12px; line-height:1.55; color:#5c6b62; }
+.rx-clinico{ margin-top:8px; background:#fdf3e1; border-radius:12px; padding:10px 12px; }
+.rx-clinico h4, .rx-clinico ul{ color:#7a5212; }
+.rx-nota{ margin-top:8px; font-size:11px; color:#9aa9a1; line-height:1.5; }
+/* Plano de treinos (aba Esportes) + modais de planejar e de pré/pós-treino -- ver planoSemanaTabTemplate(). */
+.plano-section{ margin-top:0; margin-bottom:20px; }
+.plano-lista{ margin-top:12px; display:flex; flex-direction:column; gap:8px; }
+.plano-semana-titulo{ margin:18px 0 0; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:#6c8d68; }
+.plano-vazio{ margin:8px 0 0; font-size:13px; color:#9aa9a1; }
+.plano-row{ display:flex; align-items:center; gap:12px; padding:12px; border-radius:14px; border:1px solid #edf0eb; background:#fbfcfa; text-align:left; }
+.plano-row[role="button"]{ cursor:pointer; }
+.plano-row.hoje{ border-color:#bcd9a8; background:#f3f9ee; }
+.plano-emoji{ font-size:22px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:#eef2ea; flex-shrink:0; }
+.plano-info{ flex:1; min-width:0; }
+.plano-nome{ font-size:14px; font-weight:700; color:#1b3f34; }
+.plano-meta{ font-size:12px; color:#71857e; margin-top:2px; }
+.plano-meta .sem-hora{ color:#a8742a; font-weight:600; }
+.plano-registrado{ color:#2f6b3a; font-weight:600; display:flex; align-items:center; gap:4px; }
+.plano-registrado .icon{ width:13px; height:13px; }
+.plano-chip{ font-size:11px; font-weight:700; padding:4px 9px; border-radius:999px; white-space:nowrap; }
+.chip-realizado{ background:#e3f0dc; color:#2f6b3a; }
+.chip-nao{ background:#eef0ee; color:#7b8780; }
+.chip-pendente{ background:#fdf1dc; color:#9a6512; }
+.chip-hoje{ background:#1c4d3e; color:#fff; }
+.chip-planejado{ background:#e8eef7; color:#3d5f8a; }
+.chip-ruim{ background:#fbe3df; color:#b0362b; }
+.foco-bloco{ margin-top:12px; border-radius:14px; background:#f7f9f5; padding:14px; }
+.foco-chips{ display:flex; flex-wrap:wrap; gap:6px; }
+.foco-dicas{ margin:8px 0 0; padding-left:18px; font-size:12.5px; line-height:1.6; color:#5c6b62; }
+.plano-remover{ display:flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:999px; color:#9aa9a1; flex-shrink:0; }
+.plano-remover:hover{ background:#f1f4ef; color:#b0362b; }
+.plano-remover .icon{ width:15px; height:15px; }
+.plano-acoes-inline{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+.plano-mini-btn{ white-space:nowrap; font-size:12px; font-weight:700; padding:6px 10px; border-radius:999px; border:1px solid #dce5db; background:#fff; color:#31564a; display:inline-flex; align-items:center; gap:4px; }
+.plano-mini-btn.primario{ background:#1c4d3e; color:#fff; border-color:#1c4d3e; }
+.plano-mini-btn .icon{ width:13px; height:13px; }
+.plano-botoes{ display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+.plano-modal{ max-height:calc(100vh - 32px); overflow-y:auto; }
+.plano-modal .modal-body{ gap:12px; }
+.pm-sub{ margin-top:4px; font-size:13px; color:#71857e; }
+.pm-ok{ display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; background:#e3f0dc; color:#2f6b3a; padding:4px 9px; border-radius:999px; margin-top:6px; }
+.pm-ok .icon{ width:12px; height:12px; }
+.pm-bloco{ border-radius:16px; padding:14px; background:#f7f9f5; }
+.pm-bloco-titulo{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:#6c8d68; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+.pm-bloco-titulo .icon{ width:14px; height:14px; }
+.pm-macros{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+.pm-macro{ background:#fff; border:1px solid #e5e9e1; border-radius:12px; padding:8px 4px; text-align:center; }
+.pm-macro-nome{ font-size:10px; font-weight:700; color:#8a9c93; text-transform:uppercase; letter-spacing:.06em; }
+.pm-macro-resta{ font-family:'Fraunces',serif; font-size:16px; font-weight:600; color:#1b3f34; margin-top:2px; }
+.pm-macro-de{ font-size:10px; color:#8a9c93; }
+.pm-refeicoes{ margin-top:10px; display:flex; flex-direction:column; gap:4px; }
+.pm-ref{ display:flex; justify-content:space-between; gap:8px; font-size:12px; color:#5c6b62; }
+.pm-ref b{ color:#31564a; font-weight:600; }
+.pm-agora{ border-radius:16px; padding:14px; background:#1c4d3e; color:#eef6e9; }
+.pm-agora .pm-bloco-titulo{ color:#bfe0a6; }
+.pm-agora-titulo{ font-family:'Fraunces',serif; font-size:18px; font-weight:600; color:#fff; margin-bottom:4px; }
+.pm-agora-desc{ font-size:13px; line-height:1.5; color:#cfe3d4; }
+.pm-alvos{ display:flex; flex-wrap:wrap; gap:6px; margin:10px 0; }
+.pm-alvo{ font-size:12px; font-weight:700; padding:5px 10px; border-radius:999px; background:rgba(255,255,255,.12); color:#fff; }
+.pm-aviso{ border-radius:14px; padding:12px; background:#fdf3e1; color:#7a5212; font-size:13px; line-height:1.5; display:flex; gap:8px; }
+.pm-aviso .icon{ width:16px; height:16px; flex-shrink:0; margin-top:2px; }
+.pm-dica{ border-radius:14px; padding:12px; background:#eef2ea; color:#3d5c48; font-size:13px; line-height:1.5; display:flex; gap:8px; }
+.pm-dica .icon{ width:16px; height:16px; flex-shrink:0; margin-top:2px; color:#6c8d68; }
+.pm-passos{ display:flex; flex-direction:column; gap:10px; }
+.pm-passo{ display:flex; gap:10px; }
+.pm-passo-hora{ font-size:12px; font-weight:700; color:#1c4d3e; width:86px; flex-shrink:0; padding-top:1px; }
+.pm-passo-txt{ font-size:13px; color:#3d5c48; line-height:1.45; }
+.pm-reserva{ font-size:12px; color:#5c6b62; line-height:1.5; }
+.pm-atalhos{ display:flex; gap:8px; }
+.pm-atalho{ flex:1; border:1px solid #dce5db; background:#fff; border-radius:12px; padding:10px 6px; text-align:center; font-size:13px; font-weight:700; color:#31564a; }
+.pm-atalho small{ display:block; font-weight:500; color:#8a9c93; font-size:11px; margin-top:2px; }
+.pm-footer{ display:flex; gap:8px; margin-top:18px; }
+.pm-footer .btn-primary{ margin-top:0; flex:1; }
+.pm-footer .bioimpedancia-btn-secundario{ justify-content:center; }
+.pm-grid2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:end; }
+.pm-chips-sel{ display:flex; gap:6px; flex-wrap:wrap; }
+.pm-chip-sel{ cursor:pointer; }
+.pm-chip-sel input{ position:absolute; opacity:0; pointer-events:none; }
+.pm-chip-sel span{ display:inline-block; font-size:12px; font-weight:700; padding:7px 11px; border-radius:999px; border:1px solid #dce5db; background:#fff; color:#557268; }
+.pm-chip-sel input:checked + span{ background:#1c4d3e; border-color:#1c4d3e; color:#fff; }
+.pm-nota{ margin:0; font-size:12px; color:#8a9c93; line-height:1.5; }
 .garmin-insight{ display:flex; align-items:flex-start; gap:10px; border-radius:16px; padding:13px 14px; font-size:12.8px; line-height:1.55; margin-top:10px; }
 .garmin-insight .icon{ margin-top:2px; flex-shrink:0; }
 .garmin-insight.warn{ background:#fff3ec; color:#7a5a45; }
@@ -1201,6 +1324,16 @@ async function chamarApi(acao, dados) {
   // (redirecionamento interno) que o navegador aceita para GET, mas bloqueia por CORS para POST.
   const payload = JSON.stringify(Object.assign({ acao }, dados || {}));
   const url = API_URL + "?data=" + encodeURIComponent(payload);
+  // Exceções que vão por POST (texto puro, mesmo esquema já usado no envio de anexos -- ver
+  // enviarAnexoViaPost()): (1) pedido grande -- uma refeição com muitos alimentos detalhados, por
+  // exemplo, passava do limite de tamanho de URL do Apps Script, falhava e ficava presa na fila de
+  // reenvio pra sempre; (2) pedido com senha -- numa URL de GET a senha fica registrada em logs e no
+  // histórico do navegador.
+  if (url.length > 1800 || ["login", "cadastrar", "atualizarPerfil"].includes(acao)) {
+    const resp = await fetch(API_URL, { method: "POST", body: payload });
+    if (!resp.ok) throw new Error("Erro de rede (" + resp.status + ")");
+    return resp.json();
+  }
   const response = await fetch(url, { method: "GET" });
   if (!response.ok) throw new Error("Erro de rede (" + response.status + ")");
   return response.json();
@@ -1232,6 +1365,8 @@ const authApi = {
   atualizarCalorimetriaGoogle: (email, registro) => chamarApi("atualizarCalorimetriaGoogle", { email, registro }),
   salvarTreinoGoogle: (email, treino) => chamarApi("salvarTreinoGoogle", { email, treino }),
   removerTreinoGoogle: (email, id) => chamarApi("removerTreinoGoogle", { email, id }),
+  salvarTreinoPlanejadoGoogle: (email, plano) => chamarApi("salvarTreinoPlanejadoGoogle", { email, plano }),
+  removerTreinoPlanejadoGoogle: (email, id) => chamarApi("removerTreinoPlanejadoGoogle", { email, id }),
   atualizarFotoTreinoGoogle: (email, id, fotoUrl) => chamarApi("atualizarFotoTreinoGoogle", { email, id, fotoUrl }),
   atualizarTreinoGoogle: (email, treino) => chamarApi("atualizarTreinoGoogle", { email, treino }),
   salvarExercicioCustomizadoGoogle: (email, exercicio) => chamarApi("salvarExercicioCustomizadoGoogle", { email, exercicio }),
@@ -2554,7 +2689,11 @@ function numeroDoTexto(str) {
 // "1/2", depois de reconhecida) em "1 unidade" na tela -- o cálculo de kcal já saía certo, mas o texto
 // mostrado enganava, fazendo parecer que tinha ignorado a fração/decimal digitado. Mesmo padrão já usado
 // em doseAmountForFood() pra suplementos.
-function formatarQuantidadeUnidade(valor) { return formatNumber(valor, valor % 1 === 0 ? 0 : 1) + " unidade" + (valor > 1 ? "s" : ""); }
+function formatarQuantidadeUnidade(valor) {
+  // Até 2 casas, sem zeros sobrando: 1/2 -> "0,5", 3/4 -> "0,75" (antes arredondava pra "0,8").
+  const casas = Math.round(valor * 10) === valor * 10 ? (valor % 1 === 0 ? 0 : 1) : 2;
+  return formatNumber(valor, casas) + " unidade" + (valor > 1 ? "s" : "");
+}
 function amountForFood(text, position, food) {
   const before = text.slice(Math.max(0, position - 38), position);
   const grams = before.match(new RegExp("(" + NUMERO_REGEX + ")\\s*(?:g|gramas?|gramos?)\\s*(?:de\\s*)?$", "i"));
@@ -2686,6 +2825,7 @@ const CHAVE_FILA = "nutri-track-fila-pendente";
 const CHAVE_BIOIMPEDANCIA = "nutri-track-bioimpedancia";
 const CHAVE_CALORIMETRIA = "nutri-track-calorimetria";
 const CHAVE_TREINOS = "nutri-track-treinos";
+const CHAVE_TREINOS_PLANEJADOS = "nutri-track-treinos-planejados"; // plano de treinos da semana -- ver planoTreinos*()
 const CHAVE_TREINO_ATIVO = "nutri-track-treino-ativo";
 const CHAVE_EXERCICIOS_CUSTOMIZADOS = "nutri-track-exercicios-customizados";
 // Esportes/atividades que a própria pessoa cadastrou (opção "Outro" no seletor de esporte do treino --
@@ -3095,6 +3235,12 @@ const state = {
   // grupos musculares -- só esporte, data, horários, distância e nota são editáveis).
   treinoEditandoId: null,
   treinoModo: "cronometro", // "cronometro" | "manual" — só é relevante quando não há treino em andamento
+  // Plano de treinos (pedido do usuário): treinos PLANEJADOS pra semana, que só viram treino de verdade
+  // quando registrados. Formato: { id, date, esporte, hora ("" = sem horário), duracaoMin, intensidade
+  // ("leve"|"moderada"|"intensa"), naoRealizado }. "Realizado" é deduzido (ver planoTreinoRealizado()).
+  treinosPlanejados: readStorage(CHAVE_TREINOS_PLANEJADOS, []),
+  planoModalId: null, // id do treino planejado aberto no modal de pré/pós-treino (ver planoTreinoModalTemplate())
+  planejarAberto: false, // modal "Planejar treino" (ver planejarTreinoModalTemplate())
   // Treino em andamento (cronômetro), ou null. Formato: { esporte, date, horaInicioClock,
   // segmentoAtualInicio (timestamp ms de quando o trecho atual começou a rodar, ou null se pausado),
   // acumuladoMs (soma dos trechos já concluídos), pausado }. Persistido para sobreviver a fechar o
@@ -3129,6 +3275,7 @@ function persistMedidas() { writeStorage(CHAVE_MEDIDAS, state.medidas); }
 function persistBioimpedancia() { writeStorage(CHAVE_BIOIMPEDANCIA, state.bioimpedancia); }
 function persistCalorimetria() { writeStorage(CHAVE_CALORIMETRIA, state.calorimetria); }
 function persistTreinos() { writeStorage(CHAVE_TREINOS, state.treinos); }
+function persistTreinosPlanejados() { writeStorage(CHAVE_TREINOS_PLANEJADOS, state.treinosPlanejados); }
 function persistTreinoAtivo() { writeStorage(CHAVE_TREINO_ATIVO, state.treinoAtivo); }
 function persistExerciciosCustomizados() { writeStorage(CHAVE_EXERCICIOS_CUSTOMIZADOS, state.exerciciosCustomizados); }
 function persistEsportesCustomizados() { writeStorage(CHAVE_ESPORTES_CUSTOMIZADOS, state.esportesCustomizados); }
@@ -4104,7 +4251,10 @@ async function processarFilaPendente() {
       restante.push(item);
     }
   }
-  gravarFila(restante);
+  // Envios que falharam ENQUANTO este loop esperava as respostas (ver enviarComFila()) entraram no fim
+  // da fila gravada -- antes, gravar só "restante" apagava esses itens novos e eles nunca mais eram
+  // reenviados (registro ficava só neste aparelho).
+  gravarFila(restante.concat(lerFila().slice(fila.length)));
 }
 
 // Uma refeição/medida que ainda está pendente de envio (na fila de reenvio OU ainda a caminho pela
@@ -4252,6 +4402,8 @@ async function sincronizarDoServidorInterno() {
     // que veio do servidor (se vier undefined, ex.: planilha antiga sem a aba ainda, mantém o que já
     // estava em cache local em vez de apagar).
     if (resposta.garmin) { state.garmin = resposta.garmin; persistGarmin(); }
+    // Plano de treinos: se vier undefined (backend ainda sem essa aba), mantém o que está no aparelho.
+    if (resposta.treinosPlanejados) { state.treinosPlanejados = mesclarTreinosPlanejados(resposta.treinosPlanejados); persistTreinosPlanejados(); }
     render();
   } catch { /* falha de rede — mantém os dados locais e tenta de novo na próxima abertura */ }
 }
@@ -4288,6 +4440,10 @@ function publicarRegistrosLocaisPendentes(remoto) {
   state.diarioKcal.filter((r) => !idsDiarioKcal.has(r.id)).forEach((r) => enviarComFila("salvarDiarioKcalGoogle", [state.usuario.email, r]));
   const idsProdutos = idsJaConfirmadosOuACaminho(remoto.produtosCustomizados, "salvarProdutoCustomizadoGoogle");
   (state.produtosCustomizados || []).filter((p) => !idsProdutos.has(p.id)).forEach((p) => enviarComFila("salvarProdutoCustomizadoGoogle", [state.usuario.email, p]));
+  if (remoto.treinosPlanejados) {
+    const idsPlanejados = idsJaConfirmadosOuACaminho(remoto.treinosPlanejados, "salvarTreinoPlanejadoGoogle");
+    (state.treinosPlanejados || []).filter((p) => !idsPlanejados.has(p.id)).forEach((p) => enviarComFila("salvarTreinoPlanejadoGoogle", [state.usuario.email, p]));
+  }
   if (!remoto.goals) enviarComFila("atualizarMetasGoogle", [state.usuario.email, state.goals, state.altura]);
 }
 // Única função que efetivamente abre algo do Google — e só roda quando a pessoa clica no botão
@@ -4313,6 +4469,7 @@ async function acaoConectarGoogle() {
     state.exerciciosCustomizados = mesclarExerciciosCustomizados(state.exerciciosCustomizados, resposta.exerciciosCustomizados || {}); persistExerciciosCustomizados();
     state.diarioKcal = dedupDiarioKcalPorData(mergeMedidas(state.diarioKcal, resposta.diarioKcal || [])); persistDiarioKcal();
     state.produtosCustomizados = mergeMedidas(state.produtosCustomizados, resposta.produtosCustomizados || []); persistProdutosCustomizados();
+    if (resposta.treinosPlanejados) { state.treinosPlanejados = mergeMedidas(state.treinosPlanejados, resposta.treinosPlanejados); persistTreinosPlanejados(); }
     toastSuccess("Conectado como " + state.account.email + ". Seus dados agora sincronizam entre aparelhos — sem precisar conectar de novo.");
   } catch (err) { toastError((err && err.message) || "Falha ao conectar com o Google. Tente novamente."); }
   finally { state.syncing = false; render(); }
@@ -7586,6 +7743,334 @@ function acaoEditarTreino(id) {
   if (distanciaEl) distanciaEl.value = t.distanciaKm ? String(t.distanciaKm) : "";
   toastSuccess("Treino carregado no formulário para edição.");
 }
+/* ===================== plano de treinos da semana + pré/pós-treino ===================== */
+// Pedido do usuário: planejar os treinos da semana (horário opcional -- a rotina varia muito), confirmar
+// depois se treinou ou não, e, ao tocar num treino do dia, ver o que comer antes/depois considerando o
+// que já comeu e a meta do dia. Treino planejado NUNCA entra no histórico/estatísticas: só o treino
+// registrado de verdade (aba Treinos) conta.
+const PLANO_INTENSIDADES = ["leve", "moderada", "intensa"];
+const DIAS_SEMANA_CURTO = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+function somarDias(data, n) { const d = new Date(data + "T12:00:00"); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
+// Segunda-feira da semana de uma data (semana de segunda a domingo).
+function inicioSemana(data) { const dow = new Date(data + "T12:00:00").getDay(); return somarDias(data, dow === 0 ? -6 : 1 - dow); }
+function rotuloDiaPlano(data) { const d = new Date(data + "T12:00:00"); return DIAS_SEMANA_CURTO[d.getDay()] + " " + String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0"); }
+function hhmmParaMin(h) { if (!h) return null; const p = String(h).split(":"); return Number(p[0]) * 60 + Number(p[1] || 0); }
+function minParaHhmm(m) { m = ((Math.round(m) % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); }
+function agoraMin() { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
+function ordenarPlanos(lista) { return lista.slice().sort((a, b) => (a.date === b.date ? (a.hora || "99").localeCompare(b.hora || "99") || a.id - b.id : a.date < b.date ? -1 : 1)); }
+// Treino registrado que "confirma" um planejado: mesma data + mesmo esporte. Com 2 planejados iguais no
+// mesmo dia, o 1º casa com o 1º treino registrado, o 2º com o 2º, e assim por diante.
+function planoTreinoRealizado(p) {
+  if (p.naoRealizado) return null;
+  const irmaos = ordenarPlanos(state.treinosPlanejados.filter((x) => x.date === p.date && x.esporte === p.esporte && !x.naoRealizado));
+  const treinos = state.treinos.filter((t) => t.date === p.date && t.esporte === p.esporte).sort((a, b) => (a.horaInicio || "").localeCompare(b.horaInicio || ""));
+  return treinos[irmaos.findIndex((x) => x.id === p.id)] || null;
+}
+function planoStatus(p) {
+  if (p.naoRealizado) return "nao";
+  if (planoTreinoRealizado(p)) return "realizado";
+  if (p.date === today()) return "hoje";
+  return p.date < today() ? "pendente" : "planejado";
+}
+const PLANO_CHIP = { realizado: ["chip-realizado", "Realizado"], nao: ["chip-nao", "Não realizado"], pendente: ["chip-pendente", "Confirmar"], hoje: ["chip-hoje", "Hoje"], planejado: ["chip-planejado", "Planejado"] };
+// Junta o que veio do servidor com o que ainda está a caminho dele (fila/envios em andamento): um
+// "salvar" pendente ganha da versão do servidor (é mais novo) e um "remover" pendente tira o item -- sem
+// isso, marcar "Não treinei" e logo em seguida sincronizar faria o status piscar de volta.
+function mesclarTreinosPlanejados(servidor) {
+  const porId = new Map(servidor.map((p) => [p.id, p]));
+  lerFila().concat(enviosEmAndamento).forEach((item) => {
+    if (item.tipo === "salvarTreinoPlanejadoGoogle") porId.set(item.args[1].id, item.args[1]);
+    if (item.tipo === "removerTreinoPlanejadoGoogle") porId.delete(item.args[1]);
+  });
+  return Array.from(porId.values());
+}
+function salvarPlano(p) {
+  state.treinosPlanejados = state.treinosPlanejados.filter((x) => x.id !== p.id).concat([p]);
+  persistTreinosPlanejados();
+  if (state.account) enviarComFila("salvarTreinoPlanejadoGoogle", [state.usuario.email, p]);
+}
+function acaoRemoverPlano(id) {
+  state.treinosPlanejados = state.treinosPlanejados.filter((x) => x.id !== id);
+  persistTreinosPlanejados();
+  if (state.account) enviarComFila("removerTreinoPlanejadoGoogle", [state.usuario.email, id]);
+  if (state.planoModalId === id) state.planoModalId = null;
+  toastSuccess("Treino removido do plano.");
+  render();
+}
+function acaoNaoTreineiPlano(id) {
+  const p = state.treinosPlanejados.find((x) => x.id === id);
+  if (!p) return;
+  salvarPlano(Object.assign({}, p, { naoRealizado: true }));
+  state.planoModalId = null;
+  render();
+}
+function acaoDesfazerNaoTreineiPlano(id) {
+  const p = state.treinosPlanejados.find((x) => x.id === id);
+  if (!p) return;
+  salvarPlano(Object.assign({}, p, { naoRealizado: false }));
+  render();
+}
+// "Treinei": leva pro formulário de treino já preenchido (esporte, data, horários do plano) -- a pessoa
+// escolhe se registra manualmente ou pelo cronômetro (pedido do usuário: "deixar a critério"). Treino
+// de outro dia só dá pra registrar manualmente. Assim que o treino é salvo, o plano vira "Realizado"
+// sozinho (ver planoTreinoRealizado()).
+function acaoTreineiPlano(id) {
+  const p = state.treinosPlanejados.find((x) => x.id === id);
+  if (!p) return;
+  state.planoModalId = null;
+  state.activeTab = "treinos";
+  state.treinosAba = "treinos";
+  state.treinoCardPagina = 0;
+  if (!state.treinoAtivo) {
+    state.treinoEditandoId = null;
+    state.treinoEsporte = p.esporte;
+    state.treinoEsporteCustom = "";
+    state.treinoData = p.date;
+    state.treinoHoraInicio = p.hora || "";
+    state.treinoHoraFim = p.hora ? minParaHhmm(hhmmParaMin(p.hora) + (p.duracaoMin || 60)) : "";
+    if (p.date !== today()) state.treinoModo = "manual";
+  }
+  render();
+  // Mesmo motivo de acaoEditarTreino(): captureFormState() pode ter recapturado valores antigos do DOM.
+  const campos = { "treino-data": state.treinoData, "treino-hora-inicio": state.treinoHoraInicio, "treino-hora-fim": state.treinoHoraFim };
+  Object.keys(campos).forEach((idCampo) => { const el = document.getElementById(idCampo); if (el && campos[idCampo] != null) el.value = campos[idCampo]; });
+  const form = document.querySelector(".meal-card");
+  if (form) form.scrollIntoView({ behavior: "smooth", block: "start" });
+  toastSuccess(state.treinoAtivo ? "Já há um treino em andamento no cronômetro." : p.date === today() ? "Confira os dados e registre: manualmente ou pelo cronômetro." : "Confira os horários e salve o treino.");
+}
+function acaoAbrirPlanoModal(id) { state.planoModalId = id; render(); }
+function acaoFecharPlanoModal() { state.planoModalId = null; render(); }
+function acaoDefinirHoraPlano(id, hora) {
+  const p = state.treinosPlanejados.find((x) => x.id === id);
+  if (!p) return;
+  if (hora == null) { const el = document.getElementById("plano-hora-input"); hora = el ? el.value : ""; }
+  if (!hora) { toastError("Informe o horário do treino."); return; }
+  salvarPlano(Object.assign({}, p, { hora: hora }));
+  render();
+}
+function acaoAbrirPlanejar() { state.planejarAberto = true; render(); }
+function acaoFecharPlanejar() { state.planejarAberto = false; render(); }
+// Lê o formulário de "Planejar treino" direto do DOM (checkboxes/radios nativos -- sem re-render a cada
+// toque, mais simples) e cria um treino planejado por dia marcado. Dias que já passaram são ignorados.
+function acaoSalvarPlanejamento() {
+  const semana = (document.querySelector('input[name="planejar-semana"]:checked') || {}).value || "proxima";
+  const dias = Array.from(document.querySelectorAll('input[name="planejar-dia"]:checked')).map((el) => Number(el.value));
+  const esporte = (document.getElementById("planejar-esporte") || {}).value || "";
+  const hora = (document.getElementById("planejar-hora") || {}).value || "";
+  const duracao = Number((document.getElementById("planejar-duracao") || {}).value) || 60;
+  const intensidade = (document.querySelector('input[name="planejar-intensidade"]:checked') || {}).value || "moderada";
+  if (!esporte) { toastError("Escolha a modalidade."); return; }
+  if (!dias.length) { toastError("Marque pelo menos um dia."); return; }
+  const segunda = somarDias(inicioSemana(today()), semana === "atual" ? 0 : 7);
+  const datas = dias.map((i) => somarDias(segunda, i)).filter((d) => d >= today());
+  if (!datas.length) { toastError("Esses dias já passaram nesta semana."); return; }
+  const base = Date.now();
+  datas.forEach((data, i) => salvarPlano({ id: base + i, date: data, esporte, hora, duracaoMin: duracao, intensidade, naoRealizado: false }));
+  state.planejarAberto = false;
+  toastSuccess(datas.length + " treino" + (datas.length > 1 ? "s" : "") + " adicionado" + (datas.length > 1 ? "s" : "") + " ao plano.");
+  render();
+}
+// Copia os treinos planejados desta semana pros mesmos dias da semana que vem (sem duplicar o que já
+// estiver lá com mesmo dia, esporte e horário).
+function acaoRepetirSemanaPlano() {
+  const segunda = inicioSemana(today());
+  const daSemana = state.treinosPlanejados.filter((p) => p.date >= segunda && p.date <= somarDias(segunda, 6));
+  if (!daSemana.length) { toastError("Nenhum treino planejado nesta semana pra repetir."); return; }
+  const base = Date.now();
+  let n = 0;
+  daSemana.forEach((p, i) => {
+    const data = somarDias(p.date, 7);
+    if (state.treinosPlanejados.some((x) => x.date === data && x.esporte === p.esporte && (x.hora || "") === (p.hora || ""))) return;
+    salvarPlano({ id: base + i, date: data, esporte: p.esporte, hora: p.hora || "", duracaoMin: p.duracaoMin, intensidade: p.intensidade, naoRealizado: false });
+    n++;
+  });
+  toastSuccess(n ? n + " treino" + (n > 1 ? "s copiados" : " copiado") + " pra próxima semana." : "A próxima semana já tem esses treinos.");
+  render();
+}
+function planoLinhaTemplate(p) {
+  const status = planoStatus(p);
+  const chip = PLANO_CHIP[status];
+  const real = planoTreinoRealizado(p);
+  const clicavel = status !== "pendente" && status !== "nao";
+  const acoes = status === "pendente"
+    ? '<div class="plano-acoes-inline"><button class="plano-mini-btn primario" onclick="event.stopPropagation(); acaoTreineiPlano(' + p.id + ')">' + icon("check") + " Treinei</button>" +
+      '<button class="plano-mini-btn" onclick="event.stopPropagation(); acaoNaoTreineiPlano(' + p.id + ')">' + icon("x") + " Não treinei</button></div>"
+    : status === "nao" ? '<div class="plano-acoes-inline"><button class="plano-mini-btn" onclick="event.stopPropagation(); acaoDesfazerNaoTreineiPlano(' + p.id + ')">Desfazer</button></div>' : "";
+  return '<div class="plano-row' + (p.date === today() ? " hoje" : "") + '"' + (clicavel ? ' role="button" onclick="acaoAbrirPlanoModal(' + p.id + ')"' : "") + ">" +
+    '<div class="plano-emoji">' + emojiEsporte(p.esporte) + "</div>" +
+    '<div class="plano-info"><div class="plano-nome">' + esc(p.esporte) + "</div>" +
+      '<div class="plano-meta">' + rotuloDiaPlano(p.date) + " · " + (p.hora ? esc(p.hora) : '<span class="sem-hora">sem horário</span>') + " · " + (p.duracaoMin || 60) + " min · " + esc(p.intensidade || "moderada") + "</div>" +
+      (real ? '<div class="plano-meta plano-registrado">' + icon("check") + " Registrado: " + esc(real.horaInicio || "") + "–" + esc(real.horaFim || "") + (real.caloriasQueimadas ? " · " + formatNumber(real.caloriasQueimadas, 0) + " kcal" : "") + "</div>" : "") +
+      acoes + "</div>" +
+    '<span class="plano-chip ' + chip[0] + '">' + chip[1] + "</span>" +
+    (status === "planejado" || (status === "hoje" && !real) ? '<button class="plano-remover" aria-label="Remover do plano" onclick="event.stopPropagation(); acaoRemoverPlano(' + p.id + ')">' + icon("trash") + "</button>" : "") +
+  "</div>";
+}
+// Card compacto no topo da sub-aba Treinos: treinos planejados pra hoje (visíveis até o fim do dia, já
+// resolvidos ou não -- decisão do usuário) + os dos últimos 7 dias que ficaram sem confirmação. Some
+// quando não há nada (sem poluir a tela de quem não usa o plano).
+function planoHojeCardTemplate() {
+  const limite = somarDias(today(), -7);
+  const lista = ordenarPlanos(state.treinosPlanejados.filter((p) => p.date === today() || (p.date >= limite && planoStatus(p) === "pendente")));
+  if (!lista.length) return "";
+  return '<section class="medidas-section plano-section">' +
+    '<div class="medidas-section-title-row"><h2 class="medidas-section-title">' + icon("calendar") + " Hoje e pendentes</h2>" +
+      '<div class="medidas-section-title-actions"><button class="plano-mini-btn" onclick="acaoTrocarAbaTreinos(\'plano\')">Ver semana →</button></div></div>' +
+    '<div class="plano-lista">' + lista.map(planoLinhaTemplate).join("") + "</div></section>";
+}
+function planoSemanaTabTemplate() {
+  const segunda = inicioSemana(today());
+  const semana = (ini) => ordenarPlanos(state.treinosPlanejados.filter((p) => p.date >= ini && p.date <= somarDias(ini, 6)));
+  const atual = semana(segunda);
+  const proxima = semana(somarDias(segunda, 7));
+  const bloco = (titulo, lista, vazio) => '<div class="plano-semana-titulo">' + titulo + "</div>" +
+    (lista.length ? '<div class="plano-lista">' + lista.map(planoLinhaTemplate).join("") + "</div>" : '<p class="plano-vazio">' + vazio + "</p>");
+  const fmt = (d) => d.slice(8, 10) + "/" + d.slice(5, 7);
+  return '<section class="medidas-section plano-section">' +
+    '<h2 class="medidas-section-title">' + icon("calendar") + " Plano de treinos</h2>" +
+    '<p class="medidas-section-sub">Toque num treino pra ver o que comer antes e depois. Treino planejado só entra no histórico quando você registrar.</p>' +
+    bloco("Esta semana · " + fmt(segunda) + " a " + fmt(somarDias(segunda, 6)), atual, "Nenhum treino planejado nesta semana.") +
+    bloco("Próxima semana · " + fmt(somarDias(segunda, 7)) + " a " + fmt(somarDias(segunda, 13)), proxima, "Nada planejado ainda.") +
+    '<div class="plano-botoes"><button class="bioimpedancia-btn-secundario" onclick="acaoAbrirPlanejar()">' + icon("plus") + " Planejar treino</button>" +
+      (atual.length ? '<button class="bioimpedancia-btn-secundario" onclick="acaoRepetirSemanaPlano()">' + icon("rotate") + " Repetir esta semana</button>" : "") + "</div>" +
+  "</section>";
+}
+function planejarTreinoModalTemplate() {
+  if (!state.planejarAberto) return "";
+  const esportes = ESPORTE_TIPOS.concat(state.esportesCustomizados || []).filter((e) => e !== "Outro");
+  const dias = [["Seg", 0], ["Ter", 1], ["Qua", 2], ["Qui", 3], ["Sex", 4], ["Sáb", 5], ["Dom", 6]];
+  return '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharPlanejar();}"><div class="modal-card plano-modal">' +
+    '<div class="meal-detalhe-head"><h2>Planejar treino</h2><button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharPlanejar()">' + icon("x") + "</button></div>" +
+    '<div class="modal-body">' +
+      '<div class="pm-chips-sel"><label class="pm-chip-sel"><input type="radio" name="planejar-semana" value="atual"/><span>Esta semana</span></label>' +
+        '<label class="pm-chip-sel"><input type="radio" name="planejar-semana" value="proxima" checked/><span>Próxima semana</span></label></div>' +
+      '<div><label class="field-label">Dias</label><div class="pm-chips-sel">' + dias.map((d) => '<label class="pm-chip-sel"><input type="checkbox" name="planejar-dia" value="' + d[1] + '"/><span>' + d[0] + "</span></label>").join("") + "</div></div>" +
+      '<div><label class="field-label">Modalidade</label><select id="planejar-esporte" class="field-input"><option value="">Selecione...</option>' + esportes.map((e) => '<option value="' + esc(e) + '">' + esc(e) + "</option>").join("") + "</select></div>" +
+      '<div class="pm-grid2"><div><label class="field-label">Horário (opcional)</label><input id="planejar-hora" type="time" class="field-input"/></div>' +
+        '<div><label class="field-label">Duração (min)</label><input id="planejar-duracao" type="number" min="10" step="5" class="field-input" value="60"/></div></div>' +
+      '<p class="pm-nota">Sem horário? Deixe em branco: o app pergunta quando você tocar no treino no dia.</p>' +
+      '<div><label class="field-label">Intensidade</label><div class="pm-chips-sel">' + PLANO_INTENSIDADES.map((i) => '<label class="pm-chip-sel"><input type="radio" name="planejar-intensidade" value="' + i + '"' + (i === "moderada" ? " checked" : "") + "/><span>" + i.charAt(0).toUpperCase() + i.slice(1) + "</span></label>").join("") + "</div></div>" +
+    "</div>" +
+    '<div class="pm-footer"><button class="bioimpedancia-btn-secundario" onclick="acaoFecharPlanejar()">Cancelar</button><button class="btn-primary" onclick="acaoSalvarPlanejamento()">' + icon("check") + " Adicionar ao plano</button></div>" +
+  "</div></div>";
+}
+
+// ----- modal de pré/pós-treino -----
+// Peso de referência pras quantidades (g/kg): última pesagem (Medidas) ou bioimpedância; sem nenhuma,
+// 75 kg só pra não deixar o cálculo vazio.
+function pesoReferenciaKg() {
+  const pesos = state.medidas.filter((m) => m.tipo === "peso" && Number(m.valor)).sort((a, b) => (a.date === b.date ? a.id - b.id : a.date < b.date ? -1 : 1));
+  if (pesos.length) return Number(pesos[pesos.length - 1].valor);
+  const bio = (state.bioimpedancia || []).filter((b) => b.peso).sort((a, b) => (a.date < b.date ? -1 : 1));
+  return bio.length ? Number(bio[bio.length - 1].peso) : 75;
+}
+// Quantidades por momento (referências de nutrição esportiva, arredondadas pra ficar prático): proteína
+// ~0,35 g/kg antes e ~0,4 g/kg depois; carboidrato conforme a intensidade.
+const PLANO_CARBO = { refeicao: { leve: 25, moderada: 35, intensa: 45 }, lanche: { leve: 15, moderada: 25, intensa: 30 }, pos: { leve: 20, moderada: 35, intensa: 45 } };
+const PLANO_DICA_ESPORTE = {
+  "Jiu-jitsu": "Evite refeição volumosa nas 2h antes: a pressão no abdômen nas posições costuma dar desconforto.",
+  "Muay Thai": "Evite refeição volumosa nas 2h antes: golpes e clinch no abdômen pesam com o estômago cheio.",
+  "Boxe": "Evite refeição volumosa nas 2h antes: o impacto pesa com o estômago cheio.",
+  "Corrida": "Impacto: evite fibra e gordura perto do treino (risco de enjoo e pontada).",
+  "Futebol": "Impacto e arrancadas: evite fibra e gordura perto do jogo.",
+  "Musculação": "O pós-treino com proteína é o que mais faz diferença pro músculo.",
+  "Ciclismo": "Treino longo: leve água; acima de 90 min, carboidrato durante (bebida, gel ou fruta).",
+  "Natação": "Leve água mesmo na piscina: a desidratação passa despercebida.",
+};
+function planoTreinoModalTemplate() {
+  const p = state.planoModalId != null ? state.treinosPlanejados.find((x) => x.id === state.planoModalId) : null;
+  if (!p) return "";
+  const ehHoje = p.date === today();
+  const real = planoTreinoRealizado(p);
+  const dur = p.duracaoMin || 60;
+  const head = '<div class="meal-detalhe-head"><div><h2>' + emojiEsporte(p.esporte) + " " + esc(p.esporte) + "</h2>" +
+    '<div class="pm-sub">' + (ehHoje ? "Hoje" : rotuloDiaPlano(p.date)) + " · " + (real ? esc(real.horaInicio) + "–" + esc(real.horaFim) : p.hora ? esc(p.hora) : "sem horário") + " · " + dur + " min · " + esc(p.intensidade || "moderada") + (ehHoje ? " · agora são " + minParaHhmm(agoraMin()) : "") + "</div>" +
+    (real ? '<span class="pm-ok">' + icon("check") + " Treino registrado</span>" : "") + "</div>" +
+    '<button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharPlanoModal()">' + icon("x") + "</button></div>";
+  const rodapeConfirmar = !real && p.date <= today() ? '<div class="pm-footer"><button class="bioimpedancia-btn-secundario" onclick="acaoNaoTreineiPlano(' + p.id + ')">' + icon("x") + " Não treinei</button>" +
+    '<button class="btn-primary" onclick="acaoTreineiPlano(' + p.id + ')">' + icon("check") + " Treinei</button></div>" : "";
+  const envolver = (corpo, rodape) => '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharPlanoModal();}"><div class="modal-card plano-modal">' + head + '<div class="modal-body">' + corpo + "</div>" + (rodape || "") + "</div></div>";
+  // Dia futuro: só mostra o planejado e deixa ajustar o horário -- as sugestões dependem do que for comido
+  // no dia, então só fazem sentido no próprio dia.
+  if (!ehHoje) {
+    return envolver('<div class="pm-dica">' + icon("info") + "<div>As sugestões de o que comer antes e depois aparecem no dia do treino, levando em conta o que você já tiver comido.</div></div>" +
+      '<div><label class="field-label">Horário</label><div class="pm-grid2"><input id="plano-hora-input" type="time" class="field-input" value="' + esc(p.hora || "") + '"/>' +
+      '<button class="bioimpedancia-btn-secundario" onclick="acaoDefinirHoraPlano(' + p.id + ')">Salvar horário</button></div></div>', rodapeConfirmar);
+  }
+  // Sem horário: pergunta antes de sugerir (sem horário não dá pra saber se é hora de refeição, lanche ou só água).
+  const agora = agoraMin();
+  if (!p.hora && !real) {
+    const atalhos = [60, 120, 180].map((m) => { const h = minParaHhmm(Math.ceil((agora + m) / 5) * 5); return '<button class="pm-atalho" onclick="acaoDefinirHoraPlano(' + p.id + ", '" + h + "')\">Em " + m / 60 + "h<small>" + h + "</small></button>"; }).join("");
+    return envolver('<div class="pm-bloco"><div class="pm-bloco-titulo">' + icon("clock") + " Que horas pretende treinar?</div>" +
+      '<div class="pm-atalhos">' + atalhos + "</div>" +
+      '<div class="pm-grid2" style="margin-top:10px"><input id="plano-hora-input" type="time" class="field-input"/><button class="bioimpedancia-btn-secundario" onclick="acaoDefinirHoraPlano(' + p.id + ')">Ver sugestões</button></div></div>' +
+      planoResumoDiaTemplate(), rodapeConfirmar);
+  }
+  const intens = PLANO_INTENSIDADES.includes(p.intensidade) ? p.intensidade : "moderada";
+  const peso = pesoReferenciaKg();
+  const ini = real ? hhmmParaMin(real.horaInicio) : hhmmParaMin(p.hora);
+  const fim = real ? hhmmParaMin(real.horaFim) : ini + dur;
+  const restante = remainingToday();
+  const carboRestante = Math.max(0, Math.round(restante.carbs || 0));
+  const protPre = Math.round(peso * 0.35), protPos = Math.round(peso * 0.4);
+  const carboPos = PLANO_CARBO.pos[intens];
+  const fase = real || agora >= fim ? "pos" : agora >= ini ? "durante" : ini - agora >= 150 ? "refeicao" : ini - agora >= 30 ? "lanche" : "agua";
+  const falta = ini - agora;
+  const faltaTxt = falta >= 60 ? Math.floor(falta / 60) + "h" + (falta % 60 ? String(falta % 60).padStart(2, "0") : "") : falta + " min";
+  const refeicoesHoje = mealsDesdeUltimoEncerramento().slice().sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+  // Refeição recente (pelo horário registrado) antes do treino: muda a recomendação de "lanche" pra "só
+  // água" e, se teve bastante gordura, avisa.
+  const recentes = refeicoesHoje.filter((m) => m.time && hhmmParaMin(m.time) <= agora && hhmmParaMin(m.time) >= ini - 120);
+  const gordurosa = recentes.find((m) => (m.fat || 0) >= 20);
+  const comeuHaPouco = recentes.find((m) => agora - hhmmParaMin(m.time) <= 90);
+  let agoraBloco, avisos = "";
+  if (fase === "refeicao") {
+    const c = Math.min(PLANO_CARBO.refeicao[intens], Math.max(10, carboRestante - carboPos));
+    agoraBloco = { rotulo: "Agora · faltam " + faltaTxt, titulo: "Refeição pré-treino", desc: "Dá tempo de digerir: refeição completa, com carboidrato lento e pouca gordura.", alvos: ["Proteína ~" + protPre + " g", "Carbo ~" + c + " g (lento)", "Gordura baixa"], ex: "arroz + feijão + frango, batata-doce + carne magra ou pão + ovos + fruta" };
+  } else if (fase === "lanche" && !comeuHaPouco) {
+    const c = Math.min(PLANO_CARBO.lanche[intens], Math.max(10, carboRestante - carboPos));
+    agoraBloco = { rotulo: "Agora · faltam " + faltaTxt, titulo: "Lanche rápido e leve", desc: "Pouco tempo pra digerir: carboidrato de absorção rápida, sem fibra nem gordura.", alvos: ["Carbo ~" + c + " g (rápido)", "Proteína opcional ~10 g"], ex: "banana (com mel, se o treino for intenso), pão francês com geleia ou tapioca simples" };
+  } else if (fase === "lanche" || fase === "agua") {
+    agoraBloco = { rotulo: "Agora · faltam " + faltaTxt, titulo: "Não coma agora, só água", desc: comeuHaPouco ? "Você comeu há pouco e isso já cobre o pré-treino. Comer mais só aumenta o risco de desconforto." : "Falta pouco pro treino: comer agora mais atrapalha do que ajuda.", alvos: ["Água 300–500 ml"] };
+  } else if (fase === "durante") {
+    agoraBloco = { rotulo: "Treino em andamento", titulo: "Hidrate-se", desc: dur > 90 ? "Treino longo: além de água, carboidrato de absorção rápida (bebida esportiva, fruta) ajuda a manter o rendimento até o fim." : "Até ~90 min, água é suficiente.", alvos: ["Água em goles, a cada 15–20 min"] };
+  } else {
+    const c = Math.min(carboPos, Math.max(0, carboRestante));
+    agoraBloco = { rotulo: "Pós-treino · até " + minParaHhmm(fim + 120), titulo: "Hora de repor e reconstruir", desc: "O músculo está mais receptivo agora: proteína pra reconstruir e carboidrato rápido pra repor o que o treino gastou.", alvos: ["Proteína ~" + protPos + " g", "Carbo ~" + c + " g (rápido)"], ex: "arroz + carne ou frango, pão + ovos, ou iogurte/whey + banana" };
+    if (carboRestante < carboPos) avisos += '<div class="pm-aviso">' + icon("alert") + "<div><b>Restam só " + carboRestante + " g de carboidrato na meta de hoje.</b> Depois de um treino " + intens + ", passar um pouco (15–20 g) pra recuperar bem não compromete o resultado: o app avisa, não proíbe.</div></div>";
+  }
+  if (gordurosa && fase !== "pos" && fase !== "durante") {
+    avisos += '<div class="pm-aviso">' + icon("alert") + "<div><b>" + esc(gordurosa.name || "Refeição") + " das " + esc(gordurosa.time) + " teve bastante gordura (" + formatNumber(gordurosa.fat, 0) + " g):</b> a digestão é lenta. Se der, deixe pelo menos 2–3h até o treino.</div></div>";
+  }
+  if ((fase === "refeicao" || fase === "lanche") && carboRestante < PLANO_CARBO[fase][intens] + carboPos) {
+    avisos += '<div class="pm-reserva">Carboidrato restante hoje: <b>' + carboRestante + " g</b>. Guarde a maior parte pro entorno do treino (antes e depois); nas outras refeições, prefira proteína e salada.</div>";
+  }
+  const dicaEsporte = PLANO_DICA_ESPORTE[p.esporte] && fase !== "pos" ? '<div class="pm-dica">' + icon("info") + "<div>" + esc(PLANO_DICA_ESPORTE[p.esporte]) + "</div></div>" : "";
+  const dicaNoite = fase === "pos" && ini >= 18 * 60 ? '<div class="pm-dica">' + icon("moon") + "<div>Treino à noite: faça do pós-treino o seu jantar e evite cafeína. É no sono que o músculo se reconstrói.</div></div>" : "";
+  const passos = [];
+  if (fase === "refeicao" && ini - 60 > agora) passos.push([minParaHhmm(ini - 60) + "–" + minParaHhmm(ini - 30), "<b>Lanche rápido, só se tiver fome:</b> uma fruta (carboidrato rápido)."]);
+  if (fase !== "pos" && fase !== "durante") passos.push([minParaHhmm(ini) + "–" + minParaHhmm(fim), "<b>Treino.</b> Água" + (dur > 90 ? "; por ser longo, carboidrato durante." : ".")]);
+  if (fase !== "pos") passos.push(["Até " + minParaHhmm(fim + 120), "<b>Pós-treino:</b> ~" + protPos + " g de proteína + ~" + carboPos + " g de carboidrato rápido."]);
+  if (fase === "pos" && (restante.protein || 0) - protPos > 15) passos.push(["Antes de dormir", "<b>Ainda vai faltar proteína</b> (~" + Math.round(restante.protein - protPos) + " g): iogurte ou queijo cottage, de digestão lenta."]);
+  if (fase === "pos") passos.push(["Amanhã", "<b>Recuperação:</b> confira o HRV e o Body Battery na aba Recuperação."]);
+  const agoraHtml = '<div class="pm-agora"><div class="pm-bloco-titulo">' + icon("clock") + " " + agoraBloco.rotulo + "</div>" +
+    '<div class="pm-agora-titulo">' + agoraBloco.titulo + '</div><div class="pm-agora-desc">' + agoraBloco.desc + "</div>" +
+    '<div class="pm-alvos">' + agoraBloco.alvos.map((a) => '<span class="pm-alvo">' + a + "</span>").join("") + "</div>" +
+    (agoraBloco.ex ? '<div class="pm-agora-desc">Ex.: ' + agoraBloco.ex + ".</div>" : "") + "</div>";
+  const passosHtml = passos.length ? '<div class="pm-bloco"><div class="pm-bloco-titulo">' + icon("calendar") + " Próximos passos</div><div class=\"pm-passos\">" +
+    passos.map((x) => '<div class="pm-passo"><div class="pm-passo-hora">' + x[0] + '</div><div class="pm-passo-txt">' + x[1] + "</div></div>").join("") + "</div></div>" : "";
+  return envolver(agoraHtml + avisos + dicaEsporte + dicaNoite + passosHtml + planoResumoDiaTemplate(), rodapeConfirmar);
+}
+function planoResumoDiaTemplate() {
+  const restante = remainingToday();
+  const refeicoes = mealsDesdeUltimoEncerramento().slice().sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+  const item = (nome, k, un) => '<div class="pm-macro"><div class="pm-macro-nome">' + nome + '</div><div class="pm-macro-resta">' + formatNumber(Math.max(0, restante[k] || 0), 0) + un + '</div><div class="pm-macro-de">restam de ' + formatNumber(state.goals[k] || 0, 0) + un + "</div></div>";
+  return '<div class="pm-bloco"><div class="pm-bloco-titulo">' + icon("utensils") + " Seu dia até agora</div>" +
+    '<div class="pm-macros">' + item("Kcal", "calories", "") + item("Prot.", "protein", "g") + item("Carbo", "carbs", "g") + item("Gord.", "fat", "g") + "</div>" +
+    '<div class="pm-refeicoes">' + (refeicoes.length
+      ? refeicoes.map((m) => '<div class="pm-ref"><span><b>' + esc(m.time || "--:--") + "</b> · " + esc(m.name || "Refeição") + "</span><span>" + formatNumber(m.calories, 0) + " kcal · P" + formatNumber(m.protein, 0) + " C" + formatNumber(m.carbs, 0) + " G" + formatNumber(m.fat, 0) + "</span></div>").join("")
+      : '<div class="pm-ref"><span>Nenhuma refeição registrada hoje ainda.</span></div>') + "</div></div>";
+}
 function acaoCancelarEdicaoTreino() {
   state.treinoEditandoId = null;
   state.treinoEsporte = "";
@@ -7998,6 +8483,44 @@ function alimentosInfluenciaramNutrienteTemplate(chave, meta) {
 // alimentares), aberto pelo botão "i" ao lado do título do card -- ver acaoAbrirInfoNutriente()/
 // NUTRIENT_INFO. Busca a meta em nutrientMeta OU micronutrientMeta (a chave pode ser de qualquer um
 // dos dois grupos, dependendo de qual card foi clicado).
+// Guia rápido dos 4 macronutrientes (pedido do usuário): os TIPOS de cada um, QUANDO priorizar cada tipo
+// (em relação ao treino/dia) e uma frase ajustada ao objetivo cadastrado nas metas -- mostrado no mesmo
+// modal do "i" do card (ver nutrientInfoModalTemplate()), bem resumido, sem tela nova.
+const MACRO_GUIA = {
+  protein: {
+    tipos: [["Completa", "carnes, ovos, leite, soja, quinoa — tem todos os aminoácidos essenciais; é a que mais estimula o músculo"], ["Incompleta", "feijão, lentilha, cereais, castanhas — combine (ex.: arroz + feijão)"], ["Rápida", "whey, claras — absorve em ~1–2h; boa no pós-treino"], ["Lenta", "caseína, queijos, iogurte, carnes — absorve ao longo de horas; boa antes de dormir"]],
+    quando: [["Em cada refeição", "25–40 g, em 3 a 5 refeições"], ["Até 2h após o treino", "rápida ou completa, pra reconstruir"], ["Antes de dormir", "lenta (iogurte, cottage), se faltar proteína no dia"]],
+    objetivo: { deficit: "Em déficit, proteína alta (1,6–2,2 g/kg) protege o músculo — priorize-a em todas as refeições.", ganho: "Pra ganhar massa, 1,6–2,2 g/kg distribuídos em 4–5 refeições.", performance: "1,4–1,8 g/kg, com atenção ao pós-treino.", padrao: "1,2–1,6 g/kg costuma bastar; distribua ao longo do dia." },
+  },
+  carbs: {
+    tipos: [["Rápido (índice glicêmico alto)", "pão branco, tapioca, arroz branco, banana madura, mel — energia imediata"], ["Lento (índice glicêmico baixo)", "aveia, feijão, batata-doce, integrais, frutas com casca — energia estável e mais saciedade"], ["Açúcar adicionado", "refrigerante, doces — energia vazia; limite"]],
+    quando: [["3–4h antes do treino", "refeição com carbo lento + proteína"], ["30–60 min antes", "carbo rápido e leve, sem fibra nem gordura"], ["Até 2h depois", "carbo rápido + proteína, pra repor o glicogênio"], ["Resto do dia", "prefira os lentos, com fibra"]],
+    objetivo: { deficit: "Em déficit, concentre o carbo em volta do treino e use os lentos no resto do dia.", ganho: "Carbo alto ajuda o superávit e o rendimento — não precisa ter medo dele.", performance: "É o principal combustível: aumente nos dias de treino longo ou intenso.", padrao: "Prefira os lentos e com fibra; os rápidos, perto do treino." },
+  },
+  fat: {
+    tipos: [["Monoinsaturada", "azeite, abacate, castanhas, amendoim — protege o coração; prefira"], ["Poli-insaturada / ômega-3", "sardinha, salmão, atum, chia, linhaça — anti-inflamatória; peixe 2x por semana"], ["Saturada", "carne gorda, manteiga, queijos amarelos, coco — com moderação (até ~10% das calorias)"], ["Trans industrial", "frituras, biscoitos recheados, ultraprocessados — evite"]],
+    quando: [["Longe do treino", "gordura atrasa a digestão: evite muita nas 2–3h antes"], ["Nas refeições principais", "ajuda a absorver as vitaminas A, D, E e K"]],
+    objetivo: { deficit: "Não corte demais (~25–30% das calorias): gordura é base dos hormônios, inclusive os que ajudam a manter músculo.", ganho: "Ajuda a fechar o superávit com pouco volume (castanhas, azeite).", padrao: "Priorize mono e ômega-3; limite a saturada e evite a trans." },
+  },
+  fiber: {
+    tipos: [["Solúvel", "aveia, feijão, maçã, laranja, chia — forma gel: mais saciedade, glicemia e colesterol melhores"], ["Insolúvel", "verduras, cascas, grãos integrais — acelera o intestino"]],
+    quando: [["Café, almoço e jantar", "distribua pra saciar o dia todo"], ["1–2h antes do treino", "evite muita fibra (pesa no estômago)"], ["Sempre com água", "fibra sem água pode prender o intestino"]],
+    objetivo: { deficit: "Grande aliada no déficit: aumenta a saciedade. Meta de 30 g ou mais por dia.", padrao: "Meta de 25–38 g por dia, juntando os dois tipos." },
+  },
+};
+const MACRO_GUIA_GRUPO_OBJETIVO = { emagrecimento: "deficit", definicao: "deficit", ganho_massa: "ganho", performance: "performance" };
+function macroGuiaTemplate(chave) {
+  const guia = MACRO_GUIA[chave];
+  if (!guia) return "";
+  const grupo = MACRO_GUIA_GRUPO_OBJETIVO[state.goals && state.goals.objetivo] || "padrao";
+  const fraseObjetivo = guia.objetivo[grupo] || guia.objetivo.padrao;
+  const rotuloObjetivo = state.goals && state.goals.objetivo && OBJETIVOS_META[state.goals.objetivo] ? OBJETIVOS_META[state.goals.objetivo].label : "";
+  return '<div class="nutrient-info-secao"><h3>Tipos</h3><ul class="nutrient-info-lista">' +
+      guia.tipos.map((t) => "<li><strong>" + esc(t[0]) + ":</strong> " + esc(t[1]) + "</li>").join("") + "</ul></div>" +
+    '<div class="nutrient-info-secao"><h3>Quando priorizar</h3><ul class="nutrient-info-lista">' +
+      guia.quando.map((t) => "<li><strong>" + esc(t[0]) + ":</strong> " + esc(t[1]) + "</li>").join("") + "</ul></div>" +
+    '<div class="nutrient-info-secao"><h3>Para o seu objetivo' + (rotuloObjetivo ? " (" + esc(rotuloObjetivo) + ")" : "") + "</h3><p>" + esc(fraseObjetivo) + "</p></div>";
+}
 function nutrientInfoModalTemplate() {
   const chave = state.infoNutrienteAberto;
   if (!chave) return "";
@@ -8018,6 +8541,7 @@ function nutrientInfoModalTemplate() {
       '<div class="nutrient-info-secao"><h3>Principais fontes alimentares</h3>' +
         '<div class="nutrient-info-chips">' + info.fontes.map((f) => '<span class="nutrient-info-chip" style="background:' + meta.soft + ";color:" + meta.color + '">' + esc(f) + "</span>").join("") + "</div>" +
       "</div>" +
+      macroGuiaTemplate(chave) +
       // Pedido explícito do usuário: essa seção (a única com dados pessoais do dia, todas as outras
       // são conteúdo educativo fixo) deve ser a ÚLTIMA do modal, não a primeira.
       '<div class="nutrient-info-secao"><h3>Alimentos que mais influenciaram hoje</h3>' +
@@ -10231,15 +10755,19 @@ function treinosTabTemplate() {
   // Sub-aba "Treinos" (formulário + card de hoje/histórico, o que já existia) / "Análise de Treinos"
   // (NOVA, ver analiseTreinoTabTemplate()) -- mesmo espírito de .nutricao-modo-tabs em Nutrição (ver
   // nutricaoTabTemplate()), reaproveitando a mesma classe CSS (estilo genérico, não específico de Nutrição).
+  // Sub-aba "Plano" (pedido do usuário): plano de treinos da semana -- ver planoSemanaTabTemplate(). Na
+  // sub-aba Treinos, o card "Hoje e pendentes" (planoHojeCardTemplate()) só aparece quando há algo.
+  const aba = state.treinosAba === "analise" || state.treinosAba === "plano" ? state.treinosAba : "treinos";
   return '' +
     "<main>" +
     '<div class="nutricao-modo-tabs">' +
-      '<button class="nutricao-modo-tab' + (state.treinosAba !== "analise" ? " active" : "") + '" onclick="acaoTrocarAbaTreinos(\'treinos\')">' + icon("activity") + " Treinos</button>" +
-      '<button class="nutricao-modo-tab' + (state.treinosAba === "analise" ? " active" : "") + '" onclick="acaoTrocarAbaTreinos(\'analise\')">' + icon("trend") + " Análise de Treinos</button>" +
+      '<button class="nutricao-modo-tab' + (aba === "treinos" ? " active" : "") + '" onclick="acaoTrocarAbaTreinos(\'treinos\')">' + icon("activity") + " Treinos</button>" +
+      '<button class="nutricao-modo-tab' + (aba === "plano" ? " active" : "") + '" onclick="acaoTrocarAbaTreinos(\'plano\')">' + icon("calendar") + " Plano</button>" +
+      '<button class="nutricao-modo-tab' + (aba === "analise" ? " active" : "") + '" onclick="acaoTrocarAbaTreinos(\'analise\')">' + icon("trend") + " Análise</button>" +
     "</div>" +
-    (state.treinosAba === "analise"
-      ? analiseTreinoTabTemplate()
-      : '<section class="dashboard-grid">' + treinoFormCardTemplate() + treinoCardFlipWrapperTemplate() + "</section>") +
+    (aba === "analise" ? analiseTreinoTabTemplate()
+      : aba === "plano" ? planoSemanaTabTemplate()
+      : planoHojeCardTemplate() + '<section class="dashboard-grid">' + treinoFormCardTemplate() + treinoCardFlipWrapperTemplate() + "</section>") +
     "</main>";
 }
 
@@ -11777,7 +12305,7 @@ function nutricaoTabTemplate() {
 // bem documentado (EXCELLENT/GOOD/FAIR/POOR); já o status/feedbackPhrase do HRV tem mais variações não
 // documentadas publicamente -- pra esses, humanizarCodigoGarmin() abaixo serve de rede de segurança
 // (mostra o próprio código "limpo" em vez de esconder a informação quando não temos uma tradução pronta).
-const GARMIN_HRV_STATUS_LABEL = { BALANCED: "Equilibrado", UNBALANCED: "Desequilibrado", LOW: "Baixo", NONE: "Calibrando" };
+const GARMIN_HRV_STATUS_LABEL = { BALANCED: "Equilibrado", UNBALANCED: "Desequilibrado", LOW: "Baixo", POOR: "Ruim", NONE: "Calibrando" };
 const GARMIN_QUALIDADE_SONO_LABEL = { EXCELLENT: "Excelente", GOOD: "Boa", FAIR: "Regular", POOR: "Ruim" };
 function humanizarCodigoGarmin(codigo) {
   if (!codigo) return "";
@@ -11926,24 +12454,177 @@ function recuperacaoInfoModalTemplate() {
       '<p class="nutrient-info-fonte">' + icon("help") + " Fonte: " + esc(info.fonte) + "</p>" +
     "</div></div>";
 }
+// ===== Escalas detalhadas de HRV e Body Battery (pedido do usuário) =====
+// Cada card mostra: valor do dia + escala colorida com marcadores, 2-3 leituras comparativas e, recolhido
+// num <details> (pra não poluir, principalmente no celular), as causas comuns de alteração pra cima/pra
+// baixo e situações clínicas que mexem nesses números. Tudo é referência pra acompanhar tendência, não
+// diagnóstico -- dito no próprio card.
+const RX_COR = { ruim: "#c9483c", baixo: "#e3874a", alerta: "#e6bd4c", bom: "#5f9f62" };
+function rxEscalaTemplate(min, max, segs, pins) {
+  const pct = (v) => ((Math.min(max, Math.max(min, v)) - min) / (max - min)) * 100;
+  let ini = min;
+  const barras = segs.map((s) => { const w = ((s.ate - ini) / (max - min)) * 100; ini = s.ate; return { s, w }; });
+  return '<div class="rx-escala">' +
+    // Perto das pontas, o rótulo do marcador encosta na borda em vez de centralizar (senão vazava pra fora
+    // do card -- ex.: "Acordou 98").
+    pins.filter((p) => p.valor != null).map((p) => {
+      const x = pct(p.valor);
+      const desloc = x > 88 ? "translateX(-40%)" : x < 12 ? "translateX(40%)" : "none";
+      return '<div class="rx-pin' + (p.sec ? " sec" : "") + '" style="left:' + x.toFixed(1) + '%"><span style="transform:' + desloc + '">' + esc(p.rotulo) + "</span><i></i></div>";
+    }).join("") +
+    '<div class="rx-barra">' + barras.map((b) => '<div class="rx-seg" style="width:' + b.w + "%;background:" + b.s.cor + '"></div>').join("") + "</div>" +
+    '<div class="rx-rotulos">' + barras.map((b) => '<div class="rx-rotulo" style="width:' + b.w + '%"><b>' + b.s.nome + "</b>" + b.s.faixa + "</div>").join("") + "</div>" +
+    "</div>";
+}
+const rxLinha = (rotulo, valor, classe, texto) => '<div class="rx-linha"><span>' + rotulo + "</span><span><b>" + valor + "</b>" + (texto ? ' · <span class="rx-' + classe + '">' + texto + "</span>" : "") + "</span></div>";
+const rxDetalhes = (titulo, baixo, alto, clinico, nota) =>
+  '<details class="rx-detalhes"><summary>Ver causas e situações clínicas</summary>' +
+    '<div class="rx-legenda">' +
+      '<div class="rx-leg"><h4>' + titulo[0] + "</h4><ul>" + baixo.map((t) => "<li>" + t + "</li>").join("") + "</ul></div>" +
+      '<div class="rx-leg"><h4>' + titulo[1] + "</h4><ul>" + alto.map((t) => "<li>" + t + "</li>").join("") + "</ul></div>" +
+    "</div>" +
+    '<div class="rx-clinico"><h4>Situações clínicas que alteram esse número</h4><ul>' + clinico.map((t) => "<li>" + t + "</li>").join("") + "</ul></div>" +
+    '<div class="rx-nota">' + nota + "</div>" +
+  "</details>";
+// Registros do Garmin até (e incluindo) a data, do mais antigo pro mais recente -- últimos n.
+function garminHistoricoAte(data, n) { return garminRegistrosOrdenados().filter((g) => g.date <= data).slice(-n); }
+const rxMedia = (vals) => (vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null);
+// Faixas do HRV: a própria Garmin calcula a "linha de base" da pessoa (hrvSummary.baseline, últimas ~3
+// semanas) -- quando ela vier no dado, é a usada. Sem ela (relógio ainda calibrando), aproxima pela média
+// semanal (±10% = equilibrado), avisando no card que é uma estimativa.
+function rxLinhaBaseHrv(resumo) {
+  const b = resumo.baseline;
+  if (b && b.balancedLow && b.balancedUpper) {
+    return { lowUpper: b.lowUpper || Math.round(b.balancedLow * 0.92), balancedLow: b.balancedLow, balancedUpper: b.balancedUpper, daGarmin: true };
+  }
+  const ref = resumo.weeklyAvg || resumo.lastNightAvg;
+  return { lowUpper: Math.round(ref * 0.82), balancedLow: Math.round(ref * 0.9), balancedUpper: Math.round(ref * 1.1), daGarmin: false };
+}
+const RX_HRV_BADGE = { BALANCED: ["#e3f0dc", "#2f6b3a"], UNBALANCED: ["#fdf1dc", "#9a6512"], LOW: ["#fbe3df", "#b0362b"], POOR: ["#fbe3df", "#b0362b"] };
 function recuperacaoHrvTemplate(dia) {
   const resumo = dia.hrv && dia.hrv.hrvSummary;
-  if (!resumo) return '<div class="garmin-stat-tile"><div class="garmin-stat-tile-label">' + icon("heart") + " HRV" + recuperacaoInfoBtnTemplate("hrv", "HRV") + "</div><div class=\"garmin-stat-tile-value garmin-stat-tile-vazio\">Sem dado</div></div>";
+  const titulo = '<div class="garmin-stat-tile-label">' + icon("heart") + " HRV" + recuperacaoInfoBtnTemplate("hrv", "HRV") + "</div>";
+  if (!resumo || resumo.lastNightAvg == null) return '<div class="rx-card">' + titulo + '<div class="garmin-stat-tile-value garmin-stat-tile-vazio">Sem dado de HRV nesta noite.</div></div>';
+  const noite = resumo.lastNightAvg;
+  const semanal = resumo.weeklyAvg;
+  const base = rxLinhaBaseHrv(resumo);
   const status = GARMIN_HRV_STATUS_LABEL[resumo.status] || humanizarCodigoGarmin(resumo.status) || "--";
-  return '<div class="garmin-stat-tile"><div class="garmin-stat-tile-label">' + icon("heart") + " HRV" + recuperacaoInfoBtnTemplate("hrv", "HRV") + "</div>" +
-    '<div class="garmin-stat-tile-value">' + (resumo.lastNightAvg != null ? resumo.lastNightAvg + " ms" : "--") + "</div>" +
-    '<div class="garmin-stat-tile-sub">Média da última noite · status: ' + esc(status) + (resumo.weeklyAvg != null ? " · média semanal " + resumo.weeklyAvg + " ms" : "") + "</div>" +
+  const badge = RX_HRV_BADGE[resumo.status] || ["#eef0ee", "#5c6b62"];
+  const min = Math.max(0, base.lowUpper - 22);
+  const max = base.balancedUpper + 22;
+  const segs = [
+    { ate: base.lowUpper - 10, nome: "Ruim", faixa: "< " + (base.lowUpper - 10), cor: RX_COR.ruim },
+    { ate: base.lowUpper, nome: "Baixo", faixa: (base.lowUpper - 10) + "–" + base.lowUpper, cor: RX_COR.baixo },
+    { ate: base.balancedLow, nome: "Deseq. ↓", faixa: base.lowUpper + "–" + base.balancedLow, cor: RX_COR.alerta },
+    { ate: base.balancedUpper, nome: "Equilibrado", faixa: base.balancedLow + "–" + base.balancedUpper + " ms", cor: RX_COR.bom },
+    { ate: max, nome: "Deseq. ↑", faixa: "> " + base.balancedUpper, cor: RX_COR.alerta },
+  ];
+  // Leituras comparativas: noite x média semanal (queda de 10%+ já merece atenção) e FC durante o sono x
+  // média das noites anteriores (FC subindo junto com HRV caindo é o par de sinais mais útil -- inclusive
+  // pra quem tem histórico de tireoide).
+  let linhas = "";
+  if (semanal) {
+    const v = Math.round(((noite - semanal) / semanal) * 100);
+    const c = v <= -20 ? ["ruim", "queda forte"] : v <= -10 ? ["atencao", "queda — atenção"] : v >= 15 ? ["atencao", "alta incomum"] : ["ok", "dentro do normal"];
+    linhas += rxLinha("Noite vs. sua média semanal (" + semanal + " ms)", (v > 0 ? "+" : "") + v + "%", c[0], c[1]);
+  }
+  const historico = garminHistoricoAte(dia.date, 15);
+  const fcNoite = dia.sono && dia.sono.avgHeartRate;
+  const fcAnteriores = historico.filter((g) => g.date !== dia.date && g.sono && g.sono.avgHeartRate).map((g) => g.sono.avgHeartRate);
+  if (fcNoite && fcAnteriores.length >= 3) {
+    const fcMedia = Math.round(rxMedia(fcAnteriores));
+    const d = Math.round(fcNoite - fcMedia);
+    const c = d >= 6 ? ["ruim", "bem acima do seu normal"] : d >= 3 ? ["atencao", "um pouco acima"] : ["ok", "normal"];
+    linhas += rxLinha("FC durante o sono (sua média " + fcMedia + " bpm)", formatNumber(fcNoite, 0) + " bpm", c[0], c[1]);
+  }
+  const noites = historico.slice(-7).filter((g) => g.hrv && g.hrv.hrvSummary && g.hrv.hrvSummary.lastNightAvg != null);
+  if (noites.length >= 2) {
+    const valores = noites.map((g) => g.hrv.hrvSummary.lastNightAvg);
+    const maxN = Math.max.apply(null, valores);
+    const minEsc = Math.min(base.lowUpper - 20, Math.min.apply(null, valores) - 5);
+    const dias = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    linhas += '<div class="rx-linha" style="flex-direction:column;align-items:stretch"><span>Últimas noites</span><div class="rx-noites">' +
+      noites.map((g) => {
+        const v = g.hrv.hrvSummary.lastNightAvg;
+        const cor = v < base.lowUpper ? RX_COR.baixo : v < base.balancedLow || v > base.balancedUpper ? RX_COR.alerta : RX_COR.bom;
+        return '<div class="rx-noite">' + v + '<div style="height:' + Math.max(3, Math.round(((v - minEsc) / ((maxN - minEsc) || 1)) * 26)) + "px;background:" + cor + '"></div>' + dias[new Date(g.date + "T12:00:00").getDay()] + "</div>";
+      }).join("") + "</div></div>";
+  }
+  return '<div class="rx-card">' +
+    '<div class="rx-head"><div>' + titulo + '<div class="rx-valor">' + noite + " ms<small>média da última noite</small></div></div>" +
+      '<span class="rx-badge" style="background:' + badge[0] + ";color:" + badge[1] + '">' + esc(status) + "</span></div>" +
+    rxEscalaTemplate(min, max, segs, [{ valor: semanal, rotulo: "Semana " + semanal, sec: true }, { valor: noite, rotulo: "Noite " + noite }]) +
+    '<div class="rx-nota">' + (base.daGarmin ? "Faixas da SUA linha de base, calculada pelo Garmin (últimas ~3 semanas)" : "Faixas estimadas pela sua média semanal (o Garmin ainda está calibrando sua linha de base)") + ' — não existe um valor "bom" universal de HRV.</div>' +
+    '<div class="rx-linhas">' + linhas + "</div>" +
+    rxDetalhes(["↓ O que costuma derrubar o HRV", "↑ O que costuma elevar o HRV"],
+      ["Treino intenso ou volume acima do habitual (normal no dia seguinte)", "Sono curto ou ruim", "Álcool, mesmo 1–2 doses à noite", "Jantar pesado ou tarde; desidratação", "Estresse, ansiedade, prazos", "Doença começando (gripe, infecção), febre", "Déficit calórico muito agressivo"],
+      ["Boa recuperação, dias de descanso", "Sono longo e regular", "Melhora do condicionamento aeróbico (ao longo de semanas)", "<b>Subida fora da faixa</b> também pede atenção: fadiga acumulada profunda, às vezes início de doença"],
+      ["<b>Hipertireoidismo</b> (ex.: doença de Graves ativa): HRV cai e a FC de repouso sobe. Queda sem motivo por 1–2 semanas + FC mais alta + palpitação, tremor, calor ou perda de peso → converse com seu médico.",
+        "<b>Hipotireoidismo</b>: FC de repouso mais baixa, cansaço, frio, ganho de peso.",
+        "<b>Remédios</b>: betabloqueadores (ex.: propranolol) baixam a FC e mudam o HRV; descongestionantes e estimulantes derrubam.",
+        "<b>Arritmias</b> (extrassístoles, fibrilação atrial): valores muito altos ou erráticos sem explicação.",
+        "<b>Apneia do sono</b>: HRV cronicamente baixo e Body Battery que não recarrega."],
+      "Referência pra acompanhar tendência, não é diagnóstico.") +
   "</div>";
+}
+// Nível do Body Battery mais próximo de um instante (timestamp GMT em ms), procurando nos registros do
+// dia e do dia anterior -- a noite de sono começa no dia anterior, então o nível "ao deitar" costuma estar
+// no array do dia anterior. depois=true pega o primeiro ponto NO instante ou depois dele; false, o último
+// ponto antes dele.
+function rxNivelBodyBattery(pontos, ts, depois) {
+  if (!ts || !pontos.length) return null;
+  const alvo = depois ? pontos.find((p) => p[0] >= ts) : pontos.filter((p) => p[0] <= ts).pop();
+  return alvo ? alvo[1] : null;
 }
 function recuperacaoBodyBatteryTemplate(dia) {
   const bb = dia.bodyBattery && dia.bodyBattery[0];
-  if (!bb) return '<div class="garmin-stat-tile"><div class="garmin-stat-tile-label">' + icon("zap") + " Body Battery" + recuperacaoInfoBtnTemplate("bodyBattery", "Body Battery") + "</div><div class=\"garmin-stat-tile-value garmin-stat-tile-vazio\">Sem dado</div></div>";
-  const valores = (bb.bodyBatteryValuesArray || []).map((v) => v[1]).filter((v) => v != null);
-  const minimo = valores.length ? Math.min.apply(null, valores) : null;
-  const maximo = valores.length ? Math.max.apply(null, valores) : null;
-  return '<div class="garmin-stat-tile"><div class="garmin-stat-tile-label">' + icon("zap") + " Body Battery" + recuperacaoInfoBtnTemplate("bodyBattery", "Body Battery") + "</div>" +
-    '<div class="garmin-stat-tile-value">+' + (bb.charged != null ? bb.charged : "--") + " / -" + (bb.drained != null ? bb.drained : "--") + "</div>" +
-    '<div class="garmin-stat-tile-sub">Recarregou / gastou no dia' + (minimo != null ? " · variou entre " + minimo + " e " + maximo : "") + "</div>" +
+  const titulo = '<div class="garmin-stat-tile-label">' + icon("zap") + " Body Battery" + recuperacaoInfoBtnTemplate("bodyBattery", "Body Battery") + "</div>";
+  if (!bb) return '<div class="rx-card">' + titulo + '<div class="garmin-stat-tile-value garmin-stat-tile-vazio">Sem dado de Body Battery neste dia.</div></div>';
+  const pontosDia = (bb.bodyBatteryValuesArray || []).filter((v) => v && v[1] != null);
+  const anterior = state.garmin.find((g) => g.date === diaAnterior(dia.date));
+  const bbAnterior = anterior && anterior.bodyBattery && anterior.bodyBattery[0];
+  const pontos = ((bbAnterior && bbAnterior.bodyBatteryValuesArray) || []).filter((v) => v && v[1] != null).concat(pontosDia).sort((a, b) => a[0] - b[0]);
+  const valoresDia = pontosDia.map((v) => v[1]);
+  const s = dia.sono || {};
+  const acordou = rxNivelBodyBattery(pontos, s.sleepEndTimestampGMT, true) != null ? rxNivelBodyBattery(pontos, s.sleepEndTimestampGMT, true) : (valoresDia.length ? Math.max.apply(null, valoresDia) : null);
+  const dormiu = rxNivelBodyBattery(pontos, s.sleepStartTimestampGMT, false) != null ? rxNivelBodyBattery(pontos, s.sleepStartTimestampGMT, false) : (valoresDia.length ? valoresDia[0] : null);
+  const agora = valoresDia.length ? valoresDia[valoresDia.length - 1] : null;
+  const ehHoje = dia.date === today();
+  const segs = [
+    { ate: 25, nome: "Muito baixa", faixa: "0–25", cor: RX_COR.ruim },
+    { ate: 50, nome: "Baixa", faixa: "26–50", cor: RX_COR.baixo },
+    { ate: 75, nome: "Média", faixa: "51–75", cor: RX_COR.alerta },
+    { ate: 100, nome: "Alta", faixa: "76–100", cor: RX_COR.bom },
+  ];
+  const nivel = (v) => v >= 76 ? ["ok", "reserva alta — liberado pra treino forte", ["#e3f0dc", "#2f6b3a", "Reserva alta"]]
+    : v >= 51 ? ["atencao", "reserva média — treino normal", ["#fdf1dc", "#9a6512", "Reserva média"]]
+    : v >= 26 ? ["atencao", "reserva baixa — prefira treino leve", ["#fbe3df", "#b0362b", "Reserva baixa"]]
+    : ["ruim", "muito drenado — descanso", ["#fbe3df", "#b0362b", "Muito drenado"]];
+  const nAcordou = acordou != null ? nivel(acordou) : null;
+  const badge = nAcordou ? nAcordou[2] : ["#eef0ee", "#5c6b62", "--"];
+  let linhas = "";
+  if (acordou != null) linhas += rxLinha("Ao acordar", acordou, nAcordou[0], nAcordou[1]);
+  if (bb.charged != null) {
+    const c = acordou != null && acordou >= 90 ? ["ok", "completa (chegou perto de 100)"] : bb.charged >= 50 ? ["ok", "boa"] : bb.charged >= 25 ? ["atencao", "moderada"] : ["ruim", "fraca — sono pouco reparador"];
+    linhas += rxLinha("Recarga (ideal +50 ou chegar perto de 100)", "+" + bb.charged, c[0], c[1]);
+  }
+  if (bb.drained != null) {
+    const c = ehHoje && bb.drained < 30 ? ["", "dia em andamento"] : bb.drained < 30 ? ["ok", "leve"] : bb.drained <= 60 ? ["atencao", "moderado"] : ["ruim", "alto"];
+    linhas += rxLinha("Gasto no dia (treino intenso ≈ 20–40)", "-" + bb.drained, c[0], c[1]);
+  }
+  return '<div class="rx-card">' +
+    '<div class="rx-head"><div>' + titulo + '<div class="rx-valor">' + (agora != null ? agora : "--") + "<small>" + (ehHoje ? "último registro" : "fim do dia") + (acordou != null ? " · acordou com " + acordou : "") + "</small></div></div>" +
+      '<span class="rx-badge" style="background:' + badge[0] + ";color:" + badge[1] + '">' + badge[2] + "</span></div>" +
+    rxEscalaTemplate(0, 100, segs, [{ valor: dormiu, rotulo: "Deitou " + dormiu, sec: true }, { valor: acordou, rotulo: "Acordou " + acordou }]) +
+    '<div class="rx-linhas">' + linhas + "</div>" +
+    rxDetalhes(["↓ O que drena mais rápido", "↑ O que atrapalha a recarga"],
+      ["Treino intenso (jiu-jitsu costuma tirar 20–40)", "Estresse mental: trabalho, prazos, discussões", "Cafeína em excesso, álcool", "Calor, doença, febre", "Muitas horas acordado sem pausa"],
+      ["Dormir pouco ou com horário irregular", "Álcool à noite (o sono não recarrega direito)", "Treino intenso tarde e jantar pesado perto de deitar", "Telas e cafeína depois do fim da tarde", "Quarto quente, barulho"],
+      ["<b>Hipertireoidismo</b>: FC de repouso alta faz o relógio ler \"estresse\" o tempo todo — a bateria drena até parado e recarrega pouco à noite.",
+        "<b>Infecção, febre, ressaca</b>: recarga fraca mesmo dormindo bem.",
+        "<b>Apneia do sono</b>: acordar com bateria baixa com frequência, mesmo dormindo 7–8h.",
+        "<b>Ansiedade/estresse crônico</b>: gasto alto em dias sem treino."],
+      "Escala de 0 a 100 da Garmin. Referência pra acompanhar tendência, não é diagnóstico.") +
   "</div>";
 }
 function recuperacaoSonoTemplate(dia) {
@@ -11985,11 +12666,8 @@ const RECUPERACAO_SONO_RUIM_PONTUACAO = 70;
 const RECUPERACAO_NUTRIENTE_BAIXO_FRACAO = 0.7;
 // Mesmo padrão de soma/subtração de data usado no resto do app (ver legendaContextoPesoReferencia() e
 // afins) -- meio-dia fixo evita o "dia virar" errado por causa de fuso horário.
-function diaAnterior(data) {
-  const d = new Date(data + "T12:00:00");
-  d.setDate(d.getDate() - 1);
-  return d.toISOString().slice(0, 10);
-}
+// (diaAnterior() é a mesma definida mais acima, junto de proximoDia() -- existia uma 2ª cópia aqui que
+// sobrescrevia silenciosamente a primeira e lançava erro com data vazia em vez de devolver null.)
 function minutosTreinoNoDia(data) {
   return state.treinos.filter((t) => t.date === data).reduce((soma, t) => soma + (t.duracaoMin || 0), 0);
 }
@@ -12005,7 +12683,7 @@ function recuperacaoInsights(dia) {
   const pontuacaoSono = dia.sono && dia.sono.sleepScores && dia.sono.sleepScores.overall ? dia.sono.sleepScores.overall.value : null;
   const sonoRuim = pontuacaoSono != null && pontuacaoSono < RECUPERACAO_SONO_RUIM_PONTUACAO;
   const hrvStatus = dia.hrv && dia.hrv.hrvSummary ? dia.hrv.hrvSummary.status : null;
-  const hrvBaixo = hrvStatus === "LOW" || hrvStatus === "UNBALANCED";
+  const hrvBaixo = hrvStatus === "LOW" || hrvStatus === "UNBALANCED" || hrvStatus === "POOR";
 
   if (treinoPesadoOntem && (sonoRuim || hrvBaixo)) {
     insights.push({ tipo: "warn", titulo: "Recuperação abaixo do esperado.",
@@ -12056,7 +12734,7 @@ function recuperacaoTabTemplate() {
         ? '<div class="meal-empty"><div class="meal-empty-icon">' + icon("heart") + "</div><p>Nenhum dado do Garmin ainda</p><p>Assim que a sincronização diária rodar pela primeira vez, os dados aparecem aqui.</p></div>"
         : '' +
           recuperacaoDiaNavTemplate(dia, ordenados) +
-          '<div class="garmin-stat-grid">' + recuperacaoHrvTemplate(dia) + recuperacaoBodyBatteryTemplate(dia) + "</div>" +
+          recuperacaoHrvTemplate(dia) + recuperacaoBodyBatteryTemplate(dia) +
           '<div class="garmin-sono-card">' + recuperacaoSonoTemplate(dia) + "</div>"
       ) +
     "</section>" +
@@ -12349,6 +13027,34 @@ function avaliacaoDerivadaTemplate(info) {
     info.fatores.map((f) => esc(f)).join("<br>") +
   "</div></div>";
 }
+// Foco e cognição (pedido do usuário): os nutrientes com papel mais estabelecido no cérebro que o app já
+// mede, em % da meta (média dos dias fechados no Diário de Kcal da janela), + dicas curtas recolhidas.
+// Ômega-3: a meta de rotulagem do app (4.000 mg, ver MICRO_GOALS) é alta demais como referência diária
+// de alimento -- aqui usa a Ingestão Adequada (1.600 mg homens / 1.100 mg mulheres, National Academies).
+function focoNutrientesTemplate() {
+  const dias = avaliacaoDiarioKcalNaJanela();
+  if (!dias.length) return "";
+  const feminino = state.usuario && state.usuario.sexo === "feminino";
+  const itens = [["omega3", "Ômega-3", feminino ? 1100 : 1600], ["vitB12", "B12", MICRO_GOALS.vitB12], ["folato", "Folato", MICRO_GOALS.folato], ["ferro", "Ferro", MICRO_GOALS.ferro], ["magnesio", "Magnésio", MICRO_GOALS.magnesio], ["vitD", "Vitamina D", MICRO_GOALS.vitD]];
+  const chips = itens.map((it) => {
+    const frac = avaliacaoMediaFracaoMeta(dias, it[0], it[2]);
+    if (frac == null) return "";
+    const pct = Math.round(frac * 100);
+    const cls = pct >= 90 ? "chip-realizado" : pct >= 60 ? "chip-pendente" : "chip-ruim";
+    return '<span class="plano-chip ' + cls + '">' + it[1] + " " + pct + "%</span>";
+  }).join("");
+  if (!chips) return "";
+  return '<div class="foco-bloco"><div class="pm-bloco-titulo">' + icon("zap") + " Nutrientes do foco · média da meta nos últimos " + AVALIACAO_JANELA_DIAS + " dias</div>" +
+    '<div class="foco-chips">' + chips + "</div>" +
+    '<details class="rx-detalhes"><summary>Dicas pra concentração no dia a dia</summary><ul class="foco-dicas">' +
+      "<li><b>Antes de um período de trabalho intelectual pesado:</b> refeição moderada, com carboidrato lento e proteína; refeição grande e gordurosa dá sonolência.</li>" +
+      "<li><b>Cafeína:</b> funciona melhor em dose moderada; evite depois de ~15h pra não prejudicar o sono.</li>" +
+      "<li><b>Água:</b> perder 1–2% de água do corpo já piora atenção e memória. Deixe uma garrafa à vista.</li>" +
+      "<li><b>Ômega-3:</b> peixe gordo (sardinha, salmão, atum) 2x por semana.</li>" +
+      "<li><b>Glicemia estável:</b> evite longos jejuns seguidos de doce — o pico e a queda de glicose derrubam o foco.</li>" +
+      "<li><b>Sono:</b> continua sendo o fator nº 1 — acompanhe na aba Recuperação.</li>" +
+    "</ul></details></div>";
+}
 function avaliacaoTabTemplate() {
   const r = avaliacaoCalcular();
   const fertilidade = avaliacaoNotaFertilidade(r);
@@ -12370,6 +13076,7 @@ function avaliacaoTabTemplate() {
     '<section class="medidas-section">' +
       '<h2 class="medidas-section-title">' + icon("zap") + " Cognição e disposição esportiva</h2>" +
       avaliacaoDerivadaTemplate(cognicaoDisposicao) +
+      focoNutrientesTemplate() +
     "</section>" +
   "</main>";
 }
@@ -12378,7 +13085,7 @@ function homeTemplate() {
   return '' +
     '<div class="app-shell">' +
     '<button class="hamburger-btn" onclick="acaoAbrirSidebar()" aria-label="Abrir menu"><span></span></button>' +
-    sidebarTemplate() + editarPerfilTemplate() + mealDetalheModalTemplate() + nutrientInfoModalTemplate() + exameInfoModalTemplate() + recuperacaoInfoModalTemplate() + cadastrarProdutoModalTemplate() + analiseConsumoDiaModalTemplate() + autonomiaInfoModalTemplate() +
+    sidebarTemplate() + editarPerfilTemplate() + mealDetalheModalTemplate() + nutrientInfoModalTemplate() + exameInfoModalTemplate() + recuperacaoInfoModalTemplate() + cadastrarProdutoModalTemplate() + analiseConsumoDiaModalTemplate() + autonomiaInfoModalTemplate() + planoTreinoModalTemplate() + planejarTreinoModalTemplate() +
     '<div class="home-content"><div class="home-inner">' +
     (state.account ? fullHomeTemplate() : lockedTemplate()) +
     "</div></div></div>";
@@ -12506,7 +13213,28 @@ function initInstallPrompt() {
       '<button class="install-close" aria-label="Fechar aviso de instalação" onclick="document.getElementById(\'install-banner\').remove()">' + icon("x") + "</button>";
     document.body.appendChild(banner);
   });
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+    // Atualização do app: o service worker serve a versão guardada em cache e só baixa a nova em segundo
+    // plano -- por isso uma atualização só aparecia na SEGUNDA vez que o app era aberto. Quando a versão
+    // nova assume, recarrega sozinho -- mas nunca no meio de uma digitação (espera sair do campo ou o app
+    // ir pro segundo plano). Na 1ª instalação (sem versão anterior) não recarrega.
+    const tinhaVersaoAnterior = !!navigator.serviceWorker.controller;
+    let atualizacaoPendente = false;
+    const recarregarSePuder = () => {
+      if (!atualizacaoPendente) return;
+      const el = document.activeElement;
+      const digitando = (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) || !!document.querySelector(".modal-overlay") || !!state.treinoAtivo;
+      if (document.visibilityState === "hidden" || !digitando) { atualizacaoPendente = false; location.reload(); }
+    };
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!tinhaVersaoAnterior) return;
+      atualizacaoPendente = true;
+      recarregarSePuder();
+    });
+    document.addEventListener("focusout", () => setTimeout(recarregarSePuder, 300));
+    document.addEventListener("visibilitychange", recarregarSePuder);
+  }
 }
 async function doInstall() {
   if (!installPromptEvent) return;
