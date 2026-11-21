@@ -7877,8 +7877,12 @@ function acaoTreineiPlano(id) {
     state.treinoEsporteCustom = "";
     state.treinoData = p.date;
     state.treinoHoraInicio = p.hora || "";
-    state.treinoHoraFim = ""; // término é sempre o real, informado por quem treinou
-    if (p.date !== today()) state.treinoModo = "manual";
+    // Pedido do usuário: "Treinei" = treino já feito -> abre direto em "Registrar manualmente", com o
+    // início planejado e o término = hora do clique (só no próprio dia e se já passou do início; num dia
+    // passado o término fica pra pessoa informar). Tudo continua editável antes de salvar.
+    const agoraHhmm = minParaHhmm(agoraMin());
+    state.treinoHoraFim = p.date === today() && (!p.hora || agoraMin() > hhmmParaMin(p.hora)) ? agoraHhmm : "";
+    state.treinoModo = "manual";
   }
   render();
   // Mesmo motivo de acaoEditarTreino(): captureFormState() pode ter recapturado valores antigos do DOM.
@@ -7886,7 +7890,7 @@ function acaoTreineiPlano(id) {
   Object.keys(campos).forEach((idCampo) => { const el = document.getElementById(idCampo); if (el && campos[idCampo] != null) el.value = campos[idCampo]; });
   const form = document.querySelector(".meal-card");
   if (form) form.scrollIntoView({ behavior: "smooth", block: "start" });
-  toastSuccess(state.treinoAtivo ? "Já há um treino em andamento no cronômetro." : p.date === today() ? "Confira os dados e registre: manualmente ou pelo cronômetro." : "Confira os horários e salve o treino.");
+  toastSuccess(state.treinoAtivo ? "Já há um treino em andamento no cronômetro." : "Confira os horários e salve o treino.");
 }
 function acaoAbrirPlanoModal(id) { state.planoModalId = id; render(); }
 function acaoFecharPlanoModal() { state.planoModalId = null; render(); }
