@@ -1403,6 +1403,103 @@ body:has(.modal-overlay) .hamburger-btn{ display:none; }
 .pr-grid .s{ font-size:11px; color:#557268; }
 .pr-grid .full{ grid-column:1 / 3; }
 .pr-aviso{ font-size:9.5px; color:#8a9a91; line-height:1.45; margin-top:8px; }
+/* ===== Treinos: esforço, rolas, prontidão, recordes e Análise em 4 seções ===== */
+.trx-campo{ display:flex; flex-direction:column; gap:8px; }
+.trx-opc{ opacity:.7; font-weight:500; text-transform:none; letter-spacing:0; }
+.trx-rpe{ display:grid; grid-template-columns:repeat(10,1fr); gap:4px; }
+.trx-rpe button{ height:34px; border-radius:10px; border:1px solid rgba(255,255,255,.22); background:rgba(255,255,255,.08); font-size:13px; font-weight:700; color:#e3f2d3; padding:0; }
+.trx-rpe button.on{ background:#d3e9b9; border-color:#d3e9b9; color:#1c4d3e; }
+.trx-rpe-escala{ display:flex; justify-content:space-between; font-size:11px; color:rgba(227,242,211,.7); }
+.trx-hint{ font-size:12px; line-height:1.45; border-radius:10px; padding:8px 10px; background:rgba(255,255,255,.1); color:#e3f2d3; }
+.trx-hint b{ color:#fff; }
+.trx-rolas{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.trx-step{ display:flex; align-items:center; justify-content:space-between; border:1px solid rgba(255,255,255,.22); border-radius:12px; background:rgba(255,255,255,.08); padding:6px 8px; }
+.trx-step button{ width:30px; height:30px; border-radius:50%; background:rgba(255,255,255,.14); font-size:18px; font-weight:700; color:#e3f2d3; }
+.trx-step .v{ text-align:center; font-size:15px; font-weight:700; color:#fff; line-height:1.1; }
+.trx-step .v small{ display:block; font-size:10.5px; font-weight:500; color:rgba(227,242,211,.7); }
+.trx-chips{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+.trx-chip{ font-size:11.5px; font-weight:700; padding:3px 8px; border-radius:999px; background:#eef2ea; color:#557268; white-space:nowrap; }
+.trx-chip.pr{ background:#fbf0dc; color:#a86a12; }
+.trx-chip.rpe{ background:#e4efd9; color:#2f6b3a; }
+.trx-pront{ border-radius:16px; border:1px solid #cfe3c6; background:#f2f8ee; padding:12px 14px; display:flex; flex-direction:column; gap:8px; margin:14px 0 0; }
+.trx-pront.n1{ border-color:#efd9a6; background:#fdf6e6; }
+.trx-pront.n2{ border-color:#efc3b8; background:#fcefeb; }
+.trx-pront-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.trx-pront-t{ display:flex; align-items:center; gap:8px; font-weight:700; color:#1c4d3e; font-size:14px; }
+.trx-dot{ width:12px; height:12px; border-radius:50%; background:#4f8f62; box-shadow:0 0 0 4px rgba(79,143,98,.18); flex:none; }
+.trx-pront.n1 .trx-dot{ background:#d9922e; box-shadow:0 0 0 4px rgba(217,146,46,.2); }
+.trx-pront.n2 .trx-dot{ background:#c8553d; box-shadow:0 0 0 4px rgba(200,85,61,.2); }
+.trx-pront-sub{ font-size:12.5px; color:#3d5c48; line-height:1.5; }
+.trx-pront-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(70px,1fr)); gap:6px; }
+.trx-pront-grid div{ background:#fff; border-radius:10px; padding:6px; text-align:center; }
+.trx-pront-grid b{ display:block; font-size:13.5px; }
+.trx-pront-grid span{ font-size:10.5px; color:#7c8c86; }
+.trx-n0{ color:#2f6b3a; } .trx-n1{ color:#a86a12; } .trx-n2{ color:#b0442f; }
+.trx-sug{ display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; background:#e4efd9; color:#2f6b3a; margin-left:6px; }
+.trx-sug.manter{ background:#eef2ea; color:#557268; }
+.trx-nav{ display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.trx-nav button{ display:flex; align-items:center; justify-content:center; gap:6px; font-size:12.5px; font-weight:700; padding:8px 10px; border-radius:999px; border:1px solid #dce5db; background:#fff; color:#557268; }
+.trx-nav button.on{ background:#1c4d3e; border-color:#1c4d3e; color:#fff; }
+.trx-1rm{ display:grid; grid-template-columns:1fr 92px 74px; gap:8px; align-items:center; font-size:12.5px; color:#3d5c48; padding:6px 0; border-bottom:1px dashed #e5ebe3; }
+.trx-1rm:last-of-type{ border-bottom:none; }
+.trx-1rm .nm{ font-weight:600; color:#1b3f34; }
+.trx-1rm .nm small{ display:block; font-weight:500; color:#8a9a91; font-size:11px; }
+.trx-1rm .vl{ text-align:right; font-weight:700; color:#1b3f34; }
+.trx-1rm .vl small{ display:block; font-size:11px; font-weight:700; }
+.trx-up{ color:#2f6b3a; } .trx-down{ color:#b0442f; } .trx-flat{ color:#8a9a91; }
+.trx-series{ display:grid; grid-template-columns:96px 1fr 34px; gap:8px; align-items:center; font-size:12.5px; color:#3d5c48; }
+.trx-series .t{ position:relative; height:10px; border-radius:5px; background:#eef2ea; }
+.trx-series .faixa{ position:absolute; top:-3px; bottom:-3px; border-left:1.5px dashed #6c9a6e; border-right:1.5px dashed #6c9a6e; background:rgba(79,143,98,.08); }
+.trx-series .t span{ position:absolute; left:0; top:0; bottom:0; border-radius:5px; }
+.trx-series .n{ text-align:right; font-weight:700; }
+.trx-bal{ display:flex; flex-direction:column; gap:4px; font-size:12px; color:#3d5c48; }
+.trx-bal .bar{ display:flex; height:10px; border-radius:5px; overflow:hidden; gap:2px; }
+.trx-bal .bar span:first-child{ background:#4f8f62; } .trx-bal .bar span:last-child{ background:#9cc3a4; }
+.trx-bal .lg{ display:flex; justify-content:space-between; }
+.trx-zonas{ display:flex; height:22px; border-radius:8px; overflow:hidden; gap:2px; }
+.trx-zonas span{ display:flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:700; color:#fff; overflow:hidden; white-space:nowrap; }
+.trx-zl{ display:grid; grid-template-columns:repeat(5,1fr); gap:4px; font-size:10.5px; color:#7c8c86; text-align:center; }
+.trx-zl b{ display:block; color:#3d5c48; font-size:11px; }
+.trx-semana{ display:flex; align-items:flex-end; gap:8px; height:130px; padding-top:8px; }
+.trx-semana .c{ flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:10.5px; color:#7c8c86; height:100%; justify-content:flex-end; min-width:0; }
+.trx-semana .stack{ width:100%; display:flex; flex-direction:column-reverse; border-radius:6px; overflow:hidden; gap:2px; }
+.trx-semana .v{ font-size:11px; font-weight:700; color:#1b3f34; }
+.trx-gauge{ position:relative; height:14px; border-radius:7px; background:linear-gradient(90deg,#f2e2b8 0 20%, #cfe3c6 20% 53.3%, #f2e2b8 53.3% 66.7%, #f0c2b5 66.7% 100%); }
+.trx-gauge i{ position:absolute; top:-5px; width:4px; height:24px; border-radius:2px; background:#1c4d3e; }
+.trx-gauge-lg{ position:relative; height:14px; font-size:10.5px; color:#7c8c86; margin-top:4px; }
+.trx-gauge-lg span{ position:absolute; transform:translateX(-50%); }
+.trx-cruz{ display:flex; flex-direction:column; gap:8px; }
+.trx-cruz div{ display:flex; gap:8px; font-size:12.5px; line-height:1.45; color:#3d5c48; background:#f7f9f5; border-radius:10px; padding:8px 10px; }
+.trx-cruz b{ color:#1b3f34; }
+.trx-ea{ border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:6px; background:#f2f8ee; }
+.trx-ea.n1{ background:#fbf0dc; } .trx-ea.n2{ background:#fbe7e2; }
+.trx-ea .n{ font-family:'Fraunces',serif; font-size:24px; font-weight:600; }
+.trx-ea .faixas{ position:relative; height:10px; border-radius:5px; background:linear-gradient(90deg,#f0c2b5 0 50%, #f2e2b8 50% 75%, #cfe3c6 75% 100%); }
+.trx-ea .faixas i{ position:absolute; top:-4px; width:4px; height:18px; border-radius:2px; background:#1c4d3e; }
+.trx-ea .lg{ display:flex; justify-content:space-between; font-size:10.5px; color:#7c8c86; }
+.trx-ea p{ margin:0; font-size:12.5px; color:#3d5c48; line-height:1.5; }
+.trx-cal{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+.trx-cal .h{ font-size:10px; font-weight:700; color:#8a9a91; text-align:center; }
+.trx-cal .d{ aspect-ratio:1; border-radius:8px; background:#f2f4ef; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:9.5px; color:#8a9a91; overflow:hidden; }
+.trx-cal .d b{ font-size:13px; line-height:1.1; font-weight:400; }
+.trx-cal .d.l1{ background:#dcebd3; } .trx-cal .d.l2{ background:#b7d6aa; } .trx-cal .d.l3{ background:#86b88a; color:#1b3f34; }
+.trx-cal .d.falta{ background:#fff; border:1.5px dashed #d9922e; }
+.trx-cal .d.vazio{ background:transparent; }
+.trx-cal .d.futuro{ background:#fafbf8; color:#c2cbc6; }
+.trx-prontcal{ display:grid; grid-template-columns:repeat(10,1fr); gap:4px; }
+.trx-prontcal div{ aspect-ratio:1; border-radius:6px; }
+.trx-metas{ display:grid; grid-template-columns:repeat(auto-fit,minmax(90px,1fr)); gap:8px; }
+.trx-meta{ display:flex; flex-direction:column; align-items:center; gap:4px; font-size:11.5px; color:#557268; text-align:center; }
+.trx-meta b{ color:#1b3f34; font-size:12.5px; }
+.trx-rel-hint{ font-size:12px; line-height:1.5; color:#557268; background:#f2f6ef; border-radius:10px; padding:8px 10px; }
+.trx-rel-hint.aviso{ background:#fbf0dc; color:#5a4a2a; }
+@media (min-width: 900px){ .trx-nav{ grid-template-columns:repeat(4,1fr); } }
+@media print{
+  #print-root .trx-1rm, #print-root .trx-cal, #print-root .trx-series{ break-inside:avoid; }
+  #print-root .rel-box > .rel-kpis{ grid-template-columns:repeat(4,1fr); }
+  #print-root .trx-semana, #print-root .trx-cal, #print-root .trx-prontcal{ max-width:430px; }
+  #print-root .rel-card > svg{ max-height:160px; }
+}
 </style>
 </head>
 <body>
@@ -3476,6 +3573,8 @@ const state = {
   treinoData: "",
   treinoHoraInicio: "",
   treinoHoraFim: "",
+  treinoEsforco: null, treinoRolas: 0, treinoRolaMin: 5, // nota de esforço (1-10) e rolas do jiu-jitsu -- ver treinoEsforcoCampoTemplate()
+  analiseTreinoSecao: "forca", // seção aberta na Análise de Treinos (modo Todos) -- ver analiseDesempenhoTemplate()
   treinoNota: "", // observação livre sobre o treino (ex.: "treino pesado", "alto astral") — opcional
   treinoDistanciaKm: "", // distância percorrida (km), só pra esportes em ESPORTES_COM_DISTANCIA — opcional
   // Submodalidade de Ciclismo (pedido do usuário) -- "" | "Pista" | "Estrada" | "MTB" | "Gravel" |
@@ -6031,7 +6130,7 @@ function submitPerfil() {
 /* ===================== templates ===================== */
 // Versão exibida no menu, na tela de login e em "Sobre o App" (mesmo padrão do Custódia Digital e do app
 // do escritório). Atualizar junto com o CACHE_NAME do sw.js a cada versão publicada.
-const APP_VERSAO = "2.32";
+const APP_VERSAO = "2.33";
 const APP_VERSAO_DATA = "21/11/2026";
 const DEV = { nome: "EFS Technology", lema: "Soluções digitais sob medida", tel: "83 9 99944-7957", wa: "5583999447957", email: "efstechnology.app@gmail.com" };
 function authVersaoTemplate() {
@@ -6701,6 +6800,682 @@ function acaoGerarAnaliseConsumo() {
 }
 /* =============== fim Análise de Consumo =============== */
 
+/* ===================== Treinos: esforço, carga, recordes, prontidão e Análise em 4 seções ===================== */
+// Pedido do usuário (protótipo aprovado): nota de esforço (1 a 10) em todo treino, número de rolas no
+// jiu-jitsu, recordes de força (1RM estimado), prontidão do dia, sugestão de progressão no "montar treino"
+// e a Análise de Treinos (modo "Todos os treinos") reorganizada em Força, Condicionamento, Carga e
+// recuperação e Nutrição e corpo, com PDF.
+
+// ----- campos do formulário -----
+function treinoEsporteDoFormulario() { return state.treinoAtivo ? state.treinoAtivo.esporte : state.treinoEsporte; }
+function treinoDuracaoDoFormulario() {
+  if (state.treinoAtivo) return Math.round(treinoAtivoElapsedMs() / 60000);
+  return state.treinoHoraInicio && state.treinoHoraFim ? duracaoMinutos(state.treinoHoraInicio, state.treinoHoraFim) : 0;
+}
+function treinoRolasCampoTemplate() {
+  if (treinoEsporteDoFormulario() !== "Jiu-jitsu") return "";
+  const n = state.treinoRolas || 0, min = state.treinoRolaMin || 5;
+  const dur = treinoDuracaoDoFormulario();
+  return '<div class="trx-campo"><label class="meal-form-label">Rolas (sparring) <span class="trx-opc">(opcional)</span></label>' +
+    '<div class="trx-rolas">' +
+      '<div class="trx-step"><button type="button" aria-label="Menos rolas" onclick="acaoRolasTreino(\'rolas\', -1)">−</button><div class="v">' + n + "<small>" + (n === 1 ? "rola" : "rolas") + '</small></div><button type="button" aria-label="Mais rolas" onclick="acaoRolasTreino(\'rolas\', 1)">+</button></div>' +
+      '<div class="trx-step"><button type="button" aria-label="Menos minutos" onclick="acaoRolasTreino(\'min\', -1)">−</button><div class="v">' + min + ' min<small>cada</small></div><button type="button" aria-label="Mais minutos" onclick="acaoRolasTreino(\'min\', 1)">+</button></div>' +
+    "</div>" +
+    (n ? '<div class="trx-hint">' + n * min + " min de rola" + (dur > 0 ? " em " + formatarDuracao(dur) + " de treino" : "") + ".</div>" : "") +
+  "</div>";
+}
+function treinoEsforcoCampoTemplate() {
+  const sel = state.treinoEsforco;
+  const dur = treinoDuracaoDoFormulario();
+  return '<div class="trx-campo"><label class="meal-form-label">Como foi o esforço? <span class="trx-opc">(opcional)</span></label>' +
+    '<div class="trx-rpe">' + [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => '<button type="button" class="' + (n === sel ? "on" : "") + '" onclick="acaoEsforcoTreino(' + n + ')">' + n + "</button>").join("") + "</div>" +
+    '<div class="trx-rpe-escala"><span>1-3 leve</span><span>4-6 moderado</span><span>7-8 forte</span><span>9-10 máximo</span></div>' +
+    (sel && dur > 0 ? '<div class="trx-hint">Carga deste treino: <b>' + formatNumber(dur * sel) + "</b> (" + dur + " min × " + sel + ").</div>" : "") +
+  "</div>";
+}
+function acaoEsforcoTreino(n) { state.treinoEsforco = state.treinoEsforco === n ? null : n; render(); }
+function acaoRolasTreino(campo, delta) {
+  if (campo === "rolas") state.treinoRolas = Math.max(0, Math.min(30, (state.treinoRolas || 0) + delta));
+  else state.treinoRolaMin = Math.max(1, Math.min(15, (state.treinoRolaMin || 5) + delta));
+  render();
+}
+function limparEsforcoRolasTreino() { state.treinoEsforco = null; state.treinoRolas = 0; state.treinoRolaMin = 5; }
+function camposEsforcoRolas(esporte) {
+  const jj = esporte === "Jiu-jitsu" && state.treinoRolas > 0;
+  return { esforco: state.treinoEsforco || null, rolas: jj ? state.treinoRolas : null, rolaMin: jj ? state.treinoRolaMin || 5 : null };
+}
+
+// ----- carga de treino (duração × esforço) -----
+// Sem nota: usa o efeito de treino do Garmin (0 a 5, ×2) ou uma intensidade típica da modalidade.
+const ESFORCO_PADRAO = { "Jiu-jitsu": 7, "Muay Thai": 7, "Boxe": 7, "Futebol": 7, "Musculação": 6, "Corrida": 6, "Natação": 6, "Tênis": 6, "Ciclismo": 5, "Caminhada": 3 };
+function esforcoDoTreino(t) {
+  if (t.esforco) return { v: Number(t.esforco), fonte: "nota" };
+  const te = Math.max(Number(t.teAerobico) || 0, Number(t.teAnaerobico) || 0);
+  if (te > 0) return { v: Math.max(1, Math.min(10, Math.round(te * 2))), fonte: "garmin" };
+  let v = ESFORCO_PADRAO[t.esporte] || 5;
+  if (t.esporte === "Ciclismo" && t.ciclismoModalidade === "Spinning") v = /HIIT/i.test(t.spinningIntensidade || "") ? 7 : 6;
+  return { v: v, fonte: "estimado" };
+}
+function cargaDoTreino(t) { return Math.round((Number(t.duracaoMin) || 0) * esforcoDoTreino(t).v); }
+function cargaEntre(de, ate) { return state.treinos.filter((t) => t.date >= de && t.date <= ate).reduce((s, t) => s + cargaDoTreino(t), 0); }
+// Carga dos últimos 7 dias × média semanal das últimas 4 semanas (terminando em "fim"). Só com 3+ semanas de histórico.
+function acwrEm(fim) {
+  if (!fim || !state.treinos.length) return null;
+  const primeiro = state.treinos.reduce((m, t) => (t.date < m ? t.date : m), "9999");
+  if (primeiro > relSomarDias(fim, -20)) return null;
+  const aguda = cargaEntre(relSomarDias(fim, -6), fim);
+  const cronica = cargaEntre(relSomarDias(fim, -27), fim) / 4;
+  return cronica > 0 ? { valor: aguda / cronica, aguda: aguda, cronica: cronica } : null;
+}
+
+// ----- força estimada (1RM, fórmula de Epley) e recordes -----
+function umRM(peso, reps) {
+  peso = Number(peso); reps = Number(reps);
+  if (!(peso > 0)) return null;
+  if (!(reps > 0)) reps = 1;
+  return reps === 1 ? peso : peso * (1 + Math.min(reps, 15) / 30);
+}
+function treinoAntesDe(a, b) { return a.date < b.date || (a.date === b.date && (a.horaInicio || "") < (b.horaInicio || "")) || (a.date === b.date && (a.horaInicio || "") === (b.horaInicio || "") && a.id < b.id); }
+// Melhor 1RM de cada exercício num treino: { "Supino reto": { rm, series, reps, peso, grupo } }
+function rmsDoTreino(t) {
+  const out = {};
+  (t.gruposMusculares || []).forEach((g) => (g.exercicios || []).forEach((e) => {
+    const rm = umRM(e.peso, e.repeticoes);
+    if (rm == null) return;
+    if (!out[e.exercicio] || rm > out[e.exercicio].rm) out[e.exercicio] = { rm: rm, series: e.series, reps: e.repeticoes, peso: e.peso, grupo: g.grupo };
+  }));
+  return out;
+}
+// Recordes batidos por um treino em relação a TODOS os treinos anteriores a ele (o primeiro registro de
+// um exercício não conta como recorde).
+function recordesDoTreino(t) {
+  const anteriores = state.treinos.filter((x) => x.id !== t.id && treinoAntesDe(x, t));
+  const out = [];
+  if (t.esporte === "Musculação") {
+    const atual = rmsDoTreino(t);
+    Object.keys(atual).forEach((nome) => {
+      let melhor = null;
+      anteriores.forEach((x) => { if (x.esporte !== "Musculação") return; const r = rmsDoTreino(x)[nome]; if (r && (melhor == null || r.rm > melhor)) melhor = r.rm; });
+      if (melhor != null && atual[nome].rm > melhor + 0.05) out.push({ tipo: "forca", nome: nome, valor: atual[nome].rm, antes: melhor });
+    });
+  }
+  if (ESPORTES_COM_DISTANCIA.includes(t.esporte) && t.distanciaKm) {
+    const mesmos = anteriores.filter((x) => x.esporte === t.esporte && x.distanciaKm);
+    if (mesmos.length) {
+      const maiorDist = Math.max.apply(null, mesmos.map((x) => Number(x.distanciaKm)));
+      if (Number(t.distanciaKm) > maiorDist + 0.05) out.push({ tipo: "distancia", nome: t.esporte, valor: Number(t.distanciaKm), antes: maiorDist });
+      const comPace = mesmos.filter((x) => x.paceMinPorKm && Number(x.distanciaKm) >= 3);
+      if (t.paceMinPorKm && Number(t.distanciaKm) >= 3 && comPace.length) {
+        const melhorPace = Math.min.apply(null, comPace.map((x) => Number(x.paceMinPorKm)));
+        if (Number(t.paceMinPorKm) < melhorPace - 0.005) out.push({ tipo: "pace", nome: t.esporte, valor: Number(t.paceMinPorKm), antes: melhorPace });
+      }
+    }
+  }
+  return out;
+}
+function textoRecorde(r) {
+  if (r.tipo === "forca") return r.nome + ": força estimada " + formatNumber(r.valor, 1) + " kg (antes " + formatNumber(r.antes, 1) + ")";
+  if (r.tipo === "distancia") return r.nome + ": maior distância, " + formatNumber(r.valor, 1) + " km (antes " + formatNumber(r.antes, 1) + ")";
+  return r.nome + ": melhor pace, " + formatarPace(r.valor) + " (antes " + formatarPace(r.antes) + ")";
+}
+function avisarRecordesDoTreino(t) {
+  const recs = recordesDoTreino(t);
+  if (!recs.length) return;
+  setTimeout(() => toastSuccess("🏆 " + (recs.length === 1 ? "Novo recorde! " : recs.length + " recordes! ") + recs.map(textoRecorde).join(" · ") + "."), 900);
+}
+// Chips do treino na lista de hoje/histórico: esforço e carga, rolas e recordes.
+function treinoChipsExtrasHtml(t) {
+  const chips = [];
+  if (t.esforco) chips.push('<span class="trx-chip rpe">esforço ' + t.esforco + " · carga " + formatNumber(cargaDoTreino(t)) + "</span>");
+  if (t.rolas) chips.push('<span class="trx-chip">' + t.rolas + (t.rolas === 1 ? " rola" : " rolas") + " × " + (t.rolaMin || 5) + " min</span>");
+  const n = recordesDoTreino(t).length;
+  if (n) chips.push('<span class="trx-chip pr">🏆 ' + n + (n === 1 ? " recorde" : " recordes") + "</span>");
+  return chips.length ? '<div class="trx-chips">' + chips.join("") + "</div>" : "";
+}
+
+// ----- progressão no "montar treino" -----
+// Cumpriu as mesmas séries × repetições com a mesma carga nos 2 últimos treinos do exercício: sugere
+// +2,5 kg (+1 kg em halteres). Fez menos repetições que na vez anterior com a mesma carga: manter.
+function progressaoExercicio(h) {
+  const s = (h.sessoes || []).filter((x) => Number(x.peso) > 0 && Number(x.repeticoes) > 0);
+  if (s.length < 2) return null;
+  const a = s[s.length - 2], b = s[s.length - 1];
+  if (Number(a.peso) !== Number(b.peso)) return null;
+  const inc = /halter/i.test(h.label || "") ? 1 : 2.5;
+  if (Number(b.repeticoes) >= Number(a.repeticoes) && Number(b.series || 0) >= Number(a.series || 0)) return { tipo: "subir", inc: inc, peso: Number(b.peso) + inc };
+  return { tipo: "manter", peso: Number(b.peso) };
+}
+
+// ----- prontidão do dia (HRV, sono, Body Battery e carga recente) -----
+function garminDoDia(date) { return (state.garmin || []).find((g) => g.date === date) || null; }
+function bodyBatteryAoAcordar(g) {
+  const bb = g.bodyBattery && g.bodyBattery[0];
+  if (!bb) return null;
+  const pontosDia = (bb.bodyBatteryValuesArray || []).filter((v) => v && v[1] != null);
+  const ant = garminDoDia(diaAnterior(g.date));
+  const bbAnt = ant && ant.bodyBattery && ant.bodyBattery[0];
+  const pontos = ((bbAnt && bbAnt.bodyBatteryValuesArray) || []).filter((v) => v && v[1] != null).concat(pontosDia).sort((a, b) => a[0] - b[0]);
+  const s = g.sono || {};
+  const v = rxNivelBodyBattery(pontos, s.sleepEndTimestampGMT, true);
+  if (v != null) return v;
+  return pontosDia.length ? Math.max.apply(null, pontosDia.map((p) => p[1])) : null;
+}
+function prontidaoDoDia(date) {
+  const g = garminDoDia(date);
+  const sinais = [];
+  if (g) {
+    const r = g.hrv && g.hrv.hrvSummary;
+    if (r && r.lastNightAvg != null) {
+      const pct = r.weeklyAvg ? Math.round(((r.lastNightAvg - r.weeklyAvg) / r.weeklyAvg) * 100) : null;
+      const porStatus = { BALANCED: 0, UNBALANCED: 1, LOW: 2, POOR: 2 }[r.status];
+      const nivel = porStatus != null ? porStatus : pct == null ? 0 : pct >= -10 ? 0 : pct >= -20 ? 1 : 2;
+      sinais.push({ chave: "hrv", nivel: nivel, valor: r.lastNightAvg + " ms", sub: "HRV" + (pct != null ? " · " + (pct > 0 ? "+" : "") + pct + "%" : ""), bom: "HRV", ruim: "HRV abaixo da sua média", acima: pct != null && pct > 0 });
+    }
+    const s = g.sono;
+    if (s && s.sleepTimeSeconds) {
+      const h = s.sleepTimeSeconds / 3600;
+      sinais.push({ chave: "sono", nivel: h >= 7 ? 0 : h >= 6 ? 1 : 2, valor: Math.floor(h) + "h" + String(Math.round((h % 1) * 60)).padStart(2, "0"), sub: "sono", bom: "sono", ruim: "sono curto", horas: h });
+    }
+    const bb = bodyBatteryAoAcordar(g);
+    if (bb != null) sinais.push({ chave: "bb", nivel: bb >= 60 ? 0 : bb >= 30 ? 1 : 2, valor: String(bb), sub: "Body Battery", bom: "Body Battery", ruim: "Body Battery baixo", bb: bb });
+  }
+  const ac = acwrEm(diaAnterior(date));
+  if (ac) sinais.push({ chave: "carga", nivel: ac.valor > 1.5 ? 2 : ac.valor > 1.3 ? 1 : 0, valor: formatNumber(ac.valor, 2), sub: "carga 7d/28d", bom: "carga", ruim: "carga da semana alta", acwr: ac.valor });
+  if (sinais.length < 2) return null;
+  const vermelhos = sinais.filter((x) => x.nivel === 2).length;
+  const total = sinais.reduce((s2, x) => s2 + x.nivel, 0);
+  const nivel = vermelhos >= 2 || total >= 4 ? 2 : vermelhos || total >= 2 ? 1 : 0;
+  const ruins = sinais.filter((x) => x.nivel > 0).map((x) => x.ruim);
+  const juntar = (l) => l.join(", ").replace(/, ([^,]*)$/, " e $1");
+  let texto;
+  if (nivel === 0) {
+    const bons = sinais.filter((x) => x.nivel === 0 && x.chave !== "carga").map((x) => x.bom);
+    texto = (bons.length ? juntar(bons) + " dentro do seu normal" + (bons.length > 1 ? "" : "") + ". " : "") + (ruins.length ? "Só fique de olho: " + juntar(ruins) + ". " : "") + "Dá pra treinar forte hoje.";
+  } else if (nivel === 1) {
+    texto = juntar(ruins).replace(/^./, (c) => c.toUpperCase()) + ": dá pra treinar, mas sem ir ao limite (técnica, drill ou carga moderada).";
+  } else {
+    texto = juntar(ruins).replace(/^./, (c) => c.toUpperCase()) + ": a recuperação ainda não está completa. Prefira descanso ativo, técnica leve ou mobilidade.";
+  }
+  return { nivel: nivel, titulo: ["Pronto pra treinar forte", "Treino moderado", "Dia de pegar leve"][nivel], sinais: sinais, texto: texto };
+}
+function prontidaoCardTemplate() {
+  const p = prontidaoDoDia(today());
+  if (!p) return "";
+  return '<div class="trx-pront n' + p.nivel + '"><div class="trx-pront-top"><span class="trx-pront-t"><span class="trx-dot"></span> ' + p.titulo + '</span><span class="trx-chip">prontidão de hoje</span></div>' +
+    '<div class="trx-pront-grid">' + p.sinais.map((x) => '<div><b class="trx-n' + x.nivel + '">' + esc(x.valor) + "</b><span>" + esc(x.sub) + "</span></div>").join("") + "</div>" +
+    '<div class="trx-pront-sub">' + esc(p.texto) + "</div></div>";
+}
+
+// ----- utilidades da análise -----
+function trxInicioSemana(dateStr) { const d = relData(dateStr); const dia = (d.getDay() + 6) % 7; d.setDate(d.getDate() - dia); return relIso(d); }
+function trxIdade() { const i = state.usuario && state.usuario.dataNascimento ? calcularIdadeExata(state.usuario.dataNascimento) : null; return i ? i.anos : null; }
+function trxMassaMagra() {
+  const bio = state.bioimpedancia.slice().sort((a, b) => (a.date === b.date ? a.id - b.id : a.date < b.date ? -1 : 1)).pop();
+  const peso = pesoReferenciaKg();
+  if (bio && Number(bio.massaMagra) > 0) return { kg: Number(bio.massaMagra), fonte: "bioimpedância de " + dataCurta(bio.date) };
+  if (bio && Number(bio.gordura) > 0) return { kg: peso * (1 - Number(bio.gordura) / 100), fonte: "% de gordura da bioimpedância de " + dataCurta(bio.date) };
+  const alt = Number(state.altura) || 0, sexo = state.usuario && state.usuario.sexo;
+  if (alt > 0 && (sexo === "masculino" || sexo === "feminino")) return { kg: sexo === "masculino" ? 0.407 * peso + 0.267 * alt - 19.2 : 0.252 * peso + 0.473 * alt - 48.3, fonte: "estimativa por peso e altura (sem bioimpedância)" };
+  return null;
+}
+function trxSparkline(vals, cor) {
+  if (vals.length < 2) return "";
+  const W = 92, H = 26, mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals), amp = mx - mn || 1;
+  const pts = vals.map((v, i) => [2 + (i * (W - 6)) / (vals.length - 1), H - 4 - ((v - mn) / amp) * (H - 8)]);
+  return '<svg viewBox="0 0 ' + W + " " + H + '" width="' + W + '" height="' + H + '"><polyline points="' + pts.map((p) => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ") + '" fill="none" stroke="' + cor + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<circle cx="' + pts[pts.length - 1][0].toFixed(1) + '" cy="' + pts[pts.length - 1][1].toFixed(1) + '" r="3" fill="' + cor + '"/></svg>';
+}
+const TRX_CORES = ["#4f8f62", "#1c4d3e", "#d9b24a", "#8d7ab0", "#9cc3a4"];
+const GRUPOS_EMPURRAR = ["peito", "ombros", "triceps"], GRUPOS_PUXAR = ["costas", "biceps"];
+const GRUPOS_SUPERIORES = ["peito", "costas", "ombros", "biceps", "triceps", "antebraco"], GRUPOS_INFERIORES = ["quadriceps", "posterior_coxa", "gluteos", "panturrilha", "adutores"];
+
+function calcularDesempenho(de, ate) {
+  const hoje = today();
+  const fim = ate > hoje ? hoje : ate;
+  const treinos = state.treinos.filter((t) => t.date >= de && t.date <= fim).slice().sort((a, b) => (treinoAntesDe(a, b) ? -1 : 1));
+  const d = { de: de, ate: fim, treinos: treinos, nDias: relDiasEntre(de, fim) + 1, temDados: treinos.length > 0 };
+  if (!d.temDados) return d;
+  d.diasComTreino = new Set(treinos.map((t) => t.date)).size;
+  d.minutos = treinos.reduce((s, t) => s + (Number(t.duracaoMin) || 0), 0);
+
+  // ---- Força ----
+  const musc = treinos.filter((t) => t.esporte === "Musculação");
+  const todosMusc = state.treinos.filter((t) => t.esporte === "Musculação").slice().sort((a, b) => (treinoAntesDe(a, b) ? -1 : 1));
+  const porEx = {};
+  musc.forEach((t) => { const r = rmsDoTreino(t); Object.keys(r).forEach((nome) => { (porEx[nome] = porEx[nome] || []).push({ date: t.date, rm: r[nome].rm }); }); });
+  d.exercicios = Object.keys(porEx).filter((nome) => porEx[nome].length >= 2).map((nome) => {
+    const lista = porEx[nome];
+    const { primeira, segunda } = dividirEmMetades(lista);
+    const m1 = media(primeira.map((x) => x.rm)), m2 = media(segunda.map((x) => x.rm));
+    const pct = m1 ? ((m2 - m1) / m1) * 100 : 0;
+    // Recorde: o melhor 1RM de sempre foi feito dentro do período e havia registro antes dele.
+    const historico = []; todosMusc.forEach((t) => { const r = rmsDoTreino(t)[nome]; if (r) historico.push({ date: t.date, rm: r.rm }); });
+    let idxMax = 0; historico.forEach((x, i) => { if (x.rm >= historico[idxMax].rm) idxMax = i; });
+    const recorde = idxMax > 0 && historico[idxMax].date >= de && historico[idxMax].date <= fim;
+    return { nome: nome, vezes: lista.length, atual: lista[lista.length - 1].rm, pct: pct, estado: pct >= 2.5 ? "up" : pct <= -2.5 ? "down" : "flat", recorde: recorde, serie: lista.map((x) => x.rm) };
+  }).sort((a, b) => b.vezes - a.vezes || Math.abs(b.pct) - Math.abs(a.pct));
+  const semanas = Math.max(1, d.nDias / 7);
+  const seriesGrupo = {};
+  musc.forEach((t) => (t.gruposMusculares || []).forEach((g) => { const gid = grupoIdPorLabel(g.grupo); if (!gid) return; (g.exercicios || []).forEach((e) => { seriesGrupo[gid] = (seriesGrupo[gid] || 0) + (Number(e.series) || 0); }); }));
+  d.seriesSemana = GRUPOS_MUSCULARES.filter((g) => seriesGrupo[g.id]).map((g) => ({ id: g.id, label: g.label, n: seriesGrupo[g.id] / semanas })).sort((a, b) => b.n - a.n);
+  d.gruposSemSeries = GRUPOS_MUSCULARES.filter((g) => !seriesGrupo[g.id] && g.id !== "antebraco" && g.id !== "adutores").map((g) => g.label);
+  const soma = (ids) => ids.reduce((s, id) => s + (seriesGrupo[id] || 0), 0);
+  d.empurrar = soma(GRUPOS_EMPURRAR); d.puxar = soma(GRUPOS_PUXAR); d.superior = soma(GRUPOS_SUPERIORES); d.inferior = soma(GRUPOS_INFERIORES);
+
+  // ---- Recordes do período ----
+  d.recordes = [];
+  treinos.forEach((t) => recordesDoTreino(t).forEach((r) => d.recordes.push(Object.assign({ date: t.date }, r))));
+  const chaveRec = {}; d.recordes.forEach((r) => { chaveRec[r.tipo + r.nome] = r; });
+  d.recordesUnicos = Object.keys(chaveRec).map((k) => chaveRec[k]);
+
+  // ---- Condicionamento ----
+  d.eficiencia = ESPORTES_COM_DISTANCIA.map((esp) => {
+    const pts = treinos.filter((t) => t.esporte === esp && t.fcMedia && t.distanciaKm && t.duracaoMin && !(esp === "Ciclismo" && t.ciclismoModalidade === "Spinning"))
+      .map((t) => ({ date: t.date, ef: (Number(t.distanciaKm) * 1000 / Number(t.duracaoMin)) / Number(t.fcMedia) }));
+    if (pts.length < 2) return null;
+    const { primeira, segunda } = dividirEmMetades(pts);
+    const m1 = media(primeira.map((x) => x.ef)), m2 = media(segunda.map((x) => x.ef));
+    return { esporte: esp, pontos: pts, m1: m1, m2: m2, pct: m1 ? ((m2 - m1) / m1) * 100 : 0 };
+  }).filter(Boolean);
+  const idade = trxIdade();
+  d.fcMax = idade ? Math.round(208 - 0.7 * idade) : null;
+  if (d.fcMax) {
+    const z = [0, 0, 0, 0, 0];
+    treinos.filter((t) => t.fcMedia).forEach((t) => { const p = Number(t.fcMedia) / d.fcMax; const i = p < 0.6 ? 0 : p < 0.7 ? 1 : p < 0.8 ? 2 : p < 0.9 ? 3 : 4; z[i] += Number(t.duracaoMin) || 0; });
+    const tot = z.reduce((a, b) => a + b, 0);
+    d.zonas = tot ? z.map((v) => (v / tot) * 100) : null;
+    d.zonasTreinos = treinos.filter((t) => t.fcMedia).length;
+  }
+  const comDist = treinos.filter((t) => ESPORTES_COM_DISTANCIA.includes(t.esporte) && Number(t.distanciaKm) > 0);
+  const kmPorEsp = {}; comDist.forEach((t) => { kmPorEsp[t.esporte] = (kmPorEsp[t.esporte] || 0) + Number(t.distanciaKm); });
+  d.espDist = Object.keys(kmPorEsp).sort((a, b) => kmPorEsp[b] - kmPorEsp[a])[0] || null;
+  if (d.espDist) {
+    const doEsp = comDist.filter((t) => t.esporte === d.espDist);
+    const paces = doEsp.filter((t) => t.paceMinPorKm && Number(t.distanciaKm) >= 3);
+    d.melhorPace = paces.length ? paces.slice().sort((a, b) => a.paceMinPorKm - b.paceMinPorKm)[0] : null;
+    d.maiorDist = doEsp.slice().sort((a, b) => b.distanciaKm - a.distanciaKm)[0];
+    const sem = {};
+    doEsp.forEach((t) => { const k = trxInicioSemana(t.date); sem[k] = (sem[k] || 0) + Number(t.distanciaKm); });
+    const semanasLista = []; for (let s = trxInicioSemana(de); s <= fim; s = relSomarDias(s, 7)) semanasLista.push({ ini: s, km: sem[s] || 0 });
+    d.kmSemanas = semanasLista.slice(-6);
+    const n = d.kmSemanas.length;
+    if (n >= 2 && d.kmSemanas[n - 2].km > 0) d.kmVariacao = ((d.kmSemanas[n - 1].km - d.kmSemanas[n - 2].km) / d.kmSemanas[n - 2].km) * 100;
+  }
+
+  // ---- Carga e recuperação ----
+  const cargaEsp = {}; treinos.forEach((t) => { cargaEsp[t.esporte] = (cargaEsp[t.esporte] || 0) + cargaDoTreino(t); });
+  const principais = Object.keys(cargaEsp).sort((a, b) => cargaEsp[b] - cargaEsp[a]).slice(0, 4);
+  d.cargaEsportes = principais.concat(Object.keys(cargaEsp).length > 4 ? ["Outros"] : []);
+  const semanasCarga = [];
+  for (let s = trxInicioSemana(de); s <= fim; s = relSomarDias(s, 7)) {
+    const porEsp = {}; let total = 0;
+    state.treinos.filter((t) => t.date >= s && t.date <= relSomarDias(s, 6) && t.date >= de && t.date <= fim).forEach((t) => { const k = principais.includes(t.esporte) ? t.esporte : "Outros"; const c = cargaDoTreino(t); porEsp[k] = (porEsp[k] || 0) + c; total += c; });
+    semanasCarga.push({ ini: s, total: total, porEsp: porEsp });
+  }
+  d.cargaSemanas = semanasCarga.slice(-6);
+  d.acwr = acwrEm(fim);
+  d.carga7 = cargaEntre(relSomarDias(fim, -6), fim);
+  d.comNota = treinos.filter((t) => t.esforco).length;
+  d.prontidao = relListaDatas(de, fim).map((dt) => ({ date: dt, p: prontidaoDoDia(dt) })).filter((x) => x.p);
+  d.cruzamentos = trxCruzamentos(treinos);
+
+  // ---- Nutrição e corpo ----
+  d.massaMagra = trxMassaMagra();
+  if (d.massaMagra && d.massaMagra.kg > 0) {
+    const dias = state.diarioKcal.filter((r) => r.date >= de && r.date <= fim && diarioTemConsumo(r)).map((r) => {
+      const doDia = state.treinos.filter((t) => t.date === r.date);
+      const kcalTreino = doDia.reduce((s, t) => s + (Number(t.caloriasQueimadas) || 0), 0);
+      const principal = doDia.slice().sort((a, b) => (b.caloriasQueimadas || 0) - (a.caloriasQueimadas || 0))[0];
+      return { date: r.date, ea: ((r.calories || 0) - kcalTreino) / d.massaMagra.kg, cat: principal ? principal.esporte : "" };
+    });
+    if (dias.length) {
+      d.ea = media(dias.map((x) => x.ea));
+      const cats = {}; dias.forEach((x) => { (cats[x.cat] = cats[x.cat] || []).push(x.ea); });
+      d.eaCats = Object.keys(cats).map((k) => ({ cat: k, n: cats[k].length, ea: media(cats[k]) })).sort((a, b) => (a.cat === "") - (b.cat === "") || b.n - a.n);
+      d.eaDias = dias.length;
+    }
+  }
+  d.prePos = trxPrePos(treinos);
+  d.plano = trxPlano(de, fim);
+  d.mes = fim.slice(0, 7);
+  return d;
+}
+
+function trxCruzamentos(treinos) {
+  const out = [];
+  const comG = treinos.map((t) => ({ t: t, g: garminDoDia(t.date) })).filter((x) => x.g);
+  // Sono curto x esforço e pace
+  const sonoCurto = comG.filter((x) => x.g.sono && x.g.sono.sleepTimeSeconds && x.g.sono.sleepTimeSeconds < 6 * 3600);
+  const sonoOk = comG.filter((x) => x.g.sono && x.g.sono.sleepTimeSeconds && x.g.sono.sleepTimeSeconds >= 6 * 3600);
+  const esf = (l) => l.filter((x) => x.t.esforco).map((x) => Number(x.t.esforco));
+  if (esf(sonoCurto).length >= 3 && esf(sonoOk).length >= 3) {
+    const dif = media(esf(sonoCurto)) - media(esf(sonoOk));
+    if (Math.abs(dif) >= 0.3) out.push({ ic: "😴", html: "Noites com <b>menos de 6h</b> de sono: esforço " + (dif > 0 ? "<b>" + formatNumber(dif, 1) + " ponto maior</b>" : formatNumber(-dif, 1) + " ponto menor") + " pro mesmo tipo de treino." });
+  }
+  const pace = (l) => l.filter((x) => x.t.esporte === "Corrida" && x.t.paceMinPorKm).map((x) => Number(x.t.paceMinPorKm));
+  if (pace(sonoCurto).length >= 3 && pace(sonoOk).length >= 3) {
+    const seg = Math.round((media(pace(sonoCurto)) - media(pace(sonoOk))) * 60);
+    if (Math.abs(seg) >= 5) out.push({ ic: "🏃", html: "Corridas depois de noites com <b>menos de 6h</b> de sono: pace <b>" + Math.abs(seg) + " s/km " + (seg > 0 ? "mais lento" : "mais rápido") + "</b>." });
+  }
+  // HRV acima da média x recordes
+  const comHrv = comG.filter((x) => x.g.hrv && x.g.hrv.hrvSummary && x.g.hrv.hrvSummary.lastNightAvg != null && x.g.hrv.hrvSummary.weeklyAvg);
+  const alto = comHrv.filter((x) => x.g.hrv.hrvSummary.lastNightAvg >= x.g.hrv.hrvSummary.weeklyAvg), baixo = comHrv.filter((x) => x.g.hrv.hrvSummary.lastNightAvg < x.g.hrv.hrvSummary.weeklyAvg);
+  if (alto.length >= 3 && baixo.length >= 3) {
+    const rA = alto.reduce((s, x) => s + recordesDoTreino(x.t).length, 0), rB = baixo.reduce((s, x) => s + recordesDoTreino(x.t).length, 0);
+    if (rA + rB >= 2) out.push({ ic: "💓", html: "HRV <b>acima da sua média</b>: " + rA + " de " + (rA + rB) + " recordes saíram nesses dias (" + alto.length + " de " + comHrv.length + " treinos)." });
+  }
+  // Body Battery baixo x FC média
+  const comBB = comG.map((x) => Object.assign({ bb: bodyBatteryAoAcordar(x.g) }, x)).filter((x) => x.bb != null && x.t.fcMedia);
+  const bbBaixo = comBB.filter((x) => x.bb < 30), bbOk = comBB.filter((x) => x.bb >= 30);
+  if (bbBaixo.length >= 3 && bbOk.length >= 3) {
+    const dif = Math.round(media(bbBaixo.map((x) => Number(x.t.fcMedia))) - media(bbOk.map((x) => Number(x.t.fcMedia))));
+    if (Math.abs(dif) >= 3) out.push({ ic: "🔋", html: "Body Battery <b>abaixo de 30</b> ao acordar: FC média " + (dif > 0 ? "+" : "") + dif + " bpm nos treinos." });
+  }
+  return out;
+}
+function trxPrePos(treinos) {
+  const peso = pesoReferenciaKg();
+  const linhas = treinos.filter((t) => t.horaInicio && !PERFIS_TREINO[perfilDoEsporte(t.esporte)].leve).map((t) => {
+    const ini = hhmmParaMin(t.horaInicio);
+    const antes = state.meals.filter((m) => m.date === t.date && m.time && m.name !== "Exposição Solar" && ini - hhmmParaMin(m.time) >= 0 && ini - hhmmParaMin(m.time) <= 240)
+      .sort((a, b) => b.time.localeCompare(a.time))[0];
+    let preOk = false;
+    if (antes) { const meta = metasPreTreino(t.esporte, ini - hhmmParaMin(antes.time) >= 150 ? "refeicao" : "lanche", peso, null); preOk = !meta.leve && (antes.carbs || 0) >= meta.carb * 0.85; }
+    const pos = refeicaoPosDoTreino(t);
+    let posOk = null;
+    if (pos) { const mp = metasPosTreino([{ esporte: t.esporte, duracaoMin: t.duracaoMin }], peso, null); posOk = mp.leve ? null : (pos.protein || 0) >= mp.prot * 0.85; }
+    return { t: t, preOk: preOk, posOk: posOk, recordes: recordesDoTreino(t).length };
+  });
+  const grupo = (l) => ({ n: l.length, esforco: l.filter((x) => x.t.esforco).length ? media(l.filter((x) => x.t.esforco).map((x) => Number(x.t.esforco))) : null, recordes: l.reduce((s, x) => s + x.recordes, 0) });
+  return { com: grupo(linhas.filter((x) => x.preOk)), sem: grupo(linhas.filter((x) => !x.preOk)), posAvaliados: linhas.filter((x) => x.posOk != null).length, posOk: linhas.filter((x) => x.posOk === true).length };
+}
+function trxPlano(de, fim) {
+  const hoje = today();
+  const planos = state.treinosPlanejados.filter((p) => p.date >= de && p.date <= fim && p.date < hoje).map((p) => ({ p: p, feito: !!planoTreinoRealizado(p) }));
+  const faltas = planos.filter((x) => !x.feito);
+  const faltasEsp = {}; faltas.forEach((x) => { faltasEsp[x.p.esporte] = (faltasEsp[x.p.esporte] || 0) + 1; });
+  const semanas = {}; planos.forEach((x) => { const k = trxInicioSemana(x.p.date); (semanas[k] = semanas[k] || []).push(x.feito); });
+  const chaves = Object.keys(semanas).sort();
+  const completas = chaves.filter((k) => semanas[k].every(Boolean)).length;
+  let seq = 0; for (let i = chaves.length - 1; i >= 0 && semanas[chaves[i]].every(Boolean); i--) seq++;
+  // Metas da semana atual: o que está no plano desta semana x o que já foi feito.
+  const iniSem = trxInicioSemana(hoje), fimSem = relSomarDias(iniSem, 6);
+  const daSemana = state.treinosPlanejados.filter((p) => p.date >= iniSem && p.date <= fimSem);
+  const metas = {}; daSemana.forEach((p) => { const m = metas[p.esporte] || (metas[p.esporte] = { esporte: p.esporte, plan: 0, feito: 0 }); m.plan++; if (planoTreinoRealizado(p)) m.feito++; });
+  return { total: planos.length, feitos: planos.length - faltas.length, faltasEsp: faltasEsp, semanas: chaves.length, completas: completas, seq: seq, metas: Object.keys(metas).map((k) => metas[k]) };
+}
+
+// ----- templates da análise -----
+const TRX_SECOES = [["forca", "🏋️ Força"], ["cond", "🏃 Condicionamento"], ["carga", "🔋 Carga e recuperação"], ["corpo", "🍽️ Nutrição e corpo"]];
+function trxKpi(l, n, dd, cor) { return '<div class="rel-kpi"><div class="l">' + l + '</div><div class="n"' + (cor ? ' style="color:' + cor + '"' : "") + ">" + n + '</div><div class="d">' + dd + "</div></div>"; }
+function trxCard(num, titulo, ex, corpo) { return '<div class="rel-card"><div class="rel-card-t"><span class="num">' + num + "</span> " + titulo + (ex ? ' <span class="ex">· ' + ex + "</span>" : "") + "</div>" + corpo + "</div>"; }
+function trxVazio(txt) { return '<p class="rel-vazio">' + txt + "</p>"; }
+function trxKpisTopo(d) {
+  const media4 = d.acwr ? d.acwr.cronica : null;
+  const pctCarga = media4 ? Math.round(((d.carga7 - media4) / media4) * 100) : null;
+  const ef = d.eficiencia[0];
+  const ea = d.ea;
+  return '<div class="rel-kpis">' +
+    trxKpi("Recordes", d.recordes.length ? "🏆 " + d.recordes.length : "0", d.recordes.length ? "em " + d.recordesUnicos.length + (d.recordesUnicos.length === 1 ? " exercício ou prova" : " exercícios ou provas") : "nenhum no período") +
+    trxKpi("Carga 7 dias", formatNumber(d.carga7), pctCarga != null ? (pctCarga > 0 ? "+" : "") + pctCarga + "% sobre a sua média · " + (d.acwr.valor > 1.5 ? "pico" : d.acwr.valor > 1.3 ? "acima" : d.acwr.valor < 0.8 ? "abaixo" : "zona segura") : "duração × esforço") +
+    trxKpi("Eficiência aeróbica", ef ? (ef.pct > 0 ? "+" : "") + formatNumber(ef.pct, 0) + "%" : "—", ef ? esc(ef.esporte.toLowerCase()) + ": velocidade x batimento" : "precisa de 2 treinos com FC e distância", ef ? (ef.pct >= 2 ? "#2f6b3a" : ef.pct <= -2 ? "#b0442f" : "") : "") +
+    trxKpi("Disponib. energética", ea != null ? formatNumber(ea, 0) : "—", ea != null ? "kcal/kg de massa magra · " + (ea < 30 ? "atenção" : ea < 45 ? "ok pra perder gordura" : "ideal") : "precisa de dias no Diário de Kcal", ea != null ? (ea < 30 ? "#b0442f" : ea < 45 ? "#a86a12" : "#2f6b3a") : "") +
+  "</div>";
+}
+function trxForcaHtml(d) {
+  let h = "";
+  if (!d.exercicios.length && !d.seriesSemana.length) return trxCard(1, "Força", "", trxVazio("Nenhum treino de musculação com carga registrada no período."));
+  if (d.exercicios.length) {
+    const linhas = d.exercicios.slice(0, 8).map((e) => {
+      const cor = e.estado === "up" ? "#4f8f62" : e.estado === "down" ? "#c8553d" : "#8a9a91";
+      const varTxt = e.estado === "flat" ? '<small class="trx-flat">estável</small>' : '<small class="' + (e.estado === "up" ? "trx-up" : "trx-down") + '">' + (e.pct > 0 ? "+" : "−") + formatNumber(Math.abs(e.pct), 0) + "%" + (e.recorde ? " 🏆" : "") + "</small>";
+      return '<div class="trx-1rm"><span class="nm">' + esc(e.nome) + "<small>" + e.vezes + " treinos</small></span>" + trxSparkline(e.serie, cor) + '<span class="vl">' + formatNumber(e.atual, 0) + " kg" + (e.estado === "flat" && e.recorde ? '<small class="trx-up">🏆</small>' : varTxt) + "</span></div>";
+    }).join("");
+    const queda = d.exercicios.filter((e) => e.estado === "down");
+    h += trxCard(1, "Força estimada (1RM)", "peso e repetições juntos",
+      '<p class="rel-nota">Fórmula de Epley: 4×8 com 80 kg ≈ 101 kg de 1RM. Compara a força mesmo quando você muda séries e repetições (1ª metade x 2ª metade do período).</p>' + linhas +
+      (queda.length ? '<div class="trx-rel-hint">' + esc(queda.map((e) => e.nome).join(", ")) + (queda.length === 1 ? " caiu" : " caíram") + " no período. Cansaço acumulado (jiu-jitsu ou corrida no dia anterior), sono e déficit pesam: vale treinar " + (queda.length === 1 ? "esse exercício" : "esses exercícios") + " depois de um dia de descanso.</div>" : ""));
+  } else {
+    h += trxCard(1, "Força estimada (1RM)", "", trxVazio("Precisa de pelo menos 2 treinos do mesmo exercício com carga e repetições no período."));
+  }
+  if (d.seriesSemana.length) {
+    const linhas = d.seriesSemana.map((g) => {
+      const n = g.n, cor = n >= 10 && n <= 20 ? "#4f8f62" : n > 20 || n >= 6 ? "#d9922e" : "#c8553d";
+      return '<div class="trx-series"><span>' + esc(g.label) + '</span><div class="t"><div class="faixa" style="left:' + (10 / 24 * 100) + "%;width:" + (10 / 24 * 100) + '%"></div><span style="width:' + Math.min(100, (n / 24) * 100).toFixed(1) + "%;background:" + cor + '"></span></div><span class="n">' + formatNumber(n, n < 10 && n % 1 ? 1 : 0) + "</span></div>";
+    }).join("");
+    let bal = "";
+    const pp = d.empurrar + d.puxar, si = d.superior + d.inferior;
+    if (pp >= 10) {
+      const pe = Math.round((d.empurrar / pp) * 100);
+      bal += '<div class="trx-bal"><div class="lg"><span>Empurrar ' + pe + "%</span><span>Puxar " + (100 - pe) + '%</span></div><div class="bar"><span style="width:' + pe + '%"></span><span style="width:' + (100 - pe) + '%"></span></div><div class="lg"><span class="' + (pe >= 40 && pe <= 60 ? "trx-up" : "trx-n1") + '" style="font-weight:600">' + (pe >= 40 && pe <= 60 ? "✓ equilibrado" : pe > 60 ? "⚠ mais empurrar que puxar: reforce costas e bíceps" : "⚠ mais puxar que empurrar: reforce peito, ombros e tríceps") + "</span></div></div>";
+    }
+    if (si >= 10) {
+      const ps = Math.round((d.superior / si) * 100);
+      bal += '<div class="trx-bal"><div class="lg"><span>Superiores ' + ps + "%</span><span>Inferiores " + (100 - ps) + '%</span></div><div class="bar"><span style="width:' + ps + '%"></span><span style="width:' + (100 - ps) + '%"></span></div><div class="lg"><span class="' + (ps <= 65 ? "trx-up" : "trx-n1") + '" style="font-weight:600">' + (ps <= 65 ? "✓ equilibrado" : "⚠ pernas abaixo: o ideal fica perto de 60/40") + "</span></div></div>";
+    }
+    h += trxCard(2, "Séries por grupo", "média por semana", linhas +
+      '<p class="rel-nota">Faixa tracejada = 10 a 20 séries por semana, a recomendada pra ganhar massa muscular. Jiu-jitsu e corrida ajudam pernas e core, mas não substituem o treino com carga.' +
+      (d.gruposSemSeries.length ? " Sem séries no período: " + esc(d.gruposSemSeries.join(", ")) + "." : "") + "</p>" +
+      (bal ? '<div class="rel-sub2">Equilíbrio</div>' + bal : ""));
+  }
+  return h;
+}
+function trxEficienciaSvg(pts) {
+  const W = 340, H = 120, PL = 34, PR = 8, PT = 12, PB = 20;
+  const vals = pts.map((p) => p.ef), mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals);
+  const lo = mn - (mx - mn || 0.05) * 0.2, hi = mx + (mx - mn || 0.05) * 0.2;
+  const x = (i) => PL + (i * (W - PL - PR)) / Math.max(1, pts.length - 1), y = (v) => PT + ((hi - v) / (hi - lo)) * (H - PT - PB);
+  let s = '<svg viewBox="0 0 ' + W + " " + H + '" width="100%" role="img" aria-label="Eficiência aeróbica ao longo do período">';
+  [hi, (hi + lo) / 2, lo].forEach((v) => { s += '<line x1="' + PL + '" x2="' + (W - PR) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '" stroke="#e5ebe3"/><text x="' + (PL - 4) + '" y="' + (y(v) + 3).toFixed(1) + '" font-size="8" text-anchor="end" fill="#8a9a91">' + formatNumber(v, 2) + "</text>"; });
+  s += '<polyline points="' + pts.map((p, i) => x(i).toFixed(1) + "," + y(p.ef).toFixed(1)).join(" ") + '" fill="none" stroke="#4f8f62" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+  pts.forEach((p, i) => { s += '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(p.ef).toFixed(1) + '" r="3.5" fill="#fff" stroke="#4f8f62" stroke-width="2"><title>' + relDiaMes(p.date) + ": " + formatNumber(p.ef, 2) + " m/batimento</title></circle>"; });
+  s += '<text x="' + PL + '" y="' + (H - 5) + '" font-size="8" fill="#8a9a91">' + relDiaMes(pts[0].date) + '</text><text x="' + (W - PR) + '" y="' + (H - 5) + '" font-size="8" text-anchor="end" fill="#8a9a91">' + relDiaMes(pts[pts.length - 1].date) + "</text></svg>";
+  return s;
+}
+function trxCondHtml(d) {
+  let h = "", num = 1;
+  if (d.eficiencia.length) {
+    d.eficiencia.forEach((e) => {
+      const txt = e.pct >= 2 ? "Você está mais rápido com o mesmo batimento: o condicionamento melhorou." : e.pct <= -2 ? "Mais batimento pra mesma velocidade: cansaço, calor, sono ou déficit podem estar pesando." : "Eficiência estável no período.";
+      h += trxCard(num++, "Eficiência aeróbica", esc(e.esporte.toLowerCase()) + " · treinos com FC do Garmin", trxEficienciaSvg(e.pontos) +
+        '<p class="rel-p">Metros por batimento: <b>' + formatNumber(e.m1, 2) + " → " + formatNumber(e.m2, 2) + " (" + (e.pct > 0 ? "+" : "") + formatNumber(e.pct, 0) + "%)</b>. " + txt + "</p>");
+    });
+  } else {
+    h += trxCard(num++, "Eficiência aeróbica", "", trxVazio("Precisa de pelo menos 2 corridas, pedais ou caminhadas com distância e FC (vindas do Garmin) no período."));
+  }
+  if (d.fcMax && d.zonas) {
+    const z = d.zonas, cores = ["#9cc3a4", "#4f8f62", "#d9b24a", "#d9922e", "#c8553d"];
+    const fx = [[0, 0.6], [0.6, 0.7], [0.7, 0.8], [0.8, 0.9], [0.9, 1]].map((f, i) => i === 0 ? "&lt;" + Math.round(d.fcMax * 0.6) : i === 4 ? Math.round(d.fcMax * 0.9) + "+" : Math.round(d.fcMax * f[0]) + "-" + (Math.round(d.fcMax * f[1]) - 1));
+    const leve = z[0] + z[1], mod = z[2], int = z[3] + z[4];
+    h += trxCard(num++, "Zonas de frequência cardíaca", "FC máx. estimada " + d.fcMax + " bpm",
+      '<div class="trx-zonas">' + z.map((v, i) => v > 0 ? '<span style="width:' + v.toFixed(1) + "%;background:" + cores[i] + '">' + (v >= 12 ? "Z" + (i + 1) + " " + formatNumber(v, 0) + "%" : v >= 5 ? "Z" + (i + 1) : "") + "</span>" : "").join("") + "</div>" +
+      '<div class="trx-zl">' + fx.map((f, i) => "<div><b>Z" + (i + 1) + "</b>" + f + "</div>").join("") + "</div>" +
+      '<div class="trx-rel-hint">' + formatNumber(leve, 0) + "% leve · " + formatNumber(mod, 0) + "% moderado · " + formatNumber(int, 0) + "% intenso. " +
+        (leve >= 70 ? "Boa distribuição: a referência pra evoluir é <b>~80% leve</b>." : "A referência pra evoluir é <b>~80% leve</b>: troque um treino moderado por um bem leve (Z2) e deixe o forte pros tiros.") + "</div>" +
+      '<p class="rel-nota">Cada treino entra na zona da sua FC média (o Garmin não manda o tempo em cada zona). ' + d.zonasTreinos + " treinos com FC no período.</p>");
+  } else {
+    h += trxCard(num++, "Zonas de frequência cardíaca", "", trxVazio(d.fcMax ? "Nenhum treino com FC (do Garmin) no período." : "Informe sua data de nascimento no perfil pra estimar a FC máxima."));
+  }
+  if (d.espDist) {
+    const km = d.kmSemanas, mx = Math.max.apply(null, km.map((s) => s.km).concat([1]));
+    const ult = km.length - 1;
+    const alerta = d.kmVariacao != null && d.kmVariacao > 10;
+    h += trxCard(num++, "Recordes e volume", esc(d.espDist.toLowerCase()),
+      '<div class="rel-kpis">' +
+        trxKpi("Melhor pace", d.melhorPace ? formatarPace(d.melhorPace.paceMinPorKm) : "—", d.melhorPace ? "em " + formatNumber(d.melhorPace.distanciaKm, 1) + " km · " + relDiaMes(d.melhorPace.date) + (d.recordesUnicos.some((r) => r.tipo === "pace" && r.nome === d.espDist) ? " 🏆" : "") : "precisa de treinos de 3 km ou mais") +
+        trxKpi("Maior distância", formatNumber(d.maiorDist.distanciaKm, 1) + " km", relDiaMes(d.maiorDist.date) + " · " + formatarDuracao(d.maiorDist.duracaoMin) + (d.recordesUnicos.some((r) => r.tipo === "distancia" && r.nome === d.espDist) ? " 🏆" : "")) +
+      "</div>" +
+      '<div class="rel-sub2">Km por semana</div><div class="trx-semana">' + km.map((s, i) => '<div class="c"><span class="v">' + formatNumber(s.km, 1) + '</span><div class="stack" style="height:' + Math.max(2, (s.km / mx) * 92).toFixed(0) + 'px"><span style="flex:1;background:' + (i === ult && alerta ? "#d9922e" : "#4f8f62") + '"></span></div><span>' + relDiaMes(s.ini) + "</span></div>").join("") + "</div>" +
+      (alerta ? '<div class="trx-rel-hint aviso">⚠ A última semana subiu <b>' + formatNumber(d.kmVariacao, 0) + "%</b>: a referência é aumentar até ~10% por semana pra poupar canela e joelho.</div>" : '<p class="rel-nota">Semanas começando na segunda-feira. A referência é aumentar o volume até ~10% por semana.</p>'));
+  }
+  return h;
+}
+function trxCargaHtml(d) {
+  let h = "";
+  const sem = d.cargaSemanas, mx = Math.max.apply(null, sem.map((s) => s.total).concat([1]));
+  const cor = (k) => TRX_CORES[d.cargaEsportes.indexOf(k) % TRX_CORES.length];
+  const barras = '<div class="trx-semana" style="height:150px">' + sem.map((s) => '<div class="c"><span class="v">' + formatNumber(s.total) + '</span><div class="stack" style="height:' + Math.max(2, (s.total / mx) * 110).toFixed(0) + 'px">' +
+    d.cargaEsportes.filter((k) => s.porEsp[k]).map((k) => '<span style="height:' + ((s.porEsp[k] / (s.total || 1)) * 100).toFixed(1) + "%;background:" + cor(k) + '" title="' + esc(k) + ": " + formatNumber(s.porEsp[k]) + '"></span>').join("") +
+    "</div><span>" + relDiaMes(s.ini) + "</span></div>").join("") + "</div>";
+  const legenda = '<div class="rel-legenda">' + d.cargaEsportes.map((k) => '<span><i style="background:' + cor(k) + '"></i>' + esc(k.toLowerCase()) + "</span>").join("") + "</div>";
+  let regua;
+  if (d.acwr) {
+    const v = d.acwr.valor, pos = Math.max(0, Math.min(100, ((v - 0.5) / 1.5) * 100));
+    regua = '<div class="rel-sub2">Últimos 7 dias × média de 4 semanas</div><div class="trx-gauge"><i style="left:calc(' + pos.toFixed(1) + '% - 2px)"></i></div>' +
+      '<div class="trx-gauge-lg">' + [0.5, 0.8, 1.3, 1.5, 2.0].map((x) => '<span style="left:' + ((x - 0.5) / 1.5 * 100).toFixed(1) + '%">' + formatNumber(x, 1) + "</span>").join("") + "</div>" +
+      '<p class="rel-p"><b>' + formatNumber(v, 2) + ": " + (v > 1.5 ? "pico de carga" : v > 1.3 ? "acima do normal" : v < 0.8 ? "abaixo do normal" : "zona segura") + "</b> (0,8 a 1,3). " +
+      (v > 1.5 ? "Subiu rápido demais: é quando o risco de lesão sobe. Segure a carga nos próximos dias." : v > 1.3 ? "Atenção aos próximos dias: evite somar mais carga." : v < 0.8 ? "Semana mais leve que o normal: bom pra recuperar, mas se durar muito o condicionamento cai." : "Acima de 1,5 é pico de carga, quando o risco de lesão sobe.") + "</p>";
+  } else regua = '<p class="rel-nota">A comparação 7 dias × 4 semanas aparece com pelo menos 3 semanas de treinos registrados.</p>';
+  const notaEsforco = '<p class="rel-nota">Carga = duração × esforço; semanas de segunda a domingo (a primeira e a última podem estar incompletas). ' + d.comNota + " de " + d.treinos.length + " treinos com nota de esforço; os demais usam o efeito de treino do Garmin ou a intensidade típica da modalidade.</p>";
+  h += trxCard(1, "Carga semanal", "duração × esforço", barras + legenda + regua + notaEsforco);
+  if (d.prontidao.length) {
+    const cont = [0, 0, 0]; d.prontidao.forEach((x) => cont[x.p.nivel]++);
+    const cores = ["#cfe3c6", "#f2e2b8", "#f0c2b5"];
+    h += trxCard(2, "Prontidão no período", "",
+      '<div class="trx-prontcal">' + d.prontidao.map((x) => '<div style="background:' + cores[x.p.nivel] + '" title="' + relComSemana(x.date) + ": " + esc(x.p.titulo) + '"></div>').join("") + "</div>" +
+      '<p class="rel-p"><b>' + cont[0] + " " + (cont[0] === 1 ? "dia" : "dias") + " 🟢 · " + cont[1] + " 🟡 · " + cont[2] + " 🔴.</b> Calculada com HRV, sono, Body Battery e carga de cada manhã.</p>");
+  } else {
+    h += trxCard(2, "Prontidão no período", "", trxVazio("Aparece quando o relógio Garmin está conectado (HRV, sono e Body Battery)."));
+  }
+  h += trxCard(3, "O que a recuperação mudou no seu treino", "", d.cruzamentos.length
+    ? '<div class="trx-cruz">' + d.cruzamentos.map((c) => "<div>" + c.ic + " <span>" + c.html + "</span></div>").join("") + '</div><p class="rel-nota">Só aparece com pelo menos 3 treinos de cada lado pra comparar.</p>'
+    : trxVazio("Ainda não há treinos suficientes com dados do Garmin pra comparar (precisa de pelo menos 3 de cada lado)."));
+  return h;
+}
+function trxCorpoHtml(d) {
+  let h = "";
+  if (d.ea != null) {
+    const ea = d.ea, nivel = ea < 30 ? 2 : ea < 45 ? 1 : 0;
+    const pos = Math.max(0, Math.min(100, (ea / 60) * 100));
+    const nomeCat = (c) => (c ? "Dias de " + c.toLowerCase() : "Dias sem treino");
+    const pior = d.eaCats.filter((c) => c.cat && c.ea < 30).sort((a, b) => a.ea - b.ea)[0];
+    const extra = pior ? Math.ceil(((30 - pior.ea) * d.massaMagra.kg) / 50) * 50 : 0;
+    h += trxCard(1, "Disponibilidade energética", "",
+      '<div class="trx-ea n' + nivel + '"><div class="rel-sub2">Média do período</div><div class="n trx-n' + nivel + '">' + formatNumber(ea, 0) + ' kcal/kg</div>' +
+        '<div class="faixas"><i style="left:calc(' + pos.toFixed(1) + '% - 2px)"></i></div><div class="lg"><span>&lt;30 baixa</span><span>30-45 ok pra perder gordura</span><span>45+ ideal</span></div>' +
+        "<p>É o que sobra de energia pro corpo depois do treino: (consumo − gasto no treino) ÷ massa magra (" + formatNumber(d.massaMagra.kg, 1) + " kg, " + esc(d.massaMagra.fonte) + "). Abaixo de 30 por muitos dias, o corpo poupa energia: hormônios, recuperação e massa muscular sofrem.</p></div>" +
+      '<table class="rel-tab"><tr><th></th><th>Dias</th><th>Disp. energética</th></tr>' + d.eaCats.map((c) => "<tr><td>" + esc(nomeCat(c.cat)) + "</td><td>" + c.n + '</td><td class="trx-n' + (c.ea < 30 ? 2 : c.ea < 45 ? 1 : 0) + '" style="font-weight:700">' + formatNumber(c.ea, 0) + "</td></tr>").join("") + "</table>" +
+      (pior ? '<div class="trx-rel-hint">Nos ' + esc(nomeCat(pior.cat).toLowerCase()) + ", <b>+" + formatNumber(extra) + " kcal</b> (de preferência carboidrato no pré ou pós) levam a disponibilidade pra ~30, sem mudar a meta dos outros dias.</div>" : "") +
+      '<p class="rel-nota">Usa os ' + d.eaDias + " dias consolidados do Diário de Kcal no período.</p>");
+  } else {
+    h += trxCard(1, "Disponibilidade energética", "", trxVazio(d.massaMagra ? "Precisa de dias consolidados no Diário de Kcal dentro do período." : "Registre uma bioimpedância (ou peso, altura e sexo no perfil) pra calcular a massa magra."));
+  }
+  const pp = d.prePos;
+  if (pp.com.n + pp.sem.n >= 2) {
+    const esfTxt = (g) => (g.esforco != null ? formatNumber(g.esforco, 1) : "—");
+    let txt = "";
+    if (pp.com.n >= 3 && pp.sem.n >= 3 && pp.com.esforco != null && pp.sem.esforco != null) {
+      const dif = pp.com.esforco - pp.sem.esforco;
+      txt = "Com pré-treino adequado, o treino pareceu " + (dif < -0.2 ? "<b>mais leve</b> (esforço " + formatNumber(dif, 1).replace("-", "−") + ")" : dif > 0.2 ? "mais pesado (esforço +" + formatNumber(dif, 1) + ")" : "igual (esforço parecido)") + " e saíram " + pp.com.recordes + " de " + (pp.com.recordes + pp.sem.recordes) + " recordes. ";
+    }
+    if (pp.posAvaliados) txt += "Proteína do pós-treino atingida em <b>" + pp.posOk + " de " + pp.posAvaliados + "</b> treinos.";
+    h += trxCard(2, "Pré e pós-treino × desempenho", "",
+      '<table class="rel-tab"><tr><th></th><th>Treinos</th><th>Esforço</th><th>Recordes</th></tr><tr><td>Pré-treino adequado</td><td>' + pp.com.n + "</td><td>" + esfTxt(pp.com) + "</td><td>" + pp.com.recordes + "</td></tr><tr><td>Sem pré ou fraco</td><td>" + pp.sem.n + "</td><td>" + esfTxt(pp.sem) + "</td><td>" + pp.sem.recordes + "</td></tr></table>" +
+      (txt ? '<p class="rel-p">' + txt + "</p>" : "") + '<p class="rel-nota">Pré-treino adequado = refeição até 4h antes com pelo menos ~85% do carboidrato sugerido pra modalidade.</p>');
+  } else {
+    h += trxCard(2, "Pré e pós-treino × desempenho", "", trxVazio("Precisa de treinos com horário e refeições registradas no mesmo dia."));
+  }
+  // Plano, mapa do mês e metas da semana
+  const pl = d.plano;
+  let corpoPlano = "";
+  if (pl.total) {
+    const faltas = Object.keys(pl.faltasEsp).map((k) => pl.faltasEsp[k] + " " + k.toLowerCase());
+    corpoPlano += '<div class="rel-kpis">' +
+      trxKpi("Planejado × feito", pl.feitos + " de " + pl.total, formatNumber((pl.feitos / pl.total) * 100, 0) + "%" + (faltas.length ? " · faltas: " + esc(faltas.join(", ")) : "")) +
+      trxKpi("Semanas completas", pl.completas + " de " + pl.semanas, "sequência atual: " + pl.seq + (pl.seq === 1 ? " semana" : " semanas")) + "</div>";
+  }
+  corpoPlano += '<div class="rel-sub2">' + esc(new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(relData(d.mes + "-01"))) + "</div>" + trxMapaMesHtml(d.mes) +
+    '<div class="rel-legenda"><span><i style="background:#dcebd3"></i>leve</span><span><i style="background:#b7d6aa"></i>moderado</span><span><i style="background:#86b88a"></i>forte</span><span><i style="background:#fff;border:1.5px dashed #d9922e"></i>planejado e não feito</span></div>';
+  if (pl.metas.length) {
+    const C = 2 * Math.PI * 24;
+    corpoPlano += '<div class="rel-sub2">Metas desta semana (do seu plano)</div><div class="trx-metas">' + pl.metas.map((m) => {
+      const p = Math.min(1, m.feito / m.plan);
+      return '<div class="trx-meta"><svg viewBox="0 0 60 60" width="64" height="64"><circle cx="30" cy="30" r="24" fill="none" stroke="#eef2ea" stroke-width="6"/>' + (p > 0 ? '<circle cx="30" cy="30" r="24" fill="none" stroke="' + (p >= 1 ? "#4f8f62" : "#d9922e") + '" stroke-width="6" stroke-linecap="round" stroke-dasharray="' + (C * p).toFixed(1) + " " + C.toFixed(1) + '" transform="rotate(-90 30 30)"/>' : "") + '<text x="30" y="36" text-anchor="middle" font-size="17">' + emojiEsporte(m.esporte) + "</text></svg><b>" + m.feito + " de " + m.plan + "</b>" + esc(m.esporte) + "</div>";
+    }).join("") + "</div>";
+  } else corpoPlano += '<p class="rel-nota">Monte o plano da semana na aba Plano pra ver as metas da semana aqui.</p>';
+  h += trxCard(3, "Plano e metas da semana", "", corpoPlano);
+  return h;
+}
+function trxMapaMesHtml(mes) {
+  const hoje = today();
+  const ini = mes + "-01";
+  const ult = relSomarDias(relIso(new Date(relData(ini).getFullYear(), relData(ini).getMonth() + 1, 1)), -1);
+  const vazios = relData(ini).getDay();
+  let h = '<div class="trx-cal">' + ["D", "S", "T", "Q", "Q", "S", "S"].map((x) => '<div class="h">' + x + "</div>").join("");
+  for (let i = 0; i < vazios; i++) h += '<div class="d vazio"></div>';
+  relListaDatas(ini, ult).forEach((dt) => {
+    const dia = Number(dt.slice(8));
+    const doDia = state.treinos.filter((t) => t.date === dt);
+    if (doDia.length) {
+      const carga = doDia.reduce((s, t) => s + cargaDoTreino(t), 0);
+      const emojis = Array.from(new Set(doDia.map((t) => emojiEsporte(t.esporte)))).slice(0, 2).join("");
+      h += '<div class="d ' + (carga >= 600 ? "l3" : carga >= 300 ? "l2" : "l1") + '" title="' + esc(doDia.map((t) => t.esporte).join(" + ")) + " · carga " + formatNumber(carga) + '"><b>' + emojis + "</b>" + dia + "</div>";
+    } else if (dt < hoje && state.treinosPlanejados.some((p) => p.date === dt && !planoTreinoRealizado(p))) {
+      const p = state.treinosPlanejados.find((x) => x.date === dt);
+      h += '<div class="d falta" title="Planejado e não feito"><b>' + emojiEsporte(p.esporte) + "</b>" + dia + "</div>";
+    } else h += '<div class="d' + (dt > hoje ? " futuro" : "") + '">' + dia + "</div>";
+  });
+  return h + "</div>";
+}
+function trxResumo(d) {
+  const bons = [], atencao = [];
+  if (d.recordes.length) bons.push(d.recordes.length + (d.recordes.length === 1 ? " recorde" : " recordes") + " no período");
+  const ef = d.eficiencia[0];
+  if (ef && ef.pct >= 2) bons.push("condicionamento melhorando (+" + formatNumber(ef.pct, 0) + "% de eficiência)");
+  if (d.acwr && d.acwr.valor >= 0.8 && d.acwr.valor <= 1.3) bons.push("carga na zona segura");
+  const queda = d.exercicios.filter((e) => e.estado === "down");
+  if (queda.length) atencao.push("força em queda em " + queda.map((e) => e.nome.toLowerCase()).join(", "));
+  const poucas = d.seriesSemana.filter((g) => g.n < 10).map((g) => g.label.toLowerCase());
+  if (poucas.length) atencao.push("poucas séries de " + poucas.slice(0, 3).join(", ").replace(/, ([^,]*)$/, " e $1"));
+  if (d.kmVariacao != null && d.kmVariacao > 10) atencao.push(d.espDist.toLowerCase() + " subindo rápido (+" + formatNumber(d.kmVariacao, 0) + "%)");
+  if (d.acwr && d.acwr.valor > 1.3) atencao.push("carga acima do normal (" + formatNumber(d.acwr.valor, 2) + ")");
+  if (d.ea != null && d.ea < 30) atencao.push("disponibilidade energética baixa (" + formatNumber(d.ea, 0) + " kcal/kg)");
+  const juntar = (l) => l.join(", ").replace(/, ([^,]*)$/, " e $1");
+  return "<b>Resumo:</b> " + (bons.length ? juntar(bons) + "." : d.treinos.length + " treinos em " + d.diasComTreino + " dias.") + (atencao.length ? " <b>Atenção:</b> " + atencao.join("; ") + "." : "");
+}
+function analiseDesempenhoTemplate(gerada) {
+  const d = calcularDesempenho(gerada.de, gerada.ate);
+  if (!d.temDados) return '<div class="rel-box" style="margin-top:18px"><p class="rel-vazio">Nenhum treino registrado nesse período.</p></div>';
+  const sec = TRX_SECOES.some((s) => s[0] === state.analiseTreinoSecao) ? state.analiseTreinoSecao : "forca";
+  const corpo = sec === "forca" ? trxForcaHtml(d) : sec === "cond" ? trxCondHtml(d) : sec === "carga" ? trxCargaHtml(d) : trxCorpoHtml(d);
+  return '<div class="rel-box" id="trx-resultado" style="margin-top:18px">' +
+    '<div class="rel-head"><span>Treinos: ' + relDiaMes(d.de) + " a " + relDiaMes(d.ate) + "</span></div>" +
+    '<div class="rel-sub">' + d.nDias + " dias · " + d.treinos.length + (d.treinos.length === 1 ? " treino" : " treinos") + " em " + d.diasComTreino + (d.diasComTreino === 1 ? " dia" : " dias") + " · " + formatarDuracao(d.minutos) + " de treino</div>" +
+    trxKpisTopo(d) +
+    '<div class="trx-nav">' + TRX_SECOES.map((s) => '<button type="button" class="' + (s[0] === sec ? "on" : "") + '" onclick="acaoSecaoAnaliseTreino(\'' + s[0] + '\')">' + s[1] + "</button>").join("") + "</div>" +
+    corpo +
+    '<div class="rel-conclusao">' + trxResumo(d) + "</div>" +
+    '<button class="rel-pdf" onclick="acaoImprimirAnaliseTreino()">' + icon("download") + " Imprimir / salvar em PDF</button>" +
+  "</div>";
+}
+function acaoSecaoAnaliseTreino(sec) { state.analiseTreinoSecao = sec; render(); }
+function acaoImprimirAnaliseTreino() {
+  const g = state.analiseTreinoGerada;
+  if (!g || g.modo === "esporte") return;
+  const d = calcularDesempenho(g.de, g.ate);
+  if (!d.temDados) return;
+  let root = document.getElementById("print-root");
+  if (!root) { root = document.createElement("div"); root.id = "print-root"; document.body.appendChild(root); }
+  const agora = new Date();
+  const emitido = dataCurta(today()) + " às " + String(agora.getHours()).padStart(2, "0") + ":" + String(agora.getMinutes()).padStart(2, "0");
+  const titulo = (t) => '<div class="rel-sub2" style="font-size:12px;color:#1c4d3e;margin:8px 0 0">' + t + "</div>";
+  const pesoAtual = state.medidas.filter((m) => m.tipo === "peso" && m.jejum === true && Number(m.valor) > 0).slice().sort(relOrdenarPorData).pop();
+  const relFake = { peso: pesoAtual ? { fim: Number(pesoAtual.valor), fimDate: pesoAtual.date } : null };
+  // Mesmo cabeçalho/rodapé do relatório do Diário (relatorioImpressaoHtml()), com as 4 seções em sequência.
+  root.innerHTML = relImpressaoTopoHtml("Relatório de Treinos", { de: d.de, fim: d.ate, nDias: d.nDias, peso: relFake.peso }) +
+    '<div class="rel-box">' + trxKpisTopo(d) + titulo("🏋️ Força") + trxForcaHtml(d) + titulo("🏃 Condicionamento") + trxCondHtml(d) + titulo("🔋 Carga e recuperação") + trxCargaHtml(d) + titulo("🍽️ Nutrição e corpo") + trxCorpoHtml(d) +
+    '<div class="rel-conclusao">' + trxResumo(d) + "</div></div>" +
+    '<p class="pr-aviso">As referências deste relatório são gerais e não substituem a orientação de profissional de educação física, nutricionista ou médico. Dados registrados pelo próprio usuário no NutriTrack e no relógio Garmin.</p>';
+  root.dataset.dono = "treinos";
+  document.body.classList.add("rel-imprimindo");
+  const tituloAntes = document.title;
+  document.title = "Relatório de Treinos NutriTrack " + dataCurta(d.de).replace(/\//g, "-") + " a " + dataCurta(d.ate).replace(/\//g, "-");
+  const restaurar = () => { document.title = tituloAntes; window.removeEventListener("afterprint", restaurar); };
+  window.addEventListener("afterprint", restaurar);
+  setTimeout(() => window.print(), 60);
+}
+/* =============== fim Treinos: esforço, carga, recordes, prontidão e Análise =============== */
+
 /* =============== Análise de Treinos (ver treinosTabTemplate()/analiseTreinoTabTemplate()) =============== */
 // Pedido do usuário: mesmo espírito da Análise de Consumo acima, só que pros treinos -- motor local/
 // offline que analisa os treinos registrados num período escolhido, tanto agregando TODOS os esportes
@@ -7269,7 +8044,8 @@ function analiseTreinoResultadoTodosTemplate(gerada) {
 }
 
 /* ---------- aba/formulário (ver treinosTabTemplate()) ---------- */
-function analiseTreinoResultadoTemplate(gerada) { return gerada.modo === "esporte" ? analiseTreinoResultadoEsporteTemplate(gerada) : analiseTreinoResultadoTodosTemplate(gerada); }
+// Modo "Todos os treinos": análise em 4 seções (ver analiseDesempenhoTemplate()); "Por esporte" continua a análise detalhada de antes.
+function analiseTreinoResultadoTemplate(gerada) { return gerada.modo === "esporte" ? analiseTreinoResultadoEsporteTemplate(gerada) : analiseDesempenhoTemplate(gerada); }
 function analiseTreinoTabTemplate() {
   const esportes = esportesPresentesTreinos();
   if (state.analiseTreinoModo === "esporte" && !state.analiseTreinoEsporteSelecionado && esportes.length) state.analiseTreinoEsporteSelecionado = esportes[0];
@@ -8108,7 +8884,7 @@ function acaoEncerrarTreino() {
     duracaoMin, fotoUrl: "", nota, gruposMusculares,
     ciclismoModalidade: state.treinoAtivo.ciclismoModalidade || "", spinningIntensidade: state.treinoAtivo.spinningIntensidade || "",
     ambiente: state.treinoAtivo.ambiente || "",
-  }, camposDistancia);
+  }, camposDistancia, camposEsforcoRolas(state.treinoAtivo.esporte));
   novoTreino.caloriasQueimadas = estimarCaloriasQueimadas(novoTreino);
   // Mesmo padrão "salva primeiro, anexo depois" já usado nos exames de bioimpedância/calorimetria
   // (ver processarAnexoBioimpedanciaEmSegundoPlano): o treino nunca fica refém do envio da foto.
@@ -8125,6 +8901,7 @@ function acaoEncerrarTreino() {
   state.treinoSpinningIntensidade = "";
   state.treinoAmbiente = "";
   state.treinoNota = "";
+  limparEsforcoRolasTreino();
   state.treinoDistanciaKm = "";
   state.treinoGruposSelecionados = [];
   state.treinoExerciciosMarcados = {};
@@ -8135,6 +8912,7 @@ function acaoEncerrarTreino() {
   const concluiuPlano = state.planoRegistrandoId != null && state.treinosPlanejados.some((p) => p.id === state.planoRegistrandoId && planoTreinoRealizado(p));
   state.planoRegistrandoId = null;
   toastSuccess((concluiuPlano ? "Treino concluído e registrado." : "Treino registrado.") + (arquivoFoto ? " Enviando a foto em segundo plano..." : ""));
+  avisarRecordesDoTreino(novoTreino);
   const promessaRegistroBase = state.account ? enviarComFila("salvarTreinoGoogle", [state.usuario.email, novoTreino]) : Promise.resolve();
   render();
   if (arquivoFoto) processarFotoTreinoEmSegundoPlano(novoTreino.id, arquivoFoto, promessaRegistroBase);
@@ -8184,6 +8962,7 @@ function acaoEditarTreino(id) {
   state.treinoHoraInicio = t.horaInicio;
   state.treinoHoraFim = t.horaFim;
   state.treinoNota = t.nota || "";
+  state.treinoEsforco = t.esforco || null; state.treinoRolas = t.rolas || 0; state.treinoRolaMin = t.rolaMin || 5;
   state.treinoDistanciaKm = t.distanciaKm ? String(t.distanciaKm) : "";
   state.treinoCardPagina = 0; // volta pra página do formulário (ver treinoCardFlipWrapperTemplate())
   state.historyDiaExpandidoTreinos = null;
@@ -8494,7 +9273,8 @@ function montarIncluirGrupo(gid, hist) {
   const ultimaData = lista.length ? lista[0].ultimaData : null;
   lista.forEach((x) => {
     const k = gid + "::" + x.h.id;
-    if (!m.itens[k]) m.itens[k] = { marcado: x.ultimaData === ultimaData, series: x.series || "", repeticoes: x.repeticoes || "", peso: x.peso || "" };
+    const prog = progressaoExercicio(x.h);
+    if (!m.itens[k]) m.itens[k] = { marcado: x.ultimaData === ultimaData, series: x.series || "", repeticoes: x.repeticoes || "", peso: prog && prog.tipo === "subir" ? prog.peso : x.peso || "" };
   });
 }
 function capturarMontarDom() {
@@ -8567,15 +9347,18 @@ function montarAreaHtml() {
       const k = gid + "::" + x.h.id, it = m.itens[k] || {}, pre = "mt-" + gid + "-" + x.h.id;
       const info = "última (" + rotuloDiaPlano(x.ultimaData) + "): " + (x.series && x.repeticoes ? x.series + "×" + x.repeticoes : "—") + (x.peso ? " · " + kg(x.peso) : "") +
         (x.max ? " · média " + kg(x.media) + " · máx " + kg(x.max) : "") + " · feito " + x.vezes + "×";
-      return '<div class="mt-ex' + (it.marcado ? " on" : "") + '"><label><input type="checkbox"' + (it.marcado ? " checked" : "") + ' onchange="acaoMontarExercicio(\'' + k + '\')"/> <b>' + esc(x.h.label) + "</b></label>" +
-        '<div class="mt-info">' + info + "</div>" +
+      const prog = progressaoExercicio(x.h);
+      const sug = prog ? (prog.tipo === "subir" ? '<span class="trx-sug">↑ +' + formatNumber(prog.inc, prog.inc % 1 ? 1 : 0) + " kg</span>" : '<span class="trx-sug manter">= manter</span>') : "";
+      const sugInfo = prog ? (prog.tipo === "subir" ? '<div class="mt-info">Repetiu ' + x.series + "×" + x.repeticoes + " com " + kg(prog.peso - prog.inc) + " nos 2 últimos treinos: sugestão " + kg(prog.peso) + ".</div>" : '<div class="mt-info">Faltaram repetições na última vez: mantenha a carga.</div>') : "";
+      return '<div class="mt-ex' + (it.marcado ? " on" : "") + '"><label><input type="checkbox"' + (it.marcado ? " checked" : "") + ' onchange="acaoMontarExercicio(\'' + k + '\')"/> <b>' + esc(x.h.label) + "</b>" + sug + "</label>" +
+        '<div class="mt-info">' + info + "</div>" + sugInfo +
         (it.marcado ? '<div class="mt-campos"><label><span>Séries</span><input id="' + pre + '-series" type="number" min="0" inputmode="numeric" value="' + esc(it.series) + '"/></label><label><span>Repetições</span><input id="' + pre + '-repeticoes" type="number" min="0" inputmode="numeric" value="' + esc(it.repeticoes) + '"/></label><label><span>Carga (kg)</span><input id="' + pre + '-peso" type="number" min="0" step="0.5" inputmode="decimal" value="' + esc(it.peso) + '"/></label></div>' : "") +
         "</div>";
     }).join("") + "</div>";
   }).join("");
   const n = montagemDoState().reduce((s2, g) => s2 + g.exercicios.length, 0);
   return '<div class="mt-box"><div class="mt-head"><span>' + icon("activity") + " Montar treino</span>" + '<button type="button" class="mt-fechar" onclick="acaoMontarFechar()">Não montar</button></div>' +
-    '<p class="mt-vazio">Escolha os grupos. Já vêm marcados os exercícios do seu último treino de cada grupo, com séries, repetições e carga da última vez; ajuste à vontade.</p>' +
+    '<p class="mt-vazio">Escolha os grupos. Já vêm marcados os exercícios do seu último treino de cada grupo, com séries, repetições e carga da última vez; ajuste à vontade. Quando você repetiu as mesmas repetições com a mesma carga nos 2 últimos treinos, a carga já vem com +2,5 kg (+1 kg em halteres).</p>' +
     chips + blocos + (m.grupos.length ? '<p class="mt-total">' + n + " exercício" + (n === 1 ? "" : "s") + " no treino.</p>" : "") + "</div>";
 }
 // Mostra o treino montado de um plano (lista) -- usado no modal do treino planejado.
@@ -9340,6 +10123,7 @@ function acaoCancelarEdicaoTreino() {
   state.treinoAmbiente = "";
   state.treinoData = "";
   state.treinoNota = "";
+  limparEsforcoRolasTreino();
   state.treinoDistanciaKm = "";
   render();
 }
@@ -9388,7 +10172,7 @@ function acaoSalvarTreino() {
     registro.horaFim = horaFim;
     registro.duracaoMin = duracaoMin;
     registro.nota = nota;
-    Object.assign(registro, camposDistancia);
+    Object.assign(registro, camposDistancia, camposEsforcoRolas(esporte));
     // Treino preenchido com dados do Garmin: mantém as calorias medidas pelo relógio (não volta pra estimativa).
     if (!registro.garminId) registro.caloriasQueimadas = estimarCaloriasQueimadas(registro);
     const arquivoFoto = treinoFotoSelecionada;
@@ -9403,6 +10187,7 @@ function acaoSalvarTreino() {
     state.treinoAmbiente = "";
     state.treinoData = "";
     state.treinoNota = "";
+    limparEsforcoRolasTreino();
     state.treinoDistanciaKm = "";
     if (dataEl) dataEl.value = "";
     inicioEl.value = "";
@@ -9421,7 +10206,7 @@ function acaoSalvarTreino() {
   }
 
   const gruposMusculares = obterGruposMuscularesParaSalvar();
-  const novoTreino = Object.assign({ id: Date.now(), date: dataTreino, esporte, ciclismoModalidade, spinningIntensidade, ambiente: state.treinoAmbiente, horaInicio, horaFim, duracaoMin, fotoUrl: "", nota, gruposMusculares }, camposDistancia);
+  const novoTreino = Object.assign({ id: Date.now(), date: dataTreino, esporte, ciclismoModalidade, spinningIntensidade, ambiente: state.treinoAmbiente, horaInicio, horaFim, duracaoMin, fotoUrl: "", nota, gruposMusculares }, camposDistancia, camposEsforcoRolas(esporte));
   novoTreino.caloriasQueimadas = estimarCaloriasQueimadas(novoTreino);
   const veioDoGarmin = aplicarGarminNoTreino(novoTreino); // calorias reais do relógio, quando os dados vieram do Garmin
   state.treinoGarmin = null;
@@ -9436,6 +10221,7 @@ function acaoSalvarTreino() {
   state.treinoAmbiente = "";
   state.treinoData = "";
   state.treinoNota = "";
+  limparEsforcoRolasTreino();
   state.treinoDistanciaKm = "";
   state.treinoGruposSelecionados = [];
   state.treinoExerciciosMarcados = {};
@@ -9455,6 +10241,7 @@ function acaoSalvarTreino() {
   // Treino vindo do Garmin: o esporte continua escolhido, pra já mostrar as outras atividades pendentes.
   if (veioDoGarmin) state.treinoEsporte = esporte;
   toastSuccess((concluiuPlano ? "Treino concluído e registrado." : veioDoGarmin && dataTreino !== today() ? "Treino de " + rotuloDiaPlano(dataTreino) + " registrado no histórico." : "Treino registrado.") + (arquivoFoto ? " Enviando a foto em segundo plano..." : ""));
+  avisarRecordesDoTreino(novoTreino);
   const promessaRegistroBase = state.account ? enviarComFila("salvarTreinoGoogle", [state.usuario.email, novoTreino]) : Promise.resolve();
   // Mesmo motivo do sincronizarDiarioKcalDoDia() no modo edição acima: se dataTreino for um dia que já
   // tinha sido encerrado no Diário de Kcal (ex.: registrando agora um treino esquecido de um dia que já
@@ -9561,6 +10348,7 @@ function treinoListTemplate() {
     (t.caloriasQueimadas ? '<div class="meal-row-calorias-queimadas">' + icon("flame") + " " + esc(treinoCaloriasResumoTexto(t)) + " queimadas " + (t.garminId ? "(Garmin)" : "(estimativa)") + "</div>" : "") +
     (t.fcMedia ? '<div class="meal-row-meta">' + icon("heart") + " FC média " + t.fcMedia + (t.fcMax ? " · máx " + t.fcMax : "") + " bpm" + (t.teAerobico ? " · efeito aeróbico " + formatNumber(t.teAerobico, 1) : "") + "</div>" : "") +
     (t.nota ? '<div class="meal-row-nota">' + icon("help") + " " + esc(t.nota) + "</div>" : "") +
+    treinoChipsExtrasHtml(t) +
     "</div></div>" +
     '<div class="meal-row-right"><div class="meal-row-stat"><div class="meal-row-kcal">' + esc(formatarDuracao(t.duracaoMin)) + "</div></div>" +
     '<button class="meal-row-edit" aria-label="Editar treino" onclick="acaoEditarTreino(' + t.id + ')">' + icon("edit") + "</button>" +
@@ -9607,6 +10395,7 @@ function treinoHistoryDayCardTemplate(date) {
               treinoGruposMuscularesListaHtml(t) +
               (t.caloriasQueimadas ? '<p class="history-day-meal-calorias-queimadas">' + esc(treinoCaloriasResumoTexto(t)) + " queimadas " + (t.garminId ? "(Garmin)" : "(estimativa)") + "</p>" : "") +
               (t.nota ? '<p class="history-day-meal-nota">' + esc(t.nota) + "</p>" : "") +
+              treinoChipsExtrasHtml(t) +
             "</div>"
           ).join("") + "</div>"
         : ""
@@ -11980,6 +12769,8 @@ function treinoCronometroAtivoTemplate() {
     '<div class="treino-cronometro">' + formatarCronometro(ms) + "</div>" +
     treinoDistanciaCampoTemplate() +
     treinoGruposMuscularesCampoTemplate() +
+    treinoRolasCampoTemplate() +
+    treinoEsforcoCampoTemplate() +
     treinoNotaCampoTemplate() +
     treinoFotoCampoTemplate() +
     '<div class="treino-cronometro-acoes">' +
@@ -12011,6 +12802,8 @@ function treinoFormManualTemplate() {
     "</div>" +
     treinoDistanciaCampoTemplate() +
     (state.treinoEditandoId == null ? treinoGruposMuscularesCampoTemplate() : "") +
+    treinoRolasCampoTemplate() +
+    treinoEsforcoCampoTemplate() +
     treinoNotaCampoTemplate() +
     treinoFotoCampoTemplate() +
     '<button class="btn-ghost-light" onclick="acaoSalvarTreino()">' + icon("check") + (state.treinoEditandoId != null ? " Salvar alterações" : " Salvar treino") + "</button>" +
@@ -12152,7 +12945,7 @@ function treinosTabTemplate() {
     "</div>" +
     (aba === "analise" ? analiseTreinoTabTemplate()
       : aba === "plano" ? planoSemanaTabTemplate()
-      : planoHojeCardTemplate() + '<section class="dashboard-grid">' + treinoFormCardTemplate() + treinoCardFlipWrapperTemplate() + "</section>") +
+      : prontidaoCardTemplate() + planoHojeCardTemplate() + '<section class="dashboard-grid">' + treinoFormCardTemplate() + treinoCardFlipWrapperTemplate() + "</section>") +
     "</main>";
 }
 
@@ -14113,6 +14906,12 @@ function relDadosUsuarioHtml(rel) {
   "</div></div>";
 }
 function relatorioImpressaoHtml(rel) {
+  return relImpressaoTopoHtml("Relatório do Diário de Kcal", rel) +
+    '<div class="rel-box">' + relatorioDiarioCorpoHtml(rel, true) + "</div>" +
+    '<p class="pr-aviso">As referências nutricionais deste relatório são gerais e não substituem a orientação de nutricionista ou médico. Dados registrados pelo próprio usuário no NutriTrack.</p>';
+}
+// Topo comum dos PDFs (rodapé da EFS via @page, logo, título, período e dados do usuário).
+function relImpressaoTopoHtml(tituloDoc, rel) {
   const agora = new Date();
   const emitido = dataCurta(today()) + " às " + String(agora.getHours()).padStart(2, "0") + ":" + String(agora.getMinutes()).padStart(2, "0");
   const css = (s) => String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
@@ -14122,10 +14921,8 @@ function relatorioImpressaoHtml(rel) {
       " @bottom-left{ width:68%; content:\"" + rodapeEsq + "\"; white-space:pre; font-family:'DM Sans',sans-serif; font-size:8pt; color:#557268; border-top:1px solid #dce5db; vertical-align:top; padding-top:6px; }" +
       " @bottom-right{ width:32%; content:\"" + rodapeDir + "\"; white-space:pre; text-align:right; font-family:'DM Sans',sans-serif; font-size:8pt; color:#557268; border-top:1px solid #dce5db; vertical-align:top; padding-top:6px; } }</style>" +
     '<div class="pr-top"><div class="pr-brand">' + REL_LOGO_SVG + '<div><div class="nm">Nutri<span>Track</span></div><div class="sl">seu dia, no seu ritmo</div></div></div>' +
-      '<div class="pr-doc"><div class="t">Relatório do Diário de Kcal</div><div class="p">Período: ' + dataCurta(rel.de) + " a " + dataCurta(rel.fim) + " (" + rel.nDias + (rel.nDias === 1 ? " dia" : " dias") + ")<br>Emitido em " + emitido + "</div></div></div>" +
-    relDadosUsuarioHtml(rel) +
-    '<div class="rel-box">' + relatorioDiarioCorpoHtml(rel, true) + "</div>" +
-    '<p class="pr-aviso">As referências nutricionais deste relatório são gerais e não substituem a orientação de nutricionista ou médico. Dados registrados pelo próprio usuário no NutriTrack.</p>';
+      '<div class="pr-doc"><div class="t">' + esc(tituloDoc) + '</div><div class="p">Período: ' + dataCurta(rel.de) + " a " + dataCurta(rel.fim) + " (" + rel.nDias + (rel.nDias === 1 ? " dia" : " dias") + ")<br>Emitido em " + emitido + "</div></div></div>" +
+    relDadosUsuarioHtml(rel);
 }
 function acaoImprimirRelatorioDiario() {
   const g = state.relDiarioGerado;
@@ -14135,6 +14932,7 @@ function acaoImprimirRelatorioDiario() {
   let root = document.getElementById("print-root");
   if (!root) { root = document.createElement("div"); root.id = "print-root"; document.body.appendChild(root); }
   root.innerHTML = relatorioImpressaoHtml(rel);
+  root.dataset.dono = "diario";
   document.body.classList.add("rel-imprimindo");
   // Nome sugerido do arquivo ao salvar em PDF (o navegador usa o título da página).
   const tituloAntes = document.title;
@@ -14146,7 +14944,11 @@ function acaoImprimirRelatorioDiario() {
 // Chamada em render(): o conteúdo de impressão só fica montado enquanto o relatório está aberto na tela
 // (no celular a impressão é assíncrona, então não dá pra limpar logo depois do window.print()).
 function sincronizarImpressaoRelatorio() {
-  const aberto = state.relDiarioGerado && state.activeTab === "nutricao" && state.nutricaoAba === "diario";
+  const root0 = document.getElementById("print-root");
+  const dono = root0 && root0.dataset.dono;
+  const aberto = dono === "treinos"
+    ? state.analiseTreinoGerada && state.analiseTreinoGerada.modo !== "esporte" && state.activeTab === "treinos" && state.treinosAba === "analise"
+    : state.relDiarioGerado && state.activeTab === "nutricao" && state.nutricaoAba === "diario";
   if (aberto || !document.body.classList.contains("rel-imprimindo")) return;
   document.body.classList.remove("rel-imprimindo");
   const root = document.getElementById("print-root");
