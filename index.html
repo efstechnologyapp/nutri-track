@@ -1984,6 +1984,14 @@ const foodLibrary = [
   { terms: ["macarrao cozido", "macarrao", "massa"], label: "Macarrão cozido", baseAmount: "100 g", values: { calories: 158, protein: 5.8, carbs: 31, fat: 0.9, fiber: 1.8, vitA: 0, vitC: 0, vitD: 0, calcio: 7, ferro: 0.5, magnesio: 18, potassio: 45, zinco: 0.5, sodio: 180, vitB12: 0 }, grams: 100 },
   { terms: ["batata inglesa", "batata cozida", "batata"], label: "Batata inglesa cozida", baseAmount: "100 g", values: { calories: 87, protein: 1.9, carbs: 20, fat: 0.1, fiber: 1.8, vitA: 0, vitC: 13, vitD: 0, calcio: 8, ferro: 0.3, magnesio: 20, potassio: 380, zinco: 0.3, sodio: 200, vitB12: 0 }, grams: 100 },
   { terms: ["batata doce"], label: "Batata doce cozida", baseAmount: "100 g", values: { calories: 86, protein: 1.6, carbs: 20, fat: 0.1, fiber: 3, vitA: 700, vitC: 2.4, vitD: 0, calcio: 30, ferro: 0.6, magnesio: 25, potassio: 340, zinco: 0.3, sodio: 30, vitB12: 0 }, grams: 100 },
+  // Inhame, cará e taro (pedido do usuário). Macros por 100 g cozido: inhame -- IBGE/POF via TACO online
+  // (100 kcal, 1,7 g prot, 23,4 g carbo, 0,1 g gord), minerais/vit. C da TACO (inhame cru); cará -- TACO
+  // (78 kcal, 1,5 g prot, 18,9 g carbo, 0,1 g gord, 2,6 g fibra), minerais/vit. C aproximados da USDA
+  // (yam cozido); taro -- USDA (taro cozido). "cara" e "taro" só valem como PALAVRA INTEIRA (palavraInteira),
+  // senão "cara" seria achado dentro de "carambola", "acarajé" etc.
+  { terms: ["inhame cozido", "inhame"], label: "Inhame cozido", baseAmount: "100 g", values: { calories: 100, protein: 1.7, carbs: 23.4, fat: 0.1, fiber: 1.7, vitA: 0, vitC: 5.6, vitD: 0, calcio: 12, ferro: 0.4, magnesio: 29, potassio: 568, zinco: 0.4, sodio: 5, vitB12: 0 }, grams: 100 },
+  { terms: ["cara cozido", "cara"], palavraInteira: true, label: "Cará cozido", baseAmount: "100 g", values: { calories: 78, protein: 1.5, carbs: 18.9, fat: 0.1, fiber: 2.6, vitA: 0, vitC: 12, vitD: 0, calcio: 14, ferro: 0.5, magnesio: 18, potassio: 670, zinco: 0.2, sodio: 8, vitB12: 0 }, grams: 100 },
+  { terms: ["taro cozido", "taro"], palavraInteira: true, label: "Taro cozido", baseAmount: "100 g", values: { calories: 142, protein: 0.5, carbs: 34.6, fat: 0.1, fiber: 5.1, vitA: 4, vitC: 5, vitD: 0, calcio: 18, ferro: 0.7, magnesio: 30, potassio: 484, zinco: 0.3, sodio: 15, vitB12: 0 }, grams: 100 },
   { terms: ["batata palha"], label: "Batata palha", baseAmount: "100 g", values: { calories: 542, protein: 5, carbs: 48, fat: 36, fiber: 2.7, vitA: 0, vitC: 8, vitD: 0, calcio: 20, ferro: 1.5, magnesio: 30, potassio: 780, zinco: 0.5, sodio: 700, vitB12: 0 }, grams: 100 },
   { terms: ["mandioca", "aipim", "macaxeira"], label: "Mandioca cozida", baseAmount: "100 g", values: { calories: 125, protein: 0.6, carbs: 30, fat: 0.3, fiber: 1.6, vitA: 1, vitC: 20, vitD: 0, calcio: 16, ferro: 0.3, magnesio: 21, potassio: 270, zinco: 0.3, sodio: 15, vitB12: 0 }, grams: 100 },
   { terms: ["arroz integral"], label: "Arroz integral cozido", baseAmount: "100 g", values: { calories: 124, protein: 2.6, carbs: 25.8, fat: 1, fiber: 2.7, vitA: 0, vitC: 0, vitD: 0, calcio: 10, ferro: 0.4, magnesio: 44, potassio: 79, zinco: 0.6, sodio: 150, vitB12: 0 }, grams: 100 },
@@ -2031,6 +2039,15 @@ const foodLibrary = [
   { terms: ["carne de sol"], label: "Carne de sol grelhada", baseAmount: "100 g", values: { calories: 199, protein: 32, carbs: 0, fat: 7, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 10, ferro: 3, magnesio: 22, potassio: 320, zinco: 5.5, sodio: 1200, vitB12: 3 }, grams: 100 },
   { terms: ["maminha"], label: "Maminha grelhada", baseAmount: "100 g", values: { calories: 163, protein: 28, carbs: 0, fat: 5, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 8, ferro: 2.2, magnesio: 21, potassio: 320, zinco: 4, sodio: 60, vitB12: 2.4 }, grams: 100 },
   { terms: ["cupim assado", "cupim"], label: "Cupim assado", baseAmount: "100 g", values: { calories: 280, protein: 24, carbs: 0, fat: 20, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 9, ferro: 2, magnesio: 19, potassio: 280, zinco: 4, sodio: 60, vitB12: 2.2 }, grams: 100 },
+  // Pedido do usuário: acém, charque, coxão mole (chã de dentro) e coxão duro (chã de fora). Energia,
+  // proteína e gordura da TACO (carne bovina sem gordura, cozida; charque cozido); minerais e B12
+  // aproximados de cortes bovinos magros cozidos (mesma ordem de grandeza dos demais cortes desta lista).
+  // Charque: sódio alto mesmo dessalgado (referência TACO ~1.400 mg/100 g). palavraInteira evita achar
+  // "acem"/"jaba" dentro de outras palavras.
+  { terms: ["acem cozido", "acem"], palavraInteira: true, label: "Acém cozido", baseAmount: "100 g", values: { calories: 215, protein: 27.3, carbs: 0, fat: 10.9, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 6, ferro: 2.7, magnesio: 20, potassio: 280, zinco: 6, sodio: 55, vitB12: 2.6 }, grams: 100 },
+  { terms: ["charque cozido", "charque", "carne seca", "jaba"], palavraInteira: true, label: "Charque cozido", baseAmount: "100 g", values: { calories: 263, protein: 36.4, carbs: 0, fat: 11.9, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 15, ferro: 2.4, magnesio: 22, potassio: 150, zinco: 6.6, sodio: 1443, vitB12: 2.4 }, grams: 100 },
+  { terms: ["coxao mole", "cha de dentro", "chao de dentro"], label: "Coxão mole (chã de dentro) cozido", baseAmount: "100 g", values: { calories: 219, protein: 32.4, carbs: 0, fat: 8.9, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 5, ferro: 2.9, magnesio: 24, potassio: 300, zinco: 5.5, sodio: 60, vitB12: 2.5 }, grams: 100 },
+  { terms: ["coxao duro", "cha de fora", "chao de fora"], label: "Coxão duro (chã de fora) cozido", baseAmount: "100 g", values: { calories: 217, protein: 31.9, carbs: 0, fat: 8.9, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 5, ferro: 2.6, magnesio: 23, potassio: 290, zinco: 5, sodio: 55, vitB12: 2.4 }, grams: 100 },
   { terms: ["alcatra"], label: "Alcatra grelhada", baseAmount: "100 g", values: { calories: 179, protein: 30, carbs: 0, fat: 6, fiber: 0, vitA: 0, vitC: 0, vitD: 0.1, calcio: 8, ferro: 2.3, magnesio: 22, potassio: 320, zinco: 4.3, sodio: 55, vitB12: 2.5 }, grams: 100 },
   { terms: ["file de tilapia", "peixe grelhado", "tilapia"], label: "Filé de tilápia grelhado", baseAmount: "100 g", values: { calories: 128, protein: 26, carbs: 0, fat: 2.7, fiber: 0, vitA: 5, vitC: 0, vitD: 1, calcio: 10, ferro: 0.5, magnesio: 27, potassio: 300, zinco: 0.4, sodio: 75, vitB12: 1.6 }, grams: 100 },
   // omega3 (EPA+DHA) acrescentado depois (USDA: salmão grelhado ~100g tem em torno de 2.000mg).
@@ -2243,6 +2260,11 @@ const foodLibrary = [
   { terms: ["suco de caju", "suco caju"], label: "Suco de caju", baseAmount: "300 ml", values: { calories: 135, protein: 0.5, carbs: 33, fat: 0.2, fiber: 0.3, vitA: 5, vitC: 130, vitD: 0, calcio: 10, ferro: 0.4, magnesio: 15, potassio: 180, zinco: 0.15, sodio: 6, vitB12: 0 }, ml: 300 },
   { terms: ["suco de acerola", "suco acerola"], label: "Suco de acerola", baseAmount: "300 ml", values: { calories: 90, protein: 0.6, carbs: 21, fat: 0.2, fiber: 0.5, vitA: 20, vitC: 900, vitD: 0, calcio: 15, ferro: 0.5, magnesio: 15, potassio: 200, zinco: 0.15, sodio: 9, vitB12: 0 }, ml: 300 },
   { terms: ["suco de goiaba", "suco goiaba"], label: "Suco de goiaba", baseAmount: "300 ml", values: { calories: 135, protein: 0.9, carbs: 33, fat: 0.3, fiber: 1.5, vitA: 45, vitC: 150, vitD: 0, calcio: 20, ferro: 0.5, magnesio: 15, potassio: 280, zinco: 0.2, sodio: 9, vitB12: 0 }, ml: 300 },
+  // Pedido do usuário. Base: polpa de graviola (TACO, polpa congelada: 38 kcal, 0,6 g prot, 9,8 g carbo,
+  // 1,2 g fibra, vit. C ~10 mg por 100 g) -- ~100 g de polpa por copo de 300 ml. Com açúcar (padrão dos
+  // outros sucos da lista: ~1 colher e meia de sopa) ou sem açúcar.
+  { terms: ["suco de graviola", "suco graviola"], label: "Suco de graviola", baseAmount: "300 ml", values: { calories: 138, protein: 0.6, carbs: 35, fat: 0.2, fiber: 1.2, vitA: 0, vitC: 10, vitD: 0, calcio: 10, ferro: 0.2, magnesio: 15, potassio: 150, zinco: 0.1, sodio: 6, vitB12: 0 }, ml: 300 },
+  { terms: ["suco de graviola sem acucar", "suco de graviola zero", "suco graviola sem acucar"], label: "Suco de graviola sem açúcar", baseAmount: "300 ml", values: { calories: 38, protein: 0.6, carbs: 9.8, fat: 0.2, fiber: 1.2, vitA: 0, vitC: 10, vitD: 0, calcio: 10, ferro: 0.2, magnesio: 15, potassio: 150, zinco: 0.1, sodio: 6, vitB12: 0 }, ml: 300 },
   { terms: ["suco de maca", "suco maca"], label: "Suco de maçã", baseAmount: "300 ml", values: { calories: 130, protein: 0.3, carbs: 32, fat: 0.2, fiber: 0.5, vitA: 0, vitC: 3, vitD: 0, calcio: 15, ferro: 0.4, magnesio: 8, potassio: 200, zinco: 0.1, sodio: 9, vitB12: 0 }, ml: 300 },
   { terms: ["suco de cenoura", "suco cenoura"], label: "Suco de cenoura", baseAmount: "300 ml", values: { calories: 110, protein: 1.5, carbs: 26, fat: 0.3, fiber: 1.5, vitA: 1600, vitC: 20, vitD: 0, calcio: 60, ferro: 0.9, magnesio: 30, potassio: 700, zinco: 0.5, sodio: 180, vitB12: 0 }, ml: 300 },
   { terms: ["suco verde"], label: "Suco verde (detox)", baseAmount: "300 ml", values: { calories: 100, protein: 1.5, carbs: 23, fat: 0.3, fiber: 2.5, vitA: 250, vitC: 40, vitD: 0, calcio: 60, ferro: 1.2, magnesio: 40, potassio: 400, zinco: 0.4, sodio: 60, vitB12: 0 }, ml: 300 },
@@ -2781,8 +2803,28 @@ function formatarQuantidadeUnidade(valor) {
   const casas = Math.round(valor * 10) === valor * 10 ? (valor % 1 === 0 ? 0 : 1) : 2;
   return formatNumber(valor, casas) + " unidade" + (valor > 1 ? "s" : "");
 }
-function amountForFood(text, position, food) {
-  const before = text.slice(Math.max(0, position - 38), position);
+// Pedido do usuário: a quantidade também pode vir DEPOIS do alimento ("acém 150g", "arroz branco 150 g",
+// "suco de graviola 500 ml"). Só com unidade explícita (g/ml/l/unidades) -- número solto depois do nome
+// fica de fora, porque quase sempre é a quantidade do PRÓXIMO alimento ("arroz 2 ovos"). E se a
+// quantidade vier seguida de "de" ("acém 150g de arroz"), ela é do alimento seguinte. Usada só quando não
+// há quantidade antes do nome. inicioPermitido: até onde o texto já foi "consumido" pela quantidade
+// depois do alimento anterior (ver detectFoods()) -- evita dois alimentos usarem o mesmo número.
+function quantidadeDepoisDoAlimento(text, fimDoNome, food) {
+  const depois = text.slice(fimDoNome, fimDoNome + 30);
+  const m = depois.match(new RegExp("^[\\s,:;-]*(" + NUMERO_REGEX + ")\\s*(gramas?|gr|g|mililitros?|ml|litros?|lts?|l|unidades?|unid\\.?)(?![a-z])(?!\\s*de\\b)", "i"));
+  if (!m) return null;
+  const valor = numeroDoTexto(m[1]);
+  const un = m[2].toLowerCase();
+  const fim = fimDoNome + m[0].length;
+  if (/^g/.test(un) && food.grams) return { multiplier: valor / food.grams, amount: formatNumber(valor, 0) + " g", fimConsumido: fim };
+  if (/^g/.test(un) && food.count) { const pu = unitGramsFromBaseAmount(food.baseAmount); if (pu) return { multiplier: valor / pu, amount: formatNumber(valor, 0) + " g", fimConsumido: fim }; }
+  if (/^(ml|mililitro)/.test(un) && food.ml) return { multiplier: valor / food.ml, amount: formatNumber(valor, 0) + " ml", fimConsumido: fim };
+  if (/^l/.test(un) && food.ml) return { multiplier: (valor * 1000) / food.ml, amount: formatNumber(valor * 1000, 0) + " ml", fimConsumido: fim };
+  if (/^unid/.test(un)) return { multiplier: valor / (food.count || 1), amount: formatarQuantidadeUnidade(valor), fimConsumido: fim };
+  return null;
+}
+function amountForFood(text, position, food, length, inicioPermitido) {
+  const before = text.slice(Math.max(0, position - 38, inicioPermitido || 0), position);
   const grams = before.match(new RegExp("(" + NUMERO_REGEX + ")\\s*(?:g|gramas?|gramos?)\\s*(?:de\\s*)?$", "i"));
   const ml = before.match(new RegExp("(" + NUMERO_REGEX + ")\\s*(?:ml|mililitros?)\\s*(?:de\\s*)?$", "i"));
   // Litros ("1,5 l", "500 lt", "2 litros") -- mesma ideia de "ml", só que convertendo pra ml antes de
@@ -2810,6 +2852,7 @@ function amountForFood(text, position, food) {
   // igual ao caminho de "unidades" explícitas — quem quiser um valor preciso em gramas/ml usa "g"/"ml".
   if (numberOnly) { const value = number(numberOnly); return { multiplier: value / (food.count || 1), amount: formatarQuantidadeUnidade(value) }; }
   if (numberWord || /\bum\b|\buma\b/.test(before)) return { multiplier: 1, amount: food.baseAmount };
+  if (length) { const depois = quantidadeDepoisDoAlimento(text, position + length, food); if (depois) return depois; }
   return { multiplier: 1, amount: food.baseAmount };
 }
 
@@ -2867,7 +2910,11 @@ function detectFoods(description) {
   for (const food of biblioteca) {
     for (const term of food.terms) {
       const normalizedTerm = normalizeText(term);
-      const position = text.indexOf(normalizedTerm);
+      // Termo curto marcado como palavraInteira (ex.: "cara"): só vale cercado por não-letras -- e o
+      // plural ("caras") é tratado logo abaixo, pela variante no plural.
+      const ehLetra = (ch) => ch >= "a" && ch <= "z";
+      let position = text.indexOf(normalizedTerm);
+      while (food.palavraInteira && position !== -1 && (ehLetra(text[position - 1] || " ") || ehLetra(text[position + normalizedTerm.length] || " "))) position = text.indexOf(normalizedTerm, position + 1);
       if (position !== -1) candidates.push({ food, position, length: normalizedTerm.length });
       // Também tenta a variante no plural (ver formaPluralDoTermo()), pra reconhecer o alimento mesmo
       // digitado no plural (ex.: "pães franceses", "castanhas de caju"). Estende o comprimento até o fim
@@ -2876,7 +2923,8 @@ function detectFoods(description) {
       // singular (ex.: "franceses" é mais longo que "frances", que é o que a variante ainda tem).
       const termoPlural = formaPluralDoTermo(normalizedTerm);
       if (termoPlural) {
-        const posicaoPlural = text.indexOf(termoPlural);
+        let posicaoPlural = text.indexOf(termoPlural);
+        while (food.palavraInteira && posicaoPlural !== -1 && ehLetra(text[posicaoPlural - 1] || " ")) posicaoPlural = text.indexOf(termoPlural, posicaoPlural + 1);
         if (posicaoPlural !== -1) {
           let fim = posicaoPlural + termoPlural.length;
           while (fim < text.length && text[fim] >= "a" && text[fim] <= "z") fim++;
@@ -2889,15 +2937,28 @@ function detectFoods(description) {
   const found = [];
   const usedFoods = new Set();
   const occupied = [];
+  const escolhidos = [];
   for (const c of candidates) {
     if (usedFoods.has(c.food)) continue; // já identificamos esse alimento por um termo mais específico
     const overlaps = occupied.some((range) => c.position < range.end && c.position + c.length > range.start);
     if (overlaps) continue;
-    const r = c.food.dose ? doseAmountForFood(text, c.position, c.length, c.food) : amountForFood(text, c.position, c.food);
-    found.push({ label: c.food.label, amount: r.amount, values: scale(c.food.values, r.multiplier), gramsEstimados: gramsEstimadosParaItem(c.food, r.multiplier) });
+    escolhidos.push(c);
     usedFoods.add(c.food);
     occupied.push({ start: c.position, end: c.position + c.length });
   }
+  // Quantidades na ordem do TEXTO: uma quantidade que vem depois de um alimento e foi usada por ele não
+  // pode ser lida de novo como "quantidade antes" do alimento seguinte (ver quantidadeDepoisDoAlimento()).
+  const quantidades = new Map();
+  let consumidoAte = 0;
+  escolhidos.slice().sort((a, b) => a.position - b.position).forEach((c) => {
+    const r = c.food.dose ? doseAmountForFood(text, c.position, c.length, c.food) : amountForFood(text, c.position, c.food, c.length, consumidoAte);
+    consumidoAte = Math.max(consumidoAte, r.fimConsumido || c.position + c.length);
+    quantidades.set(c, r);
+  });
+  escolhidos.forEach((c) => {
+    const r = quantidades.get(c);
+    found.push({ label: c.food.label, amount: r.amount, values: scale(c.food.values, r.multiplier), gramsEstimados: gramsEstimadosParaItem(c.food, r.multiplier) });
+  });
   return found;
 }
 
@@ -5846,7 +5907,7 @@ function submitPerfil() {
 /* ===================== templates ===================== */
 // Versão exibida no menu, na tela de login e em "Sobre o App" (mesmo padrão do Custódia Digital e do app
 // do escritório). Atualizar junto com o CACHE_NAME do sw.js a cada versão publicada.
-const APP_VERSAO = "2.25";
+const APP_VERSAO = "2.27";
 const APP_VERSAO_DATA = "21/11/2026";
 const DEV = { nome: "EFS Technology", lema: "Soluções digitais sob medida", tel: "83 9 99944-7957", wa: "5583999447957", email: "efstechnology.app@gmail.com" };
 function authVersaoTemplate() {
@@ -8690,13 +8751,13 @@ function posFeitoTemplate(t) {
 // Qualidade da proteína: só conta como "vegetal" o que é reconhecidamente vegetal (feijão, soja, grãos
 // etc.). Produto com nome desconhecido (ex.: um shake cadastrado pela marca) fica neutro -- antes, tudo
 // que não batia com a lista de origem animal era tratado como vegetal, e um shake lácteo virava "vegetal".
-const PROTEINA_ANIMAL_RX = /\b(carne|frango|peito|coxa|sobrecoxa|patinho|alcatra|acem|maminha|picanha|file|bife|hamburguer|ovo|ovos|clara|omelete|peixe|tilapia|salmao|atum|sardinha|camarao|bacalhau|leite|iogurte|queijo|cottage|ricota|requeijao|whey|caseina|presunto|peru|lombo|porco|linguica|salsicha|carneiro|figado|kefir|nutren|frios|mussarela|mucarela|carne de sol|charque)\b/;
+const PROTEINA_ANIMAL_RX = /\b(carne|frango|peito|coxa|sobrecoxa|patinho|alcatra|acem|maminha|picanha|file|bife|hamburguer|ovo|ovos|clara|omelete|peixe|tilapia|salmao|atum|sardinha|camarao|bacalhau|leite|iogurte|queijo|cottage|ricota|requeijao|whey|caseina|presunto|peru|lombo|porco|linguica|salsicha|carneiro|figado|kefir|nutren|frios|mussarela|mucarela|carne de sol|charque|carne seca|coxao|cha de dentro|cha de fora)\b/;
 const PROTEINA_VEGETAL_RX = /\b(feijao|soja|tofu|lentilha|grao de bico|ervilha|edamame|proteina vegetal|proteina de ervilha|quinoa|amendoim|pasta de amendoim|castanha|amendoa|nozes|aveia|granola|pao|arroz|macarrao|cuscuz|milho|tapioca|seitan|gergelim|chia|linhaca)\b/;
 // Velocidade do carboidrato por alimento: "rápido" = pouca fibra e pouca gordura em relação ao carboidrato
 // (banana, arroz branco, pão francês, tapioca, suco, mel...); "lento" = fibroso/integral ou com muita
 // gordura junto (aveia, integral, feijão, batata-doce com casca, shakes com fibra...).
-const CARBO_RAPIDO_RX = /\b(banana|arroz branco|pao frances|pao de forma|tapioca|mel|geleia|suco|uva|manga|abacaxi|melancia|batata inglesa|pure|cuscuz|maltodextrina|dextrose|isotonico|gatorade|bolacha|biscoito agua|cereal|sucrilhos|rapadura|acucar|goma|beiju|macaxeira|mandioca)\b/;
-const CARBO_LENTO_RX = /\b(integral|aveia|granola|feijao|lentilha|grao de bico|batata doce|quinoa|chia|linhaca|farelo)\b/;
+const CARBO_RAPIDO_RX = /\b(banana|arroz branco|pao frances|pao de forma|tapioca|mel|geleia|suco|uva|manga|abacaxi|melancia|batata inglesa|pure|cuscuz|maltodextrina|dextrose|isotonico|gatorade|bolacha|biscoito agua|cereal|sucrilhos|rapadura|acucar|goma|beiju|macaxeira|mandioca|graviola)\b/;
+const CARBO_LENTO_RX = /\b(integral|aveia|granola|feijao|lentilha|grao de bico|batata doce|inhame|cara|taro|quinoa|chia|linhaca|farelo)\b/;
 function velocidadeCarbo(f) {
   const v = f.values || {}, c = v.carbs || 0;
   if (c < 5) return null;
