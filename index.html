@@ -512,6 +512,10 @@ body:has(.modal-overlay) .hamburger-btn{ display:none; }
 .dev-links{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
 .dev-links a{ display:inline-flex; align-items:center; gap:6px; border-radius:999px; border:1px solid #dce5db; background:#fff; padding:6px 12px; font-size:12px; font-weight:600; color:#3d5c48; text-decoration:none; }
 .dev-legal{ font-size:11px; color:#8a9a91; }
+.rt-resumo{ display:flex; align-items:center; gap:6px; margin:2px 0 6px; padding:6px 10px; border-radius:10px; font-size:13px; font-weight:600; }
+.rt-resumo .icon{ width:15px; height:15px; }
+.rt-resumo.ok{ background:rgba(159,215,127,.14); color:#c9eab3; }
+.rt-resumo.alerta{ background:rgba(242,196,109,.14); color:#f5d999; }
 .rt-tag{ display:inline-block; margin-left:6px; border-radius:999px; background:#e4efd9; color:#3d5c48; font-size:10.5px; font-weight:600; padding:1px 7px; vertical-align:1px; }
 .exposicao-solar-aviso{ margin:0 0 4px; display:flex; align-items:flex-start; gap:6px; font-size:12.5px; line-height:1.5; color:#d9efbd; }
 .exposicao-solar-aviso .icon{ flex:0 0 auto; width:14px; height:14px; margin-top:2px; }
@@ -2956,6 +2960,7 @@ const state = {
   // não vai pra planilha): o card mostra "Falta salvar" até o treino ser salvo e casar com o planejado.
   planoRegistrandoId: null,
   sobreAberto: false,
+  rtAnterior: null, rtAtual: null,
   // Sugestões de autocomplete pro alimento que a pessoa está digitando agora na descrição da refeição --
   // lista de labels (string), atualizada a cada tecla (ver acaoAtualizarSugestoesAlimento()) e mostrada
   // logo abaixo da textarea (mealSugestoesListaHtml()). Pedido do usuário. Fica fora do fluxo normal de
@@ -4554,6 +4559,7 @@ function acaoAnalisar() {
   const description = document.getElementById("meal-description").value;
   if (!description.trim()) { toastError("Descreva o que você comeu para eu calcular."); return; }
   const found = detectFoods(description);
+  state.rtAnterior = state.preview.length ? state.rtAtual || null : null; // pra dizer "o complemento resolveu" (ver refeicaoTreinoTemplate())
   state.preview = found;
   acaoFecharSugestoesAlimento(); // fecha o autocomplete e cancela debounce pendente, se estava aberto
   if (!found.length) toastError("Não identifiquei alimentos conhecidos. Tente informar pão, ovo, frango, arroz, patinho, banana ou suco de laranja.");
@@ -5210,7 +5216,7 @@ function acaoSalvarRefeicao() {
   state.meals = state.meals.filter((meal) => meal.id !== editandoId).concat([novaRefeicao]);
   persistMeals();
   state.preview = [];
-  state.mealTipo = ""; state.mealNomeCustom = ""; state.mealDescription = ""; state.mealData = ""; state.mealHora = ""; state.mealEditandoId = null; state.mealPosResposta = "";
+  state.mealTipo = ""; state.mealNomeCustom = ""; state.mealDescription = ""; state.mealData = ""; state.mealHora = ""; state.mealEditandoId = null; state.mealPosResposta = ""; state.rtAnterior = null; state.rtAtual = null;
   acaoFecharSugestoesAlimento();
   state.exposicaoInicio = ""; state.exposicaoFim = ""; state.exposicaoCeu = "";
   state.exposicaoLocalizacaoStatus = "idle"; state.exposicaoUVHorario = null; state.exposicaoLocalizacaoTexto = null;
@@ -5735,7 +5741,7 @@ function submitPerfil() {
 /* ===================== templates ===================== */
 // Versão exibida no menu, na tela de login e em "Sobre o App" (mesmo padrão do Custódia Digital e do app
 // do escritório). Atualizar junto com o CACHE_NAME do sw.js a cada versão publicada.
-const APP_VERSAO = "2.16";
+const APP_VERSAO = "2.17";
 const APP_VERSAO_DATA = "21/11/2026";
 const DEV = { nome: "EFS Technology", lema: "Soluções digitais sob medida", tel: "83 9 99944-7957", wa: "5583999447957", email: "efstechnology.app@gmail.com" };
 function authVersaoTemplate() {
@@ -8240,9 +8246,24 @@ function posFeitoTemplate(t) {
   const m = refeicaoPosDoTreino(t);
   return m ? '<div class="plano-meta plano-registrado">' + icon("check") + " Pós-treino feito (" + formatNumber(m.protein, 0) + " g prot · " + formatNumber(m.carbs, 0) + " g carbo)</div>" : "";
 }
-// Proteína de origem animal (completa, rica em leucina) -- se a maior parte vier de fonte vegetal, a meta
-// do pós-treino sobe (~0,5 g/kg em vez de ~0,4 g/kg) pra compensar.
-const PROTEINA_ANIMAL_RX = /\b(carne|frango|peito|coxa|sobrecoxa|patinho|alcatra|acem|maminha|picanha|file|bife|hamburguer|ovo|ovos|clara|omelete|peixe|tilapia|salmao|atum|sardinha|camarao|bacalhau|leite|iogurte|queijo|cottage|ricota|requeijao|whey|caseina|presunto|peru|lombo|porco|linguica|salsicha|carneiro|figado|kefir|nutren|frios|mussarela|mucarela)\b/;
+// Qualidade da proteína: só conta como "vegetal" o que é reconhecidamente vegetal (feijão, soja, grãos
+// etc.). Produto com nome desconhecido (ex.: um shake cadastrado pela marca) fica neutro -- antes, tudo
+// que não batia com a lista de origem animal era tratado como vegetal, e um shake lácteo virava "vegetal".
+const PROTEINA_ANIMAL_RX = /\b(carne|frango|peito|coxa|sobrecoxa|patinho|alcatra|acem|maminha|picanha|file|bife|hamburguer|ovo|ovos|clara|omelete|peixe|tilapia|salmao|atum|sardinha|camarao|bacalhau|leite|iogurte|queijo|cottage|ricota|requeijao|whey|caseina|presunto|peru|lombo|porco|linguica|salsicha|carneiro|figado|kefir|nutren|frios|mussarela|mucarela|carne de sol|charque)\b/;
+const PROTEINA_VEGETAL_RX = /\b(feijao|soja|tofu|lentilha|grao de bico|ervilha|edamame|proteina vegetal|proteina de ervilha|quinoa|amendoim|pasta de amendoim|castanha|amendoa|nozes|aveia|granola|pao|arroz|macarrao|cuscuz|milho|tapioca|seitan|gergelim|chia|linhaca)\b/;
+// Velocidade do carboidrato por alimento: "rápido" = pouca fibra e pouca gordura em relação ao carboidrato
+// (banana, arroz branco, pão francês, tapioca, suco, mel...); "lento" = fibroso/integral ou com muita
+// gordura junto (aveia, integral, feijão, batata-doce com casca, shakes com fibra...).
+const CARBO_RAPIDO_RX = /\b(banana|arroz branco|pao frances|pao de forma|tapioca|mel|geleia|suco|uva|manga|abacaxi|melancia|batata inglesa|pure|cuscuz|maltodextrina|dextrose|isotonico|gatorade|bolacha|biscoito agua|cereal|sucrilhos|rapadura|acucar|goma|beiju|macaxeira|mandioca)\b/;
+const CARBO_LENTO_RX = /\b(integral|aveia|granola|feijao|lentilha|grao de bico|batata doce|quinoa|chia|linhaca|farelo)\b/;
+function velocidadeCarbo(f) {
+  const v = f.values || {}, c = v.carbs || 0;
+  if (c < 5) return null;
+  const nome = normalizeText(f.label || "");
+  if (CARBO_LENTO_RX.test(nome)) return "lento";
+  if (CARBO_RAPIDO_RX.test(nome)) return "rapido";
+  return (v.fiber || 0) / c <= 0.1 && (v.fat || 0) * 9 <= c * 4 * 0.5 ? "rapido" : "lento";
+}
 // Complemento pra fechar o que faltou, priorizando alimentos que a própria pessoa já registrou.
 function sugestaoComplemento(tipo, falta, jaNaRefeicao) {
   const vistos = new Set(jaNaRefeicao.map((l) => normalizeText(l)));
@@ -8261,6 +8282,17 @@ function sugestaoComplemento(tipo, falta, jaNaRefeicao) {
   if (lista.length) return lista.join(" ou ");
   return tipo === "protein" ? "1 iogurte natural (~6 g), 2 ovos (~12 g) ou 1 scoop de whey (~24 g)" : "1 banana (~23 g) ou 1 pão francês (~28 g)";
 }
+// Pedido do usuário: cada item diz com todas as letras se a meta foi atingida, superada ou quanto falta
+// (não só o "✓"), e, se a pessoa completou a refeição depois de um aviso (ex.: acrescentou whey), diz
+// que o complemento resolveu. state.rtAnterior guarda o resultado do cálculo anterior da MESMA refeição
+// em edição (ver acaoAnalisar()); zera ao salvar.
+function veredito(valor, alvo, un) {
+  const v = Math.round(valor || 0), a = Math.round(alvo);
+  if (v >= a * 1.3) return { ok: true, txt: "meta superada (+" + (v - a) + " " + un + ")" };
+  if (v >= a) return { ok: true, txt: "meta atingida" };
+  if (v >= a * 0.85) return { ok: true, txt: "praticamente atingida (faltam " + (a - v) + " " + un + ")" };
+  return { ok: false, txt: "faltam " + (a - v) + " " + un };
+}
 function refeicaoTreinoTemplate(total) {
   if (state.mealTipo === "Exposição Solar") return "";
   const dataEl = document.getElementById("meal-data");
@@ -8268,7 +8300,7 @@ function refeicaoTreinoTemplate(total) {
   const antiga = state.mealEditandoId != null ? state.meals.find((m) => m.id === state.mealEditandoId) : null;
   const hora = antiga ? antiga.time : state.mealHora || (data === today() ? minParaHhmm(agoraMin()) : "");
   const ctx = treinoDaRefeicao(data, hhmmParaMin(hora));
-  if (!ctx) return "";
+  if (!ctx) { state.rtAtual = null; return ""; }
   if (ctx.fase === "pergunta") {
     return '<div class="rt-bloco"><div class="rt-head">' + emojiEsporte(ctx.esporte) + " " + esc(ctx.esporte) + " começou às " + esc(ctx.plano.hora) + "</div>" +
       '<div class="rt-linha nota">' + icon("help") + "<div>Essa refeição é seu pós-treino?</div></div>" +
@@ -8279,45 +8311,91 @@ function refeicaoTreinoTemplate(total) {
   const g = (v) => formatNumber(v || 0, 0) + " g";
   const peso = pesoReferenciaKg();
   const labels = state.preview.map((f) => f.label);
-  let titulo;
+  const anterior = state.rtAnterior || {};
+  const atual = {};
+  const resolveu = (chave, ok) => { atual[chave] = ok; return ok && anterior[chave] === false ? " — <b>o complemento resolveu</b>" : ""; };
+  // Tipo de carboidrato (rápido x lento), em % do carboidrato dos alimentos que têm carboidrato relevante.
+  let cRap = 0, cLen = 0; const lentos = [];
+  state.preview.forEach((f) => { const vel = velocidadeCarbo(f); if (vel === "rapido") cRap += f.values.carbs; else if (vel === "lento") { cLen += f.values.carbs; lentos.push(f.label); } });
+  const pctRap = cRap + cLen > 0 ? Math.round((cRap / (cRap + cLen)) * 100) : null;
+  let titulo, pendencias = 0;
   if (ctx.fase === "pos") {
     titulo = "Pós-treino · " + esc(ctx.esporte) + (ctx.treino ? " " + esc(ctx.treino.horaInicio) + "–" + esc(ctx.treino.horaFim) : "");
-    const protAnimal = state.preview.reduce((s, f) => s + (PROTEINA_ANIMAL_RX.test(normalizeText(f.label)) ? f.values.protein || 0 : 0), 0);
-    const vegetal = (total.protein || 0) >= 5 && protAnimal / total.protein < 0.5;
+    let pAnimal = 0, pVegetal = 0;
+    state.preview.forEach((f) => { const n = normalizeText(f.label), pr = f.values.protein || 0; if (PROTEINA_ANIMAL_RX.test(n)) pAnimal += pr; else if (PROTEINA_VEGETAL_RX.test(n)) pVegetal += pr; });
+    const vegetal = (total.protein || 0) >= 5 && pVegetal / total.protein >= 0.5;
     const protAlvo = Math.round(peso * (vegetal ? 0.5 : 0.4));
-    if (total.protein >= protAlvo * 0.85) linha("ok", "<b>Proteína</b> " + g(total.protein) + " de ~" + protAlvo + " g");
-    else linha("alerta", "<b>Proteína</b> " + g(total.protein) + " de ~" + protAlvo + " g" + '<div class="rt-sub">Faltam ~' + Math.round(protAlvo - total.protein) + " g: + " + esc(sugestaoComplemento("protein", protAlvo - total.protein, labels)) + ".</div>");
-    if (vegetal) linha("nota", "A maior parte da proteína é vegetal: ela tem menos leucina (o aminoácido que liga a construção muscular), por isso a meta sobe pra ~" + protAlvo + " g.");
+    const vp = veredito(total.protein, protAlvo, "g");
+    if (!vp.ok) pendencias++;
+    linha(vp.ok ? "ok" : "alerta", "<b>Proteína</b> " + g(total.protein) + " de ~" + protAlvo + " g: " + vp.txt + resolveu("protein", vp.ok) +
+      (vp.ok ? "" : '<div class="rt-sub">Complete com: ' + esc(sugestaoComplemento("protein", protAlvo - total.protein, labels)) + ".</div>") +
+      '<div class="rt-sub">' + (vegetal ? "Maior parte vegetal: tem menos leucina (o aminoácido que liga a construção muscular), por isso a meta sobe pra ~" + protAlvo + " g."
+        : pAnimal >= (total.protein || 0) * 0.5 ? "Fonte de boa qualidade (origem animal/láctea): rica em leucina."
+        : "Faixa de ~0,4 g por kg de peso, que maximiza a construção muscular depois do treino.") + "</div>");
     const carbAlvo = PLANO_CARBO.pos[ctx.intens];
-    if (total.carbs >= carbAlvo * 0.8) linha("ok", "<b>Carboidrato</b> " + g(total.carbs) + " de ~" + carbAlvo + " g <span class=\"rt-sub\">(treino " + INTENS_MASC[ctx.intens] + ")</span>");
-    else linha("alerta", "<b>Carboidrato</b> " + g(total.carbs) + " de ~" + carbAlvo + " g <span class=\"rt-sub\">(treino " + INTENS_MASC[ctx.intens] + ")</span>" + '<div class="rt-sub">Faltam ~' + Math.round(carbAlvo - total.carbs) + " g: + " + esc(sugestaoComplemento("carbs", carbAlvo - total.carbs, labels)) + ".</div>");
-    if (ctx.minDepois == null) linha("nota", "Usei um treino moderado. Registre o treino (com o horário de término) pra conferir quantidade e horário com precisão.");
-    else if (ctx.minDepois <= 120) linha("ok", "<b>Horário</b> " + (ctx.minDepois < 60 ? ctx.minDepois + " min" : Math.floor(ctx.minDepois / 60) + "h" + String(ctx.minDepois % 60).padStart(2, "0")) + " depois de terminar");
-    else linha("alerta", "<b>Horário</b> mais de 2h depois de terminar: ainda vale, mas já passou da melhor janela.");
+    const vc = veredito(total.carbs, carbAlvo, "g");
+    if (!vc.ok) pendencias++;
+    linha(vc.ok ? "ok" : "alerta", "<b>Carboidrato</b> " + g(total.carbs) + " de ~" + carbAlvo + " g (treino " + INTENS_MASC[ctx.intens] + "): " + vc.txt + resolveu("carbs", vc.ok) +
+      (vc.ok ? "" : '<div class="rt-sub">Complete com: ' + esc(sugestaoComplemento("carbs", carbAlvo - total.carbs, labels)) + ".</div>"));
+    // Tipo do carboidrato: rápido repõe o glicogênio mais depressa -- faz diferença quando o treino foi
+    // intenso ou tem outro treino em poucas horas; com um treino só no dia, o total do dia pesa mais.
+    if (pctRap != null) {
+      const urgente = ctx.intens === "intensa" || ctx.proximo;
+      if (pctRap >= 50) linha("ok", "<b>Tipo do carboidrato</b>: " + pctRap + "% de absorção rápida — ideal pra repor o glicogênio gasto no treino.");
+      else if (pctRap >= 25) linha("ok", "<b>Tipo do carboidrato</b>: misto (" + pctRap + "% rápido) — repõe bem, só um pouco mais devagar.");
+      else linha(ctx.proximo ? "alerta" : "nota", "<b>Tipo do carboidrato</b>: predomina carboidrato lento/fibroso (" + esc(lentos.slice(0, 2).join(", ")) + ")." +
+        '<div class="rt-sub">' + (ctx.proximo ? "Com outro treino daqui a pouco, prefira carboidrato rápido: banana, arroz branco, pão francês, tapioca."
+          : urgente ? "Depois de treino intenso, parte do carboidrato rápido (banana, arroz branco, pão, tapioca) acelera a recuperação. Não é erro: o total do dia continua sendo o mais importante."
+          : "Com um treino só no dia, tudo bem: o que conta mais é o total de carboidrato do dia.") + "</div>");
+      if (ctx.proximo && pctRap < 25) pendencias++; // só pesa de verdade com outro treino em poucas horas
+    }
+    if (ctx.minDepois == null) linha("nota", "<b>Horário</b>: usei um treino moderado. Registre o treino (com o horário de término) pra conferir quantidade e horário com precisão.");
+    else if (ctx.minDepois <= 120) linha("ok", "<b>Horário</b> " + (ctx.minDepois < 60 ? ctx.minDepois + " min" : Math.floor(ctx.minDepois / 60) + "h" + String(ctx.minDepois % 60).padStart(2, "0")) + " depois de terminar: dentro da janela ideal (até 2h).");
+    else { pendencias++; linha("alerta", "<b>Horário</b>: mais de 2h depois de terminar. Ainda vale, mas já passou da melhor janela."); }
     if (ctx.proximo) {
       const leve = (total.fat || 0) <= 10 && (total.fiber || 0) <= 5;
+      if (!leve) pendencias++;
       linha(leve ? "ok" : "alerta", "<b>" + esc(ctx.proximo.esporte) + " às " + minParaHhmm(ctx.proximo.ini) + "</b> (em " + ctx.proximo.d + " min): " + (leve ? "leve o suficiente pro próximo treino." : "gordura e fibra (" + g(total.fat) + " · " + g(total.fiber) + ") demoram a digerir e podem pesar no próximo treino."));
-    } else if ((total.fat || 0) > 20 || (total.fiber || 0) > 10) linha("nota", "Bastante " + ((total.fat || 0) > 20 ? "gordura" : "fibra") + ": a digestão fica mais lenta. Não é errado depois do treino, só demora mais pra chegar ao músculo.");
+    } else {
+      const gord = total.fat || 0, fib = total.fiber || 0;
+      linha(gord > 20 || fib > 10 ? "nota" : "ok", "<b>Gordura e fibra</b> " + g(gord) + " · " + g(fib) + (gord > 20 || fib > 10
+        ? ": bastante " + (gord > 20 ? "gordura" : "fibra") + ", a digestão fica mais lenta. Não é erro depois do treino, só demora mais pra chegar ao músculo."
+        : ": na medida, não atrasam a digestão."));
+    }
+    const sessao = ctx.treino || {};
+    if ((sessao.duracaoMin || 0) >= 60 || (sessao.caloriasQueimadas || 0) >= 500) {
+      linha("nota", "<b>Hidratação</b>: treino longo (" + (sessao.duracaoMin || 0) + " min). Beba água nas próximas horas; o sódio da refeição" + ((total.sodio || 0) > 0 ? " (" + formatNumber(total.sodio, 0) + " mg)" : "") + " ajuda o corpo a reter essa água.");
+    }
   } else {
     const m = ctx.minAntes;
     const faltaTxt = m >= 60 ? Math.floor(m / 60) + "h" + (m % 60 ? String(m % 60).padStart(2, "0") : "") : m + " min";
     titulo = "Pré-treino · " + esc(ctx.esporte) + " às " + minParaHhmm(ctx.ini) + " (em " + faltaTxt + ")";
     if (m >= 150) {
       const protPre = Math.round(peso * 0.35);
-      const carbAlvo = PLANO_CARBO.refeicao;
-      linha(total.carbs >= carbAlvo * 0.8 ? "ok" : "alerta", "<b>Carboidrato</b> " + g(total.carbs) + " de ~" + carbAlvo + " g" + (total.carbs >= carbAlvo * 0.8 ? "" : '<div class="rt-sub">Prefira carboidrato lento: + ' + esc(sugestaoComplemento("carbs", carbAlvo - total.carbs, labels)) + ".</div>"));
-      linha(total.protein >= protPre * 0.7 ? "ok" : "alerta", "<b>Proteína</b> " + g(total.protein) + " de ~" + protPre + " g");
-      linha((total.fat || 0) <= 20 ? "ok" : "alerta", "<b>Gordura</b> " + g(total.fat) + ((total.fat || 0) <= 20 ? "" : '<div class="rt-sub">Muita gordura atrasa a digestão: pode pesar no treino.</div>'));
+      const vc = veredito(total.carbs, PLANO_CARBO.refeicao, "g");
+      if (!vc.ok) pendencias++;
+      linha(vc.ok ? "ok" : "alerta", "<b>Carboidrato</b> " + g(total.carbs) + " de ~" + PLANO_CARBO.refeicao + " g: " + vc.txt + resolveu("carbs", vc.ok) + (vc.ok ? "" : '<div class="rt-sub">Complete com: ' + esc(sugestaoComplemento("carbs", PLANO_CARBO.refeicao - total.carbs, labels)) + ".</div>"));
+      if (pctRap != null) linha("ok", "<b>Tipo do carboidrato</b>: " + (pctRap <= 60 ? "lento ou misto — bom com esse tempo até o treino: libera energia aos poucos." : pctRap + "% rápido — com esse tempo até o treino, um pouco de carboidrato lento (feijão, batata-doce, aveia, integrais) segura melhor a energia."));
+      const vp = veredito(total.protein, protPre, "g");
+      if (!vp.ok) pendencias++;
+      linha(vp.ok ? "ok" : "alerta", "<b>Proteína</b> " + g(total.protein) + " de ~" + protPre + " g: " + vp.txt + resolveu("protein", vp.ok));
+      const gOk = (total.fat || 0) <= 20;
+      if (!gOk) pendencias++;
+      linha(gOk ? "ok" : "alerta", "<b>Gordura</b> " + g(total.fat) + (gOk ? ": na medida (até ~20 g)." : ": acima de ~20 g, atrasa a digestão e pode pesar no treino."));
     } else if (m >= 30) {
-      const carbAlvo = PLANO_CARBO.lanche;
-      linha(total.carbs >= carbAlvo * 0.6 ? "ok" : "alerta", "<b>Carboidrato</b> " + g(total.carbs) + " de ~" + carbAlvo + " g (rápido)");
+      const vc = veredito(total.carbs, PLANO_CARBO.lanche, "g");
+      if (!vc.ok) pendencias++;
+      linha(vc.ok ? "ok" : "alerta", "<b>Carboidrato</b> " + g(total.carbs) + " de ~" + PLANO_CARBO.lanche + " g: " + vc.txt + resolveu("carbs", vc.ok));
+      if (pctRap != null) linha(pctRap >= 50 ? "ok" : "alerta", "<b>Tipo do carboidrato</b>: " + (pctRap >= 50 ? pctRap + "% rápido — ideal perto do treino." : "predomina lento/fibroso: perto do treino, prefira rápido (banana, pão francês, tapioca)."));
       const leve = (total.fat || 0) <= 10 && (total.fiber || 0) <= 5;
-      linha(leve ? "ok" : "alerta", "<b>Gordura e fibra</b> " + g(total.fat) + " · " + g(total.fiber) + (leve ? "" : '<div class="rt-sub">Perto do treino, gordura e fibra demoram a digerir: risco de desconforto.</div>'));
+      if (!leve) pendencias++;
+      linha(leve ? "ok" : "alerta", "<b>Gordura e fibra</b> " + g(total.fat) + " · " + g(total.fiber) + (leve ? ": baixas, digestão rápida." : ": perto do treino demoram a digerir, risco de desconforto."));
     } else {
       const leve = (total.calories || 0) <= 200 && (total.fat || 0) <= 5;
+      if (!leve) pendencias++;
       linha(leve ? "ok" : "alerta", leve ? "Leve o suficiente pra tão perto do treino." : "<b>Muito perto do treino</b> pra essa quantidade: risco de desconforto. Se der, só água ou uma fruta.");
     }
-    if (linhas.some((l) => l.includes("rt-linha alerta")) && PLANO_DICA_ESPORTE[ctx.esporte]) linha("nota", esc(PLANO_DICA_ESPORTE[ctx.esporte]));
+    if (pendencias && PLANO_DICA_ESPORTE[ctx.esporte]) linha("nota", esc(PLANO_DICA_ESPORTE[ctx.esporte]));
   }
   // Déficit: quanto essa refeição consome do que restava de kcal hoje.
   if (data === today() && state.goals.calories > 0) {
@@ -8325,9 +8403,13 @@ function refeicaoTreinoTemplate(total) {
     if (antiga && mealsDesdeUltimoEncerramento().some((x) => x.id === antiga.id)) restante += antiga.calories || 0;
     const kcal = total.calories || 0;
     if (kcal > restante) linha("alerta", "<b>Calorias:</b> passa " + formatNumber(kcal - Math.max(0, restante), 0) + " kcal da meta de hoje.");
-    else if (restante > 0 && kcal / restante >= 0.45) linha("nota", "Usa " + formatNumber((kcal / restante) * 100, 0) + "% das " + formatNumber(restante, 0) + " kcal que restavam hoje.");
+    else if (restante > 0 && kcal / restante >= 0.45) linha("nota", "<b>Calorias:</b> usa " + formatNumber((kcal / restante) * 100, 0) + "% das " + formatNumber(restante, 0) + " kcal que restavam hoje.");
+    else if (restante > 0) linha("ok", "<b>Calorias:</b> " + formatNumber(kcal, 0) + " kcal, cabe com folga no que restava hoje (" + formatNumber(restante, 0) + " kcal).");
   }
-  return '<div class="rt-bloco"><div class="rt-head">' + emojiEsporte(ctx.esporte) + " " + titulo + "</div>" + linhas.join("") + "</div>";
+  state.rtAtual = atual;
+  const resumo = pendencias ? '<div class="rt-resumo alerta">' + icon("alert") + " " + (pendencias === 1 ? "Quase lá: falta 1 ponto" : "Faltam " + pendencias + " pontos") + " pra refeição ficar ideal como " + (ctx.fase === "pos" ? "pós" : "pré") + "-treino.</div>"
+    : '<div class="rt-resumo ok">' + icon("check") + " Refeição adequada como " + (ctx.fase === "pos" ? "pós" : "pré") + "-treino.</div>";
+  return '<div class="rt-bloco"><div class="rt-head">' + emojiEsporte(ctx.esporte) + " " + titulo + "</div>" + resumo + linhas.join("") + "</div>";
 }
 function acaoCancelarEdicaoTreino() {
   state.treinoEditandoId = null;
