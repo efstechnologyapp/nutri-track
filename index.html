@@ -4710,6 +4710,9 @@ function acaoEditarProdutoCustomizado(id) {
   state.produtoManualMicroPreview = [];
   produtoRotuloArquivo = null;
   const usaModoIngredientes = !!(p.ingredientesTexto && p.ingredientesTexto.trim());
+  const valores = {};
+  PRODUTO_MANUAL_CAMPOS.forEach((c) => { valores[c.id] = p.values && p.values[c.id] ? p.values[c.id] : ""; });
+  const porcao = p.grams != null ? String(p.grams) : "";
   if (usaModoIngredientes) {
     state.produtoModoCadastro = "ingredientes";
     state.produtoIngredientes = p.ingredientesTexto;
@@ -4720,10 +4723,8 @@ function acaoEditarProdutoCustomizado(id) {
     state.produtoModoCadastro = "manual";
     state.produtoIngredientes = "";
     state.produtoPreview = [];
-    const valores = {};
-    PRODUTO_MANUAL_CAMPOS.forEach((c) => { valores[c.id] = p.values && p.values[c.id] ? p.values[c.id] : ""; });
     state.produtoManualValores = valores;
-    state.produtoManualPorcao = p.grams != null ? String(p.grams) : "";
+    state.produtoManualPorcao = porcao;
   }
   render();
   // captureFormState() (chamado no início do render() acima) recaptura os valores AINDA presentes no DOM
@@ -4739,14 +4740,22 @@ function acaoEditarProdutoCustomizado(id) {
   if (nomeEl) nomeEl.value = p.label;
   state.produtoNome = p.label;
   if (usaModoIngredientes) {
+    // Usa p.ingredientesTexto (não state.produtoIngredientes): quando o lápis é tocado com o modal JÁ
+    // aberto, o captureFormState() do render() acima recaptura o campo ainda vazio do DOM e zera o state
+    // -- era por isso que a lista aparecia na análise, mas o campo de texto ficava em branco.
+    state.produtoIngredientes = p.ingredientesTexto;
     const ingredientesEl = document.getElementById("produto-ingredientes");
-    if (ingredientesEl) ingredientesEl.value = state.produtoIngredientes;
+    if (ingredientesEl) ingredientesEl.value = p.ingredientesTexto;
   } else {
+    // Mesmo motivo acima: usa os valores do produto (locais), nunca o state que o captureFormState() pode
+    // ter acabado de sobrescrever com os campos do produto que estava aberto antes.
+    state.produtoManualValores = valores;
+    state.produtoManualPorcao = porcao;
     const porcaoEl = document.getElementById("produto-manual-porcao");
-    if (porcaoEl) porcaoEl.value = state.produtoManualPorcao;
+    if (porcaoEl) porcaoEl.value = porcao;
     PRODUTO_MANUAL_CAMPOS.forEach((c) => {
       const el = document.getElementById("produto-manual-" + c.id);
-      if (el) el.value = state.produtoManualValores[c.id];
+      if (el) el.value = valores[c.id];
     });
   }
 }
