@@ -485,6 +485,18 @@ body:has(.modal-overlay) .hamburger-btn{ display:none; }
 .meal-preview-total-row .label{ font-size:14px; font-weight:600; color:#f0f7eb; }
 .meal-preview-total-row .value{ font-family:'Fraunces',serif; font-size:24px; font-weight:600; color:#d9efbd; }
 .meal-preview-macros{ margin-top:4px; text-align:right; font-size:12px; color:#a9c6b7; }
+/* checagem da refeição contra o treino (pré/pós), dentro do preview escuro */
+.rt-bloco{ margin-top:12px; border-radius:12px; background:rgba(0,0,0,.16); border:1px solid rgba(184,214,156,.18); padding:10px 12px; }
+.rt-head{ font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:#b8d4ba; margin-bottom:6px; }
+.rt-linha{ display:flex; gap:8px; font-size:13px; line-height:1.45; color:#eff6e9; padding:4px 0; }
+.rt-linha .icon{ width:15px; height:15px; flex-shrink:0; margin-top:2px; }
+.rt-linha.ok .icon{ color:#9fd77f; }
+.rt-linha.alerta .icon{ color:#f2c46d; }
+.rt-linha.nota .icon{ color:#9fbeb0; }
+.rt-sub{ font-size:12px; color:#a9c6b7; }
+.rt-botoes{ display:flex; gap:8px; margin-top:6px; }
+.rt-botoes button{ flex:1; border-radius:999px; border:1px solid rgba(184,214,156,.35); background:rgba(255,255,255,.06); padding:7px 12px; font-size:13px; font-weight:600; color:#e3f2d3; }
+.rt-tag{ display:inline-block; margin-left:6px; border-radius:999px; background:#e4efd9; color:#3d5c48; font-size:10.5px; font-weight:600; padding:1px 7px; vertical-align:1px; }
 .exposicao-solar-aviso{ margin:0 0 4px; display:flex; align-items:flex-start; gap:6px; font-size:12.5px; line-height:1.5; color:#d9efbd; }
 .exposicao-solar-aviso .icon{ flex:0 0 auto; width:14px; height:14px; margin-top:2px; }
 .exposicao-solar-link{ font-weight:600; color:#fff; text-decoration:underline; text-underline-offset:2px; }
@@ -2914,6 +2926,9 @@ const state = {
   // quando o formulário está no modo normal de "nova refeição" -- ver acaoEditarRefeicao()/
   // acaoSalvarRefeicao()/acaoCancelarEdicaoRefeicao().
   mealEditandoId: null,
+  // Resposta a "Essa refeição é seu pós-treino?" (treino planejado já começou, mas ainda não registrado):
+  // "" = ainda não respondeu, "sim" / "nao". Zera ao salvar/cancelar a refeição.
+  mealPosResposta: "",
   // Sugestões de autocomplete pro alimento que a pessoa está digitando agora na descrição da refeição --
   // lista de labels (string), atualizada a cada tecla (ver acaoAtualizarSugestoesAlimento()) e mostrada
   // logo abaixo da textarea (mealSugestoesListaHtml()). Pedido do usuário. Fica fora do fluxo normal de
@@ -5168,7 +5183,7 @@ function acaoSalvarRefeicao() {
   state.meals = state.meals.filter((meal) => meal.id !== editandoId).concat([novaRefeicao]);
   persistMeals();
   state.preview = [];
-  state.mealTipo = ""; state.mealNomeCustom = ""; state.mealDescription = ""; state.mealData = ""; state.mealHora = ""; state.mealEditandoId = null;
+  state.mealTipo = ""; state.mealNomeCustom = ""; state.mealDescription = ""; state.mealData = ""; state.mealHora = ""; state.mealEditandoId = null; state.mealPosResposta = "";
   acaoFecharSugestoesAlimento();
   state.exposicaoInicio = ""; state.exposicaoFim = ""; state.exposicaoCeu = "";
   state.exposicaoLocalizacaoStatus = "idle"; state.exposicaoUVHorario = null; state.exposicaoLocalizacaoTexto = null;
@@ -7098,6 +7113,7 @@ function mealPreviewTemplate() {
     ).join("") + "</div>" +
     '<div class="meal-preview-total"><div class="meal-preview-total-row"><span class="label">Total da refeição</span><span class="value">' + formatNumber(total.calories) + " kcal</span></div>" +
     '<div class="meal-preview-macros">P ' + formatNumber(total.protein, 1) + " · C " + formatNumber(total.carbs, 1) + " · G " + formatNumber(total.fat, 1) + " · F " + formatNumber(total.fiber, 1) + "</div></div>" +
+    refeicaoTreinoTemplate(total) +
     '<button class="btn-accent" onclick="acaoSalvarRefeicao()">' + icon("check") + (state.mealEditandoId != null ? " Salvar alterações" : " Salvar no histórico") + "</button>" +
     "</div>";
 }
@@ -7932,7 +7948,7 @@ function planoLinhaTemplate(p) {
     '<div class="plano-emoji">' + emojiEsporte(p.esporte) + "</div>" +
     '<div class="plano-info"><div class="plano-nome">' + esc(p.esporte) + "</div>" +
       '<div class="plano-meta">' + rotuloDiaPlano(p.date) + " · " + (p.hora ? esc(p.hora) : '<span class="sem-hora">sem horário</span>') + "</div>" +
-      (real ? '<div class="plano-meta plano-registrado">' + icon("check") + " Registrado: " + esc(real.horaInicio || "") + "–" + esc(real.horaFim || "") + (real.caloriasQueimadas ? " · " + formatNumber(real.caloriasQueimadas, 0) + " kcal" : "") + "</div>" : "") +
+      (real ? '<div class="plano-meta plano-registrado">' + icon("check") + " Registrado: " + esc(real.horaInicio || "") + "–" + esc(real.horaFim || "") + (real.caloriasQueimadas ? " · " + formatNumber(real.caloriasQueimadas, 0) + " kcal" : "") + "</div>" + posFeitoTemplate(real) : "") +
       acoes + "</div>" +
     '<span class="plano-chip ' + chip[0] + '">' + chip[1] + "</span>" +
     (status === "planejado" || (status === "hoje" && !real) ? '<button class="plano-remover" aria-label="Remover do plano" onclick="event.stopPropagation(); acaoRemoverPlano(' + p.id + ')">' + icon("trash") + "</button>" : "") +
@@ -8094,7 +8110,9 @@ function planoTreinoModalTemplate() {
     (agoraBloco.ex ? '<div class="pm-agora-desc">Ex.: ' + agoraBloco.ex + ".</div>" : "") + "</div>";
   const passosHtml = passos.length ? '<div class="pm-bloco"><div class="pm-bloco-titulo">' + icon("calendar") + " Próximos passos</div><div class=\"pm-passos\">" +
     passos.map((x) => '<div class="pm-passo"><div class="pm-passo-hora">' + x[0] + '</div><div class="pm-passo-txt">' + x[1] + "</div></div>").join("") + "</div></div>" : "";
-  return envolver(agoraHtml + avisos + dicaEsporte + dicaNoite + passosHtml + planoResumoDiaTemplate(), rodapeConfirmar);
+  const posFeito = fase === "pos" ? refeicaoPosDoTreino(real) : null;
+  const posFeitoHtml = posFeito ? '<div class="pm-dica">' + icon("check") + "<div><b>Pós-treino feito:</b> " + esc(posFeito.name || "Refeição") + " das " + esc(posFeito.time) + " · " + formatNumber(posFeito.protein, 0) + " g de proteína · " + formatNumber(posFeito.carbs, 0) + " g de carboidrato.</div></div>" : "";
+  return envolver(posFeitoHtml + (posFeito ? "" : agoraHtml) + avisos + dicaEsporte + dicaNoite + passosHtml + planoResumoDiaTemplate(), rodapeConfirmar);
 }
 function planoResumoDiaTemplate() {
   const restante = remainingToday();
@@ -8105,6 +8123,136 @@ function planoResumoDiaTemplate() {
     '<div class="pm-refeicoes">' + (refeicoes.length
       ? refeicoes.map((m) => '<div class="pm-ref"><span><b>' + esc(m.time || "--:--") + "</b> · " + esc(m.name || "Refeição") + "</span><span>" + formatNumber(m.calories, 0) + " kcal · P" + formatNumber(m.protein, 0) + " C" + formatNumber(m.carbs, 0) + " G" + formatNumber(m.fat, 0) + "</span></div>").join("")
       : '<div class="pm-ref"><span>Nenhuma refeição registrada hoje ainda.</span></div>') + "</div></div>";
+}
+// ===================== refeição x treino (pré/pós) =====================
+// Pedido do usuário: ao calcular uma refeição, além dos nutrientes, conferir se ela está adequada como
+// pré ou pós-treino. Tudo é derivado na hora (data/horário da refeição x treinos registrados/planejados
+// do dia) -- nada novo é gravado na planilha.
+// Janelas: pós = até 3h depois do término de um treino REGISTRADO; pré = até 4h antes do início (treino
+// registrado ou planejado com horário). Treino planejado que já começou e não foi registrado: pergunta.
+function treinoDaRefeicao(data, horaMin, opcoes) {
+  if (horaMin == null || isNaN(horaMin)) return null;
+  const treinos = state.treinos.filter((t) => t.date === data && t.horaInicio && t.horaFim);
+  const pos = treinos.map((t) => ({ t, d: horaMin - hhmmParaMin(t.horaFim) })).filter((x) => x.d >= 0 && x.d <= 180).sort((a, b) => a.d - b.d)[0];
+  const planos = state.treinosPlanejados.filter((p) => p.date === data && p.hora && !p.naoRealizado && !planoTreinoRealizado(p));
+  const pres = treinos.map((t) => ({ esporte: t.esporte, ini: hhmmParaMin(t.horaInicio) }))
+    .concat(planos.map((p) => ({ esporte: p.esporte, ini: hhmmParaMin(p.hora) })))
+    .map((x) => Object.assign(x, { d: x.ini - horaMin })).filter((x) => x.d > 0 && x.d <= 240).sort((a, b) => a.d - b.d)[0];
+  // Dois treinos no dia: a mesma refeição pode ser pós de um e pré do outro.
+  if (pos) return { fase: "pos", treino: pos.t, esporte: pos.t.esporte, intens: intensidadeDoTreino(pos.t), minDepois: pos.d, proximo: pres || null };
+  if (pres) return { fase: "pre", esporte: pres.esporte, ini: pres.ini, minAntes: pres.d };
+  if (opcoes && opcoes.semPergunta) return null;
+  const comecou = planos.find((p) => horaMin >= hhmmParaMin(p.hora) && horaMin - hhmmParaMin(p.hora) <= 300);
+  if (!comecou) return null;
+  if (state.mealPosResposta === "sim") return { fase: "pos", plano: comecou, esporte: comecou.esporte, intens: "moderada", minDepois: null };
+  if (state.mealPosResposta === "nao") return null;
+  return { fase: "pergunta", plano: comecou, esporte: comecou.esporte };
+}
+const INTENS_MASC = { leve: "leve", moderada: "moderado", intensa: "intenso" };
+function acaoResponderPosTreino(resp) { state.mealPosResposta = resp; render(); }
+function etiquetaTreinoRefeicao(m) {
+  if (!m.time || m.name === "Exposição Solar") return "";
+  const c = treinoDaRefeicao(m.date, hhmmParaMin(m.time), { semPergunta: true });
+  return c ? '<span class="rt-tag">' + (c.fase === "pos" ? "pós-treino" : "pré-treino") + "</span>" : "";
+}
+function refeicaoPosDoTreino(t) {
+  if (!t || !t.horaFim) return null;
+  const fim = hhmmParaMin(t.horaFim);
+  return state.meals.filter((m) => m.date === t.date && m.time && hhmmParaMin(m.time) >= fim && hhmmParaMin(m.time) - fim <= 180 && m.name !== "Exposição Solar")
+    .sort((a, b) => a.time.localeCompare(b.time))[0] || null;
+}
+function posFeitoTemplate(t) {
+  const m = refeicaoPosDoTreino(t);
+  return m ? '<div class="plano-meta plano-registrado">' + icon("check") + " Pós-treino feito (" + formatNumber(m.protein, 0) + " g prot · " + formatNumber(m.carbs, 0) + " g carbo)</div>" : "";
+}
+// Proteína de origem animal (completa, rica em leucina) -- se a maior parte vier de fonte vegetal, a meta
+// do pós-treino sobe (~0,5 g/kg em vez de ~0,4 g/kg) pra compensar.
+const PROTEINA_ANIMAL_RX = /\b(carne|frango|peito|coxa|sobrecoxa|patinho|alcatra|acem|maminha|picanha|file|bife|hamburguer|ovo|ovos|clara|omelete|peixe|tilapia|salmao|atum|sardinha|camarao|bacalhau|leite|iogurte|queijo|cottage|ricota|requeijao|whey|caseina|presunto|peru|lombo|porco|linguica|salsicha|carneiro|figado|kefir|nutren|frios|mussarela|mucarela)\b/;
+// Complemento pra fechar o que faltou, priorizando alimentos que a própria pessoa já registrou.
+function sugestaoComplemento(tipo, falta, jaNaRefeicao) {
+  const vistos = new Set(jaNaRefeicao.map((l) => normalizeText(l)));
+  const cands = [];
+  state.meals.slice(-200).forEach((m) => (m.alimentos || []).forEach((a) => {
+    const v = a.values || {}, chave = normalizeText(a.label || "");
+    if (!chave || vistos.has(chave) || !v.calories) return;
+    const ok = tipo === "protein" ? (v.protein || 0) >= 5 && (v.protein * 4) / v.calories >= 0.3
+      : (v.carbs || 0) >= 10 && (v.carbs * 4) / v.calories >= 0.6 && (v.fat || 0) <= 4 && (v.fiber || 0) <= 4;
+    if (!ok) return;
+    vistos.add(chave);
+    cands.push({ txt: a.label + (a.amount ? " (" + a.amount + ")" : ""), g: v[tipo] });
+  }));
+  cands.sort((a, b) => Math.abs(a.g - falta) - Math.abs(b.g - falta));
+  const lista = cands.slice(0, 2).map((c) => c.txt + ", ~" + formatNumber(c.g, 0) + " g");
+  if (lista.length) return lista.join(" ou ");
+  return tipo === "protein" ? "1 iogurte natural (~6 g), 2 ovos (~12 g) ou 1 scoop de whey (~24 g)" : "1 banana (~23 g) ou 1 pão francês (~28 g)";
+}
+function refeicaoTreinoTemplate(total) {
+  if (state.mealTipo === "Exposição Solar") return "";
+  const dataEl = document.getElementById("meal-data");
+  const data = state.mealData || (dataEl && dataEl.value) || today();
+  const antiga = state.mealEditandoId != null ? state.meals.find((m) => m.id === state.mealEditandoId) : null;
+  const hora = antiga ? antiga.time : state.mealHora || (data === today() ? minParaHhmm(agoraMin()) : "");
+  const ctx = treinoDaRefeicao(data, hhmmParaMin(hora));
+  if (!ctx) return "";
+  if (ctx.fase === "pergunta") {
+    return '<div class="rt-bloco"><div class="rt-head">' + emojiEsporte(ctx.esporte) + " " + esc(ctx.esporte) + " começou às " + esc(ctx.plano.hora) + "</div>" +
+      '<div class="rt-linha nota">' + icon("help") + "<div>Essa refeição é seu pós-treino?</div></div>" +
+      '<div class="rt-botoes"><button onclick="acaoResponderPosTreino(\'sim\')">Sim</button><button onclick="acaoResponderPosTreino(\'nao\')">Não</button></div></div>';
+  }
+  const linhas = [];
+  const linha = (tipo, html) => linhas.push('<div class="rt-linha ' + tipo + '">' + icon(tipo === "ok" ? "check" : tipo === "alerta" ? "alert" : "info") + "<div>" + html + "</div></div>");
+  const g = (v) => formatNumber(v || 0, 0) + " g";
+  const peso = pesoReferenciaKg();
+  const labels = state.preview.map((f) => f.label);
+  let titulo;
+  if (ctx.fase === "pos") {
+    titulo = "Pós-treino · " + esc(ctx.esporte) + (ctx.treino ? " " + esc(ctx.treino.horaInicio) + "–" + esc(ctx.treino.horaFim) : "");
+    const protAnimal = state.preview.reduce((s, f) => s + (PROTEINA_ANIMAL_RX.test(normalizeText(f.label)) ? f.values.protein || 0 : 0), 0);
+    const vegetal = (total.protein || 0) >= 5 && protAnimal / total.protein < 0.5;
+    const protAlvo = Math.round(peso * (vegetal ? 0.5 : 0.4));
+    if (total.protein >= protAlvo * 0.85) linha("ok", "<b>Proteína</b> " + g(total.protein) + " de ~" + protAlvo + " g");
+    else linha("alerta", "<b>Proteína</b> " + g(total.protein) + " de ~" + protAlvo + " g" + '<div class="rt-sub">Faltam ~' + Math.round(protAlvo - total.protein) + " g: + " + esc(sugestaoComplemento("protein", protAlvo - total.protein, labels)) + ".</div>");
+    if (vegetal) linha("nota", "A maior parte da proteína é vegetal: ela tem menos leucina (o aminoácido que liga a construção muscular), por isso a meta sobe pra ~" + protAlvo + " g.");
+    const carbAlvo = PLANO_CARBO.pos[ctx.intens];
+    if (total.carbs >= carbAlvo * 0.8) linha("ok", "<b>Carboidrato</b> " + g(total.carbs) + " de ~" + carbAlvo + " g <span class=\"rt-sub\">(treino " + INTENS_MASC[ctx.intens] + ")</span>");
+    else linha("alerta", "<b>Carboidrato</b> " + g(total.carbs) + " de ~" + carbAlvo + " g <span class=\"rt-sub\">(treino " + INTENS_MASC[ctx.intens] + ")</span>" + '<div class="rt-sub">Faltam ~' + Math.round(carbAlvo - total.carbs) + " g: + " + esc(sugestaoComplemento("carbs", carbAlvo - total.carbs, labels)) + ".</div>");
+    if (ctx.minDepois == null) linha("nota", "Usei um treino moderado. Registre o treino (com o horário de término) pra conferir quantidade e horário com precisão.");
+    else if (ctx.minDepois <= 120) linha("ok", "<b>Horário</b> " + (ctx.minDepois < 60 ? ctx.minDepois + " min" : Math.floor(ctx.minDepois / 60) + "h" + String(ctx.minDepois % 60).padStart(2, "0")) + " depois de terminar");
+    else linha("alerta", "<b>Horário</b> mais de 2h depois de terminar: ainda vale, mas já passou da melhor janela.");
+    if (ctx.proximo) {
+      const leve = (total.fat || 0) <= 10 && (total.fiber || 0) <= 5;
+      linha(leve ? "ok" : "alerta", "<b>" + esc(ctx.proximo.esporte) + " às " + minParaHhmm(ctx.proximo.ini) + "</b> (em " + ctx.proximo.d + " min): " + (leve ? "leve o suficiente pro próximo treino." : "gordura e fibra (" + g(total.fat) + " · " + g(total.fiber) + ") demoram a digerir e podem pesar no próximo treino."));
+    } else if ((total.fat || 0) > 20 || (total.fiber || 0) > 10) linha("nota", "Bastante " + ((total.fat || 0) > 20 ? "gordura" : "fibra") + ": a digestão fica mais lenta. Não é errado depois do treino, só demora mais pra chegar ao músculo.");
+  } else {
+    const m = ctx.minAntes;
+    const faltaTxt = m >= 60 ? Math.floor(m / 60) + "h" + (m % 60 ? String(m % 60).padStart(2, "0") : "") : m + " min";
+    titulo = "Pré-treino · " + esc(ctx.esporte) + " às " + minParaHhmm(ctx.ini) + " (em " + faltaTxt + ")";
+    if (m >= 150) {
+      const protPre = Math.round(peso * 0.35);
+      const carbAlvo = PLANO_CARBO.refeicao;
+      linha(total.carbs >= carbAlvo * 0.8 ? "ok" : "alerta", "<b>Carboidrato</b> " + g(total.carbs) + " de ~" + carbAlvo + " g" + (total.carbs >= carbAlvo * 0.8 ? "" : '<div class="rt-sub">Prefira carboidrato lento: + ' + esc(sugestaoComplemento("carbs", carbAlvo - total.carbs, labels)) + ".</div>"));
+      linha(total.protein >= protPre * 0.7 ? "ok" : "alerta", "<b>Proteína</b> " + g(total.protein) + " de ~" + protPre + " g");
+      linha((total.fat || 0) <= 20 ? "ok" : "alerta", "<b>Gordura</b> " + g(total.fat) + ((total.fat || 0) <= 20 ? "" : '<div class="rt-sub">Muita gordura atrasa a digestão: pode pesar no treino.</div>'));
+    } else if (m >= 30) {
+      const carbAlvo = PLANO_CARBO.lanche;
+      linha(total.carbs >= carbAlvo * 0.6 ? "ok" : "alerta", "<b>Carboidrato</b> " + g(total.carbs) + " de ~" + carbAlvo + " g (rápido)");
+      const leve = (total.fat || 0) <= 10 && (total.fiber || 0) <= 5;
+      linha(leve ? "ok" : "alerta", "<b>Gordura e fibra</b> " + g(total.fat) + " · " + g(total.fiber) + (leve ? "" : '<div class="rt-sub">Perto do treino, gordura e fibra demoram a digerir: risco de desconforto.</div>'));
+    } else {
+      const leve = (total.calories || 0) <= 200 && (total.fat || 0) <= 5;
+      linha(leve ? "ok" : "alerta", leve ? "Leve o suficiente pra tão perto do treino." : "<b>Muito perto do treino</b> pra essa quantidade: risco de desconforto. Se der, só água ou uma fruta.");
+    }
+    if (linhas.some((l) => l.includes("rt-linha alerta")) && PLANO_DICA_ESPORTE[ctx.esporte]) linha("nota", esc(PLANO_DICA_ESPORTE[ctx.esporte]));
+  }
+  // Déficit: quanto essa refeição consome do que restava de kcal hoje.
+  if (data === today() && state.goals.calories > 0) {
+    let restante = remainingToday().calories;
+    if (antiga && mealsDesdeUltimoEncerramento().some((x) => x.id === antiga.id)) restante += antiga.calories || 0;
+    const kcal = total.calories || 0;
+    if (kcal > restante) linha("alerta", "<b>Calorias:</b> passa " + formatNumber(kcal - Math.max(0, restante), 0) + " kcal da meta de hoje.");
+    else if (restante > 0 && kcal / restante >= 0.45) linha("nota", "Usa " + formatNumber((kcal / restante) * 100, 0) + "% das " + formatNumber(restante, 0) + " kcal que restavam hoje.");
+  }
+  return '<div class="rt-bloco"><div class="rt-head">' + emojiEsporte(ctx.esporte) + " " + titulo + "</div>" + linhas.join("") + "</div>";
 }
 function acaoCancelarEdicaoTreino() {
   state.treinoEditandoId = null;
@@ -8420,7 +8568,7 @@ function mealListTemplate() {
     // esse tipo de registro em vez de "0 kcal" (tecnicamente certo, mas confuso de bater o olho).
     const exposicaoSolar = m.name === "Exposição Solar";
     const percentualTexto = metaCalorias > 0 ? " / " + formatNumber((m.calories / metaCalorias) * 100, 1) + "%" : "";
-    return '<div class="meal-row" onclick="acaoAbrirDetalheRefeicao(' + m.id + ')"><div class="meal-row-left"><div class="meal-row-icon">' + icon(exposicaoSolar ? "sun" : "utensils") + '</div><div class="meal-row-text"><div class="meal-row-name">' + esc(m.name) + '</div><div class="meal-row-meta">' + icon("clock") + " " + esc(m.time) + " · " + esc(m.detected.join(", ")) + "</div></div></div>" +
+    return '<div class="meal-row" onclick="acaoAbrirDetalheRefeicao(' + m.id + ')"><div class="meal-row-left"><div class="meal-row-icon">' + icon(exposicaoSolar ? "sun" : "utensils") + '</div><div class="meal-row-text"><div class="meal-row-name">' + esc(m.name) + etiquetaTreinoRefeicao(m) + '</div><div class="meal-row-meta">' + icon("clock") + " " + esc(m.time) + " · " + esc(m.detected.join(", ")) + "</div></div></div>" +
     '<div class="meal-row-right"><div class="meal-row-stat">' + (exposicaoSolar
       ? '<div class="meal-row-kcal">' + formatVitaminaDComUI(m.vitD, 1) + " vitamina D</div>"
       : '<div class="meal-row-kcal">' + formatNumber(m.calories) + " kcal" + percentualTexto + '</div><div class="meal-row-macro">P ' + formatNumber(m.protein, 1) + " · C " + formatNumber(m.carbs, 1) + " · G " + formatNumber(m.fat, 1) + "</div>"
