@@ -5926,7 +5926,7 @@ function submitPerfil() {
 /* ===================== templates ===================== */
 // Versão exibida no menu, na tela de login e em "Sobre o App" (mesmo padrão do Custódia Digital e do app
 // do escritório). Atualizar junto com o CACHE_NAME do sw.js a cada versão publicada.
-const APP_VERSAO = "2.28";
+const APP_VERSAO = "2.30";
 const APP_VERSAO_DATA = "21/11/2026";
 const DEV = { nome: "EFS Technology", lema: "Soluções digitais sob medida", tel: "83 9 99944-7957", wa: "5583999447957", email: "efstechnology.app@gmail.com" };
 function authVersaoTemplate() {
@@ -9059,6 +9059,8 @@ function descricaoAjustada(alimentos, kProt, kOutros) {
     const rico = (a.values.protein || 0) * 4 / Math.max(1, a.values.calories) >= 0.35;
     const m = mult * (rico ? kProt : kOutros);
     const termo = food.terms[0];
+    // Pedido do usuário: porções pequenas ficam na sugestão, por menores que sejam (só arredonda, com um
+    // mínimo de 10 g / 50 ml / meia unidade pra não virar zero).
     if (food.grams) partes.push(Math.max(10, Math.round((m * food.grams) / 10) * 10) + " g de " + termo);
     else if (food.ml) partes.push(Math.max(50, Math.round((m * food.ml) / 50) * 50) + " ml de " + termo);
     else { const u = Math.max(0.5, Math.round(m * (food.count || 1) * 2) / 2); partes.push(String(u).replace(".", ",") + " unidade" + (u > 1 ? "s" : "") + " de " + termo); }
@@ -9106,19 +9108,32 @@ function sugestoesDeRefeicao(tipo) {
   const lacunas = [["fiber", "fibra", state.goals.fiber], ["ferro", "ferro", MICRO_GOALS.ferro], ["magnesio", "magnésio", MICRO_GOALS.magnesio], ["potassio", "potássio", MICRO_GOALS.potassio], ["calcio", "cálcio", MICRO_GOALS.calcio], ["vitC", "vitamina C", MICRO_GOALS.vitC]]
     .filter((x) => x[2] && (consumido[x[0]] || 0) < x[2] * fracDia * 0.6);
   const comidoHoje = new Set(state.meals.filter((m) => m.date === hoje).flatMap((m) => (m.alimentos || []).map((a) => a.label)));
-  // Candidatas: refeições do mesmo tipo (e, se faltar, do mesmo grupo: principais x leves) do histórico.
-  const grupo = SUGESTAO_PRINCIPAIS.includes(tipo) ? SUGESTAO_PRINCIPAIS : SUGESTAO_TIPOS.filter((t) => !SUGESTAO_PRINCIPAIS.includes(t));
-  const historico = state.meals.filter((m) => m.date < hoje && m.date >= somarDias(hoje, -120) && (m.alimentos || []).length && grupo.includes(m.name))
-    .sort((a, b) => (a.name === tipo) - (b.name === tipo) || a.date.localeCompare(b.date)).reverse();
+  // Candidatas: SÓ refeições do mesmo tipo (pedido do usuário: sugestão de jantar tem que parecer com os
+  // jantares dele -- antes entravam também almoços, e aparecia feijão no jantar de quem não janta feijão).
+  // Itens raros naquele tipo de refeição (ex.: um brigadeiro que apareceu uma vez num almoço) saem da
+  // sugestão, mantendo sempre a fonte principal de proteína e de carboidrato daquela refeição; e a
+  // "tipicidade" (quanto os alimentos se repetem nesse tipo de refeição) pesa na escolha.
+  const historico = state.meals.filter((m) => m.date < hoje && m.date >= somarDias(hoje, -120) && (m.alimentos || []).length && m.name === tipo)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const freq = {};
+  historico.forEach((m) => new Set(m.alimentos.map((a) => a.label)).forEach((l) => { freq[l] = (freq[l] || 0) + 1 / historico.length; }));
+  const minFreq = historico.length >= 5 ? 0.15 : 1.5 / Math.max(1, historico.length);
   const vistos = new Set();
   const cands = [];
   historico.forEach((m) => {
-    const assinatura = m.alimentos.map((a) => a.label).sort().join("|");
-    if (vistos.has(assinatura)) return;
+    const maxP = m.alimentos.reduce((a, x) => ((x.values.protein || 0) > (a.values.protein || 0) ? x : a), m.alimentos[0]);
+    const maxC = m.alimentos.reduce((a, x) => ((x.values.carbs || 0) > (a.values.carbs || 0) ? x : a), m.alimentos[0]);
+    // Doce/sobremesa só entra se for hábito de verdade nesse tipo de refeição (metade das vezes ou mais).
+    const doce = (a) => /\b(brigadeiro|doce|bolo|sorvete|chocolate|pudim|mousse|torta|bombom|pacoca|cocada|beijinho|rapadura|sobremesa|recheado|leite condensado|acai)\b/.test(normalizeText(a.label));
+    const alimentos = m.alimentos.filter((a) => (doce(a) ? (freq[a.label] || 0) >= 0.5 : a === maxP || a === maxC || (freq[a.label] || 0) >= minFreq));
+    const assinatura = alimentos.map((a) => a.label).sort().join("|");
+    if (!alimentos.length || vistos.has(assinatura)) return;
     vistos.add(assinatura);
-    cands.push({ origem: (m.name === "Ceia" ? "Sua " : "Seu ") + m.name.toLowerCase() + " de " + rotuloDiaPlano(m.date).toLowerCase() + (m.name === "Ceia" ? ", ajustada" : ", ajustado"), alimentos: m.alimentos });
+    const tipicidade = alimentos.reduce((a, x) => a + (freq[x.label] || 0), 0) / alimentos.length;
+    cands.push({ origem: (m.name === "Ceia" ? "Sua " : "Seu ") + m.name.toLowerCase() + " de " + rotuloDiaPlano(m.date).toLowerCase() + (m.name === "Ceia" ? ", ajustada" : ", ajustado"), alimentos: alimentos, tipicidade: tipicidade });
   });
-  SUGESTAO_GENERICAS[SUGESTAO_PRINCIPAIS.includes(tipo) ? "principal" : "leve"].forEach((itens) => cands.push({ origem: "Combinação do app", texto: itens.join(", ") }));
+  // Combinações padrão só quando o histórico desse tipo de refeição não dá 3 opções.
+  if (cands.length < 3) SUGESTAO_GENERICAS[SUGESTAO_PRINCIPAIS.includes(tipo) ? "principal" : "leve"].forEach((itens) => cands.push({ origem: "Combinação do app", texto: itens.join(", "), tipicidade: 0 }));
   const opcoes = [];
   cands.slice(0, 40).forEach((c) => {
     let desc;
@@ -9146,6 +9161,8 @@ function sugestoesDeRefeicao(tipo) {
     if (cafeina && agora >= 14 * 60) return; // nada de cafeína à tarde/noite
     if (rec && rec.cansado && tipo === "Ceia" && /\b(iogurte|cottage|leite|caseina|queijo)\b/.test(normalizeText(desc))) score -= 0.2;
     if (c.origem === "Combinação do app") score += 0.15;
+    score -= 0.4 * (c.tipicidade || 0); // mais parecida com o que você costuma comer nesse tipo de refeição
+    if (itens.length > 4) score += 0.1 * (itens.length - 4);
     opcoes.push({ origem: c.origem, desc: desc, itens: itens, total: t, score: score, cobre: cobre, errK: errK, errP: errP });
   });
   opcoes.sort((a, b) => a.score - b.score);
