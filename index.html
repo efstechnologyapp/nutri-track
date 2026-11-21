@@ -508,6 +508,24 @@ body:has(.modal-overlay) .hamburger-btn{ display:none; }
 .garmin-ativ.aplicado{ border-style:solid; background:rgba(159,215,127,.12); }
 .garmin-ativ.discreto{ border:none; background:none; padding:4px 0 0; color:#9fb5aa; }
 .garmin-ativ.discreto button{ border:none; background:none; padding:0; text-decoration:underline; color:#b8d6a0; font-weight:500; }
+.sg-btn{ display:flex; width:100%; align-items:center; justify-content:center; gap:8px; border-radius:12px; border:1px dashed rgba(184,214,156,.55); background:rgba(255,255,255,.06); padding:10px 14px; font-size:13.5px; font-weight:600; color:#e3f2d3; }
+.sg-btn .icon{ width:16px; height:16px; }
+.sg-ctx{ display:flex; flex-wrap:wrap; gap:6px; }
+.sg-chip{ font-size:11.5px; font-weight:600; padding:4px 9px; border-radius:999px; background:#eef2ea; color:#3d5c48; }
+.sg-chip.ok{ background:#e4efd9; color:#2f6b3a; }
+.sg-chip.aviso{ background:#fff1d6; color:#8a5a00; }
+.sg-meta{ border-radius:14px; background:#1c4d3e; color:#e3f2d3; padding:12px 14px; font-size:14px; line-height:1.5; }
+.sg-meta b{ color:#fff; }
+.sg-meta .t{ font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#bfe0a6; margin-bottom:4px; }
+.sg-op{ border:1px solid #dce5db; border-radius:14px; padding:12px 14px; background:#fff; display:flex; flex-direction:column; gap:6px; }
+.sg-op.melhor{ border-color:#9fc08f; box-shadow:0 0 0 2px rgba(159,192,143,.25); }
+.sg-op-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; font-size:12px; color:#7c8c86; }
+.sg-op-titulo{ font-weight:700; font-size:14px; color:#1b3f34; }
+.sg-itens{ margin:0; padding-left:18px; font-size:13px; line-height:1.55; color:#3d5c48; }
+.sg-macros{ font-size:12px; color:#557268; }
+.sg-porque{ font-size:12px; color:#6c8d68; }
+.sg-usar{ align-self:flex-end; border-radius:999px; background:#1c4d3e; color:#fff; border:none; padding:7px 14px; font-size:12.5px; font-weight:600; }
+.sg-fecha{ border-radius:12px; background:#f7f9f5; padding:10px 12px; font-size:12.5px; color:#3d5c48; line-height:1.55; }
 .mt-abrir{ display:flex; align-items:center; gap:8px; width:100%; justify-content:center; border-radius:12px; border:1px dashed #b9cdb8; background:#f7f9f5; padding:10px; font-size:13px; font-weight:600; color:#1c4d3e; }
 .mt-box{ border-radius:14px; border:1px solid #dce5db; background:#f7f9f5; padding:12px; display:flex; flex-direction:column; gap:10px; }
 .mt-head{ display:flex; align-items:center; justify-content:space-between; font-size:13px; font-weight:700; color:#1c4d3e; }
@@ -3061,6 +3079,7 @@ const state = {
   planoRegistrandoId: null,
   sobreAberto: false,
   rtAnterior: null, rtAtual: null,
+  sugestaoAberta: false, // modal "Sugestão de refeição" (ver sugestaoModalTemplate())
   // Atividades do relógio Garmin do dia escolhido no formulário de treino (ver garminAtividadesLinhaTemplate()).
   // semRelogio: a conta não tem Garmin (o app para de perguntar nesta sessão). treinoGarmin: a atividade
   // cujos dados preencheram o formulário (calorias reais, FC...) até salvar.
@@ -5907,7 +5926,7 @@ function submitPerfil() {
 /* ===================== templates ===================== */
 // Versão exibida no menu, na tela de login e em "Sobre o App" (mesmo padrão do Custódia Digital e do app
 // do escritório). Atualizar junto com o CACHE_NAME do sw.js a cada versão publicada.
-const APP_VERSAO = "2.27";
+const APP_VERSAO = "2.28";
 const APP_VERSAO_DATA = "21/11/2026";
 const DEV = { nome: "EFS Technology", lema: "Soluções digitais sob medida", tel: "83 9 99944-7957", wa: "5583999447957", email: "efstechnology.app@gmail.com" };
 function authVersaoTemplate() {
@@ -8937,6 +8956,257 @@ function refeicaoTreinoTemplate(total) {
   const resumo = pendencias ? '<div class="rt-resumo alerta">' + icon("alert") + " " + (pendencias === 1 ? "Quase lá: falta 1 ponto" : "Faltam " + pendencias + " pontos") + " pra refeição ficar ideal como " + (ctx.fase === "pos" ? "pós" : "pré") + "-treino.</div>"
     : '<div class="rt-resumo ok">' + icon("check") + " Refeição adequada como " + (ctx.fase === "pos" ? "pós" : "pré") + "-treino.</div>";
   return '<div class="rt-bloco"><div class="rt-head">' + emojiEsporte(ctx.esporte) + " " + titulo + "</div>" + resumo + linhas.join("") + "</div>";
+}
+// ===================== sugestão de refeição (pedido do usuário) =====================
+// Botão "Sugestão de refeição" abaixo do tipo de refeição: abre um modal com 2-3 opções montadas a partir
+// das refeições que a própria pessoa já registrou (ajustando as quantidades), considerando tudo do dia:
+// o que resta de kcal/macros, as refeições que ainda podem acontecer, treinos (pós já feito não soma de
+// novo; treino por vir faz da refeição o pré/pós) e a recuperação (sono/Body Battery/HRV). Regras
+// combinadas com o usuário:
+//   - nenhuma refeição é obrigatória. Refeição sem registro conta como PULADA quando uma refeição
+//     posterior já foi registrada ou quando passou do horário de costume (+1h30); o que ela comeria vai
+//     pras refeições que ainda podem acontecer, na proporção que a pessoa costuma comer em cada uma;
+//   - teto de ~50% da meta do dia por refeição (o excesso vai pras seguintes) e proteína distribuída
+//     primeiro (25-50 g por refeição);
+//   - sempre dentro da meta de kcal; sono/Body Battery mudam o TIPO de comida, nunca as calorias.
+const SUGESTAO_TIPOS = ["Café da manhã", "Lanche da manhã", "Almoço", "Lanche da tarde", "Jantar", "Ceia"];
+const SUGESTAO_PADRAO = { "Café da manhã": [450, 0.2], "Lanche da manhã": [600, 0.08], "Almoço": [750, 0.32], "Lanche da tarde": [960, 0.1], "Jantar": [1200, 0.22], "Ceia": [1320, 0.08] };
+const SUGESTAO_PRINCIPAIS = ["Almoço", "Jantar"];
+// Horário e tamanho de costume de cada refeição (últimos 60 dias); sem histórico, valores padrão.
+function perfilRefeicoes() {
+  const desde = somarDias(today(), -60), hoje = today(), meta = state.goals.calories || 2000;
+  const out = {};
+  SUGESTAO_TIPOS.forEach((t) => {
+    const ms = state.meals.filter((m) => m.name === t && m.date >= desde && m.date < hoje && m.calories > 0);
+    const horas = ms.map((m) => hhmmParaMin(m.time)).filter((v) => v != null).sort((a, b) => a - b);
+    const kcal = ms.map((m) => m.calories);
+    out[t] = {
+      hora: horas.length >= 3 ? horas[Math.floor(horas.length / 2)] : SUGESTAO_PADRAO[t][0],
+      peso: kcal.length >= 2 ? kcal.reduce((a, b) => a + b, 0) / kcal.length : SUGESTAO_PADRAO[t][1] * meta,
+      max: kcal.length ? Math.max.apply(null, kcal) : null,
+    };
+  });
+  return out;
+}
+function situacaoRefeicoesHoje(tipoSel, perfil) {
+  const hoje = today(), agora = agoraMin();
+  const feitas = new Set(state.meals.filter((m) => m.date === hoje).map((m) => m.name));
+  let ultimaFeita = -1;
+  SUGESTAO_TIPOS.forEach((t, i) => { if (feitas.has(t)) ultimaFeita = i; });
+  const pendentes = [], puladas = [];
+  SUGESTAO_TIPOS.forEach((t, i) => {
+    if (t === tipoSel) { pendentes.push(t); return; }
+    if (feitas.has(t)) return;
+    if (i < ultimaFeita || agora > perfil[t].hora + 90) puladas.push(t); else pendentes.push(t);
+  });
+  return { pendentes: pendentes, puladas: puladas };
+}
+// Divide o que resta entre as refeições pendentes: kcal pela proporção de costume (teto de 50% da meta
+// por refeição), proteína primeiro (25-50 g cada), carbo e gordura acompanhando as kcal.
+function alocarRestante(tipos, perfil, rest) {
+  const n = tipos.length;
+  if (!n) return {};
+  const meta = state.goals.calories || 2000, teto = meta * 0.5;
+  const soma = tipos.reduce((a, t) => a + perfil[t].peso, 0) || 1;
+  const kcalTotal = Math.max(0, rest.calories || 0);
+  let kcal = tipos.map((t) => kcalTotal * perfil[t].peso / soma);
+  for (let it = 0; it < 4; it++) {
+    const excesso = kcal.reduce((a, v) => a + Math.max(0, v - teto), 0);
+    if (excesso < 1) break;
+    const livres = kcal.map((v, i) => (v < teto ? i : -1)).filter((i) => i >= 0);
+    kcal = kcal.map((v) => Math.min(v, teto));
+    if (!livres.length) break;
+    const sl = livres.reduce((a, i) => a + perfil[tipos[i]].peso, 0);
+    livres.forEach((i) => { kcal[i] += excesso * perfil[tipos[i]].peso / sl; });
+  }
+  const protTotal = Math.max(0, rest.protein || 0);
+  let prot = tipos.map((t) => protTotal * perfil[t].peso / soma);
+  const piso = Math.min(25, protTotal / n), tetoP = Math.max(50, protTotal / n);
+  for (let it = 0; it < 4; it++) {
+    const falta = prot.reduce((a, v) => a + Math.max(0, piso - v), 0) + 0, sobra = prot.reduce((a, v) => a + Math.max(0, v - tetoP), 0);
+    prot = prot.map((v) => Math.min(tetoP, Math.max(piso, v)));
+    const ajuste = sobra - falta, alvo = ajuste > 0 ? prot.map((v, i) => (v < tetoP ? i : -1)).filter((i) => i >= 0) : prot.map((v, i) => (v > piso ? i : -1)).filter((i) => i >= 0);
+    if (Math.abs(ajuste) < 0.5 || !alvo.length) break;
+    alvo.forEach((i) => { prot[i] += ajuste / alvo.length; });
+  }
+  const out = {};
+  tipos.forEach((t, i) => {
+    const f = kcalTotal > 0 ? kcal[i] / kcalTotal : 0;
+    out[t] = { kcal: kcal[i], prot: prot[i], carb: Math.max(0, rest.carbs || 0) * f, fat: Math.max(0, rest.fat || 0) * f };
+  });
+  return out;
+}
+function garminDeHoje() { return (state.garmin || []).find((g) => g.date === today()) || null; }
+function contextoRecuperacaoHoje() {
+  const g = garminDeHoje();
+  if (!g) return null;
+  const sono = g.sono && g.sono.sleepScores && g.sono.sleepScores.overall ? g.sono.sleepScores.overall.value : null;
+  const bbArr = g.bodyBattery && g.bodyBattery[0] && g.bodyBattery[0].bodyBatteryValuesArray;
+  const bb = bbArr && bbArr.length ? bbArr[bbArr.length - 1][1] : null;
+  const hrv = g.hrv && g.hrv.hrvSummary ? g.hrv.hrvSummary.status : null;
+  return { sono: sono, bb: bb, hrvBaixo: hrv === "LOW" || hrv === "POOR" || hrv === "UNBALANCED", cansado: (sono != null && sono < 70) || (bb != null && bb < 40) };
+}
+// Monta a descrição de uma refeição do histórico com as quantidades multiplicadas (kProt nos itens ricos
+// em proteína, kOutros no resto), no formato que o próprio reconhecimento do app entende.
+function descricaoAjustada(alimentos, kProt, kOutros) {
+  const biblioteca = foodLibrary.concat(state.produtosCustomizados || []);
+  const partes = [];
+  for (const a of alimentos) {
+    const food = biblioteca.find((f) => f.label === a.label);
+    if (!food || food.dose || !food.values.calories || !a.values) { if (food && food.dose) continue; return null; }
+    const mult = (a.values.calories || 0) / food.values.calories;
+    if (!(mult > 0)) continue;
+    const rico = (a.values.protein || 0) * 4 / Math.max(1, a.values.calories) >= 0.35;
+    const m = mult * (rico ? kProt : kOutros);
+    const termo = food.terms[0];
+    if (food.grams) partes.push(Math.max(10, Math.round((m * food.grams) / 10) * 10) + " g de " + termo);
+    else if (food.ml) partes.push(Math.max(50, Math.round((m * food.ml) / 50) * 50) + " ml de " + termo);
+    else { const u = Math.max(0.5, Math.round(m * (food.count || 1) * 2) / 2); partes.push(String(u).replace(".", ",") + " unidade" + (u > 1 ? "s" : "") + " de " + termo); }
+  }
+  return partes.length ? partes.join(", ") : null;
+}
+const SUGESTAO_GENERICAS = {
+  principal: [["150 g de bife de patinho", "120 g de arroz branco", "100 g de feijao", "100 g de salada mista"], ["150 g de peito de frango", "200 g de batata doce", "100 g de salada mista"], ["2 unidades de ovo cozido", "150 g de cuscuz", "100 g de peito de frango"]],
+  leve: [["1 pote de iogurte natural", "30 g de whey protein"], ["1 unidade de banana", "30 g de whey protein"], ["2 unidades de ovo cozido", "1 unidade de pao frances"]],
+};
+function totalDe(itens) { return itens.reduce((sum, f) => addNutrients(sum, f.values), emptyNutrients); }
+function sugestoesDeRefeicao(tipo) {
+  const perfil = perfilRefeicoes();
+  const sit = situacaoRefeicoesHoje(tipo, perfil);
+  const rest = remainingToday();
+  const peso = pesoReferenciaKg();
+  const hoje = today(), agora = agoraMin();
+  const aloc = alocarRestante(sit.pendentes, perfil, rest);
+  let alvo = Object.assign({}, aloc[tipo] || { kcal: 0, prot: 0, carb: 0, fat: 0 });
+  const chips = [];
+  // Treino: a refeição escolhida pode ser o pré ou o pós (metas do perfil da modalidade, sem passar do que resta).
+  const horaRef = Math.max(agora, perfil[tipo].hora - 60);
+  const ctx = treinoDaRefeicao(hoje, horaRef, { semPergunta: true });
+  const posFeitoHoje = state.treinos.filter((t) => t.date === hoje && t.horaFim).some((t) => refeicaoPosDoTreino(t));
+  if (ctx && ctx.fase === "pos" && !refeicaoPosDoTreino(ctx.treino)) {
+    const mp = metasPosTreino(ctx.sessoes, peso, Math.max(0, rest.calories || 0));
+    if (!mp.leve) { alvo.prot = Math.max(alvo.prot, mp.prot); alvo.carb = Math.max(alvo.carb, mp.carb); chips.push(["treino", "Esta refeição é o seu pós-treino (" + esc(ctx.esporte) + ")"]); }
+  } else if (ctx && ctx.fase === "pre" && !PERFIS_TREINO[perfilDoEsporte(ctx.esporte)].leve) {
+    const mPre = metasPreTreino(ctx.esporte, ctx.minAntes >= 150 ? "refeicao" : "lanche", peso, null);
+    alvo.carb = Math.max(alvo.carb, mPre.carb); alvo.fat = Math.min(alvo.fat, ctx.minAntes >= 150 ? 20 : 10);
+    chips.push(["treino", "Pré-treino: " + esc(ctx.esporte) + " às " + minParaHhmm(ctx.ini)]);
+  } else if (posFeitoHoje) chips.push(["ok", "✓ Pós-treino de hoje já feito: nada de carbo extra de treino aqui"]);
+  alvo.kcal = Math.min(Math.max(alvo.kcal, alvo.prot * 4 + alvo.carb * 4 + alvo.fat * 9 * 0.8), Math.max(0, rest.calories || 0));
+  // As outras refeições pendentes dividem o que sobrar depois desta.
+  const outrosTipos = sit.pendentes.filter((t) => t !== tipo);
+  const restDepois = { calories: (rest.calories || 0) - alvo.kcal, protein: (rest.protein || 0) - alvo.prot, carbs: (rest.carbs || 0) - alvo.carb, fat: (rest.fat || 0) - alvo.fat };
+  const outros = alocarRestante(outrosTipos, perfil, restDepois);
+  const rec = contextoRecuperacaoHoje();
+  const noturna = tipo === "Jantar" || tipo === "Ceia";
+  if (rec && rec.cansado) chips.push(["aviso", (rec.sono != null ? "Sono " + rec.sono : "") + (rec.sono != null && rec.bb != null ? " · " : "") + (rec.bb != null ? "Body Battery " + rec.bb : "") + (noturna ? ": refeição sem exagero e sem cafeína" : ": prefira comida de verdade a doces")]);
+  if (rec && rec.hrvBaixo && state.treinos.some((t) => t.date === hoje)) chips.push(["aviso", "HRV baixo em dia de treino: não corte o carboidrato demais"]);
+  // Nutrientes que estão baixos hoje (ajudam a escolher entre opções parecidas).
+  const consumido = consumedToday();
+  const fracDia = Math.min(1, Math.max(0.3, (agora - 360) / 960));
+  const lacunas = [["fiber", "fibra", state.goals.fiber], ["ferro", "ferro", MICRO_GOALS.ferro], ["magnesio", "magnésio", MICRO_GOALS.magnesio], ["potassio", "potássio", MICRO_GOALS.potassio], ["calcio", "cálcio", MICRO_GOALS.calcio], ["vitC", "vitamina C", MICRO_GOALS.vitC]]
+    .filter((x) => x[2] && (consumido[x[0]] || 0) < x[2] * fracDia * 0.6);
+  const comidoHoje = new Set(state.meals.filter((m) => m.date === hoje).flatMap((m) => (m.alimentos || []).map((a) => a.label)));
+  // Candidatas: refeições do mesmo tipo (e, se faltar, do mesmo grupo: principais x leves) do histórico.
+  const grupo = SUGESTAO_PRINCIPAIS.includes(tipo) ? SUGESTAO_PRINCIPAIS : SUGESTAO_TIPOS.filter((t) => !SUGESTAO_PRINCIPAIS.includes(t));
+  const historico = state.meals.filter((m) => m.date < hoje && m.date >= somarDias(hoje, -120) && (m.alimentos || []).length && grupo.includes(m.name))
+    .sort((a, b) => (a.name === tipo) - (b.name === tipo) || a.date.localeCompare(b.date)).reverse();
+  const vistos = new Set();
+  const cands = [];
+  historico.forEach((m) => {
+    const assinatura = m.alimentos.map((a) => a.label).sort().join("|");
+    if (vistos.has(assinatura)) return;
+    vistos.add(assinatura);
+    cands.push({ origem: (m.name === "Ceia" ? "Sua " : "Seu ") + m.name.toLowerCase() + " de " + rotuloDiaPlano(m.date).toLowerCase() + (m.name === "Ceia" ? ", ajustada" : ", ajustado"), alimentos: m.alimentos });
+  });
+  SUGESTAO_GENERICAS[SUGESTAO_PRINCIPAIS.includes(tipo) ? "principal" : "leve"].forEach((itens) => cands.push({ origem: "Combinação do app", texto: itens.join(", ") }));
+  const opcoes = [];
+  cands.slice(0, 40).forEach((c) => {
+    let desc;
+    if (c.alimentos) {
+      const base = totalDe(c.alimentos);
+      if (!base.calories) return;
+      const pRico = c.alimentos.filter((a) => (a.values.protein || 0) * 4 / Math.max(1, a.values.calories) >= 0.35).reduce((s2, a) => s2 + (a.values.protein || 0), 0);
+      const kcalRico = c.alimentos.filter((a) => (a.values.protein || 0) * 4 / Math.max(1, a.values.calories) >= 0.35).reduce((s2, a) => s2 + (a.values.calories || 0), 0);
+      const kProt = pRico > 0 ? Math.min(2, Math.max(0.5, (alvo.prot - (base.protein - pRico)) / pRico)) : 1;
+      const kOut = base.calories - kcalRico > 0 ? Math.min(1.8, Math.max(0.4, (alvo.kcal - kcalRico * kProt) / (base.calories - kcalRico))) : 1;
+      desc = descricaoAjustada(c.alimentos, kProt, kOut);
+    } else desc = c.texto;
+    if (!desc) return;
+    const itens = detectFoods(desc);
+    if (!itens.length) return;
+    const t = totalDe(itens);
+    const errK = Math.abs(t.calories - alvo.kcal) / Math.max(150, alvo.kcal);
+    const errP = Math.abs(t.protein - alvo.prot) / Math.max(10, alvo.prot);
+    const errC = Math.abs(t.carbs - alvo.carb) / Math.max(20, alvo.carb);
+    let score = errK + 1.5 * errP + 0.5 * errC;
+    const cobre = lacunas.filter((x) => (t[x[0]] || 0) >= x[2] * 0.2).map((x) => x[1]);
+    score -= 0.12 * cobre.length;
+    if (itens.some((f) => comidoHoje.has(f.label))) score += 0.25;
+    const cafeina = /\b(cafe|coca|refrigerante|energetico|cha preto|cha mate)\b/.test(normalizeText(desc));
+    if (cafeina && agora >= 14 * 60) return; // nada de cafeína à tarde/noite
+    if (rec && rec.cansado && tipo === "Ceia" && /\b(iogurte|cottage|leite|caseina|queijo)\b/.test(normalizeText(desc))) score -= 0.2;
+    if (c.origem === "Combinação do app") score += 0.15;
+    opcoes.push({ origem: c.origem, desc: desc, itens: itens, total: t, score: score, cobre: cobre, errK: errK, errP: errP });
+  });
+  opcoes.sort((a, b) => a.score - b.score);
+  const escolhidas = [];
+  opcoes.forEach((o) => { if (escolhidas.length < 3 && !escolhidas.some((e) => e.desc === o.desc)) escolhidas.push(o); });
+  escolhidas.forEach((o, i) => {
+    o.porque = i === 0 ? (o.errP <= o.errK ? "fecha melhor a proteína" : "mais perto da meta de kcal") : o.cobre.length ? "mais " + o.cobre[0] : o.total.fat < alvo.fat * 0.8 ? "mais leve na gordura" : "outra opção";
+  });
+  return { tipo: tipo, perfil: perfil, sit: sit, rest: rest, alvo: alvo, outros: outros, outrosTipos: outrosTipos, chips: chips, opcoes: escolhidas, lacunas: lacunas };
+}
+function acaoAbrirSugestaoRefeicao() { state.sugestaoAberta = true; render(); }
+function acaoFecharSugestaoRefeicao() { state.sugestaoAberta = false; render(); }
+function acaoUsarSugestaoRefeicao(i) {
+  const s2 = state.sugestaoCache && state.sugestaoCache.opcoes[i];
+  if (!s2) return;
+  state.sugestaoAberta = false;
+  state.mealDescription = s2.desc;
+  state.preview = [];
+  render();
+  const el = document.getElementById("meal-description");
+  if (el) { el.value = s2.desc; el.focus(); }
+  toastSuccess("Descrição preenchida. Ajuste se quiser e toque em Calcular refeição.");
+}
+function sugestaoBotaoTemplate() {
+  if (!state.mealTipo || !SUGESTAO_TIPOS.includes(state.mealTipo) || state.mealEditandoId != null || (state.mealData && state.mealData !== today())) return "";
+  return '<button type="button" class="sg-btn" onclick="acaoAbrirSugestaoRefeicao()">' + icon("sparkles") + (state.mealTipo === "Ceia" ? " Sugestão de refeição pra ceia" : " Sugestão de refeição pro " + esc(state.mealTipo.toLowerCase())) + "</button>";
+}
+function sugestaoModalTemplate() {
+  if (!state.sugestaoAberta || !state.mealTipo) return "";
+  const r = sugestoesDeRefeicao(state.mealTipo);
+  state.sugestaoCache = r;
+  const n0 = (v) => formatNumber(Math.max(0, v || 0), 0);
+  const artigo = state.mealTipo === "Ceia" ? "a ceia" : "o " + state.mealTipo.toLowerCase();
+  const chipsHtml = ['<span class="sg-chip">Restam ' + n0(r.rest.calories) + " kcal · " + n0(r.rest.protein) + " g prot · " + n0(r.rest.carbs) + " g carbo · " + n0(r.rest.fat) + " g gord</span>"]
+    .concat(r.sit.puladas.length ? ['<span class="sg-chip">Sem registro: ' + esc(r.sit.puladas.join(", ").toLowerCase()) + " (dividido entre as próximas)</span>"] : [])
+    .concat(r.outrosTipos.length ? ['<span class="sg-chip">Ainda podem vir: ' + r.outrosTipos.map((t) => esc(t.toLowerCase()) + " (~" + minParaHhmm(r.perfil[t].hora) + ")").join(", ") + "</span>"] : [])
+    .concat(r.chips.map((c) => '<span class="sg-chip' + (c[0] === "ok" ? " ok" : c[0] === "aviso" ? " aviso" : "") + '">' + c[1] + "</span>")).join("");
+  const semKcal = (r.rest.calories || 0) <= 50;
+  const metaHtml = '<div class="sg-meta"><div class="t">Meta pr' + (state.mealTipo === "Ceia" ? "a ceia" : "o " + esc(state.mealTipo.toLowerCase())) + "</div>" +
+    (semKcal ? "<b>A meta de kcal de hoje já foi atingida.</b>" + ((r.rest.protein || 0) > 15 ? " Ainda faltam ~" + n0(r.rest.protein) + " g de proteína: se tiver fome, algo leve e proteico." : " Se tiver fome, prefira algo leve.")
+      : "<b>~" + n0(r.alvo.kcal) + " kcal</b> · ~" + n0(r.alvo.prot) + " g de proteína · ~" + n0(r.alvo.carb) + " g de carbo · ~" + n0(r.alvo.fat) + " g de gordura") + "</div>";
+  const ops = r.opcoes.length ? r.opcoes.map((o, i) => '<div class="sg-op' + (i === 0 ? " melhor" : "") + '"><div class="sg-op-head"><span class="sg-op-titulo">' + (i + 1) + ". " + esc(o.origem) + "</span><span>" + esc(o.porque) + "</span></div>" +
+      '<ul class="sg-itens">' + o.itens.map((f) => "<li>" + esc(f.amount) + " · " + esc(f.label) + "</li>").join("") + "</ul>" +
+      '<div class="sg-macros">≈ ' + n0(o.total.calories) + " kcal · P " + n0(o.total.protein) + " g · C " + n0(o.total.carbs) + " g · G " + n0(o.total.fat) + " g · fibra " + n0(o.total.fiber) + " g</div>" +
+      (o.cobre.length ? '<div class="sg-porque">Ajuda no que está baixo hoje: ' + esc(o.cobre.slice(0, 3).join(", ")) + ".</div>" : "") +
+      '<button type="button" class="sg-usar" onclick="acaoUsarSugestaoRefeicao(' + i + ')">Usar esta</button></div>').join("")
+    : '<p class="pm-nota">Ainda não há refeições suficientes no seu histórico pra montar sugestões.</p>';
+  const best = r.opcoes[0];
+  const comido = consumedToday();
+  const somaOutros = r.outrosTipos.reduce((a, t) => a + ((r.outros[t] || {}).kcal || 0), 0);
+  const protOutros = r.outrosTipos.reduce((a, t) => a + ((r.outros[t] || {}).prot || 0), 0);
+  const rodape = best && !semKcal ? '<div class="sg-fecha">' +
+      (r.outrosTipos.length ? r.outrosTipos.map((t) => "<b>" + esc(t) + " (~" + minParaHhmm(r.perfil[t].hora) + "), se tiver fome:</b> ~" + n0((r.outros[t] || {}).kcal) + " kcal · ~" + n0((r.outros[t] || {}).prot) + " g prot").join("<br>") + "<br>" : "") +
+      "<b>Fechando o dia com a opção 1" + (r.outrosTipos.length ? " + as próximas" : "") + ":</b> ~" + n0(comido.calories + best.total.calories + somaOutros) + " de " + n0(state.goals.calories) + " kcal · proteína ~" + n0(comido.protein + best.total.protein + protOutros) + " de " + n0(state.goals.protein) + " g" +
+      (function () { const sobra = (state.goals.calories || 0) - (comido.calories + best.total.calories + somaOutros); return sobra > 150 ? "<br>Sobram ~" + n0(sobra) + " kcal" + (objetivoEmDeficit() ? ": no seu objetivo, tudo bem não comer tudo (fica um déficit maior)." : ": dá pra completar com um lanche, se tiver fome.") : ""; })() + "</div>" : "";
+  return '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharSugestaoRefeicao();}"><div class="modal-card plano-modal" style="max-width:520px">' +
+    '<div class="meal-detalhe-head"><div><h2>Sugestões pr' + (state.mealTipo === "Ceia" ? "a ceia" : "o " + esc(state.mealTipo.toLowerCase())) + '</h2><div class="pm-sub">' + rotuloDiaPlano(today()) + " · você costuma fazer " + artigo + " por volta das " + minParaHhmm(r.perfil[state.mealTipo].hora) + "</div></div>" +
+    '<button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharSugestaoRefeicao()">' + icon("x") + "</button></div>" +
+    '<div class="modal-body"><div class="sg-ctx">' + chipsHtml + "</div>" + metaHtml + (semKcal && (r.rest.protein || 0) <= 15 ? "" : ops) + rodape +
+    '<p class="pm-nota">Sugestões a partir das refeições que você já registrou, dentro da sua meta de kcal. Não substituem orientação de nutricionista.</p></div>' +
+  "</div></div>";
 }
 function acaoCancelarEdicaoTreino() {
   state.treinoEditandoId = null;
@@ -13283,6 +13553,7 @@ function nutricaoTabTemplate() {
             '<option value="">Selecione a refeição...</option>' +
             MEAL_TIPOS.map((t) => '<option value="' + esc(t) + '"' + (state.mealTipo === t ? " selected" : "") + ">" + esc(t) + "</option>").join("") +
           "</select>" +
+          sugestaoBotaoTemplate() +
           (state.mealTipo === "Outro" ? '<input id="meal-nome-custom" class="meal-input" placeholder="Nome da refeição" value="' + esc(state.mealNomeCustom) + '"/>' : "") +
           '<div><label class="meal-form-label">Data</label><input id="meal-data" type="date" class="meal-input" max="' + esc(today()) + '" value="' + esc(state.mealData || today()) + '"/></div>' +
           (editandoRefeicao ? "" : '<div><label class="meal-form-label">Horário (opcional)</label><input id="meal-hora" type="time" class="meal-input" value="' + esc(state.mealHora) + '"/></div>') +
@@ -14147,7 +14418,7 @@ function homeTemplate() {
   return '' +
     '<div class="app-shell">' +
     '<button class="hamburger-btn" onclick="acaoAbrirSidebar()" aria-label="Abrir menu"><span></span></button>' +
-    sidebarTemplate() + editarPerfilTemplate() + sobreAppTemplate() + garminModalTemplate() + mealDetalheModalTemplate() + nutrientInfoModalTemplate() + exameInfoModalTemplate() + recuperacaoInfoModalTemplate() + cadastrarProdutoModalTemplate() + analiseConsumoDiaModalTemplate() + autonomiaInfoModalTemplate() + planoTreinoModalTemplate() + planejarTreinoModalTemplate() + montarPlanoModalTemplate() +
+    sidebarTemplate() + editarPerfilTemplate() + sobreAppTemplate() + sugestaoModalTemplate() + garminModalTemplate() + mealDetalheModalTemplate() + nutrientInfoModalTemplate() + exameInfoModalTemplate() + recuperacaoInfoModalTemplate() + cadastrarProdutoModalTemplate() + analiseConsumoDiaModalTemplate() + autonomiaInfoModalTemplate() + planoTreinoModalTemplate() + planejarTreinoModalTemplate() + montarPlanoModalTemplate() +
     '<div class="home-content"><div class="home-inner">' +
     (state.account ? fullHomeTemplate() : lockedTemplate()) +
     "</div></div></div>";
