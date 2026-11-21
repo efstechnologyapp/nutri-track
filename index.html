@@ -549,6 +549,8 @@ body:has(.modal-overlay) .hamburger-btn{ display:none; }
 .rt-resumo .icon{ width:15px; height:15px; }
 .rt-resumo.ok{ background:rgba(159,215,127,.14); color:#c9eab3; }
 .rt-resumo.alerta{ background:rgba(242,196,109,.14); color:#f5d999; }
+.diario-estimado-chip{ display:inline-block; border-radius:999px; background:#fff1d6; color:#8a5a00; font-size:10.5px; font-weight:700; padding:1px 7px; margin-right:4px; vertical-align:1px; }
+.diario-estimado-nota{ display:block; margin-top:4px; font-size:12px; font-weight:400; line-height:1.5; color:#8a7a5c; }
 .rt-tag{ display:inline-block; margin-left:6px; border-radius:999px; background:#e4efd9; color:#3d5c48; font-size:10.5px; font-weight:600; padding:1px 7px; vertical-align:1px; }
 .exposicao-solar-aviso{ margin:0 0 4px; display:flex; align-items:flex-start; gap:6px; font-size:12.5px; line-height:1.5; color:#d9efbd; }
 .exposicao-solar-aviso .icon{ flex:0 0 auto; width:14px; height:14px; margin-top:2px; }
@@ -5487,17 +5489,66 @@ function acaoEncerrarDia() {
 // automático, exceto quando o dia já tinha sido fechado manualmente antes -- aí preserva a meta já
 // congelada naquele momento, só atualizando o corteId (pra cobrir qualquer refeição registrada depois
 // do clique manual mas ainda no mesmo dia).
-function fecharDiaAutomaticamente(date) {
+// ===================== consumo ESTIMADO (dia com treino e sem refeição) =====================
+// Pedido do usuário: num dia JÁ ENCERRADO com treino/atividade registrado mas nenhuma refeição, contar
+// 0 kcal consumidas gera um "déficit" irreal que distorce saldo, meta atingida e médias. Nesses dias o
+// consumo é estimado pela média do PRÓPRIO usuário:
+//   1. média dos últimos 7 dias, se pelo menos 4 deles tiverem registro "completo";
+//   2. senão, média dos últimos 15 dias com registro completo (dias com registro, não de calendário);
+//   3. com menos de 3 dias completos, não estima: o dia fica "sem dados de consumo".
+// Dia "completo" = 2+ refeições e pelo menos 50% da meta de kcal daquele dia (um dia em que só o café foi
+// registrado puxaria a média pra baixo). Dias estimados nunca entram na média (não têm refeição).
+// Estima kcal e macros (proteína, carboidrato, gordura, fibra); micronutrientes ficam "sem dados".
+// Registrar refeição depois nesse dia troca a estimativa pelos dados reais (ver consumoDoDia()).
+const CONSUMO_ESTIMADO_CHAVES = ["calories", "protein", "carbs", "fat", "fiber"];
+function estimativaConsumoDoDia(date) {
+  const porData = {};
+  state.meals.forEach((m) => { if (m.date < date && m.name !== "Exposição Solar") (porData[m.date] = porData[m.date] || []).push(m); });
+  const metaDo = (d) => { const r = state.diarioKcal.find((x) => x.date === d); return r && r.metaCalorias != null ? r.metaCalorias : state.goals.calories; };
+  const completos = Object.keys(porData).filter((d) => {
+    const ms = porData[d], meta = metaDo(d);
+    return ms.length >= 2 && (!meta || ms.reduce((s2, m) => s2 + (m.calories || 0), 0) >= meta * 0.5);
+  }).sort();
+  const semana = completos.filter((d) => d >= somarDias(date, -7));
+  let dias, fonte;
+  if (semana.length >= 4) { dias = semana; fonte = "7d"; }
+  else { dias = completos.slice(-15); fonte = "15d"; if (dias.length < 3) return null; }
+  const valores = {};
+  CONSUMO_ESTIMADO_CHAVES.forEach((k) => {
+    valores[k] = Math.round((dias.reduce((s2, d) => s2 + porData[d].reduce((s3, m) => s3 + (m[k] || 0), 0), 0) / dias.length) * 10) / 10;
+  });
+  return { valores: valores, fonte: fonte, dias: dias.length };
+}
+// Totais/refeições de um dia + a estimativa, quando cabe -- usado por fecharDiaAutomaticamente() e
+// recalcularDiarioKcalRegistro(), pra os dois caminhos darem sempre o mesmo resultado.
+function consumoDoDia(date) {
   const mealsDoDia = ordenarPorTipoDeRefeicao(state.meals.filter((m) => m.date === date));
   const treinosDoDia = state.treinos.filter((tr) => tr.date === date);
-  const existente = state.diarioKcal.find((r) => r.date === date);
-  if (!mealsDoDia.length && !existente) return; // nada registrado nesse dia -- nada a fechar
-  const totais = mealsDoDia.reduce((sum, m) => addNutrients(sum, m), emptyNutrients);
+  const totais = Object.assign({}, emptyNutrients, mealsDoDia.reduce((sum, m) => addNutrients(sum, m), emptyNutrients));
   const refeicoes = mealsDoDia.map((m) => {
     const r = { name: m.name, time: m.time, alimentos: m.detected || [] };
     NUTRIENT_KEYS.forEach((k) => { r[k] = m[k] || 0; });
     return r;
   });
+  let consumoEstimado = null;
+  if (!mealsDoDia.length && treinosDoDia.length && date < today()) {
+    const est = estimativaConsumoDoDia(date);
+    if (est) { Object.assign(totais, est.valores); consumoEstimado = { fonte: est.fonte, dias: est.dias }; }
+    else consumoEstimado = { semDados: true };
+  }
+  return { mealsDoDia: mealsDoDia, treinosDoDia: treinosDoDia, totais: totais, refeicoes: refeicoes, consumoEstimado: consumoEstimado };
+}
+// Registro do Diário com consumo de verdade (real ou estimado) -- fica de fora só o "sem dados".
+function diarioTemConsumo(r) { return !(r.consumoEstimado && r.consumoEstimado.semDados); }
+// Micronutrientes só existem em dia com refeição registrada (estimativa não inventa ferro, vitamina D...).
+function diarioTemMicros(r) { return !r.consumoEstimado; }
+function diarioFiltroPorNutriente(key) { return CONSUMO_ESTIMADO_CHAVES.includes(key) ? diarioTemConsumo : diarioTemMicros; }
+function fecharDiaAutomaticamente(date) {
+  const { mealsDoDia, treinosDoDia, totais, refeicoes, consumoEstimado } = consumoDoDia(date);
+  const existente = state.diarioKcal.find((r) => r.date === date);
+  // Nada registrado nesse dia -- nada a fechar. Dia com treino e sem refeição agora fecha também, com o
+  // consumo estimado (ver estimativaConsumoDoDia()).
+  if (!mealsDoDia.length && !existente && !treinosDoDia.length) return;
   const caloriasQueimadas = treinosDoDia.reduce((soma, tr) => soma + (tr.caloriasQueimadas || 0), 0);
   const corteId = mealsDoDia.reduce((maior, m) => Math.max(maior, m.id), existente && existente.corteId != null ? existente.corteId : 0);
   // get: mesmo padrão de "congelar no momento do fechamento" já usado pra meta/objetivo acima -- um dia
@@ -5514,6 +5565,7 @@ function fecharDiaAutomaticamente(date) {
     metaFiber: existente ? existente.metaFiber : state.goals.fiber,
     objetivo: existente ? existente.objetivo : (state.goals.objetivo || ""),
     get: existente ? existente.get : (ultimoCaloAoFechar && ultimoCaloAoFechar.get ? Number(ultimoCaloAoFechar.get) : null),
+    consumoEstimado: consumoEstimado,
   }, totais);
   state.diarioKcal = state.diarioKcal.filter((r) => r.date !== date).concat([registro]);
   persistDiarioKcal();
@@ -5557,7 +5609,14 @@ function reconciliarDiasPassadosSemRegistro() {
   const datasComRegistro = new Set(state.diarioKcal.map((r) => r.date));
   const datasOrfas = new Set(
     state.meals.filter((m) => m.date < hoje && !datasComRegistro.has(m.date)).map((m) => m.date)
+      // dia com treino e sem refeição também vira registro (consumo estimado -- ver estimativaConsumoDoDia())
+      .concat(state.treinos.filter((t) => t.date < hoje && !datasComRegistro.has(t.date)).map((t) => t.date))
   );
+  // Registros que já tinham sido fechados com 0 kcal antes dessa regra existir (dia com treino, sem
+  // refeição, sem estimativa): recalcula uma vez -- depois disso ficam com consumoEstimado preenchido.
+  state.diarioKcal.forEach((r) => {
+    if (r.date < hoje && !r.consumoEstimado && !(r.refeicoes || []).length && !r.calories && state.treinos.some((t) => t.date === r.date) && !state.meals.some((m) => m.date === r.date)) datasOrfas.add(r.date);
+  });
   datasOrfas.forEach((date) => fecharDiaAutomaticamente(date));
   return datasOrfas.size > 0;
 }
@@ -5605,15 +5664,9 @@ function verificarViradaDeDia() {
 // dois casos o objetivo é o mesmo: fazer o registro refletir de fato as refeições e treinos do dia que
 // ele diz representar.
 function recalcularDiarioKcalRegistro(registro) {
-  const mealsDoDia = ordenarPorTipoDeRefeicao(state.meals.filter((m) => m.date === registro.date));
-  const totais = mealsDoDia.reduce((sum, m) => addNutrients(sum, m), emptyNutrients);
-  const refeicoes = mealsDoDia.map((m) => {
-    const linha = { name: m.name, time: m.time, alimentos: m.detected || [] };
-    NUTRIENT_KEYS.forEach((k) => { linha[k] = m[k] || 0; });
-    return linha;
-  });
-  const caloriasQueimadas = state.treinos.filter((tr) => tr.date === registro.date).reduce((soma, tr) => soma + (tr.caloriasQueimadas || 0), 0);
-  return Object.assign({}, registro, totais, { refeicoes, caloriasQueimadas });
+  const { treinosDoDia, totais, refeicoes, consumoEstimado } = consumoDoDia(registro.date);
+  const caloriasQueimadas = treinosDoDia.reduce((soma, tr) => soma + (tr.caloriasQueimadas || 0), 0);
+  return Object.assign({}, registro, totais, { refeicoes, caloriasQueimadas, consumoEstimado });
 }
 // Ressincroniza o Diário de Kcal de uma data específica depois de criar/editar/remover uma refeição ou
 // treino daquele dia (ver acaoSalvarRefeicao()/acaoSalvarTreino()/etc.) -- pra ele sempre refletir o que
@@ -5793,7 +5846,7 @@ function submitPerfil() {
 /* ===================== templates ===================== */
 // Versão exibida no menu, na tela de login e em "Sobre o App" (mesmo padrão do Custódia Digital e do app
 // do escritório). Atualizar junto com o CACHE_NAME do sw.js a cada versão publicada.
-const APP_VERSAO = "2.22";
+const APP_VERSAO = "2.23";
 const APP_VERSAO_DATA = "21/11/2026";
 const DEV = { nome: "EFS Technology", lema: "Soluções digitais sob medida", tel: "83 9 99944-7957", wa: "5583999447957", email: "efstechnology.app@gmail.com" };
 function authVersaoTemplate() {
@@ -6051,7 +6104,7 @@ const NUTRIENT_META_CONGELADA_CHAVE = { protein: "metaProtein", carbs: "metaCarb
 // calendário. Sódio é o único caso "às avessas" (o esperado é um TETO, não um piso -- ver comentário de
 // micronutrientMeta) -- essa função só calcula os números; quem exibe é que adapta o texto.
 function nutrienteMediaHistorico(key) {
-  const registros = state.diarioKcal;
+  const registros = state.diarioKcal.filter(diarioFiltroPorNutriente(key));
   if (!registros.length) return { temDados: false };
   const chaveMetaMacro = NUTRIENT_META_CONGELADA_CHAVE[key];
   let somaReal = 0, somaEsperado = 0;
@@ -6171,7 +6224,7 @@ function nutrienteComparacaoCardTemplate(key, meta, digits) {
 // dados de nutrienteMediaHistorico(), só que filtrado por um período escolhido em vez de todo o
 // histórico).
 function calcularAnaliseConsumo(key, de, ate) {
-  const registros = state.diarioKcal.filter((r) => r.date >= de && r.date <= ate);
+  const registros = state.diarioKcal.filter((r) => r.date >= de && r.date <= ate).filter(diarioFiltroPorNutriente(key));
   if (!registros.length) return { temDados: false, dias: 0 };
   const chaveMetaMacro = NUTRIENT_META_CONGELADA_CHAVE[key];
   let somaReal = 0, somaEsperado = 0;
@@ -9970,7 +10023,7 @@ function tendenciaKcalUltimasSemanas(janelaDias, tmb) {
   const limite = new Date(hoje + "T12:00:00");
   limite.setDate(limite.getDate() - janelaDias);
   const limiteStr = limite.toISOString().slice(0, 10);
-  const registros = state.diarioKcal.filter((r) => r.date >= limiteStr && r.date < hoje && r.calories != null);
+  const registros = state.diarioKcal.filter((r) => r.date >= limiteStr && r.date < hoje && r.calories != null && diarioTemConsumo(r));
   if (registros.length < 7) return null;
   const mediaConsumida = registros.reduce((soma, r) => soma + r.calories, 0) / registros.length;
   const mediaQueimada = registros.reduce((soma, r) => soma + (r.caloriasQueimadas || 0), 0) / registros.length;
@@ -11580,11 +11633,19 @@ function diarioKcalRefeicaoTemplate(ref) {
 // registro já salvo não muda se a meta do dia for alterada depois. Só cai pra meta/objetivo ATUAIS
 // (state.goals) em registros de ANTES dessa coluna existir, que vêm com metaCalorias null -- não tem
 // como saber qual era a meta vigente naquela época, então a atual é a alternativa mais razoável.
+function diarioKcalEstimadoTexto(r) {
+  const e = r.consumoEstimado;
+  if (!e) return "";
+  if (e.semDados) return "Sem dados de consumo: nenhuma refeição registrada neste dia e poucos dias registrados pra estimar.";
+  return "Nenhuma refeição registrada neste dia: consumo estimado pela sua média " + (e.fonte === "7d" ? "dos últimos 7 dias" : "dos últimos " + e.dias + " dias com registro") + " (" + e.dias + " dias completos). Registre as refeições desse dia pra trocar pelos dados reais.";
+}
 function diarioKcalMetaTexto(r) {
+  if (r.consumoEstimado && r.consumoEstimado.semDados) return '<span class="diario-estimado-chip">sem dados</span> ' + diarioKcalEstimadoTexto(r);
   const meta = r.metaCalorias != null ? r.metaCalorias : state.goals.calories;
   const objetivoChave = r.metaCalorias != null ? r.objetivo : state.goals.objetivo;
   const percentual = meta > 0 ? (r.calories / meta) * 100 : 0;
   const objetivo = objetivoChave && OBJETIVOS_META[objetivoChave] ? OBJETIVOS_META[objetivoChave].label : "";
+  if (r.consumoEstimado) return '<span class="diario-estimado-chip">estimado</span> Consumo estimado ~' + formatNumber(r.calories) + " kcal (" + formatNumber(percentual, 2) + "%) da meta de " + formatNumber(meta) + " kcal/dia" + (objetivo ? " (" + objetivo + ")" : "") + '<div class="diario-estimado-nota">' + diarioKcalEstimadoTexto(r) + "</div>";
   return "Consumido " + formatNumber(r.calories) + " kcal (" + formatNumber(percentual, 2) + "%) da meta de " + formatNumber(meta) + " kcal/dia" + (objetivo ? " (" + objetivo + ")" : "");
 }
 // Classe de cor comparando o consumido com a meta -- combinado com o usuário: abaixo da meta em
@@ -11614,6 +11675,7 @@ function diarioKcalNutrienteTextoVitaminaD(label, consumido, meta) {
 // acaoEncerrarDia()) -- mesma lógica de fallback de diarioKcalMetaTexto() pra registros antigos sem meta
 // salva.
 function diarioKcalMacrosTemplate(r) {
+  if (r.consumoEstimado && r.consumoEstimado.semDados) return '<span class="diario-estimado-nota">Macronutrientes: sem dados.</span>';
   const temMetaPropria = r.metaCalorias != null;
   const metas = {
     protein: temMetaPropria && r.metaProtein != null ? r.metaProtein : state.goals.protein,
@@ -11630,6 +11692,7 @@ function diarioKcalMacrosTemplate(r) {
 // Micronutrientes comparados com a Ingestão Diária de Referência (MICRO_GOALS) -- essa referência é
 // fixa (não é uma meta pessoal editável), então não precisa congelar nada no registro.
 function diarioKcalMicrosTemplate(r) {
+  if (r.consumoEstimado) return '<span class="diario-estimado-nota">Micronutrientes: sem dados (dia sem refeição registrada).</span>';
   return Object.keys(micronutrientMeta).map((k) => {
     const meta = MICRO_GOALS[k];
     const classe = diarioKcalCompararMetaClasse(r[k] || 0, meta);
@@ -11783,7 +11846,12 @@ function diarioKcalAnaliseObjetivoTemplate(r) {
   // Equivalência em kg (ver KCAL_POR_KG_GORDURA) ao lado de QUALQUER valor de kcal desta seção -- não só
   // o saldo, mas também consumidos e gastos -- pra dar a mesma noção concreta em todas as linhas.
   const kgEquiv = (kcal) => formatNumber(Math.abs(kcal) / KCAL_POR_KG_GORDURA, 2) + " kg";
-  const linhas = ['<div class="diario-kcal-gastos-linha">' + icon("utensils") + " Kcal consumidos no dia: " + formatNumber(r.calories) + " kcal / " + kgEquiv(r.calories) + "</div>"];
+  if (r.consumoEstimado && r.consumoEstimado.semDados) {
+    return '<div class="diario-kcal-gastos"><p class="diario-kcal-dia-subtitulo">Análise do objetivo:</p><div class="diario-kcal-gastos-linha">' + icon("utensils") + " Kcal consumidos no dia: sem dados — sem consumo não dá pra calcular o saldo.</div>" +
+      (info.gastoTotal != null ? '<div class="diario-kcal-gastos-linha">' + icon("flame") + " Kcal gastos no dia: " + formatNumber(info.gastoTotal) + " kcal</div>" : "") + "</div>";
+  }
+  const estimado = !!r.consumoEstimado;
+  const linhas = ['<div class="diario-kcal-gastos-linha">' + icon("utensils") + " Kcal consumidos no dia" + (estimado ? " (estimado)" : "") + ": " + (estimado ? "~" : "") + formatNumber(r.calories) + " kcal / " + kgEquiv(r.calories) + "</div>"];
   if (info.gastoTotal == null) {
     linhas.push('<div class="diario-kcal-gastos-linha">' + icon("flame") + " Kcal gastos no dia: sem calorimetria registrada</div>");
   } else {
@@ -11794,7 +11862,7 @@ function diarioKcalAnaliseObjetivoTemplate(r) {
     const status = atingida == null ? "" :
       ' — <strong class="' + (atingida ? "diario-kcal-meta-atingida" : "diario-kcal-meta-nao-atingida") + '">meta (' + esc(objetivoLabel) + ") - " + (atingida ? "atingida ✅" : "não atingida ❌") + "</strong>";
     linhas.push('<div class="diario-kcal-gastos-linha">' + icon("flame") + " Kcal gastos no dia: " + formatNumber(info.gastoTotal) + " kcal / " + kgEquiv(info.gastoTotal) + treinoIconeGastos(info) + "</div>");
-    linhas.push('<div class="diario-kcal-gastos-linha">' + icon("flame") + " Saldo de kcal do dia: " + saldoTexto + status + "</div>");
+    linhas.push('<div class="diario-kcal-gastos-linha">' + icon("flame") + " Saldo de kcal do dia" + (estimado ? " (com consumo estimado)" : "") + ": " + saldoTexto + status + "</div>");
     const diaSeguinte = proximoDia(r.date);
     const pesoHoje = pesoJejumDoDia(r.date);
     const pesoAmanha = diaSeguinte ? pesoJejumDoDia(diaSeguinte) : null;
@@ -12036,7 +12104,7 @@ function evolucaoBioimpedanciaComparacao() {
 // sempre TODO o histórico (sem filtro de data), com o agrupamento em dia/semana/mês/ano escolhido no
 // verso decidindo como esses dias são agrupados em barras (ver resumoAderenciaAgrupar()).
 function resumoAderenciaSerieDiaria() {
-  return state.diarioKcal
+  return state.diarioKcal.filter(diarioTemConsumo)
     .map((r) => {
       const info = diarioKcalGastoTotalInfo(r);
       if (info.gastoTotal == null) return null;
@@ -12952,7 +13020,7 @@ function diarioKcalRegistroTemplate(r) {
   const expandido = !!state.diarioKcalDiasExpandidos[r.id];
   return '<div class="diario-kcal-dia' + (expandido ? " history-day-expandido" : "") + '">' +
     '<div class="diario-kcal-dia-head history-day-head-btn" onclick="acaoAlternarDiaDiarioKcal(' + r.id + ')"><span class="diario-kcal-dia-data">' + icon("calendar") + " " + dateLabel(r.date) + "</span>" +
-      '<span class="diario-kcal-dia-head-direita"><span class="diario-kcal-dia-kcal">' + formatNumber(r.calories) + " kcal</span>" +
+      '<span class="diario-kcal-dia-head-direita"><span class="diario-kcal-dia-kcal">' + (r.consumoEstimado ? (r.consumoEstimado.semDados ? "— kcal" : "~" + formatNumber(r.calories) + " kcal") : formatNumber(r.calories) + " kcal") + "</span>" +
       '<button class="diario-kcal-recalcular-btn" aria-label="Recalcular registro de ' + esc(dateLabel(r.date)) + ' com as refeições daquele dia" title="Recalcular com as refeições daquele dia" onclick="event.stopPropagation(); acaoRecalcularDiarioKcal(' + r.id + ')">' + icon("rotate") + "</button>" +
       '<button class="diario-kcal-recalcular-btn" aria-label="Corrigir a data do registro de ' + esc(dateLabel(r.date)) + '" title="Corrigir data" onclick="event.stopPropagation(); acaoAbrirEdicaoDataDiarioKcal(' + r.id + ')">' + icon("edit") + "</button>" +
       icon("chevron", "history-day-chevron") + "</span></div>" +
@@ -12968,7 +13036,7 @@ function diarioKcalRegistroTemplate(r) {
     (expandido ? '' +
       '<div class="diario-kcal-dia-macros">' + diarioKcalMacrosTemplate(r) + "</div>" +
       '<div class="diario-kcal-dia-micros">' + diarioKcalMicrosTemplate(r) + "</div>" +
-      '<div class="diario-kcal-refeicoes"><p class="diario-kcal-dia-subtitulo">Refeições do dia:</p>' + (r.refeicoes || []).map(diarioKcalRefeicaoTemplate).join("") + "</div>" +
+      '<div class="diario-kcal-refeicoes"><p class="diario-kcal-dia-subtitulo">Refeições do dia:</p>' + ((r.refeicoes || []).length ? r.refeicoes.map(diarioKcalRefeicaoTemplate).join("") : '<span class="diario-estimado-nota">Nenhuma refeição registrada.</span>') + "</div>" +
       diarioKcalGastosTemplate(r)
       : ""
     ) +
@@ -13526,7 +13594,7 @@ function recuperacaoInsights(dia) {
   }
 
   const diarioHoje = state.diarioKcal.find((r) => r.date === dia.date);
-  if (sonoRuim && diarioHoje) {
+  if (sonoRuim && diarioHoje && diarioTemMicros(diarioHoje)) {
     const sodioAbaixo = (diarioHoje.sodio || 0) < MICRO_GOALS.sodio * RECUPERACAO_NUTRIENTE_BAIXO_FRACAO;
     const magnesioAbaixo = (diarioHoje.magnesio || 0) < MICRO_GOALS.magnesio * RECUPERACAO_NUTRIENTE_BAIXO_FRACAO;
     if (sodioAbaixo || magnesioAbaixo) {
@@ -13605,7 +13673,7 @@ function avaliacaoDataLimite() {
 }
 function avaliacaoDiarioKcalNaJanela() {
   const limite = avaliacaoDataLimite();
-  return state.diarioKcal.filter((r) => r.date >= limite && r.date <= today());
+  return state.diarioKcal.filter((r) => r.date >= limite && r.date <= today() && diarioTemConsumo(r));
 }
 function avaliacaoTreinosNaJanela() {
   const limite = avaliacaoDataLimite();
@@ -13628,7 +13696,7 @@ function avaliacaoPesoSerieNaJanela() {
 // zero da meta nos dias que existem).
 function avaliacaoMediaFracaoMeta(dias, chave, meta) {
   if (!meta) return null;
-  const comDado = dias.filter((d) => d[chave] != null);
+  const comDado = dias.filter((d) => d[chave] != null && diarioFiltroPorNutriente(chave)(d));
   if (!comDado.length) return null;
   const soma = comDado.reduce((s, d) => s + Math.min((d[chave] || 0) / meta, 1), 0);
   return soma / comDado.length;
