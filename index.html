@@ -508,6 +508,28 @@ body:has(.modal-overlay) .hamburger-btn{ display:none; }
 .garmin-ativ.aplicado{ border-style:solid; background:rgba(159,215,127,.12); }
 .garmin-ativ.discreto{ border:none; background:none; padding:4px 0 0; color:#9fb5aa; }
 .garmin-ativ.discreto button{ border:none; background:none; padding:0; text-decoration:underline; color:#b8d6a0; font-weight:500; }
+.mt-abrir{ display:flex; align-items:center; gap:8px; width:100%; justify-content:center; border-radius:12px; border:1px dashed #b9cdb8; background:#f7f9f5; padding:10px; font-size:13px; font-weight:600; color:#1c4d3e; }
+.mt-box{ border-radius:14px; border:1px solid #dce5db; background:#f7f9f5; padding:12px; display:flex; flex-direction:column; gap:10px; }
+.mt-head{ display:flex; align-items:center; justify-content:space-between; font-size:13px; font-weight:700; color:#1c4d3e; }
+.mt-head span{ display:flex; align-items:center; gap:6px; }
+.mt-fechar{ font-size:12px; color:#7c8c86; text-decoration:underline; background:none; border:none; }
+.mt-chips{ display:flex; flex-wrap:wrap; gap:6px; }
+.mt-chip{ font-size:12px; font-weight:600; padding:6px 10px; border-radius:999px; border:1px solid #dce5db; background:#fff; color:#557268; }
+.mt-chip.atalho{ border-color:#b9cdb8; }
+.mt-chip.on{ background:#1c4d3e; border-color:#1c4d3e; color:#fff; }
+.mt-grupo{ border-top:1px solid #e5ebe3; padding-top:8px; display:flex; flex-direction:column; gap:6px; }
+.mt-grupo-titulo{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:#6c8d68; }
+.mt-ex{ border-radius:10px; padding:8px 10px; background:#fff; border:1px solid #e5ebe3; }
+.mt-ex.on{ border-color:#9fc08f; }
+.mt-ex label{ display:flex; align-items:center; gap:8px; font-size:13px; color:#1b3f34; }
+.mt-ex input[type=checkbox]{ accent-color:#1c4d3e; }
+.mt-info{ margin:2px 0 0 24px; font-size:11.5px; line-height:1.45; color:#7c8c86; }
+.mt-campos{ margin:6px 0 0 24px; display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px; }
+.mt-campos label{ display:flex; flex-direction:column; gap:2px; font-size:10.5px; color:#7c8c86; }
+.mt-campos input{ width:100%; min-width:0; box-sizing:border-box; border-radius:8px; border:1px solid #dce5db; background:#f7f9f5; padding:6px 8px; font-size:12.5px; color:#1b3f34; }
+.mt-vazio, .mt-total{ margin:0; font-size:12px; line-height:1.5; color:#7c8c86; }
+.mt-resumo-grupo{ display:flex; flex-direction:column; gap:3px; margin-bottom:8px; font-size:13px; color:#1b3f34; }
+.mt-resumo-ex{ display:flex; justify-content:space-between; gap:10px; font-size:12.5px; color:#3d5c48; }
 .garmin-passos{ margin:0; padding-left:20px; font-size:13.5px; line-height:1.6; color:#3d5c48; }
 .garmin-passos a{ color:#1c4d3e; font-weight:600; }
 .esporte-chip{ display:inline-block; margin-left:6px; border-radius:999px; background:#e4efd9; color:#3d5c48; font-size:11px; font-weight:600; padding:2px 8px; vertical-align:1px; white-space:nowrap; }
@@ -3321,6 +3343,12 @@ const state = {
   treinosPlanejados: readStorage(CHAVE_TREINOS_PLANEJADOS, []),
   planoModalId: null, // id do treino planejado aberto no modal de pré/pós-treino (ver planoTreinoModalTemplate())
   planejarAberto: false, // modal "Planejar treino" (ver planejarTreinoModalTemplate())
+  // Campos do "Planejar treino" guardados em state (antes eram lidos só do DOM): com a montagem de treino
+  // de musculação, qualquer re-render no meio do preenchimento apagaria dias/modalidade já escolhidos.
+  planejarForm: { semana: "proxima", dias: [], esporte: "", hora: "" },
+  // Treino de musculação sendo montado (ver montarAreaHtml()): { aberto, grupos: [grupoId], itens: { "grupo::ex": { marcado, series, repeticoes, peso } } }.
+  montar: null,
+  montarPlanoId: null, // plano cujo treino montado está sendo editado (modal próprio, ver montarPlanoModalTemplate())
   // Treino em andamento (cronômetro), ou null. Formato: { esporte, date, horaInicioClock,
   // segmentoAtualInicio (timestamp ms de quando o trecho atual começou a rodar, ou null se pausado),
   // acumuladoMs (soma dos trechos já concluídos), pausado }. Persistido para sobreviver a fechar o
@@ -5765,7 +5793,7 @@ function submitPerfil() {
 /* ===================== templates ===================== */
 // Versão exibida no menu, na tela de login e em "Sobre o App" (mesmo padrão do Custódia Digital e do app
 // do escritório). Atualizar junto com o CACHE_NAME do sw.js a cada versão publicada.
-const APP_VERSAO = "2.21";
+const APP_VERSAO = "2.22";
 const APP_VERSAO_DATA = "21/11/2026";
 const DEV = { nome: "EFS Technology", lema: "Soluções digitais sob medida", tel: "83 9 99944-7957", wa: "5583999447957", email: "efstechnology.app@gmail.com" };
 function authVersaoTemplate() {
@@ -8034,6 +8062,16 @@ function acaoTreineiPlano(id) {
     const agoraHhmm = minParaHhmm(agoraMin());
     state.treinoHoraFim = p.date === today() && (!p.hora || agoraMin() > hhmmParaMin(p.hora)) ? agoraHhmm : "";
     state.treinoModo = "manual";
+    // Treino de musculação montado no planejamento: o formulário já vem com grupos, exercícios, séries,
+    // repetições e carga -- a pessoa só ajusta (exclui, adiciona, edita) e salva.
+    if (p.esporte === "Musculação" && p.montagem && p.montagem.length) {
+      state.treinoGruposSelecionados = p.montagem.map((g) => g.grupoId).filter((gid) => grupoMuscularPorId(gid));
+      const marcados = {};
+      p.montagem.forEach((g) => g.exercicios.forEach((e) => {
+        if (exerciciosDoGrupo(g.grupoId).some((x) => x.id === e.id)) marcados[g.grupoId + "::" + e.id] = { series: e.series != null ? String(e.series) : "", repeticoes: e.repeticoes != null ? String(e.repeticoes) : "", peso: e.peso != null ? String(e.peso) : "" };
+      }));
+      state.treinoExerciciosMarcados = marcados;
+    }
   }
   render();
   // Mesmo motivo de acaoEditarTreino(): captureFormState() pode ter recapturado valores antigos do DOM.
@@ -8053,22 +8091,32 @@ function acaoDefinirHoraPlano(id, hora) {
   salvarPlano(Object.assign({}, p, { hora: hora }));
   render();
 }
-function acaoAbrirPlanejar() { state.planejarAberto = true; render(); }
+function acaoAbrirPlanejar() { state.planejarAberto = true; state.planejarForm = { semana: "proxima", dias: [], esporte: "", hora: "" }; state.montar = null; render(); }
 function acaoFecharPlanejar() { state.planejarAberto = false; render(); }
 // Lê o formulário de "Planejar treino" direto do DOM (checkboxes/radios nativos -- sem re-render a cada
 // toque, mais simples) e cria um treino planejado por dia marcado. Dias que já passaram são ignorados.
+function capturarPlanejarDom() {
+  if (!document.getElementById("planejar-esporte")) return;
+  state.planejarForm = {
+    semana: (document.querySelector('input[name="planejar-semana"]:checked') || {}).value || "proxima",
+    dias: Array.from(document.querySelectorAll('input[name="planejar-dia"]:checked')).map((el) => Number(el.value)),
+    esporte: document.getElementById("planejar-esporte").value || "",
+    hora: (document.getElementById("planejar-hora") || {}).value || "",
+  };
+}
 function acaoSalvarPlanejamento() {
-  const semana = (document.querySelector('input[name="planejar-semana"]:checked') || {}).value || "proxima";
-  const dias = Array.from(document.querySelectorAll('input[name="planejar-dia"]:checked')).map((el) => Number(el.value));
-  const esporte = (document.getElementById("planejar-esporte") || {}).value || "";
-  const hora = (document.getElementById("planejar-hora") || {}).value || "";
+  capturarPlanejarDom();
+  capturarMontarDom();
+  const { semana, dias, esporte, hora } = state.planejarForm;
+  const montagem = esporte === "Musculação" && state.montar && state.montar.aberto ? montagemDoState() : null;
   if (!esporte) { toastError("Escolha a modalidade."); return; }
   if (!dias.length) { toastError("Marque pelo menos um dia."); return; }
   const segunda = somarDias(inicioSemana(today()), semana === "atual" ? 0 : 7);
   const datas = dias.map((i) => somarDias(segunda, i)).filter((d) => d >= today());
   if (!datas.length) { toastError("Esses dias já passaram nesta semana."); return; }
   const base = Date.now();
-  datas.forEach((data, i) => salvarPlano({ id: base + i, date: data, esporte, hora, naoRealizado: false }));
+  datas.forEach((data, i) => salvarPlano(Object.assign({ id: base + i, date: data, esporte, hora, naoRealizado: false }, montagem && montagem.length ? { montagem: montagem } : {})));
+  state.montar = null;
   state.planejarAberto = false;
   toastSuccess(datas.length + " treino" + (datas.length > 1 ? "s" : "") + " adicionado" + (datas.length > 1 ? "s" : "") + " ao plano.");
   render();
@@ -8084,7 +8132,7 @@ function acaoRepetirSemanaPlano() {
   daSemana.forEach((p, i) => {
     const data = somarDias(p.date, 7);
     if (state.treinosPlanejados.some((x) => x.date === data && x.esporte === p.esporte && (x.hora || "") === (p.hora || ""))) return;
-    salvarPlano({ id: base + i, date: data, esporte: p.esporte, hora: p.hora || "", naoRealizado: false });
+    salvarPlano(Object.assign({ id: base + i, date: data, esporte: p.esporte, hora: p.hora || "", naoRealizado: false }, p.montagem ? { montagem: p.montagem } : {}));
     n++;
   });
   toastSuccess(n ? n + " treino" + (n > 1 ? "s copiados" : " copiado") + " pra próxima semana." : "A próxima semana já tem esses treinos.");
@@ -8104,7 +8152,8 @@ function planoLinhaTemplate(p) {
   return '<div class="plano-row' + (p.date === today() ? " hoje" : "") + '"' + (clicavel ? ' role="button" onclick="acaoAbrirPlanoModal(' + p.id + ')"' : "") + ">" +
     '<div class="plano-emoji">' + emojiEsporte(p.esporte) + "</div>" +
     '<div class="plano-info"><div class="plano-nome">' + esc(p.esporte) + "</div>" +
-      '<div class="plano-meta">' + rotuloDiaPlano(p.date) + " · " + (p.hora ? esc(p.hora) : '<span class="sem-hora">sem horário</span>') + "</div>" +
+      '<div class="plano-meta">' + rotuloDiaPlano(p.date) + " · " + (p.hora ? esc(p.hora) : '<span class="sem-hora">sem horário</span>') +
+        (p.montagem && p.montagem.length ? " · " + esc(p.montagem.map((g) => (grupoMuscularPorId(g.grupoId) || {}).label || g.grupoId).join(", ")) + " (" + p.montagem.reduce((n, g) => n + g.exercicios.length, 0) + " exercícios)" : "") + "</div>" +
       (real ? '<div class="plano-meta plano-registrado">' + icon("check") + " Registrado: " + esc(real.horaInicio || "") + "–" + esc(real.horaFim || "") + (real.caloriasQueimadas ? " · " + formatNumber(real.caloriasQueimadas, 0) + " kcal" : "") + "</div>" + posFeitoTemplate(real) : "") +
       acoes + "</div>" +
     '<span class="plano-chip ' + chip[0] + '">' + chip[1] + "</span>" +
@@ -8144,17 +8193,198 @@ function planejarTreinoModalTemplate() {
   if (!state.planejarAberto) return "";
   const esportes = ESPORTE_TIPOS.concat(state.esportesCustomizados || []).filter((e) => e !== "Outro");
   const dias = [["Seg", 0], ["Ter", 1], ["Qua", 2], ["Qui", 3], ["Sex", 4], ["Sáb", 5], ["Dom", 6]];
+  const f = state.planejarForm;
   return '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharPlanejar();}"><div class="modal-card plano-modal">' +
     '<div class="meal-detalhe-head"><h2>Planejar treino</h2><button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharPlanejar()">' + icon("x") + "</button></div>" +
     '<div class="modal-body">' +
-      '<div class="pm-chips-sel"><label class="pm-chip-sel"><input type="radio" name="planejar-semana" value="atual"/><span>Esta semana</span></label>' +
-        '<label class="pm-chip-sel"><input type="radio" name="planejar-semana" value="proxima" checked/><span>Próxima semana</span></label></div>' +
-      '<div><label class="field-label">Dias</label><div class="pm-chips-sel">' + dias.map((d) => '<label class="pm-chip-sel"><input type="checkbox" name="planejar-dia" value="' + d[1] + '"/><span>' + d[0] + "</span></label>").join("") + "</div></div>" +
-      '<div><label class="field-label">Modalidade</label><select id="planejar-esporte" class="field-input"><option value="">Selecione...</option>' + esportes.map((e) => '<option value="' + esc(e) + '">' + esc(e) + "</option>").join("") + "</select></div>" +
-      '<div><label class="field-label">Horário de início (opcional)</label><input id="planejar-hora" type="time" class="field-input"/></div>' +
+      '<div class="pm-chips-sel"><label class="pm-chip-sel"><input type="radio" name="planejar-semana" value="atual"' + (f.semana === "atual" ? " checked" : "") + '/><span>Esta semana</span></label>' +
+        '<label class="pm-chip-sel"><input type="radio" name="planejar-semana" value="proxima"' + (f.semana !== "atual" ? " checked" : "") + '/><span>Próxima semana</span></label></div>' +
+      '<div><label class="field-label">Dias</label><div class="pm-chips-sel">' + dias.map((d) => '<label class="pm-chip-sel"><input type="checkbox" name="planejar-dia" value="' + d[1] + '"' + (f.dias.includes(d[1]) ? " checked" : "") + "/><span>" + d[0] + "</span></label>").join("") + "</div></div>" +
+      '<div><label class="field-label">Modalidade</label><select id="planejar-esporte" class="field-input" onchange="acaoPlanejarEsporteMudou(this.value)"><option value="">Selecione...</option>' + esportes.map((e) => '<option value="' + esc(e) + '"' + (f.esporte === e ? " selected" : "") + ">" + esc(e) + "</option>").join("") + "</select></div>" +
+      '<div id="montar-area">' + (f.esporte === "Musculação" ? montarAreaHtml() : "") + "</div>" +
+      '<div><label class="field-label">Horário de início (opcional)</label><input id="planejar-hora" type="time" class="field-input" value="' + esc(f.hora) + '"/></div>' +
       '<p class="pm-nota">Sem horário? Deixe em branco: o app pergunta quando você tocar no treino no dia. Duração e intensidade você informa só ao registrar o treino, depois de terminar.</p>' +
     "</div>" +
     '<div class="pm-footer"><button class="bioimpedancia-btn-secundario" onclick="acaoFecharPlanejar()">Cancelar</button><button class="btn-primary" onclick="acaoSalvarPlanejamento()">' + icon("check") + " Adicionar ao plano</button></div>" +
+  "</div></div>";
+}
+
+// ===================== montar treino de musculação a partir do histórico =====================
+// Pedido do usuário: no planejamento, ao escolher Musculação, o app monta o treino com base nos treinos
+// já registrados -- a pessoa escolhe os grupos (ou o atalho "Membros inferiores/superiores") e vê os
+// exercícios que já fez desses grupos, com séries/repetições da última vez e carga média/máxima. Ao tocar
+// em "Treinei", o formulário de registro vem preenchido com esse treino (ver acaoTreineiPlano()).
+const MONTAR_ATALHOS = [
+  ["Membros inferiores", ["quadriceps", "posterior_coxa", "gluteos", "panturrilha", "adutores"]],
+  ["Membros superiores", ["peito", "costas", "ombros", "biceps", "triceps", "antebraco"]],
+];
+function grupoIdPorLabel(label) { const g = GRUPOS_MUSCULARES.find((x) => x.label === label); return g ? g.id : null; }
+// Histórico por exercício: "grupoId::exId" -> { grupoId, id, label, sessoes: [{ date, series, repeticoes, peso }] }.
+function historicoMusculacao() {
+  const mapa = {};
+  state.treinos.filter((t) => t.esporte === "Musculação" && Array.isArray(t.gruposMusculares))
+    .sort((a, b) => (a.date + (a.horaInicio || "")).localeCompare(b.date + (b.horaInicio || "")))
+    .forEach((t) => t.gruposMusculares.forEach((g) => {
+      const gid = grupoIdPorLabel(g.grupo);
+      if (!gid) return;
+      (g.exercicios || []).forEach((e) => {
+        const ex = exerciciosDoGrupo(gid).find((x) => x.label === e.exercicio);
+        if (!ex) return;
+        const k = gid + "::" + ex.id;
+        (mapa[k] = mapa[k] || { grupoId: gid, id: ex.id, label: ex.label, sessoes: [] }).sessoes.push({ date: t.date, series: e.series, repeticoes: e.repeticoes, peso: e.peso });
+      });
+    }));
+  return mapa;
+}
+function resumoExercicioHistorico(h) {
+  const ult = (campo) => { for (let i = h.sessoes.length - 1; i >= 0; i--) if (h.sessoes[i][campo]) return h.sessoes[i][campo]; return null; };
+  const pesos = h.sessoes.map((x) => Number(x.peso)).filter((v) => v > 0);
+  return { vezes: h.sessoes.length, ultimaData: h.sessoes[h.sessoes.length - 1].date, series: ult("series"), repeticoes: ult("repeticoes"), peso: ult("peso"),
+    media: pesos.length ? pesos.reduce((a, b) => a + b, 0) / pesos.length : null, max: pesos.length ? Math.max.apply(null, pesos) : null };
+}
+// Exercícios de um grupo com histórico, do mais recente pro mais antigo.
+function montarExerciciosDoGrupo(gid, hist) {
+  return Object.values(hist).filter((h) => h.grupoId === gid).map((h) => Object.assign({ h: h }, resumoExercicioHistorico(h)))
+    .sort((a, b) => b.ultimaData.localeCompare(a.ultimaData) || b.vezes - a.vezes);
+}
+// Ao incluir um grupo, já deixa marcados os exercícios do ÚLTIMO treino desse grupo (ponto de partida:
+// repetir o último), com séries/repetições/carga da última vez. Os demais aparecem desmarcados.
+function montarIncluirGrupo(gid, hist) {
+  const m = state.montar;
+  if (!m.grupos.includes(gid)) m.grupos.push(gid);
+  const lista = montarExerciciosDoGrupo(gid, hist);
+  const ultimaData = lista.length ? lista[0].ultimaData : null;
+  lista.forEach((x) => {
+    const k = gid + "::" + x.h.id;
+    if (!m.itens[k]) m.itens[k] = { marcado: x.ultimaData === ultimaData, series: x.series || "", repeticoes: x.repeticoes || "", peso: x.peso || "" };
+  });
+}
+function capturarMontarDom() {
+  const m = state.montar;
+  if (!m || !document.getElementById("montar-area")) return;
+  Object.keys(m.itens).forEach((k) => {
+    const pre = "mt-" + k.replace("::", "-");
+    ["series", "repeticoes", "peso"].forEach((c) => { const el = document.getElementById(pre + "-" + c); if (el) m.itens[k][c] = el.value; });
+  });
+}
+function atualizarMontarArea() {
+  const el = document.getElementById("montar-area");
+  if (!el) return;
+  // No "Planejar treino" a área só existe com Musculação escolhida; no modal "Montar treino" sempre.
+  const noPlanejar = !!document.getElementById("planejar-esporte");
+  el.innerHTML = !noPlanejar || state.planejarForm.esporte === "Musculação" ? montarAreaHtml() : "";
+}
+function acaoPlanejarEsporteMudou(valor) {
+  capturarPlanejarDom();
+  atualizarMontarArea();
+}
+function acaoMontarAbrir() { state.montar = { aberto: true, grupos: [], itens: {} }; atualizarMontarArea(); }
+function acaoMontarFechar() { state.montar = null; atualizarMontarArea(); }
+function acaoMontarAtalho(i) {
+  capturarMontarDom();
+  const hist = historicoMusculacao();
+  const ids = MONTAR_ATALHOS[i][1];
+  const todos = ids.every((g) => state.montar.grupos.includes(g));
+  if (todos) state.montar.grupos = state.montar.grupos.filter((g) => !ids.includes(g));
+  else ids.forEach((g) => montarIncluirGrupo(g, hist));
+  atualizarMontarArea();
+}
+function acaoMontarGrupo(gid) {
+  capturarMontarDom();
+  if (state.montar.grupos.includes(gid)) state.montar.grupos = state.montar.grupos.filter((g) => g !== gid);
+  else montarIncluirGrupo(gid, historicoMusculacao());
+  atualizarMontarArea();
+}
+function acaoMontarExercicio(k) {
+  capturarMontarDom();
+  const it = state.montar.itens[k];
+  if (it) it.marcado = !it.marcado;
+  atualizarMontarArea();
+}
+// Formato guardado no plano: [{ grupoId, exercicios: [{ id, label, series, repeticoes, peso }] }] -- só o que está marcado.
+function montagemDoState() {
+  const m = state.montar;
+  if (!m) return [];
+  const num = (v) => (v !== "" && v != null && !isNaN(Number(String(v).replace(",", "."))) ? Number(String(v).replace(",", ".")) : null);
+  return m.grupos.map((gid) => ({
+    grupoId: gid,
+    exercicios: exerciciosDoGrupo(gid).filter((ex) => m.itens[gid + "::" + ex.id] && m.itens[gid + "::" + ex.id].marcado)
+      .map((ex) => { const it = m.itens[gid + "::" + ex.id]; return { id: ex.id, label: ex.label, series: num(it.series), repeticoes: num(it.repeticoes), peso: num(it.peso) }; }),
+  })).filter((g) => g.exercicios.length);
+}
+function montarAreaHtml() {
+  const m = state.montar;
+  if (!m || !m.aberto) {
+    return '<button type="button" class="mt-abrir" onclick="acaoMontarAbrir()">' + icon("activity") + " Montar treino a partir do seu histórico</button>";
+  }
+  const hist = historicoMusculacao();
+  const kg = (v) => formatNumber(v, Number(v) % 1 ? 1 : 0) + " kg";
+  const chips = '<div class="mt-chips">' + MONTAR_ATALHOS.map((a, i) => '<button type="button" class="mt-chip atalho' + (a[1].every((g) => m.grupos.includes(g)) ? " on" : "") + '" onclick="acaoMontarAtalho(' + i + ')">' + a[0] + "</button>").join("") +
+    GRUPOS_MUSCULARES.map((g) => '<button type="button" class="mt-chip' + (m.grupos.includes(g.id) ? " on" : "") + '" onclick="acaoMontarGrupo(\'' + g.id + '\')">' + esc(g.label) + "</button>").join("") + "</div>";
+  const blocos = m.grupos.map((gid) => {
+    const g = grupoMuscularPorId(gid);
+    const lista = montarExerciciosDoGrupo(gid, hist);
+    if (!lista.length) return '<div class="mt-grupo"><div class="mt-grupo-titulo">' + esc(g.label) + '</div><p class="mt-vazio">Você ainda não registrou exercícios de ' + esc(g.label.toLowerCase()) + ". Ao tocar em Treinei, escolha no formulário.</p></div>";
+    return '<div class="mt-grupo"><div class="mt-grupo-titulo">' + esc(g.label) + "</div>" + lista.map((x) => {
+      const k = gid + "::" + x.h.id, it = m.itens[k] || {}, pre = "mt-" + gid + "-" + x.h.id;
+      const info = "última (" + rotuloDiaPlano(x.ultimaData) + "): " + (x.series && x.repeticoes ? x.series + "×" + x.repeticoes : "—") + (x.peso ? " · " + kg(x.peso) : "") +
+        (x.max ? " · média " + kg(x.media) + " · máx " + kg(x.max) : "") + " · feito " + x.vezes + "×";
+      return '<div class="mt-ex' + (it.marcado ? " on" : "") + '"><label><input type="checkbox"' + (it.marcado ? " checked" : "") + ' onchange="acaoMontarExercicio(\'' + k + '\')"/> <b>' + esc(x.h.label) + "</b></label>" +
+        '<div class="mt-info">' + info + "</div>" +
+        (it.marcado ? '<div class="mt-campos"><label><span>Séries</span><input id="' + pre + '-series" type="number" min="0" inputmode="numeric" value="' + esc(it.series) + '"/></label><label><span>Repetições</span><input id="' + pre + '-repeticoes" type="number" min="0" inputmode="numeric" value="' + esc(it.repeticoes) + '"/></label><label><span>Carga (kg)</span><input id="' + pre + '-peso" type="number" min="0" step="0.5" inputmode="decimal" value="' + esc(it.peso) + '"/></label></div>' : "") +
+        "</div>";
+    }).join("") + "</div>";
+  }).join("");
+  const n = montagemDoState().reduce((s2, g) => s2 + g.exercicios.length, 0);
+  return '<div class="mt-box"><div class="mt-head"><span>' + icon("activity") + " Montar treino</span>" + '<button type="button" class="mt-fechar" onclick="acaoMontarFechar()">Não montar</button></div>' +
+    '<p class="mt-vazio">Escolha os grupos. Já vêm marcados os exercícios do seu último treino de cada grupo, com séries, repetições e carga da última vez; ajuste à vontade.</p>' +
+    chips + blocos + (m.grupos.length ? '<p class="mt-total">' + n + " exercício" + (n === 1 ? "" : "s") + " no treino.</p>" : "") + "</div>";
+}
+// Mostra o treino montado de um plano (lista) -- usado no modal do treino planejado.
+function montagemResumoHtml(p) {
+  if (p.esporte !== "Musculação") return "";
+  const kg = (v) => formatNumber(v, Number(v) % 1 ? 1 : 0) + " kg";
+  const botao = '<button type="button" class="bioimpedancia-btn-secundario" onclick="acaoAbrirMontarPlano(' + p.id + ')">' + icon("edit") + (p.montagem && p.montagem.length ? " Editar treino montado" : " Montar treino a partir do histórico") + "</button>";
+  if (!p.montagem || !p.montagem.length) return '<div class="pm-bloco">' + botao + "</div>";
+  return '<div class="pm-bloco"><div class="pm-bloco-titulo">' + icon("activity") + " Treino montado</div>" +
+    p.montagem.map((g) => { const gr = grupoMuscularPorId(g.grupoId); return '<div class="mt-resumo-grupo"><b>' + esc(gr ? gr.label : g.grupoId) + "</b>" +
+      g.exercicios.map((e) => '<div class="mt-resumo-ex"><span>' + esc(e.label) + "</span><span>" + (e.series && e.repeticoes ? e.series + "×" + e.repeticoes : "") + (e.peso ? " · " + kg(e.peso) : "") + "</span></div>").join("") + "</div>"; }).join("") +
+    botao + "</div>";
+}
+function acaoAbrirMontarPlano(id) {
+  const p = state.treinosPlanejados.find((x) => x.id === id);
+  if (!p) return;
+  const hist = historicoMusculacao();
+  state.montar = { aberto: true, grupos: [], itens: {} };
+  (p.montagem || []).forEach((g) => {
+    state.montar.grupos.push(g.grupoId);
+    g.exercicios.forEach((e) => { state.montar.itens[g.grupoId + "::" + e.id] = { marcado: true, series: e.series || "", repeticoes: e.repeticoes || "", peso: e.peso || "" }; });
+  });
+  // Os outros exercícios já feitos desses grupos aparecem desmarcados, pra poder incluir.
+  state.montar.grupos.forEach((gid) => montarExerciciosDoGrupo(gid, hist).forEach((x) => {
+    const k = gid + "::" + x.h.id;
+    if (!state.montar.itens[k]) state.montar.itens[k] = { marcado: false, series: x.series || "", repeticoes: x.repeticoes || "", peso: x.peso || "" };
+  }));
+  state.planoModalId = null;
+  state.montarPlanoId = id;
+  render();
+}
+function acaoFecharMontarPlano() { const id = state.montarPlanoId; state.montarPlanoId = null; state.montar = null; state.planoModalId = id; render(); }
+function acaoSalvarMontarPlano() {
+  capturarMontarDom();
+  const p = state.treinosPlanejados.find((x) => x.id === state.montarPlanoId);
+  if (p) { salvarPlano(Object.assign({}, p, { montagem: montagemDoState() })); toastSuccess("Treino montado salvo no plano."); }
+  acaoFecharMontarPlano();
+}
+function montarPlanoModalTemplate() {
+  if (state.montarPlanoId == null || !state.montar) return "";
+  const p = state.treinosPlanejados.find((x) => x.id === state.montarPlanoId);
+  if (!p) return "";
+  return '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharMontarPlano();}"><div class="modal-card plano-modal">' +
+    '<div class="meal-detalhe-head"><div><h2>Montar treino</h2><div class="pm-sub">' + emojiEsporte(p.esporte) + " Musculação · " + rotuloDiaPlano(p.date) + (p.hora ? " · " + esc(p.hora) : "") + "</div></div>" +
+    '<button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharMontarPlano()">' + icon("x") + "</button></div>" +
+    '<div class="modal-body"><div id="montar-area">' + montarAreaHtml() + "</div></div>" +
+    '<div class="pm-footer"><button class="bioimpedancia-btn-secundario" onclick="acaoFecharMontarPlano()">Cancelar</button><button class="btn-primary" onclick="acaoSalvarMontarPlano()">' + icon("check") + " Salvar treino</button></div>" +
   "</div></div>";
 }
 
@@ -8197,7 +8427,7 @@ function planoTreinoModalTemplate() {
     '<button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharPlanoModal()">' + icon("x") + "</button></div>";
   const rodapeConfirmar = !real && p.date <= today() ? '<div class="pm-footer"><button class="bioimpedancia-btn-secundario" onclick="acaoNaoTreineiPlano(' + p.id + ')">' + icon("x") + " Não treinei</button>" +
     '<button class="btn-primary" onclick="acaoTreineiPlano(' + p.id + ')">' + icon("check") + " Treinei</button></div>" : "";
-  const envolver = (corpo, rodape) => '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharPlanoModal();}"><div class="modal-card plano-modal">' + head + '<div class="modal-body">' + corpo + "</div>" + (rodape || "") + "</div></div>";
+  const envolver = (corpo, rodape) => '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharPlanoModal();}"><div class="modal-card plano-modal">' + head + '<div class="modal-body">' + montagemResumoHtml(p) + corpo + "</div>" + (rodape || "") + "</div></div>";
   // Dia futuro: só mostra o planejado e deixa ajustar o horário -- as sugestões dependem do que for comido
   // no dia, então só fazem sentido no próprio dia.
   if (!ehHoje) {
@@ -13687,7 +13917,7 @@ function homeTemplate() {
   return '' +
     '<div class="app-shell">' +
     '<button class="hamburger-btn" onclick="acaoAbrirSidebar()" aria-label="Abrir menu"><span></span></button>' +
-    sidebarTemplate() + editarPerfilTemplate() + sobreAppTemplate() + garminModalTemplate() + mealDetalheModalTemplate() + nutrientInfoModalTemplate() + exameInfoModalTemplate() + recuperacaoInfoModalTemplate() + cadastrarProdutoModalTemplate() + analiseConsumoDiaModalTemplate() + autonomiaInfoModalTemplate() + planoTreinoModalTemplate() + planejarTreinoModalTemplate() +
+    sidebarTemplate() + editarPerfilTemplate() + sobreAppTemplate() + garminModalTemplate() + mealDetalheModalTemplate() + nutrientInfoModalTemplate() + exameInfoModalTemplate() + recuperacaoInfoModalTemplate() + cadastrarProdutoModalTemplate() + analiseConsumoDiaModalTemplate() + autonomiaInfoModalTemplate() + planoTreinoModalTemplate() + planejarTreinoModalTemplate() + montarPlanoModalTemplate() +
     '<div class="home-content"><div class="home-inner">' +
     (state.account ? fullHomeTemplate() : lockedTemplate()) +
     "</div></div></div>";
@@ -13695,6 +13925,8 @@ function homeTemplate() {
 
 /* ===================== render ===================== */
 function captureFormState() {
+  capturarPlanejarDom();
+  capturarMontarDom();
   const customEl = document.getElementById("meal-nome-custom");
   const descEl = document.getElementById("meal-description");
   const mealDataEl = document.getElementById("meal-data");
