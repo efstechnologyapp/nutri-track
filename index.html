@@ -4419,6 +4419,22 @@ function idsJaConfirmadosOuACaminho(listaRemota, tipoCriacao) {
 // que só existem neste aparelho ainda (registradas antes de conectar, ou feitas offline) — como daqui
 // pra frente cada ação já sobe sozinha, essa é a única vez que precisamos empurrar manualmente o que
 // ficou pra trás, pra igualar este aparelho com o servidor antes de tratá-lo como fonte da verdade.
+// Ids que este aparelho já viu no servidor (ou já mandou pra ele), por tipo. Um item local que não está
+// na resposta do servidor só é reenviado se NUNCA esteve lá -- ou seja, foi criado aqui e ainda não subiu.
+// Se já esteve e sumiu, foi apagado em outro lugar: some daqui também (a lista do servidor substitui a
+// local logo depois, em sincronizarDoServidorInterno()).
+const CHAVE_IDS_SERVIDOR = "nutri-track-ids-servidor";
+function publicarSoNovos(tipo, listaRemota, listaLocal, acaoSalvar) {
+  if (!listaRemota) return;
+  const mapa = readStorage(CHAVE_IDS_SERVIDOR, {});
+  const vistos = new Set(mapa[tipo] || []);
+  const aCaminho = idsJaConfirmadosOuACaminho(listaRemota, acaoSalvar);
+  const novos = (listaLocal || []).filter((p) => !aCaminho.has(p.id) && !vistos.has(p.id));
+  novos.forEach((p) => enviarComFila(acaoSalvar, [state.usuario.email, p]));
+  listaRemota.concat(novos).forEach((p) => vistos.add(p.id));
+  mapa[tipo] = Array.from(vistos).slice(-3000);
+  writeStorage(CHAVE_IDS_SERVIDOR, mapa);
+}
 function publicarRegistrosLocaisPendentes(remoto) {
   const idsRefeicoes = idsJaConfirmadosOuACaminho(remoto.meals, "salvarRefeicaoGoogle");
   const idsMedidas = idsJaConfirmadosOuACaminho(remoto.medidas, "salvarMedidaGoogle");
@@ -4438,12 +4454,11 @@ function publicarRegistrosLocaisPendentes(remoto) {
   });
   const idsDiarioKcal = idsJaConfirmadosOuACaminho(remoto.diarioKcal, "salvarDiarioKcalGoogle");
   state.diarioKcal.filter((r) => !idsDiarioKcal.has(r.id)).forEach((r) => enviarComFila("salvarDiarioKcalGoogle", [state.usuario.email, r]));
-  const idsProdutos = idsJaConfirmadosOuACaminho(remoto.produtosCustomizados, "salvarProdutoCustomizadoGoogle");
-  (state.produtosCustomizados || []).filter((p) => !idsProdutos.has(p.id)).forEach((p) => enviarComFila("salvarProdutoCustomizadoGoogle", [state.usuario.email, p]));
-  if (remoto.treinosPlanejados) {
-    const idsPlanejados = idsJaConfirmadosOuACaminho(remoto.treinosPlanejados, "salvarTreinoPlanejadoGoogle");
-    (state.treinosPlanejados || []).filter((p) => !idsPlanejados.has(p.id)).forEach((p) => enviarComFila("salvarTreinoPlanejadoGoogle", [state.usuario.email, p]));
-  }
+  // Produtos (compartilhados no grupo) e plano de treinos: só reenvia o que NUNCA passou pelo servidor --
+  // ver publicarSoNovos(). Sem isso, um produto apagado/editado em outro aparelho (ou pela outra pessoa do
+  // grupo) voltava sozinho, reenviado por este aparelho que ainda tinha a cópia antiga.
+  publicarSoNovos("produtos", remoto.produtosCustomizados, state.produtosCustomizados, "salvarProdutoCustomizadoGoogle");
+  if (remoto.treinosPlanejados) publicarSoNovos("planejados", remoto.treinosPlanejados, state.treinosPlanejados, "salvarTreinoPlanejadoGoogle");
   if (!remoto.goals) enviarComFila("atualizarMetasGoogle", [state.usuario.email, state.goals, state.altura]);
 }
 // Única função que efetivamente abre algo do Google — e só roda quando a pessoa clica no botão
@@ -8837,6 +8852,10 @@ function cadastrarProdutoModalTemplate() {
       '<div class="modal-body">' +
         '<div><label class="field-label">Nome do produto</label><input id="produto-nome" class="field-input" placeholder="Ex.: Pastel de Camarão" value="' + esc(state.produtoNome) + '"/></div>' +
         (modo === "manual" ? produtoCadastroManualTemplate() : '' +
+        // Editando um prato cadastrado ANTES de o app guardar a descrição dos ingredientes (ver
+        // p.ingredientesTexto em acaoCadastrarProduto()): não tem lista pra mostrar -- explica em vez de
+        // deixar o campo vazio sem motivo aparente (relato do usuário).
+        (editando && !state.produtoIngredientes ? '<p class="calo-conclusao-dica">' + icon("info") + " Este prato foi cadastrado antes de o app guardar a lista de ingredientes, então não há o que mostrar aqui. Descreva os ingredientes uma vez, toque em Analisar e salve: a partir daí eles ficam guardados pra você editar quando quiser.</p>" : "") +
         '<div><label class="field-label">Ingredientes</label>' +
           '<textarea id="produto-ingredientes" class="field-input" style="resize:none;line-height:1.5" placeholder="Descreva os ingredientes e quantidades..." rows="3">' + esc(state.produtoIngredientes) + "</textarea>" +
         "</div>" +
