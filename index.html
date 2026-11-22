@@ -3508,6 +3508,8 @@ const state = {
   // palavra "jejum" dentro do texto livre da observação. "" = ainda não respondido (obrigatório antes de
   // salvar nesses dois tipos); resetado ao trocar de tipo de medição e depois de salvar um registro.
   medidaJejum: "",
+  medidaValor: "",
+  medidaNota: "",
   // Usado só quando medidaTipo é "peso" (ver MEDIDA_MOMENTO_PESO_OPCOES): em que momento do dia a
   // pesagem foi feita -- antes de dormir, antes/depois da refeição ou antes/depois do treino. Mostrado
   // na legenda do card de IMC (ver imcCardTemplate()). "" = ainda não respondido (obrigatório antes de
@@ -4380,7 +4382,11 @@ const MEDIDA_MOMENTO_PESO_OPCOES = [
   { valor: "depois_treino", label: "Depois do treino", frase: "depois do treino" },
 ];
 function momentoPesoInfo(valor) { return MEDIDA_MOMENTO_PESO_OPCOES.find((o) => o.valor === valor) || null; }
-function acaoSelecionarTipoMedida(tipo) { state.medidaTipo = tipo; state.medidaJejum = ""; state.medidaMomentoPeso = ""; state.medidaRefeicoesSelecionadas = []; state.medidaSemRefeicaoAntes = false; render(); }
+function limparRascunhoMedida() {
+  ["medida-valor", "medida-nota"].forEach((id) => { const el = document.getElementById(id); if (el) el.value = ""; });
+  state.medidaValor = ""; state.medidaNota = "";
+}
+function acaoSelecionarTipoMedida(tipo) { limparRascunhoMedida(); state.medidaTipo = tipo; state.medidaJejum = ""; state.medidaMomentoPeso = ""; state.medidaRefeicoesSelecionadas = []; state.medidaSemRefeicaoAntes = false; render(); }
 // Trocar a resposta de jejum dispara um re-render (pra atualizar o <select> com a opção escolhida), e
 // esse re-render recria o campo de valor/observação do zero (não são inputs "controlados" por
 // state) -- sem isso, um valor já digitado antes de responder a pergunta de jejum seria perdido. Por
@@ -4500,6 +4506,7 @@ function acaoSalvarMedida() {
   }
   state.medidas = state.medidas.concat([novaMedida]);
   persistMedidas();
+  limparRascunhoMedida();
   state.medidaTipo = "";
   state.medidaJejum = "";
   state.medidaMomentoPeso = "";
@@ -4511,7 +4518,14 @@ function acaoSalvarMedida() {
   if (state.account) enviarComFila("salvarMedidaGoogle", [state.usuario.email, novaMedida]);
   render();
 }
+// Confirmação antes de qualquer exclusão feita pelo ícone de lixeira.
+function confirmarExclusao(texto) {
+  return window.confirm(texto + "\n\nEssa ação não pode ser desfeita.");
+}
 function acaoRemoverMedida(id) {
+  const reg = state.medidas.find((m) => m.id === id);
+  const tipoInfo = reg && medidaTipos[reg.tipo];
+  if (!confirmarExclusao("Apagar este registro" + (tipoInfo ? " de " + tipoInfo.label.toLowerCase() + " (" + reg.valor + (tipoInfo.unidade ? " " + tipoInfo.unidade : "") + ")" : "") + (reg && reg.date ? " de " + dataCurta(reg.date) : "") + "?")) return;
   state.medidas = state.medidas.filter((m) => m.id !== id);
   persistMedidas();
   if (state.account) enviarComFila("removerMedidaGoogle", [state.usuario.email, id]);
@@ -5274,6 +5288,8 @@ function acaoCadastrarProduto() {
   if (salvarProdutoCustomizado(novoProduto, nome)) render();
 }
 function acaoRemoverProdutoCustomizado(id) {
+  const prod = state.produtosCustomizados.find((p) => p.id === id);
+  if (!confirmarExclusao("Apagar o produto " + (prod && (prod.label || prod.nome) ? "\"" + (prod.label || prod.nome) + "\" " : "") + "do seu cardápio?")) return;
   state.produtosCustomizados = state.produtosCustomizados.filter((p) => p.id !== id);
   persistProdutosCustomizados();
   if (state.account) enviarComFila("removerProdutoCustomizadoGoogle", [state.usuario.email, id]);
@@ -5698,6 +5714,7 @@ function acaoEditarDataRefeicao(id, novaData) {
 }
 function acaoRemoverRefeicao(id) {
   const m = state.meals.find((meal) => meal.id === id);
+  if (!confirmarExclusao("Apagar a refeição " + (m ? "\"" + m.name + "\" de " + dataCurta(m.date) : "") + "?")) return;
   state.meals = state.meals.filter((meal) => meal.id !== id);
   persistMeals();
   if (state.account) enviarComFila("removerRefeicaoGoogle", [state.usuario.email, id]);
@@ -6032,6 +6049,8 @@ function acaoEditarDataDiarioKcal(id, novaData) {
 }
 // Remove um registro (dia) já encerrado no Diário de Kcal -- ver diarioKcalRegistroTemplate().
 function acaoRemoverDiarioKcal(id) {
+  const reg = state.diarioKcal.find((r) => r.id === id);
+  if (!confirmarExclusao("Apagar o registro do Diário de Kcal" + (reg && reg.date ? " de " + dataCurta(reg.date) : "") + "?")) return;
   state.diarioKcal = state.diarioKcal.filter((r) => r.id !== id);
   persistDiarioKcal();
   if (state.account) enviarComFila("removerDiarioKcalGoogle", [state.usuario.email, id]);
@@ -6142,7 +6161,7 @@ function submitPerfil() {
 /* ===================== templates ===================== */
 // Versão exibida no menu, na tela de login e em "Sobre o App" (mesmo padrão do Custódia Digital e do app
 // do escritório). Atualizar junto com o CACHE_NAME do sw.js a cada versão publicada.
-const APP_VERSAO = "2.40";
+const APP_VERSAO = "2.41";
 const APP_VERSAO_DATA = "21/11/2026";
 const DEV = { nome: "EFS Technology", lema: "Soluções digitais sob medida", tel: "83 9 99944-7957", wa: "5583999447957", email: "efstechnology.app@gmail.com" };
 function authVersaoTemplate() {
@@ -8548,6 +8567,7 @@ function historyDayCardTemplate(date) {
 function acaoRemoverDiaHistorico(date) {
   const idsDoDia = state.meals.filter((m) => m.date === date).map((m) => m.id);
   if (!idsDoDia.length) return;
+  if (!confirmarExclusao("Apagar todas as refeições de " + dataCurta(date) + " (" + idsDoDia.length + ")?")) return;
   state.meals = state.meals.filter((m) => m.date !== date);
   persistMeals();
   if (state.account) idsDoDia.forEach((id) => enviarComFila("removerRefeicaoGoogle", [state.usuario.email, id]));
@@ -9213,6 +9233,8 @@ function salvarPlano(p) {
   if (state.account) enviarComFila("salvarTreinoPlanejadoGoogle", [state.usuario.email, p]);
 }
 function acaoRemoverPlano(id) {
+  const pl = state.treinosPlanejados.find((x) => x.id === id);
+  if (!confirmarExclusao("Remover este treino do plano" + (pl && pl.date ? " de " + dataCurta(pl.date) : "") + "?")) return;
   state.treinosPlanejados = state.treinosPlanejados.filter((x) => x.id !== id);
   persistTreinosPlanejados();
   if (state.account) enviarComFila("removerTreinoPlanejadoGoogle", [state.usuario.email, id]);
@@ -10433,6 +10455,7 @@ function acaoSalvarTreino() {
 
 function acaoRemoverTreino(id) {
   const t = state.treinos.find((tr) => tr.id === id);
+  if (!confirmarExclusao("Apagar o treino" + (t ? (t.esporte ? " de " + t.esporte : "") + " de " + dataCurta(t.date) : "") + "?")) return;
   state.treinos = state.treinos.filter((tr) => tr.id !== id);
   persistTreinos();
   if (state.account) enviarComFila("removerTreinoGoogle", [state.usuario.email, id]);
@@ -10591,6 +10614,7 @@ function acaoAlternarDiaHistoricoTreinos(date) {
 function acaoRemoverDiaHistoricoTreinos(date) {
   const idsDoDia = state.treinos.filter((t) => t.date === date).map((t) => t.id);
   if (!idsDoDia.length) return;
+  if (!confirmarExclusao("Apagar todos os treinos de " + dataCurta(date) + " (" + idsDoDia.length + ")?")) return;
   state.treinos = state.treinos.filter((t) => t.date !== date);
   persistTreinos();
   if (state.account) idsDoDia.forEach((id) => enviarComFila("removerTreinoGoogle", [state.usuario.email, id]));
@@ -11757,6 +11781,8 @@ async function processarAnexoBioimpedanciaEmSegundoPlano(idRegistro, file, prome
   render();
 }
 function acaoRemoverBioimpedancia(id) {
+  const reg = state.bioimpedancia.find((r) => r.id === id);
+  if (!confirmarExclusao("Apagar este registro de bioimpedância" + (reg && reg.date ? " de " + dataCurta(reg.date) : "") + "?")) return;
   state.bioimpedancia = state.bioimpedancia.filter((r) => r.id !== id);
   persistBioimpedancia();
   if (state.account) enviarComFila("removerBioimpedanciaGoogle", [state.usuario.email, id]);
@@ -11841,6 +11867,8 @@ async function processarAnexoCalorimetriaEmSegundoPlano(idRegistro, file, promes
   render();
 }
 function acaoRemoverCalorimetria(id) {
+  const reg = state.calorimetria.find((r) => r.id === id);
+  if (!confirmarExclusao("Apagar este registro de calorimetria" + (reg && reg.date ? " de " + dataCurta(reg.date) : "") + "?")) return;
   state.calorimetria = state.calorimetria.filter((r) => r.id !== id);
   persistCalorimetria();
   if (state.account) enviarComFila("removerCalorimetriaGoogle", [state.usuario.email, id]);
@@ -12352,6 +12380,7 @@ function medidaHistoryRowTemplate(r, prefixo) {
 function acaoRemoverDiaHistoricoMedidas(date) {
   const idsDoDia = state.medidas.filter((m) => m.date === date).map((m) => m.id);
   if (!idsDoDia.length) return;
+  if (!confirmarExclusao("Apagar todos os registros de medidas de " + dataCurta(date) + " (" + idsDoDia.length + ")?")) return;
   state.medidas = state.medidas.filter((m) => m.date !== date);
   persistMedidas();
   if (state.account) idsDoDia.forEach((id) => enviarComFila("removerMedidaGoogle", [state.usuario.email, id]));
@@ -12509,7 +12538,7 @@ function medidasFormTemplate() {
         "</select></div>" +
         (meta ?
           '<div class="medida-input-row"><div><label class="field-label">' + meta.label + " (" + meta.unidade + ")</label>" +
-          '<input id="medida-valor" class="field-input" placeholder="' + meta.placeholder + '" onkeydown="if(event.key===\'Enter\') acaoSalvarMedida();"/>' +
+          '<input id="medida-valor" class="field-input" value="' + esc(state.medidaValor || "") + '" placeholder="' + meta.placeholder + '" onkeydown="if(event.key===\'Enter\') acaoSalvarMedida();"/>' +
           '<p class="imc-empty" style="margin-top:6px">' + meta.exemplo + "</p></div>" +
           (MEDIDA_TIPOS_COM_JEJUM.includes(tipo) ?
             '<div><label class="field-label">Foi medida em jejum?</label>' +
@@ -12532,7 +12561,7 @@ function medidasFormTemplate() {
             : ""
           ) +
           '<div><label class="field-label">Observação (opcional)</label>' +
-          '<textarea id="medida-nota" class="field-input medida-nota-textarea" rows="2" placeholder="Ex.: após o treino, antes de dormir..."></textarea></div>' +
+          '<textarea id="medida-nota" class="field-input medida-nota-textarea" rows="2" placeholder="Ex.: após o treino, antes de dormir...">' + esc(state.medidaNota || "") + '</textarea></div>' +
           '<button class="btn-primary" onclick="acaoSalvarMedida()">' + icon("check") + " Salvar registro</button></div>"
           : ""
         ) +
@@ -16139,6 +16168,13 @@ function homeTemplate() {
 /* ===================== render ===================== */
 function captureFormState() {
   capturarPlanejarDom();
+  // Valor e observação do formulário de Medidas: sem guardar aqui, QUALQUER render() que acontecesse no meio
+  // do preenchimento (ex.: a sincronização com o servidor que roda quando o app volta ao foco -- no celular,
+  // abrir a lista do "Foi medida em jejum?" tira e devolve o foco da janela) apagava o valor já digitado.
+  const medidaValorEl = document.getElementById("medida-valor");
+  if (medidaValorEl) state.medidaValor = medidaValorEl.value;
+  const medidaNotaEl = document.getElementById("medida-nota");
+  if (medidaNotaEl) state.medidaNota = medidaNotaEl.value;
   capturarMontarDom();
   const customEl = document.getElementById("meal-nome-custom");
   const descEl = document.getElementById("meal-description");
