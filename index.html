@@ -1035,6 +1035,9 @@ body:has(.modal-overlay) .hamburger-btn{ display:none; }
 .nutrient-info-refeicao-rank{ flex-shrink:0; width:20px; font-size:12px; font-weight:700; color:#9aa9a1; text-align:center; }
 .nutrient-info-refeicao-info{ flex:1; min-width:0; }
 .nutrient-info-refeicao-nome{ font-size:13.5px; font-weight:600; color:#3d5a4f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.carbo-abs{ margin-left:6px; font-size:10.5px; font-weight:500; letter-spacing:.01em; }
+.carbo-abs-rapida{ color:#b9772e; } .carbo-abs-moderada{ color:#8a9a91; } .carbo-abs-lenta{ color:#4f8f62; }
+.nutrient-info-nota{ margin:8px 0 0; font-size:12px; line-height:1.5; color:#7c8c86; }
 .nutrient-info-refeicao-barra{ margin-top:5px; height:5px; border-radius:999px; background:#eef1ec; overflow:hidden; }
 .nutrient-info-refeicao-barra-fill{ height:100%; border-radius:999px; }
 .nutrient-info-refeicao-valor{ flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; font-size:12.5px; font-weight:700; color:#3d5a4f; line-height:1.3; }
@@ -6234,7 +6237,7 @@ function submitPerfil() {
 /* ===================== templates ===================== */
 // Versão exibida no menu, na tela de login e em "Sobre o App" (mesmo padrão do Custódia Digital e do app
 // do escritório). Atualizar junto com o CACHE_NAME do sw.js a cada versão publicada.
-const APP_VERSAO = "2.47";
+const APP_VERSAO = "2.48";
 const APP_VERSAO_DATA = "21/11/2026";
 const DEV = { nome: "EFS Technology", lema: "Soluções digitais sob medida", tel: "83 9 99944-7957", wa: "5583999447957", email: "efstechnology.app@gmail.com" };
 function authVersaoTemplate() {
@@ -10908,6 +10911,142 @@ function formatNutrienteValorGenerico(chave, valor) {
 // (ver alimentosQueMaisInfluenciaramNutriente()), cada um com uma barrinha proporcional ao quanto
 // representa do total consumido hoje daquele nutriente (mesmo pct() já usado nas barras de progresso
 // dos cards). Sem nenhum alimento com contribuição ainda hoje, mostra um aviso em vez da lista vazia.
+// Velocidade de absorção do carboidrato de cada alimento (v2.48, pedido do usuário) -- mostrada em letra
+// pequena ao lado do nome em "Alimentos que mais influenciaram" quando o nutriente é carboidrato. Baseada no
+// índice glicêmico típico (tabelas internacionais de IG): alto (>= 70) = rápida, médio (56–69) = moderada,
+// baixo (<= 55) = lenta. Doces, sucos e bebidas com açúcar contam como rápida. Alimentos fora do mapa
+// (produtos cadastrados, por exemplo) usam uma estimativa pela composição: fibra, proteína e gordura em
+// relação ao carbo deixam a absorção mais lenta.
+const ABSORCAO_CARBO = {
+  "Pão francês": "rapida",
+  "Pão de forma": "rapida",
+  "Pão sovado": "rapida",
+  "Tapioca": "rapida",
+  "Arroz branco cozido": "rapida",
+  "Batata inglesa cozida": "rapida",
+  "Purê de batata": "rapida",
+  "Mandioca cozida": "rapida",
+  "Cuscuz": "rapida",
+  "Polenta": "rapida",
+  "Pipoca": "rapida",
+  "Melancia": "rapida",
+  "Brigadeiro": "rapida",
+  "Mel": "rapida",
+  "Geleia de frutas": "rapida",
+  "Geleia de morango": "rapida",
+  "Geleia de frutas vermelhas": "rapida",
+  "Goiabada": "rapida",
+  "Doce de leite": "rapida",
+  "Leite condensado": "rapida",
+  "Ketchup": "rapida",
+  "Achocolatado": "rapida",
+  "Refrigerante": "rapida",
+  "Suco industrializado (caixinha)": "rapida",
+  "Água de coco": "rapida",
+  "Cerveja": "rapida",
+  "Heineken": "rapida",
+  "Caipirinha de cachaça": "rapida",
+  "Suco de laranja": "rapida",
+  "Suco de limão (limonada)": "rapida",
+  "Suco de uva": "rapida",
+  "Suco de abacaxi": "rapida",
+  "Suco de maracujá": "rapida",
+  "Suco de manga": "rapida",
+  "Suco de morango": "rapida",
+  "Suco de melancia": "rapida",
+  "Suco de caju": "rapida",
+  "Suco de acerola": "rapida",
+  "Suco de goiaba": "rapida",
+  "Suco de graviola": "rapida",
+  "Suco de maçã": "rapida",
+  "Pão de forma integral": "moderada",
+  "Pão de queijo": "moderada",
+  "Macarrão cozido": "moderada",
+  "Batata doce cozida": "lenta",
+  "Inhame cozido": "moderada",
+  "Cará cozido": "moderada",
+  "Taro cozido": "moderada",
+  "Batata palha": "moderada",
+  "Arroz integral cozido": "moderada",
+  "Granola": "moderada",
+  "Milho cozido": "moderada",
+  "Pamonha": "moderada",
+  "Canjica": "moderada",
+  "Banana": "moderada",
+  "Manga": "moderada",
+  "Abacaxi": "moderada",
+  "Mamão": "moderada",
+  "Uva": "moderada",
+  "Melão": "moderada",
+  "Umbu": "moderada",
+  "Cajá": "moderada",
+  "Seriguela": "moderada",
+  "Chocolate ao leite": "moderada",
+  "Barra de cereal": "moderada",
+  "Cappuccino": "moderada",
+  "Vitamina de banana": "moderada",
+  "Suco verde (detox)": "moderada",
+  "Suco de graviola sem açúcar": "moderada",
+  "Suco de cenoura": "moderada",
+  "Pizza (fatia)": "moderada",
+  "Hambúrguer (lanche)": "moderada",
+  "Sanduíche natural": "moderada",
+  "Lasanha": "moderada",
+  "Frango à parmegiana": "moderada",
+  "Aveia em flocos": "lenta",
+  "Feijão cozido": "lenta",
+  "Fava cozida": "lenta",
+  "Lentilha cozida": "lenta",
+  "Grão de bico cozido": "lenta",
+  "Quinoa cozida": "lenta",
+  "Feijoada": "lenta",
+  "Estrogonofe de frango": "lenta",
+  "Maçã": "lenta",
+  "Pera": "lenta",
+  "Laranja": "lenta",
+  "Morango": "lenta",
+  "Kiwi": "lenta",
+  "Mirtilo (blueberry)": "lenta",
+  "Abacate": "lenta",
+  "Limão": "lenta",
+  "Leite integral": "lenta",
+  "Leite desnatado": "lenta",
+  "Iogurte natural": "lenta",
+  "Iogurte grego": "lenta",
+  "Café com leite": "lenta",
+  "Vitamina de abacate": "lenta",
+  "Brócolis cozido": "lenta",
+  "Couve refogada": "lenta",
+  "Tomate": "lenta",
+  "Cenoura crua": "lenta",
+  "Alface": "lenta",
+  "Cebola": "lenta",
+  "Salada mista": "lenta",
+  "Pepino": "lenta",
+  "Castanha-do-pará": "lenta",
+  "Castanha de caju": "lenta",
+  "Semente de chia": "lenta",
+  "Linhaça": "lenta",
+  "Amendoim": "lenta"
+};
+const ABSORCAO_CARBO_ROTULO = { rapida: "absorção rápida", moderada: "absorção moderada", lenta: "absorção lenta" };
+function absorcaoCarbo(label) {
+  if (ABSORCAO_CARBO[label]) return ABSORCAO_CARBO[label];
+  const f = foodLibrary.concat(state.produtosCustomizados || []).find((x) => x.label === label);
+  const v = f && f.values;
+  if (!v) return null;
+  const c = Number(v.carbs) || 0;
+  if (c < 2) return null; // quase sem carboidrato: não classifica
+  const fibra = (Number(v.fiber) || 0) / c, freio = ((Number(v.protein) || 0) + (Number(v.fat) || 0)) / c;
+  if (fibra >= 0.15 || freio >= 1.5) return "lenta";
+  if (fibra < 0.05 && freio < 0.25) return "rapida";
+  return "moderada";
+}
+function absorcaoCarboTag(chave, label) {
+  if (chave !== "carbs") return "";
+  const t = absorcaoCarbo(label);
+  return t ? '<span class="carbo-abs carbo-abs-' + t + '">' + ABSORCAO_CARBO_ROTULO[t] + "</span>" : "";
+}
 function alimentosInfluenciaramNutrienteTemplate(chave, meta) {
   const lista = alimentosQueMaisInfluenciaramNutriente(chave);
   if (!lista.length) {
@@ -10917,7 +11056,7 @@ function alimentosInfluenciaramNutrienteTemplate(chave, meta) {
   return '<div class="nutrient-info-refeicoes-lista">' + lista.map((r, i) =>
     '<div class="nutrient-info-refeicao-row">' +
       '<span class="nutrient-info-refeicao-rank">' + (i + 1) + "º</span>" +
-      '<div class="nutrient-info-refeicao-info"><div class="nutrient-info-refeicao-nome">' + esc(r.label) + "</div>" +
+      '<div class="nutrient-info-refeicao-info"><div class="nutrient-info-refeicao-nome">' + esc(r.label) + absorcaoCarboTag(chave, r.label) + "</div>" +
         '<div class="nutrient-info-refeicao-barra"><div class="nutrient-info-refeicao-barra-fill" style="width:' + pct(r.valor, total) + "%;background:" + meta.color + '"></div></div></div>' +
       '<span class="nutrient-info-refeicao-valor">' + formatNutrienteValorGenerico(chave, r.valor) + '<span class="nutrient-info-refeicao-pct">' + formatNumber(pct(r.valor, total), 0) + "%</span></span>" +
     "</div>"
@@ -10939,6 +11078,8 @@ const MACRO_GUIA = {
   },
   carbs: {
     tipos: [["Rápido (índice glicêmico alto)", "pão branco, tapioca, arroz branco, banana madura, mel — energia imediata"], ["Lento (índice glicêmico baixo)", "aveia, feijão, batata-doce, integrais, frutas com casca — energia estável e mais saciedade"], ["Açúcar adicionado", "refrigerante, doces — energia vazia; limite"]],
+    absorcao: [["Rápido", "a glicose começa a subir em 15–30 min, tem pico em 30–60 min e a energia dura cerca de 1–2 h"], ["Moderado", "pico em 45–90 min; energia por cerca de 2–3 h"], ["Lento", "pico em 1–2 h e liberação gradual por 3–4 h"]],
+    absorcaoNota: "Estimativa média. Comer o carbo junto com proteína, gordura ou fibra deixa qualquer um mais lento; sozinho e em jejum, ele fica mais rápido.",
     quando: [["3–4h antes do treino", "refeição com carbo lento + proteína"], ["30–60 min antes", "carbo rápido e leve, sem fibra nem gordura"], ["Até 2h depois", "carbo rápido + proteína, pra repor o glicogênio"], ["Resto do dia", "prefira os lentos, com fibra"]],
     objetivo: { deficit: "Em déficit, concentre o carbo em volta do treino e use os lentos no resto do dia.", ganho: "Carbo alto ajuda o superávit e o rendimento — não precisa ter medo dele.", performance: "É o principal combustível: aumente nos dias de treino longo ou intenso.", padrao: "Prefira os lentos e com fibra; os rápidos, perto do treino." },
   },
@@ -10962,6 +11103,9 @@ function macroGuiaTemplate(chave) {
   const rotuloObjetivo = state.goals && state.goals.objetivo && OBJETIVOS_META[state.goals.objetivo] ? OBJETIVOS_META[state.goals.objetivo].label : "";
   return '<div class="nutrient-info-secao"><h3>Tipos</h3><ul class="nutrient-info-lista">' +
       guia.tipos.map((t) => "<li><strong>" + esc(t[0]) + ":</strong> " + esc(t[1]) + "</li>").join("") + "</ul></div>" +
+    (guia.absorcao ? '<div class="nutrient-info-secao"><h3>Tempo médio de absorção</h3><ul class="nutrient-info-lista">' +
+      guia.absorcao.map((t) => "<li><strong>" + esc(t[0]) + ":</strong> " + esc(t[1]) + "</li>").join("") + "</ul>" +
+      (guia.absorcaoNota ? '<p class="nutrient-info-nota">' + esc(guia.absorcaoNota) + "</p>" : "") + "</div>" : "") +
     '<div class="nutrient-info-secao"><h3>Quando priorizar</h3><ul class="nutrient-info-lista">' +
       guia.quando.map((t) => "<li><strong>" + esc(t[0]) + ":</strong> " + esc(t[1]) + "</li>").join("") + "</ul></div>" +
     '<div class="nutrient-info-secao"><h3>Para o seu objetivo' + (rotuloObjetivo ? " (" + esc(rotuloObjetivo) + ")" : "") + "</h3><p>" + esc(fraseObjetivo) + "</p></div>";
@@ -11059,7 +11203,7 @@ function analiseConsumoDiaModalTemplate() {
     : '<div class="nutrient-info-refeicoes-lista">' + top3.map((r, i) =>
         '<div class="nutrient-info-refeicao-row">' +
           '<span class="nutrient-info-refeicao-rank">' + (i + 1) + "º</span>" +
-          '<div class="nutrient-info-refeicao-info"><div class="nutrient-info-refeicao-nome">' + esc(r.label) + "</div>" +
+          '<div class="nutrient-info-refeicao-info"><div class="nutrient-info-refeicao-nome">' + esc(r.label) + absorcaoCarboTag(aberto.key, r.label) + "</div>" +
             '<div class="nutrient-info-refeicao-barra"><div class="nutrient-info-refeicao-barra-fill" style="width:' + pct(r.valor, total) + "%;background:" + meta.color + '"></div></div></div>' +
           '<span class="nutrient-info-refeicao-valor">' + formatNutrienteValorGenerico(aberto.key, r.valor) + '<span class="nutrient-info-refeicao-pct">' + formatNumber(pct(r.valor, total), 0) + "%</span></span>" +
         "</div>"
