@@ -1263,6 +1263,14 @@ body:has(.modal-overlay) .hamburger-btn{ display:none; }
 .pm-footer{ display:flex; gap:8px; margin-top:18px; }
 .pm-footer .btn-primary{ margin-top:0; flex:1; }
 .pm-footer .bioimpedancia-btn-secundario{ justify-content:center; }
+.pm-hora-edit{ margin-bottom:12px; }
+.pm-sug-btn{ margin-top:10px; display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:#2f6b3a; background:#e4efd9; border-radius:999px; padding:8px 14px; }
+.pm-sug-btn .icon{ width:15px; height:15px; }
+.sug-hora-bloco{ margin-top:10px; border-radius:14px; padding:12px; background:#f2f8ee; border:1px solid #cfe3c6; display:flex; flex-direction:column; gap:10px; }
+.sug-hora-txt{ margin:0; font-size:13.5px; line-height:1.55; color:#3d5c48; }
+.sug-hora-txt b{ color:#1b3f34; }
+.pm-atalho.on{ background:#1c4d3e; border-color:#1c4d3e; color:#fff; }
+.pm-atalho.on small{ color:#cfe3c6; }
 .pm-grid2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:end; }
 .pm-chips-sel{ display:flex; gap:6px; flex-wrap:wrap; }
 .pm-chip-sel{ cursor:pointer; }
@@ -3635,6 +3643,8 @@ const state = {
   // quando registrados. Formato: { id, date, esporte, hora ("" = sem horário), duracaoMin, intensidade
   // ("leve"|"moderada"|"intensa"), naoRealizado }. "Realizado" é deduzido (ver planoTreinoRealizado()).
   treinosPlanejados: readStorage(CHAVE_TREINOS_PLANEJADOS, []),
+  sugHorario: null, // {planoId, mealId}: aviso pós-refeição sugerindo novo horário de treino (ver sugHorarioModalTemplate())
+  planoSugAberto: null, // id do plano com o bloco "Sugerir pela última refeição" aberto no modal do treino
   planoModalId: null, // id do treino planejado aberto no modal de pré/pós-treino (ver planoTreinoModalTemplate())
   planejarAberto: false, // modal "Planejar treino" (ver planejarTreinoModalTemplate())
   // Campos do "Planejar treino" guardados em state (antes eram lidos só do DOM): com a montagem de treino
@@ -5598,6 +5608,7 @@ function acaoSalvarRefeicao() {
   } else {
     toastSuccess(dataRefeicao === today() ? "Refeição registrada no histórico." : "Refeição registrada em " + dateLabel(dataRefeicao) + ".");
     if (state.account) enviarComFila("salvarRefeicaoGoogle", [state.usuario.email, novaRefeicao]);
+    verificarSugHorarioAposRefeicao(novaRefeicao);
   }
   // Se esse dia (ou, numa edição, o dia antigo e/ou o novo) já estiver encerrado no Diário de Kcal,
   // ressincroniza pra refletir o registro atualizado sem precisar clicar manualmente em "Recalcular".
@@ -6161,7 +6172,7 @@ function submitPerfil() {
 /* ===================== templates ===================== */
 // Versão exibida no menu, na tela de login e em "Sobre o App" (mesmo padrão do Custódia Digital e do app
 // do escritório). Atualizar junto com o CACHE_NAME do sw.js a cada versão publicada.
-const APP_VERSAO = "2.41";
+const APP_VERSAO = "2.43";
 const APP_VERSAO_DATA = "21/11/2026";
 const DEV = { nome: "EFS Technology", lema: "Soluções digitais sob medida", tel: "83 9 99944-7957", wa: "5583999447957", email: "efstechnology.app@gmail.com" };
 function authVersaoTemplate() {
@@ -9300,13 +9311,112 @@ function acaoTreineiPlano(id) {
   toastSuccess(state.treinoAtivo ? "Já há um treino em andamento no cronômetro." : "Confira os horários e salve o treino.");
 }
 function acaoAbrirPlanoModal(id) { state.planoModalId = id; render(); }
-function acaoFecharPlanoModal() { state.planoModalId = null; render(); }
+function acaoFecharPlanoModal() { state.planoModalId = null; state.planoSugAberto = null; render(); }
+/* ===== Horário de treino sugerido a partir da refeição (lógica "reversa") ===== */
+// Quanto tempo depois de comer é bom começar o treino, conforme o tamanho da refeição e o tipo de esporte.
+// Força (musculação) tolera estômago mais cheio; corrida/bike/luta (endurance/intermitente) pedem mais
+// tempo -- no jiu-jitsu, a pressão no abdômen com estômago cheio incomoda muito. Gordura alta (>= 20 g)
+// atrasa a digestão: a janela começa 30 min mais tarde. Atividade leve (caminhada) não tem restrição.
+const SUG_HORA_JANELAS = {
+  forca: { pequena: [15, 45], lanche: [45, 90], completa: [90, 180] },
+  outros: { pequena: [30, 60], lanche: [60, 120], completa: [120, 210] },
+};
+const SUG_HORA_LIMITE = 21 * 60; // não sugere começar depois das 21h, pra não atrapalhar o sono
+const SUG_TAM_ROTULO = { pequena: "refeição pequena", lanche: "lanche", completa: "refeição completa" };
+function janelaPosRefeicao(meal, esporte) {
+  const chave = perfilDoEsporte(esporte);
+  if (!PERFIS_TREINO[chave] || PERFIS_TREINO[chave].leve) return null;
+  const kcal = Number(meal.calories) || 0, gord = Number(meal.fat) || 0;
+  const tam = kcal <= 150 ? "pequena" : kcal <= 400 ? "lanche" : "completa";
+  const t = SUG_HORA_JANELAS[chave === "forca" ? "forca" : "outros"][tam];
+  const extra = gord >= 20 ? 30 : 0;
+  return { min: t[0] + extra, max: t[1] + extra, tam: tam, gordura: extra > 0, kcal: kcal };
+}
+function sugestaoHorarioTreino(p, meal) {
+  if (!meal || !meal.time) return null;
+  const j = janelaPosRefeicao(meal, p.esporte);
+  if (!j) return null;
+  const ref = hhmmParaMin(meal.time);
+  const agora = p.date === today() ? agoraMin() : 0;
+  const ini = Math.ceil(Math.max(ref + j.min, agora + 10) / 5) * 5;
+  const fim = Math.floor(Math.min(ref + j.max, SUG_HORA_LIMITE) / 5) * 5;
+  let opcoes = [];
+  if (ini <= fim) {
+    const meio = Math.round((ini + fim) / 2 / 5) * 5;
+    opcoes = [[ini, "início da janela"], [meio, "meio"], [fim, "fim da janela"]].filter((o, i, arr) => arr.findIndex((x) => x[0] === o[0]) === i);
+  }
+  const hora = p.hora ? hhmmParaMin(p.hora) : null;
+  return { j: j, ref: ref, ini: ini, fim: fim, opcoes: opcoes, hora: hora,
+    cedo: hora != null && hora >= ref - 15 && hora < ref + j.min,
+    dentro: hora != null && hora >= ref + j.min && hora <= ref + j.max };
+}
+function ultimaRefeicaoDeHoje() {
+  return todayMeals().filter((m) => m.time).sort((a, b) => a.time.localeCompare(b.time)).pop() || null;
+}
+// Treino de hoje ainda pendente (nem registrado nem marcado como "não treinei") que vem DEPOIS da refeição.
+function planoHojeAposRefeicao(meal) {
+  const ref = hhmmParaMin(meal.time);
+  return ordenarPlanos(state.treinosPlanejados.filter((p) => p.date === today() && planoStatus(p) === "hoje"))
+    .find((p) => !p.hora || hhmmParaMin(p.hora) >= ref - 15) || null;
+}
+function minutosTxt(m) { return m >= 60 ? Math.floor(m / 60) + "h" + (m % 60 ? String(m % 60).padStart(2, "0") : "") : m + " min"; }
+function sugHorarioCorpoHtml(p, meal, sug) {
+  const j = sug.j;
+  const desc = '<p class="sug-hora-txt">Depois de <b>' + esc(meal.name) + " às " + esc(meal.time) + "</b> (~" + formatNumber(j.kcal, 0) + " kcal, " + SUG_TAM_ROTULO[j.tam] + (j.gordura ? ", com bastante gordura" : "") + "), o ideal pra " + esc(p.esporte.toLowerCase()) + " é começar <b>" + minutosTxt(j.min) + " a " + minutosTxt(j.max) + " depois</b>" +
+    (sug.opcoes.length ? ": entre <b>" + minParaHhmm(sug.ini) + " e " + minParaHhmm(sug.fim) + "</b>." : ".") + "</p>";
+  let aviso = "";
+  if (sug.cedo) aviso = '<div class="pm-aviso">' + icon("alert") + "<div>Às " + esc(p.hora) + ", seriam só " + minutosTxt(Math.max(0, sug.hora - sug.ref)) + " depois de comer: risco de desconforto e de render menos no treino.</div></div>";
+  else if (sug.dentro) aviso = '<div class="pm-dica">' + icon("check") + "<div>O horário marcado (" + esc(p.hora) + ") já está numa boa janela depois dessa refeição.</div></div>";
+  const opcoes = sug.opcoes.length
+    ? '<div class="pm-atalhos">' + sug.opcoes.map((o) => '<button class="pm-atalho' + (sug.hora === o[0] ? " on" : "") + '" onclick="acaoAplicarSugHorario(' + p.id + ", '" + minParaHhmm(o[0]) + "')\">" + minParaHhmm(o[0]) + "<small>" + o[1] + "</small></button>").join("") + "</div>"
+    : '<div class="pm-aviso">' + icon("alert") + "<div>Hoje não sobra uma boa janela antes das 21h. Se o horário for fixo (ex.: aula), comece num ritmo mais leve e, da próxima vez, prefira um lanche de até ~400 kcal " + minutosTxt(SUG_HORA_JANELAS[perfilDoEsporte(p.esporte) === "forca" ? "forca" : "outros"].lanche[0]) + " a " + minutosTxt(SUG_HORA_JANELAS[perfilDoEsporte(p.esporte) === "forca" ? "forca" : "outros"].lanche[1]) + " antes.</div></div>";
+  return desc + aviso + opcoes;
+}
+function acaoAplicarSugHorario(id, hora) {
+  const p = state.treinosPlanejados.find((x) => x.id === id);
+  if (!p) return;
+  salvarPlano(Object.assign({}, p, { hora: hora }));
+  state.sugHorario = null; state.planoSugAberto = null;
+  toastSuccess("Treino de " + p.esporte.toLowerCase() + " remarcado para " + hora + ".");
+  render();
+}
+function acaoFecharSugHorario() { state.sugHorario = null; render(); }
+function acaoAlternarSugPlano(id) {
+  if (state.planoSugAberto === id) { state.planoSugAberto = null; render(); return; }
+  if (!ultimaRefeicaoDeHoje()) { toastError("Nenhuma refeição com horário registrada hoje."); return; }
+  state.planoSugAberto = id; render();
+}
+// Depois de salvar uma refeição de hoje: se ela ficou perto demais do treino planejado (ou o treino ainda
+// está sem horário), abre o aviso com horários sugeridos.
+function verificarSugHorarioAposRefeicao(meal) {
+  if (!meal || meal.date !== today() || !meal.time) return;
+  const p = planoHojeAposRefeicao(meal);
+  if (!p) return;
+  const sug = sugestaoHorarioTreino(p, meal);
+  if (!sug || !(sug.cedo || !p.hora)) return;
+  state.sugHorario = { planoId: p.id, mealId: meal.id };
+}
+function sugHorarioModalTemplate() {
+  if (!state.sugHorario) return "";
+  const p = state.treinosPlanejados.find((x) => x.id === state.sugHorario.planoId);
+  const meal = state.meals.find((m) => m.id === state.sugHorario.mealId);
+  const sug = p && meal ? sugestaoHorarioTreino(p, meal) : null;
+  if (!sug) return "";
+  return '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharSugHorario();}"><div class="modal-card plano-modal">' +
+    '<div class="meal-detalhe-head"><div><h2>' + emojiEsporte(p.esporte) + " " + esc(p.esporte) + (p.hora ? " às " + esc(p.hora) + "?" : ": que horas?") + "</h2>" +
+    '<div class="pm-sub">Treino de hoje · ajuste pelo horário da refeição</div></div>' +
+    '<button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharSugHorario()">' + icon("x") + "</button></div>" +
+    '<div class="modal-body">' + sugHorarioCorpoHtml(p, meal, sug) + "</div>" +
+    '<div class="pm-footer"><button class="bioimpedancia-btn-secundario" onclick="acaoFecharSugHorario()">' + (p.hora ? "Manter " + esc(p.hora) : "Decidir depois") + "</button></div>" +
+    "</div></div>";
+}
 function acaoDefinirHoraPlano(id, hora) {
   const p = state.treinosPlanejados.find((x) => x.id === id);
   if (!p) return;
   if (hora == null) { const el = document.getElementById("plano-hora-input"); hora = el ? el.value : ""; }
   if (!hora) { toastError("Informe o horário do treino."); return; }
   salvarPlano(Object.assign({}, p, { hora: hora }));
+  if (p.hora && p.hora !== hora) toastSuccess("Horário alterado para " + hora + ".");
   render();
 }
 function acaoAbrirPlanejar() { state.planejarAberto = true; state.planejarForm = { semana: "proxima", dias: [], esporte: "", hora: "" }; state.montar = null; render(); }
@@ -9693,6 +9803,13 @@ const PLANO_DICA_ESPORTE = {
   "Ciclismo": "Treino longo: leve água; acima de 90 min, carboidrato durante (bebida, gel ou fruta).",
   "Natação": "Leve água mesmo na piscina: a desidratação passa despercebida.",
 };
+function planoSugBlocoHtml(p) {
+  if (state.planoSugAberto !== p.id) return "";
+  const meal = ultimaRefeicaoDeHoje();
+  const sug = sugestaoHorarioTreino(p, meal);
+  if (!sug) return '<div class="sug-hora-bloco"><p class="sug-hora-txt">Sem restrição de horário pra esse tipo de atividade.</p></div>';
+  return '<div class="sug-hora-bloco">' + sugHorarioCorpoHtml(p, meal, sug) + "</div>";
+}
 function planoTreinoModalTemplate() {
   const p = state.planoModalId != null ? state.treinosPlanejados.find((x) => x.id === state.planoModalId) : null;
   if (!p) return "";
@@ -9718,7 +9835,8 @@ function planoTreinoModalTemplate() {
     const atalhos = [60, 120, 180].map((m) => { const h = minParaHhmm(Math.ceil((agora + m) / 5) * 5); return '<button class="pm-atalho" onclick="acaoDefinirHoraPlano(' + p.id + ", '" + h + "')\">Em " + m / 60 + "h<small>" + h + "</small></button>"; }).join("");
     return envolver('<div class="pm-bloco"><div class="pm-bloco-titulo">' + icon("clock") + " Que horas pretende treinar?</div>" +
       '<div class="pm-atalhos">' + atalhos + "</div>" +
-      '<div class="pm-grid2" style="margin-top:10px"><input id="plano-hora-input" type="time" class="field-input"/><button class="bioimpedancia-btn-secundario" onclick="acaoDefinirHoraPlano(' + p.id + ')">Ver sugestões</button></div></div>' +
+      '<div class="pm-grid2" style="margin-top:10px"><input id="plano-hora-input" type="time" class="field-input"/><button class="bioimpedancia-btn-secundario" onclick="acaoDefinirHoraPlano(' + p.id + ')">Ver sugestões</button></div>' +
+      (ultimaRefeicaoDeHoje() ? '<button type="button" class="pm-sug-btn" onclick="acaoAlternarSugPlano(' + p.id + ')">' + icon("sparkles") + (state.planoSugAberto === p.id ? " Fechar sugestões" : " Sugerir pela última refeição") + "</button>" + planoSugBlocoHtml(p) : "") + "</div>" +
       planoResumoDiaTemplate(), rodapeConfirmar);
   }
   const peso = pesoReferenciaKg();
@@ -9793,7 +9911,12 @@ function planoTreinoModalTemplate() {
     passos.map((x) => '<div class="pm-passo"><div class="pm-passo-hora">' + x[0] + '</div><div class="pm-passo-txt">' + x[1] + "</div></div>").join("") + "</div></div>" : "";
   const posFeito = fase === "pos" ? refeicaoPosDoTreino(real) : null;
   const posFeitoHtml = posFeito ? '<div class="pm-dica">' + icon("check") + "<div><b>Pós-treino feito:</b> " + esc(posFeito.name || "Refeição") + " das " + esc(posFeito.time) + " · " + formatNumber(posFeito.protein, 0) + " g de proteína · " + formatNumber(posFeito.carbs, 0) + " g de carboidrato.</div></div>" : "";
-  return envolver(posFeitoHtml + (posFeito ? "" : agoraHtml) + avisos + dicaEsporte + dicaNoite + passosHtml + planoResumoDiaTemplate(), rodapeConfirmar);
+  // Treino de hoje já com horário e ainda não registrado: deixa trocar o horário (as sugestões se recalculam).
+  const horaEditHtml = real ? "" : '<div class="pm-hora-edit"><label class="field-label">Horário do treino</label><div class="pm-grid2"><input id="plano-hora-input" type="time" class="field-input" value="' + esc(p.hora || "") + '"/>' +
+    '<button class="bioimpedancia-btn-secundario" onclick="acaoDefinirHoraPlano(' + p.id + ')">' + icon("clock") + " Alterar horário</button></div>" +
+    '<button type="button" class="pm-sug-btn" onclick="acaoAlternarSugPlano(' + p.id + ')">' + icon("sparkles") + (state.planoSugAberto === p.id ? " Fechar sugestões" : " Sugerir pela última refeição") + "</button>" +
+    planoSugBlocoHtml(p) + "</div>";
+  return envolver(horaEditHtml + posFeitoHtml + (posFeito ? "" : agoraHtml) + avisos + dicaEsporte + dicaNoite + passosHtml + planoResumoDiaTemplate(), rodapeConfirmar);
 }
 function planoResumoDiaTemplate() {
   const restante = remainingToday();
@@ -16159,7 +16282,7 @@ function homeTemplate() {
   return '' +
     '<div class="app-shell">' +
     '<button class="hamburger-btn" onclick="acaoAbrirSidebar()" aria-label="Abrir menu"><span></span></button>' +
-    sidebarTemplate() + editarPerfilTemplate() + sobreAppTemplate() + sugestaoModalTemplate() + garminModalTemplate() + mealDetalheModalTemplate() + nutrientInfoModalTemplate() + exameInfoModalTemplate() + recuperacaoInfoModalTemplate() + cadastrarProdutoModalTemplate() + analiseConsumoDiaModalTemplate() + autonomiaInfoModalTemplate() + planoTreinoModalTemplate() + planejarTreinoModalTemplate() + montarPlanoModalTemplate() +
+    sidebarTemplate() + editarPerfilTemplate() + sobreAppTemplate() + sugestaoModalTemplate() + garminModalTemplate() + mealDetalheModalTemplate() + nutrientInfoModalTemplate() + exameInfoModalTemplate() + recuperacaoInfoModalTemplate() + cadastrarProdutoModalTemplate() + analiseConsumoDiaModalTemplate() + autonomiaInfoModalTemplate() + planoTreinoModalTemplate() + sugHorarioModalTemplate() + planejarTreinoModalTemplate() + montarPlanoModalTemplate() +
     '<div class="home-content"><div class="home-inner">' +
     (state.account ? fullHomeTemplate() : lockedTemplate()) +
     "</div></div></div>";

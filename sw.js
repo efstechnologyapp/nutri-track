@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nutritrack-v241';
+const CACHE_NAME = 'nutritrack-v243';
 const APP_SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 // Instalação: busca os arquivos direto no servidor (cache: 'reload'), nunca no cache HTTP do navegador.
