@@ -6130,7 +6130,7 @@ function submitPerfil() {
 /* ===================== templates ===================== */
 // Versão exibida no menu, na tela de login e em "Sobre o App" (mesmo padrão do Custódia Digital e do app
 // do escritório). Atualizar junto com o CACHE_NAME do sw.js a cada versão publicada.
-const APP_VERSAO = "2.33";
+const APP_VERSAO = "2.34";
 const APP_VERSAO_DATA = "21/11/2026";
 const DEV = { nome: "EFS Technology", lema: "Soluções digitais sob medida", tel: "83 9 99944-7957", wa: "5583999447957", email: "efstechnology.app@gmail.com" };
 function authVersaoTemplate() {
@@ -7218,7 +7218,7 @@ function trxKpisTopo(d) {
   return '<div class="rel-kpis">' +
     trxKpi("Recordes", d.recordes.length ? "🏆 " + d.recordes.length : "0", d.recordes.length ? "em " + d.recordesUnicos.length + (d.recordesUnicos.length === 1 ? " exercício ou prova" : " exercícios ou provas") : "nenhum no período") +
     trxKpi("Carga 7 dias", formatNumber(d.carga7), pctCarga != null ? (pctCarga > 0 ? "+" : "") + pctCarga + "% sobre a sua média · " + (d.acwr.valor > 1.5 ? "pico" : d.acwr.valor > 1.3 ? "acima" : d.acwr.valor < 0.8 ? "abaixo" : "zona segura") : "duração × esforço") +
-    trxKpi("Eficiência aeróbica", ef ? (ef.pct > 0 ? "+" : "") + formatNumber(ef.pct, 0) + "%" : "—", ef ? esc(ef.esporte.toLowerCase()) + ": velocidade x batimento" : "precisa de 2 treinos com FC e distância", ef ? (ef.pct >= 2 ? "#2f6b3a" : ef.pct <= -2 ? "#b0442f" : "") : "") +
+    trxKpi("Eficiência aeróbica", ef ? relNum(ef.pct, 0, true) + "%" : "—", ef ? esc(ef.esporte.toLowerCase()) + ": velocidade x batimento" : "precisa de 2 treinos com FC e distância", ef ? (ef.pct >= 2 ? "#2f6b3a" : ef.pct <= -2 ? "#b0442f" : "") : "") +
     trxKpi("Disponib. energética", ea != null ? formatNumber(ea, 0) : "—", ea != null ? "kcal/kg de massa magra · " + (ea < 30 ? "atenção" : ea < 45 ? "ok pra perder gordura" : "ideal") : "precisa de dias no Diário de Kcal", ea != null ? (ea < 30 ? "#b0442f" : ea < 45 ? "#a86a12" : "#2f6b3a") : "") +
   "</div>";
 }
@@ -7278,7 +7278,8 @@ function trxCondHtml(d) {
     d.eficiencia.forEach((e) => {
       const txt = e.pct >= 2 ? "Você está mais rápido com o mesmo batimento: o condicionamento melhorou." : e.pct <= -2 ? "Mais batimento pra mesma velocidade: cansaço, calor, sono ou déficit podem estar pesando." : "Eficiência estável no período.";
       h += trxCard(num++, "Eficiência aeróbica", esc(e.esporte.toLowerCase()) + " · treinos com FC do Garmin", trxEficienciaSvg(e.pontos) +
-        '<p class="rel-p">Metros por batimento: <b>' + formatNumber(e.m1, 2) + " → " + formatNumber(e.m2, 2) + " (" + (e.pct > 0 ? "+" : "") + formatNumber(e.pct, 0) + "%)</b>. " + txt + "</p>");
+        '<p class="rel-p">Metros por batimento: <b>' + formatNumber(e.m1, 2) + " → " + formatNumber(e.m2, 2) + " (" + relNum(e.pct, 0, true) + "%)</b>. " + txt + "</p>" +
+        (e.pontos.length < 4 ? '<p class="rel-nota">Com só ' + e.pontos.length + " treinos a comparação ainda oscila bastante (calor, horário, terreno e cansaço do dia mudam a FC). Fica mais confiável a partir de 4.</p>" : ""));
     });
   } else {
     h += trxCard(num++, "Eficiência aeróbica", "", trxVazio("Precisa de pelo menos 2 corridas, pedais ou caminhadas com distância e FC (vindas do Garmin) no período."));
@@ -7299,7 +7300,8 @@ function trxCondHtml(d) {
   if (d.espDist) {
     const km = d.kmSemanas, mx = Math.max.apply(null, km.map((s) => s.km).concat([1]));
     const ult = km.length - 1;
-    const alerta = d.kmVariacao != null && d.kmVariacao > 10;
+    // Regra dos ~10%: só alerta com aumento relevante em km (3+), senão volumes pequenos (3 → 4 km) disparariam.
+    const alerta = d.kmVariacao != null && d.kmVariacao > 10 && km.length >= 2 && km[km.length - 1].km - km[km.length - 2].km >= 3;
     h += trxCard(num++, "Recordes e volume", esc(d.espDist.toLowerCase()),
       '<div class="rel-kpis">' +
         trxKpi("Melhor pace", d.melhorPace ? formatarPace(d.melhorPace.paceMinPorKm) : "—", d.melhorPace ? "em " + formatNumber(d.melhorPace.distanciaKm, 1) + " km · " + relDiaMes(d.melhorPace.date) + (d.recordesUnicos.some((r) => r.tipo === "pace" && r.nome === d.espDist) ? " 🏆" : "") : "precisa de treinos de 3 km ou mais") +
@@ -7427,7 +7429,8 @@ function trxResumo(d) {
   if (queda.length) atencao.push("força em queda em " + queda.map((e) => e.nome.toLowerCase()).join(", "));
   const poucas = d.seriesSemana.filter((g) => g.n < 10).map((g) => g.label.toLowerCase());
   if (poucas.length) atencao.push("poucas séries de " + poucas.slice(0, 3).join(", ").replace(/, ([^,]*)$/, " e $1"));
-  if (d.kmVariacao != null && d.kmVariacao > 10) atencao.push(d.espDist.toLowerCase() + " subindo rápido (+" + formatNumber(d.kmVariacao, 0) + "%)");
+  const kmS = d.kmSemanas || [];
+  if (d.kmVariacao != null && d.kmVariacao > 10 && kmS.length >= 2 && kmS[kmS.length - 1].km - kmS[kmS.length - 2].km >= 3) atencao.push(d.espDist.toLowerCase() + " subindo rápido (+" + formatNumber(d.kmVariacao, 0) + "%)");
   if (d.acwr && d.acwr.valor > 1.3) atencao.push("carga acima do normal (" + formatNumber(d.acwr.valor, 2) + ")");
   if (d.ea != null && d.ea < 30) atencao.push("disponibilidade energética baixa (" + formatNumber(d.ea, 0) + " kcal/kg)");
   const juntar = (l) => l.join(", ").replace(/, ([^,]*)$/, " e $1");
@@ -8086,6 +8089,8 @@ function acaoGerarAnaliseTreino() {
   if (state.analiseTreinoModo === "esporte" && !state.analiseTreinoEsporteSelecionado) return;
   state.analiseTreinoGerada = { modo: state.analiseTreinoModo, esporte: state.analiseTreinoEsporteSelecionado, de: state.analiseTreinoFiltroDe, ate: state.analiseTreinoFiltroAte };
   render();
+  const incompleto = state.treinos.some((t) => t.garminId && ((ESPORTES_COM_DISTANCIA.includes(t.esporte) && !t.distanciaKm && t.ciclismoModalidade !== "Spinning") || !t.fcMedia));
+  if (incompleto && state.garminConectado && !garminCompletarTentado) { garminCompletarTentado = true; carregarGarminAtividades(today(), true); }
 }
 function acaoAbrirDetalheDiaAnaliseTreino(id) { state.analiseTreinoDiaAberto = { id }; render(); }
 function acaoFecharDetalheDiaAnaliseTreino() { state.analiseTreinoDiaAberto = null; render(); }
@@ -12494,12 +12499,38 @@ async function carregarGarminAtividades(data, forcar) {
   state.garminAtiv = { data: data, status: "carregando", lista: [], semRelogio: false };
   try {
     const r = await authApi.garminAtividades(state.usuario.email, somarDias(data, -GARMIN_DIAS_BUSCA), data);
-    if (r.ok) state.garminAtiv = { data: data, status: "ok", lista: r.atividades || [], semRelogio: false };
+    if (r.ok) { state.garminAtiv = { data: data, status: "ok", lista: r.atividades || [], semRelogio: false }; completarTreinosComGarmin(state.garminAtiv.lista); }
     else state.garminAtiv = { data: data, status: "erro", lista: [], semRelogio: !!r.semRelogio };
   } catch (err) {
     state.garminAtiv = { data: data, status: "erro", lista: [], semRelogio: false };
   }
   if (state.activeTab === "treinos") render();
+}
+// Treinos já registrados a partir de uma atividade do Garmin (mesmo garminId) que ficaram sem distância ou FC
+// -- ex.: a corrida de 16/11, salva sem a distância por causa do bug corrigido em acaoUsarAtividadeGarmin() --
+// são completados com os dados do relógio (a análise de condicionamento precisa de distância + FC).
+let garminCompletarTentado = false; // uma busca por sessão, ao gerar a análise
+function completarTreinosComGarmin(lista) {
+  const porId = {}; (lista || []).forEach((a) => { porId[String(a.id)] = a; });
+  const alterados = [];
+  state.treinos.forEach((t) => {
+    const a = t.garminId && porId[String(t.garminId)];
+    if (!a) return;
+    let mudou = false;
+    if (!t.distanciaKm && a.distanciaKm && ESPORTES_COM_DISTANCIA.includes(t.esporte) && !(t.esporte === "Ciclismo" && t.ciclismoModalidade === "Spinning")) {
+      t.distanciaKm = Number(a.distanciaKm);
+      t.velocidadeMediaKmh = calcularVelocidadeMediaKmh(t.distanciaKm, t.duracaoMin);
+      t.paceMinPorKm = calcularPaceMinPorKm(t.distanciaKm, t.duracaoMin);
+      mudou = true;
+    }
+    if (!t.fcMedia && a.fcMedia) { t.fcMedia = a.fcMedia; t.fcMax = a.fcMax || t.fcMax || null; mudou = true; }
+    if (!t.teAerobico && a.teAerobico) { t.teAerobico = a.teAerobico; t.teAnaerobico = a.teAnaerobico || null; mudou = true; }
+    if (mudou) alterados.push(t);
+  });
+  if (!alterados.length) return;
+  persistTreinos();
+  if (state.account) alterados.forEach((t) => enviarComFila("atualizarTreinoGoogle", [state.usuario.email, t]));
+  toastSuccess("Dados do Garmin completados em " + (alterados.length === 1 ? "1 treino" : alterados.length + " treinos") + ": " + alterados.map((t) => t.esporte.toLowerCase() + " de " + dataCurta(t.date).slice(0, 5)).join(", ") + ".");
 }
 function acaoBuscarGarminDeNovo() { carregarGarminAtividades(today(), true); render(); }
 function garminResumoAtividade(a) {
@@ -12561,6 +12592,9 @@ function acaoUsarAtividadeGarmin(id) {
   if (m.esporte === "Ciclismo" && m.modalidade) state.treinoCiclismoModalidade = m.modalidade;
   render();
   // captureFormState() recaptura os inputs antigos no render -- grava direto no DOM (mesmo padrão de acaoTreineiPlano()).
+  // A distância vem direto da atividade (não de state.treinoDistanciaKm): com o campo já na tela -- ex.: usando a 2ª
+  // atividade logo depois de salvar a 1ª --, o captureFormState() do render() acima sobrescrevia o state com o campo vazio.
+  state.treinoDistanciaKm = a.distanciaKm ? String(a.distanciaKm) : "";
   const campos = { "treino-data": a.data, "treino-hora-inicio": a.inicio, "treino-hora-fim": a.fim, "treino-distancia": state.treinoDistanciaKm };
   Object.keys(campos).forEach((k) => { const el = document.getElementById(k); if (el) el.value = campos[k]; });
 }
@@ -12571,6 +12605,11 @@ function aplicarGarminNoTreino(treino) {
   if (!g || g.esporte !== treino.esporte) return false;
   treino.garminId = String(g.id);
   if (g.calorias) treino.caloriasQueimadas = g.calorias;
+  if (!treino.distanciaKm && g.distanciaKm && ESPORTES_COM_DISTANCIA.includes(treino.esporte)) {
+    treino.distanciaKm = Number(g.distanciaKm);
+    treino.velocidadeMediaKmh = calcularVelocidadeMediaKmh(treino.distanciaKm, treino.duracaoMin);
+    treino.paceMinPorKm = calcularPaceMinPorKm(treino.distanciaKm, treino.duracaoMin);
+  }
   treino.fcMedia = g.fcMedia || null; treino.fcMax = g.fcMax || null;
   treino.teAerobico = g.teAerobico || null; treino.teAnaerobico = g.teAnaerobico || null;
   return true;
