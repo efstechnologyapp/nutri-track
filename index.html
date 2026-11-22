@@ -6142,7 +6142,7 @@ function submitPerfil() {
 /* ===================== templates ===================== */
 // Versão exibida no menu, na tela de login e em "Sobre o App" (mesmo padrão do Custódia Digital e do app
 // do escritório). Atualizar junto com o CACHE_NAME do sw.js a cada versão publicada.
-const APP_VERSAO = "2.39";
+const APP_VERSAO = "2.40";
 const APP_VERSAO_DATA = "21/11/2026";
 const DEV = { nome: "EFS Technology", lema: "Soluções digitais sob medida", tel: "83 9 99944-7957", wa: "5583999447957", email: "efstechnology.app@gmail.com" };
 function authVersaoTemplate() {
@@ -16267,6 +16267,10 @@ function initInstallPrompt() {
   });
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js").catch(() => {});
+    // Ao voltar pro app (celular), confere se há versão nova -- sem isso o navegador só checa de tempos em tempos.
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") navigator.serviceWorker.getRegistration().then((r) => { if (r) r.update().catch(() => {}); }).catch(() => {});
+    });
     // Atualização do app: o service worker serve a versão guardada em cache e só baixa a nova em segundo
     // plano -- por isso uma atualização só aparecia na SEGUNDA vez que o app era aberto. Quando a versão
     // nova assume, recarrega sozinho -- mas nunca no meio de uma digitação (espera sair do campo ou o app
