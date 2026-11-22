@@ -6131,7 +6131,7 @@ function submitPerfil() {
 /* ===================== templates ===================== */
 // Versão exibida no menu, na tela de login e em "Sobre o App" (mesmo padrão do Custódia Digital e do app
 // do escritório). Atualizar junto com o CACHE_NAME do sw.js a cada versão publicada.
-const APP_VERSAO = "2.35";
+const APP_VERSAO = "2.36";
 const APP_VERSAO_DATA = "21/11/2026";
 const DEV = { nome: "EFS Technology", lema: "Soluções digitais sob medida", tel: "83 9 99944-7957", wa: "5583999447957", email: "efstechnology.app@gmail.com" };
 function authVersaoTemplate() {
@@ -7053,7 +7053,7 @@ function calcularDesempenho(de, ate) {
     const historico = []; todosMusc.forEach((t) => { const r = rmsDoTreino(t)[nome]; if (r) historico.push({ date: t.date, rm: r.rm }); });
     let idxMax = 0; historico.forEach((x, i) => { if (x.rm >= historico[idxMax].rm) idxMax = i; });
     const recorde = idxMax > 0 && historico[idxMax].date >= de && historico[idxMax].date <= fim;
-    return { nome: nome, vezes: lista.length, atual: lista[lista.length - 1].rm, pct: pct, estado: pct >= 2.5 ? "up" : pct <= -2.5 ? "down" : "flat", recorde: recorde, serie: lista.map((x) => x.rm) };
+    return { nome: nome, vezes: lista.length, atual: lista[lista.length - 1].rm, pct: pct, estado: pct >= 2.5 ? "up" : pct <= -2.5 ? "down" : "flat", recorde: recorde, recordeValor: historico[idxMax].rm, recordeData: historico[idxMax].date, serie: lista.map((x) => x.rm) };
   }).sort((a, b) => b.vezes - a.vezes || Math.abs(b.pct) - Math.abs(a.pct));
   const semanas = Math.max(1, d.nDias / 7);
   const seriesGrupo = {};
@@ -7230,12 +7230,13 @@ function trxForcaHtml(d) {
   if (d.exercicios.length) {
     const linhas = d.exercicios.slice(0, 8).map((e) => {
       const cor = e.estado === "up" ? "#4f8f62" : e.estado === "down" ? "#c8553d" : "#8a9a91";
-      const varTxt = e.estado === "flat" ? '<small class="trx-flat">estável</small>' : '<small class="' + (e.estado === "up" ? "trx-up" : "trx-down") + '">' + (e.pct > 0 ? "+" : "−") + formatNumber(Math.abs(e.pct), 0) + "%" + (e.recorde ? " 🏆" : "") + "</small>";
-      return '<div class="trx-1rm"><span class="nm">' + esc(e.nome) + "<small>" + e.vezes + " treinos</small></span>" + trxSparkline(e.serie, cor) + '<span class="vl">' + formatNumber(e.atual, 0) + " kg" + (e.estado === "flat" && e.recorde ? '<small class="trx-up">🏆</small>' : varTxt) + "</span></div>";
+      const varTxt = e.estado === "flat" ? '<small class="trx-flat">estável</small>' : '<small class="' + (e.estado === "up" ? "trx-up" : "trx-down") + '">' + (e.pct > 0 ? "+" : "−") + formatNumber(Math.abs(e.pct), 0) + "%</small>";
+      // O recorde fica numa linha própria, com valor e data: uma tendência em queda pode ter tido o recorde no meio do período.
+      return '<div class="trx-1rm"><span class="nm">' + esc(e.nome) + "<small>" + e.vezes + " treinos" + (e.recorde ? " · 🏆 recorde " + formatNumber(e.recordeValor, 0) + " kg em " + relDiaMes(e.recordeData) : "") + "</small></span>" + trxSparkline(e.serie, cor) + '<span class="vl">' + formatNumber(e.atual, 0) + " kg" + varTxt + "</span></div>";
     }).join("");
     const queda = d.exercicios.filter((e) => e.estado === "down");
     h += trxCard(1, "Força estimada (1RM)", "peso e repetições juntos",
-      '<p class="rel-nota">Fórmula de Epley: 4×8 com 80 kg ≈ 101 kg de 1RM. Compara a força mesmo quando você muda séries e repetições (1ª metade x 2ª metade do período).</p>' + linhas +
+      '<p class="rel-nota">Fórmula de Epley: 4×8 com 80 kg ≈ 101 kg de 1RM. Compara a força mesmo quando você muda séries e repetições. O peso à direita é o do último treino; a % compara a 1ª metade com a 2ª metade dos treinos do período.</p>' + linhas +
       (queda.length ? '<div class="trx-rel-hint">' + esc(queda.map((e) => e.nome).join(", ")) + (queda.length === 1 ? " caiu" : " caíram") + " no período. Cansaço acumulado (jiu-jitsu ou corrida no dia anterior), sono e déficit pesam: vale treinar " + (queda.length === 1 ? "esse exercício" : "esses exercícios") + " depois de um dia de descanso.</div>" : ""));
   } else {
     h += trxCard(1, "Força estimada (1RM)", "", trxVazio("Precisa de pelo menos 2 treinos do mesmo exercício com carga e repetições no período."));
@@ -7330,6 +7331,8 @@ function trxCargaHtml(d) {
       '<p class="rel-p"><b>' + formatNumber(v, 2) + ": " + (v > 1.5 ? "pico de carga" : v > 1.3 ? "acima do normal" : v < 0.8 ? "abaixo do normal" : "zona segura") + "</b> (0,8 a 1,3). " +
       (v > 1.5 ? "Subiu rápido demais: é quando o risco de lesão sobe. Segure a carga nos próximos dias." : v > 1.3 ? "Atenção aos próximos dias: evite somar mais carga." : v < 0.8 ? "Semana mais leve que o normal: bom pra recuperar, mas se durar muito o condicionamento cai." : "Acima de 1,5 é pico de carga, quando o risco de lesão sobe.") + "</p>";
   } else regua = '<p class="rel-nota">A comparação 7 dias × 4 semanas aparece com pelo menos 3 semanas de treinos registrados.</p>';
+  const semZero = d.acwr ? [1, 2, 3].filter((k) => cargaEntre(relSomarDias(d.ate, -6 - 7 * k), relSomarDias(d.ate, -7 * k)) === 0).length : 0;
+  if (semZero) regua += '<div class="trx-rel-hint aviso">⚠ ' + (semZero === 1 ? "Uma das 3 semanas anteriores ficou" : semZero + " das 3 semanas anteriores ficaram") + " sem nenhum treino registrado. Se você treinou e não registrou, a média de 4 semanas fica baixa e este número sai exagerado.</div>";
   const notaEsforco = '<p class="rel-nota">Carga = duração × esforço; semanas de segunda a domingo (a primeira e a última podem estar incompletas). ' + d.comNota + " de " + d.treinos.length + " treinos com nota de esforço; os demais usam o efeito de treino do Garmin ou a intensidade típica da modalidade.</p>";
   h += trxCard(1, "Carga semanal", "duração × esforço", barras + legenda + regua + notaEsforco);
   if (d.prontidao.length) {
@@ -8732,16 +8735,23 @@ function recalcularJiuJitsuAntigos() {
     datas.add(t.date);
     if (state.account) enviarComFila("atualizarTreinoGoogle", [state.usuario.email, t]);
   });
-  if (!datas.size) return;
-  persistTreinos();
-  // Só a coluna de calorias queimadas do Diário muda (meta, GET e consumo já fechados ficam como estão).
-  datas.forEach((d) => {
-    const r = state.diarioKcal.find((x) => x.date === d);
-    if (!r) return;
-    r.caloriasQueimadas = state.treinos.filter((t) => t.date === d).reduce((soma, t) => soma + (t.caloriasQueimadas || 0), 0);
+  if (datas.size) persistTreinos();
+  // Diário de Kcal: a coluna de calorias queimadas de cada dia já fechado tem de bater com a soma dos treinos
+  // daquele dia (ex.: o recálculo foi feito em outro aparelho e só os treinos chegaram aqui). Só essa coluna
+  // muda -- meta, GET e consumo já fechados ficam como estão.
+  let mudouDiario = false;
+  const hoje = today();
+  state.diarioKcal.forEach((r) => {
+    if (r.date >= hoje) return;
+    const doDia = state.treinos.filter((t) => t.date === r.date);
+    if (!doDia.length) return;
+    const soma = doDia.reduce((s2, t) => s2 + (t.caloriasQueimadas || 0), 0);
+    if (Math.abs(soma - (r.caloriasQueimadas || 0)) <= 1) return;
+    r.caloriasQueimadas = soma;
+    mudouDiario = true;
     if (state.account) enviarComFila("salvarDiarioKcalGoogle", [state.usuario.email, r]);
   });
-  persistDiarioKcal();
+  if (mudouDiario) persistDiarioKcal();
 }
 // MET médio (fixo) pros esportes sem dado de ritmo -- valores aproximados de intensidade moderada do
 // Compêndio de Atividades Físicas. Menos precisos que os calculados por ritmo, mas melhores que nada.
