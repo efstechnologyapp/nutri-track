@@ -1437,6 +1437,8 @@ body:has(.modal-overlay) .hamburger-btn{ display:none; }
 .trx-n0{ color:#2f6b3a; } .trx-n1{ color:#a86a12; } .trx-n2{ color:#b0442f; }
 .trx-sug{ display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; background:#e4efd9; color:#2f6b3a; margin-left:6px; }
 .trx-sug.manter{ background:#eef2ea; color:#557268; }
+.trx-info-btn{ display:inline-flex; vertical-align:middle; margin-left:4px; }
+@media print{ .trx-info-btn{ display:none !important; } }
 .trx-nav{ display:grid; grid-template-columns:1fr 1fr; gap:6px; }
 .trx-nav button{ display:flex; align-items:center; justify-content:center; gap:6px; font-size:12.5px; font-weight:700; padding:8px 10px; border-radius:999px; border:1px solid #dce5db; background:#fff; color:#557268; }
 .trx-nav button.on{ background:#1c4d3e; border-color:#1c4d3e; color:#fff; }
@@ -3577,6 +3579,7 @@ const state = {
   treinoHoraInicio: "",
   treinoHoraFim: "",
   treinoEsforco: null, treinoRolas: 0, treinoRolaMin: 5, // nota de esforço (1-10) e rolas do jiu-jitsu -- ver treinoEsforcoCampoTemplate()
+  trxInfoAberto: null, // modal "i" da Análise de Treinos ("ea" | "ef") -- ver trxInfoModalTemplate()
   analiseTreinoSecao: "forca", // seção aberta na Análise de Treinos (modo Todos) -- ver analiseDesempenhoTemplate()
   treinoNota: "", // observação livre sobre o treino (ex.: "treino pesado", "alto astral") — opcional
   treinoDistanciaKm: "", // distância percorrida (km), só pra esportes em ESPORTES_COM_DISTANCIA — opcional
@@ -4668,6 +4671,11 @@ function dedupDiarioKcalPorData(lista) {
   lista.forEach((r) => { if (!porData[r.date] || r.id > porData[r.date].id) porData[r.date] = r; });
   return Object.values(porData);
 }
+// Pedido do usuário: registros absolutamente repetidos (mesmo id) contam uma vez só.
+function dedupPorId(lista) {
+  const vistos = new Set();
+  return (lista || []).filter((x) => { const k = String(x && x.id); if (vistos.has(k)) return false; vistos.add(k); return true; });
+}
 function mesclarComPendentes(listaServidor, tipoCriacao) {
   const pendentesFila = lerFila().concat(enviosEmAndamento);
   const idsServidor = new Set(listaServidor.map((item) => item.id));
@@ -4780,13 +4788,13 @@ async function sincronizarDoServidorInterno() {
     // mesclarComPendentes/enviosEmAndamento na mesma hora) qualquer coisa que só exista neste aparelho --
     // sem duplicar nada que já esteja lá (compara por id).
     publicarRegistrosLocaisPendentes(resposta);
-    state.meals = mesclarComPendentes(resposta.meals || [], "salvarRefeicaoGoogle"); persistMeals();
+    state.meals = dedupPorId(mesclarComPendentes(resposta.meals || [], "salvarRefeicaoGoogle")); persistMeals();
     if (resposta.goals) { state.goals = resposta.goals; persistGoals(); }
     if (resposta.altura) { state.altura = resposta.altura; persistAltura(); }
     state.medidas = mesclarComPendentes(resposta.medidas || [], "salvarMedidaGoogle"); persistMedidas();
     state.bioimpedancia = mesclarComPendentes(resposta.bioimpedancia || [], "salvarBioimpedanciaGoogle"); persistBioimpedancia();
     state.calorimetria = mesclarComPendentes(resposta.calorimetria || [], "salvarCalorimetriaGoogle"); persistCalorimetria();
-    state.treinos = mesclarComPendentes(resposta.treinos || [], "salvarTreinoGoogle"); persistTreinos();
+    state.treinos = dedupPorId(mesclarComPendentes(resposta.treinos || [], "salvarTreinoGoogle")); persistTreinos();
     if (resposta.exerciciosCustomizados) {
       state.exerciciosCustomizados = mesclarExerciciosCustomizados(state.exerciciosCustomizados, resposta.exerciciosCustomizados);
       persistExerciciosCustomizados();
@@ -6134,7 +6142,7 @@ function submitPerfil() {
 /* ===================== templates ===================== */
 // Versão exibida no menu, na tela de login e em "Sobre o App" (mesmo padrão do Custódia Digital e do app
 // do escritório). Atualizar junto com o CACHE_NAME do sw.js a cada versão publicada.
-const APP_VERSAO = "2.37";
+const APP_VERSAO = "2.39";
 const APP_VERSAO_DATA = "21/11/2026";
 const DEV = { nome: "EFS Technology", lema: "Soluções digitais sob medida", tel: "83 9 99944-7957", wa: "5583999447957", email: "efstechnology.app@gmail.com" };
 function authVersaoTemplate() {
@@ -7082,7 +7090,8 @@ function calcularDesempenho(de, ate) {
     return { esporte: esp, pontos: pts, m1: m1, m2: m2, pct: m1 ? ((m2 - m1) / m1) * 100 : 0 };
   }).filter(Boolean);
   const idade = trxIdade();
-  d.fcMax = idade ? Math.round(208 - 0.7 * idade) : null;
+  const fcObservada = state.treinos.reduce((m, t) => Math.max(m, Number(t.fcMax) || 0), 0);
+  d.fcMax = idade ? Math.max(Math.round(208 - 0.7 * idade), fcObservada) : null;
   if (d.fcMax) {
     const z = [0, 0, 0, 0, 0];
     treinos.filter((t) => t.fcMedia).forEach((t) => { const p = Number(t.fcMedia) / d.fcMax; const i = p < 0.6 ? 0 : p < 0.7 ? 1 : p < 0.8 ? 2 : p < 0.9 ? 3 : 4; z[i] += Number(t.duracaoMin) || 0; });
@@ -7118,6 +7127,8 @@ function calcularDesempenho(de, ate) {
   }
   d.cargaSemanas = semanasCarga.slice(-6);
   d.acwr = acwrEm(fim);
+  // Semanas sem nenhum treino registrado entre as 3 anteriores: deixam a média de 4 semanas baixa e a comparação exagerada.
+  d.semZero = d.acwr ? [1, 2, 3].filter((k) => cargaEntre(relSomarDias(fim, -6 - 7 * k), relSomarDias(fim, -7 * k)) === 0).length : 0;
   d.carga7 = cargaEntre(relSomarDias(fim, -6), fim);
   d.comNota = treinos.filter((t) => t.esforco).length;
   d.prontidao = relListaDatas(de, fim).map((dt) => ({ date: dt, p: prontidaoDoDia(dt) })).filter((x) => x.p);
@@ -7222,9 +7233,9 @@ function trxKpisTopo(d) {
   const ea = d.ea;
   return '<div class="rel-kpis">' +
     trxKpi("Recordes", d.recordes.length ? "🏆 " + d.recordes.length : "0", d.recordes.length ? "em " + d.recordesUnicos.length + (d.recordesUnicos.length === 1 ? " exercício ou prova" : " exercícios ou provas") : "nenhum no período") +
-    trxKpi("Carga 7 dias", formatNumber(d.carga7), pctCarga != null ? (pctCarga > 0 ? "+" : "") + pctCarga + "% sobre a sua média · " + (d.acwr.valor > 1.5 ? "pico" : d.acwr.valor > 1.3 ? "acima" : d.acwr.valor < 0.8 ? "abaixo" : "zona segura") : "duração × esforço") +
-    trxKpi("Eficiência aeróbica", ef ? relNum(ef.pct, 0, true) + "%" : "—", ef ? esc(ef.esporte.toLowerCase()) + ": velocidade x batimento" : "precisa de 2 treinos com FC e distância", ef ? (ef.pct >= 2 ? "#2f6b3a" : ef.pct <= -2 ? "#b0442f" : "") : "") +
-    trxKpi("Disponib. energética", ea != null ? formatNumber(ea, 0) : "—", ea != null ? "kcal/kg de massa magra · " + (ea < 30 ? "atenção" : ea < 45 ? "ok pra perder gordura" : "ideal") : "precisa de dias no Diário de Kcal", ea != null ? (ea < 30 ? "#b0442f" : ea < 45 ? "#a86a12" : "#2f6b3a") : "") +
+    trxKpi("Carga 7 dias", formatNumber(d.carga7), pctCarga != null ? (pctCarga > 0 ? "+" : "") + pctCarga + "% sobre a sua média · " + (d.acwr.valor > 1.5 ? "pico" : d.acwr.valor > 1.3 ? "acima" : d.acwr.valor < 0.8 ? "abaixo" : "zona segura") + (d.semZero ? " · ⚠ " + d.semZero + (d.semZero === 1 ? " semana sem treino registrado" : " semanas sem treino registrado") : "") : "duração × esforço") +
+    trxKpi("Eficiência aeróbica" + trxInfoBtn("ef", "eficiência aeróbica"), ef ? relNum(ef.pct, 0, true) + "%" : "—", ef ? esc(ef.esporte.toLowerCase()) + ": velocidade x batimento" : "precisa de 2 treinos com FC e distância", ef ? (ef.pct >= 2 ? "#2f6b3a" : ef.pct <= -2 ? "#b0442f" : "") : "") +
+    trxKpi("Disponib. energética" + trxInfoBtn("ea", "disponibilidade energética"), ea != null ? formatNumber(ea, 0) : "—", ea != null ? "kcal/kg de massa magra · " + (ea < 30 ? "atenção" : ea < 45 ? "ok pra perder gordura" : "ideal") : "precisa de dias no Diário de Kcal", ea != null ? (ea < 30 ? "#b0442f" : ea < 45 ? "#a86a12" : "#2f6b3a") : "") +
   "</div>";
 }
 function trxForcaHtml(d) {
@@ -7283,12 +7294,12 @@ function trxCondHtml(d) {
   if (d.eficiencia.length) {
     d.eficiencia.forEach((e) => {
       const txt = e.pct >= 2 ? "Você está mais rápido com o mesmo batimento: o condicionamento melhorou." : e.pct <= -2 ? "Mais batimento pra mesma velocidade: cansaço, calor, sono ou déficit podem estar pesando." : "Eficiência estável no período.";
-      h += trxCard(num++, "Eficiência aeróbica", esc(e.esporte.toLowerCase()) + " · treinos com FC do Garmin", trxEficienciaSvg(e.pontos) +
+      h += trxCard(num++, "Eficiência aeróbica" + trxInfoBtn("ef", "eficiência aeróbica"), esc(e.esporte.toLowerCase()) + " · treinos com FC do Garmin", trxEficienciaSvg(e.pontos) +
         '<p class="rel-p">Metros por batimento: <b>' + formatNumber(e.m1, 2) + " → " + formatNumber(e.m2, 2) + " (" + relNum(e.pct, 0, true) + "%)</b>. " + txt + "</p>" +
         (e.pontos.length < 4 ? '<p class="rel-nota">Com só ' + e.pontos.length + " treinos a comparação ainda oscila bastante (calor, horário, terreno e cansaço do dia mudam a FC). Fica mais confiável a partir de 4.</p>" : ""));
     });
   } else {
-    h += trxCard(num++, "Eficiência aeróbica", "", trxVazio("Precisa de pelo menos 2 corridas, pedais ou caminhadas com distância e FC (vindas do Garmin) no período."));
+    h += trxCard(num++, "Eficiência aeróbica" + trxInfoBtn("ef", "eficiência aeróbica"), "", trxVazio("Precisa de pelo menos 2 corridas, pedais ou caminhadas com distância e FC (vindas do Garmin) no período."));
   }
   if (d.fcMax && d.zonas) {
     const z = d.zonas, cores = ["#9cc3a4", "#4f8f62", "#d9b24a", "#d9922e", "#c8553d"];
@@ -7334,7 +7345,7 @@ function trxCargaHtml(d) {
       '<p class="rel-p"><b>' + formatNumber(v, 2) + ": " + (v > 1.5 ? "pico de carga" : v > 1.3 ? "acima do normal" : v < 0.8 ? "abaixo do normal" : "zona segura") + "</b> (0,8 a 1,3). " +
       (v > 1.5 ? "Subiu rápido demais: é quando o risco de lesão sobe. Segure a carga nos próximos dias." : v > 1.3 ? "Atenção aos próximos dias: evite somar mais carga." : v < 0.8 ? "Semana mais leve que o normal: bom pra recuperar, mas se durar muito o condicionamento cai." : "Acima de 1,5 é pico de carga, quando o risco de lesão sobe.") + "</p>";
   } else regua = '<p class="rel-nota">A comparação 7 dias × 4 semanas aparece com pelo menos 3 semanas de treinos registrados.</p>';
-  const semZero = d.acwr ? [1, 2, 3].filter((k) => cargaEntre(relSomarDias(d.ate, -6 - 7 * k), relSomarDias(d.ate, -7 * k)) === 0).length : 0;
+  const semZero = d.semZero;
   if (semZero) regua += '<div class="trx-rel-hint aviso">⚠ ' + (semZero === 1 ? "Uma das 3 semanas anteriores ficou" : semZero + " das 3 semanas anteriores ficaram") + " sem nenhum treino registrado. Se você treinou e não registrou, a média de 4 semanas fica baixa e este número sai exagerado.</div>";
   const notaEsforco = '<p class="rel-nota">Carga = duração × esforço; semanas de segunda a domingo (a primeira e a última podem estar incompletas). ' + d.comNota + " de " + d.treinos.length + " treinos com nota de esforço; os demais usam o efeito de treino do Garmin ou a intensidade típica da modalidade.</p>";
   h += trxCard(1, "Carga semanal", "duração × esforço", barras + legenda + regua + notaEsforco);
@@ -7360,7 +7371,7 @@ function trxCorpoHtml(d) {
     const nomeCat = (c) => (c ? "Dias de " + c.toLowerCase() : "Dias sem treino");
     const pior = d.eaCats.filter((c) => c.cat && c.ea < 30).sort((a, b) => a.ea - b.ea)[0];
     const extra = pior ? Math.ceil(((30 - pior.ea) * d.massaMagra.kg) / 50) * 50 : 0;
-    h += trxCard(1, "Disponibilidade energética", "",
+    h += trxCard(1, "Disponibilidade energética" + trxInfoBtn("ea", "disponibilidade energética"), "",
       '<div class="trx-ea n' + nivel + '"><div class="rel-sub2">Média do período</div><div class="n trx-n' + nivel + '">' + formatNumber(ea, 0) + ' kcal/kg</div>' +
         '<div class="faixas"><i style="left:calc(' + pos.toFixed(1) + '% - 2px)"></i></div><div class="lg"><span>&lt;30 baixa</span><span>30-45 ok pra perder gordura</span><span>45+ ideal</span></div>' +
         "<p>É o que sobra de energia pro corpo depois do treino: (consumo − gasto do treino além do repouso) ÷ massa magra (" + formatNumber(d.massaMagra.kg, 1) + " kg, " + esc(d.massaMagra.fonte) + "). Abaixo de 30 por muitos dias, o corpo poupa energia: hormônios, recuperação e massa muscular sofrem.</p></div>" +
@@ -7370,7 +7381,7 @@ function trxCorpoHtml(d) {
         : ", faltariam ~" + formatNumber(extra) + " kcal pra chegar a 30. Comece com <b>+300 kcal</b> (de preferência carboidrato no pré ou pós), registre todas as refeições desses dias e acompanhe aqui.") + "</div>" : "") +
       '<p class="rel-nota">Usa os ' + d.eaDias + " dias consolidados do Diário de Kcal no período" + (d.eaEstimados ? ", " + d.eaEstimados + (d.eaEstimados === 1 ? " deles com consumo estimado" : " deles com consumo estimado") + " (dia com treino e sem refeição registrada: entra a sua média dos dias completos)" : "") + ". Gasto do treino sem o repouso que o seu GET já conta; jiu-jitsu sem relógio calculado pelas rolas.</p>");
   } else {
-    h += trxCard(1, "Disponibilidade energética", "", trxVazio(d.massaMagra ? "Precisa de dias consolidados no Diário de Kcal dentro do período." : "Registre uma bioimpedância (ou peso, altura e sexo no perfil) pra calcular a massa magra."));
+    h += trxCard(1, "Disponibilidade energética" + trxInfoBtn("ea", "disponibilidade energética"), "", trxVazio(d.massaMagra ? "Precisa de dias consolidados no Diário de Kcal dentro do período." : "Registre uma bioimpedância (ou peso, altura e sexo no perfil) pra calcular a massa magra."));
   }
   const pp = d.prePos;
   if (pp.com.n + pp.sem.n >= 2) {
@@ -7486,6 +7497,111 @@ function acaoImprimirAnaliseTreino() {
   const restaurar = () => { document.title = tituloAntes; window.removeEventListener("afterprint", restaurar); };
   window.addEventListener("afterprint", restaurar);
   setTimeout(() => window.print(), 60);
+}
+// ----- botões "i" da Análise de Treinos: o que é, como calcula, faixas pro usuário e o que fazer -----
+// Pedido do usuário: modais de informação da disponibilidade energética e da eficiência aeróbica, com os
+// números da própria pessoa (massa magra, consumo, gasto do treino, corridas, FC) e o que fazer quando está ruim.
+function trxInfoBtn(chave, label) {
+  return '<button type="button" class="nutrient-info-btn trx-info-btn" aria-label="O que é ' + esc(label) + '" onclick="event.stopPropagation(); acaoAbrirInfoTreino(\'' + chave + '\')">' + icon("info") + "</button>";
+}
+function acaoAbrirInfoTreino(chave) { state.trxInfoAberto = chave; render(); }
+function acaoFecharInfoTreino() { state.trxInfoAberto = null; render(); }
+function trxInfoSecao(titulo, html) { return '<div class="nutrient-info-secao"><h3>' + titulo + "</h3>" + html + "</div>"; }
+function trxInfoLista(itens) { return '<ul class="nutrient-info-lista">' + itens.map((t) => "<li>" + t + "</li>").join("") + "</ul>"; }
+function trxInfoEaHtml(d) {
+  const mlg = d.massaMagra;
+  const kcal = (ea) => (mlg ? formatNumber(ea * mlg.kg) + " kcal" : "");
+  let seus = "";
+  if (mlg && d.ea != null) {
+    const nivel = d.ea < 30 ? 2 : d.ea < 45 ? 1 : 0;
+    seus = '<p class="rel-p">Sua média no período: <b class="trx-n' + nivel + '">' + formatNumber(d.ea, 0) + " kcal/kg</b> (" + ["ideal", "reduzida", "baixa"][nivel] + "), em " + d.eaDias + " dias" + (d.eaEstimados ? " (" + d.eaEstimados + " com consumo estimado)" : "") + ".</p>" +
+      '<table class="rel-tab"><tr><th></th><th>Dias</th><th>kcal/kg</th></tr>' + d.eaCats.map((c) => "<tr><td>" + esc(c.cat ? "Dias de " + c.cat.toLowerCase() : "Dias sem treino") + "</td><td>" + c.n + '</td><td class="trx-n' + (c.ea < 30 ? 2 : c.ea < 45 ? 1 : 0) + '" style="font-weight:700">' + formatNumber(c.ea, 0) + "</td></tr>").join("") + "</table>";
+  }
+  const exemplo = mlg ? "Com a sua massa magra (" + formatNumber(mlg.kg, 1) + " kg): 30 kcal/kg = " + kcal(30) + " e 45 kcal/kg = " + kcal(45) + " sobrando por dia, depois de descontar o treino." : "";
+  const metaDia = state.goals && state.goals.calories ? Number(state.goals.calories) : null;
+  let traduzido = "";
+  if (mlg && metaDia) {
+    const semTreino = metaDia / mlg.kg;
+    const jjLiq = Math.max(0, (estimarCaloriasQueimadas({ esporte: "Jiu-jitsu", duracaoMin: 100 }) || 0) - repousoDoTreino({ duracaoMin: 100 }));
+    traduzido = "<p class=\"rel-p\">Na prática: comendo a sua meta de " + formatNumber(metaDia) + " kcal num dia <b>sem treino</b>, a disponibilidade fica em ~" + formatNumber(semTreino, 0) + " kcal/kg. " +
+      (jjLiq ? "Num dia de jiu-jitsu de 100 min (~" + formatNumber(jjLiq) + " kcal de treino além do repouso), a mesma meta cai pra ~" + formatNumber((metaDia - jjLiq) / mlg.kg, 0) + " kcal/kg; pra chegar a 30 nesse dia, seriam ~" + formatNumber(30 * mlg.kg + jjLiq) + " kcal." : "") + "</p>";
+  }
+  const ruim = d.ea != null && d.ea < 30;
+  return trxInfoSecao("O que é", '<p class="rel-p">É a energia que sobra pro corpo funcionar (hormônios, ossos, imunidade, recuperação e manutenção do músculo) depois de pagar o treino. É medida por kg de massa magra porque é ela que gasta essa energia.</p>') +
+    trxInfoSecao("Como o app calcula", trxInfoLista([
+      "<b>(kcal consumidas no dia − kcal do treino além do repouso) ÷ massa magra</b>.",
+      "Massa magra: " + (mlg ? formatNumber(mlg.kg, 1) + " kg (" + esc(mlg.fonte) + ")" : "sem dado — registre uma bioimpedância") + ".",
+      "Treino: só o que ele gastou a mais do que você gastaria parado no mesmo tempo (o repouso já está no seu GET). Jiu-jitsu sem relógio é estimado pelas rolas.",
+      "Dias de treino sem refeição registrada entram com a sua média de consumo (marcados como estimados). Dias sem nenhum dado ficam de fora.",
+    ])) +
+    trxInfoSecao("Faixas de referência", trxInfoLista([
+      '<b class="trx-n0">45 ou mais</b>: ideal pra saúde e desempenho.',
+      '<b class="trx-n1">30 a 45</b>: reduzida. Aceitável por algumas semanas numa fase de perda de gordura.',
+      '<b class="trx-n2">abaixo de 30</b>: baixa. Mantida por semanas, o corpo passa a economizar energia: hormônios caem, a recuperação piora e aumenta a perda de músculo.',
+    ]) + (exemplo ? '<p class="rel-nota">' + exemplo + "</p>" : "")) +
+    (seus ? trxInfoSecao("Os seus números", seus + traduzido) : "") +
+    trxInfoSecao(ruim ? "Está baixa: o que fazer" : "Pra manter boa", trxInfoLista(ruim ? [
+      "<b>Registre todas as refeições</b>, principalmente nos dias de treino: dia estimado ou incompleto distorce o número.",
+      "<b>Coma mais nos dias de treino pesado</b>: comece com +300 a 500 kcal, de preferência carboidrato no pré e no pós-treino. Pra manter o déficit da semana, tire um pouco dos dias sem treino.",
+      "<b>Proteína</b> de 1,6 a 2,2 g por kg de peso todo dia, dividida nas refeições.",
+      "<b>Se ficar abaixo de 30 por várias semanas</b>: diminua o déficit (meta mais perto do seu GET) ou o volume de treino.",
+      "<b>Sinais de alerta</b>: cansaço que não passa, queda de rendimento, sono ruim, libido baixa, irritabilidade e lesões frequentes. Se aparecerem, procure seu médico ou nutricionista.",
+    ] : [
+      "Continue registrando as refeições dos dias de treino.",
+      "Nos dias de treino mais pesado, aumente o carboidrato no pré e no pós-treino.",
+    ])) +
+    '<p class="nutrient-info-fonte">' + icon("help") + " Fonte: Loucks et al. (disponibilidade energética e saúde, 2011) e consenso do Comitê Olímpico Internacional sobre RED-S (2018/2023). Referência geral: não substitui avaliação de médico ou nutricionista.</p>";
+}
+function trxInfoEfHtml(d) {
+  const ef = d.eficiencia[0];
+  const fcMax = d.fcMax;
+  const z2 = fcMax ? Math.round(fcMax * 0.6) + " a " + (Math.round(fcMax * 0.7) - 1) + " bpm" : null;
+  let seus = "";
+  if (ef) {
+    const lista = d.treinos.filter((t) => t.esporte === ef.esporte && t.fcMedia && t.distanciaKm && t.duracaoMin);
+    seus = '<table class="rel-tab"><tr><th>Dia</th><th>Pace</th><th>FC</th><th>m/bat.</th></tr>' + lista.map((t) => {
+      const efv = (Number(t.distanciaKm) * 1000 / Number(t.duracaoMin)) / Number(t.fcMedia);
+      const pz = fcMax ? Math.round((Number(t.fcMedia) / fcMax) * 100) : null;
+      return "<tr><td>" + relDiaMes(t.date) + "</td><td>" + (t.paceMinPorKm ? formatarPace(t.paceMinPorKm).replace(" min/km", "") : "—") + "</td><td>" + t.fcMedia + (pz ? " (" + pz + "%)" : "") + "</td><td>" + formatNumber(efv, 2) + "</td></tr>";
+    }).join("") + "</table>" +
+      '<p class="rel-p">' + esc(ef.esporte) + ": " + formatNumber(ef.m1, 2) + " → " + formatNumber(ef.m2, 2) + " (" + relNum(ef.pct, 0, true) + "%). " +
+      (ef.pontos.length < 4 ? "Com " + ef.pontos.length + " treinos a comparação ainda oscila; fica confiável a partir de 4. " : "") +
+      (lista.length && fcMax && media(lista.map((t) => Number(t.fcMedia))) / fcMax > 0.8 ? "Suas corridas estão em média acima de 80% da FC máxima: quase tudo em ritmo forte, o que atrapalha a evolução da base aeróbica." : "") + "</p>";
+  }
+  const ruim = ef && ef.pct <= -3;
+  return trxInfoSecao("O que é", '<p class="rel-p">Quantos metros você percorre a cada batimento do coração. Se com o tempo você anda ou corre mais rápido com o mesmo batimento (ou no mesmo ritmo com o batimento mais baixo), o coração e os músculos ficaram mais eficientes: é a sua base aeróbica melhorando.</p>') +
+    trxInfoSecao("Como o app calcula", trxInfoLista([
+      "<b>(distância em metros ÷ minutos) ÷ FC média</b> de cada corrida, pedal ou caminhada com FC vinda do Garmin.",
+      "Compara a média da 1ª metade com a da 2ª metade dos treinos do período.",
+      "Exemplos: 6:00/km com FC 160 dá ~1,04; 5:00/km com FC 150 dá ~1,33.",
+    ])) +
+    trxInfoSecao("Referências pra você", trxInfoLista([
+      "Não existe uma faixa “normal” única: o número depende do seu condicionamento, do terreno e do calor. O que importa é a <b>sua tendência</b>.",
+      "<b>Melhora de 3% a 5%</b> em 4 a 8 semanas de treino regular já é real. Queda de 3% ou mais pede atenção (cansaço, calor, sono, pouco carboidrato).",
+      fcMax ? "Sua FC máxima considerada: <b>" + fcMax + " bpm</b> (a maior entre a estimativa pela idade e a maior FC que o Garmin já registrou). Zona 2, a que constrói base aeróbica: <b>" + z2 + "</b>." : "Informe sua data de nascimento no perfil pra calcular suas zonas de FC.",
+      "Compare corridas parecidas: mesmo horário, terreno e distância. Correr no sol do meio da manhã sobe a FC em 5 a 10 bpm.",
+    ])) +
+    (seus ? trxInfoSecao("As suas corridas", seus) : "") +
+    trxInfoSecao(ruim ? "Está caindo: o que fazer" : "Pra melhorar", trxInfoLista([
+      "<b>Corra leve na maior parte das vezes</b>" + (z2 ? ": FC de " + z2 : "") + ", num ritmo em que dá pra conversar. Se a FC subir, alterne trote e caminhada.",
+      "<b>2 a 3 corridas por semana</b>, com só 1 delas forte (tiros ou ritmo).",
+      "Corra em horário mais fresco e sempre com o Garmin, pra ter a FC.",
+      "Durma bem e coma carboidrato antes dos treinos: pouco sono e pouco carboidrato fazem o mesmo ritmo custar mais batimentos.",
+      "Aumente o volume semanal em até ~10% por semana.",
+    ])) +
+    '<p class="nutrient-info-fonte">' + icon("help") + " Base: o “fator de eficiência” (velocidade ÷ FC) usado em plataformas de treino como o TrainingPeaks, e a FC máxima estimada por Tanaka (208 − 0,7 × idade). Referência geral.</p>";
+}
+function trxInfoModalTemplate() {
+  const chave = state.trxInfoAberto;
+  const g = state.analiseTreinoGerada;
+  if (!chave || !g) return "";
+  const d = calcularDesempenho(g.de, g.ate);
+  const titulo = chave === "ea" ? "Disponibilidade energética" : "Eficiência aeróbica";
+  return '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharInfoTreino();}"><div class="modal-card nutrient-info-modal" style="max-height:90vh;overflow-y:auto">' +
+    '<div class="meal-detalhe-head"><div class="nutrient-info-modal-title"><div class="nutrient-icon" style="background:#eef3e0;color:#2f6b3a">' + icon(chave === "ea" ? "flame" : "heart") + "</div><h2>" + titulo + "</h2></div>" +
+    '<button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharInfoTreino()">' + icon("x") + "</button></div>" +
+    (chave === "ea" ? trxInfoEaHtml(d) : trxInfoEfHtml(d)) +
+  "</div></div>";
 }
 /* =============== fim Treinos: esforço, carga, recordes, prontidão e Análise =============== */
 
@@ -8088,7 +8204,7 @@ function analiseTreinoTabTemplate() {
       '<button class="btn-primary-pill-lg analise-consumo-gerar-btn" ' + (podeGerar ? "" : "disabled") + ' onclick="acaoGerarAnaliseTreino()">' + icon("sparkles") + ' <span class="label">Gerar análise</span></button>' +
       (state.analiseTreinoGerada ? analiseTreinoResultadoTemplate(state.analiseTreinoGerada) : "") +
     "</section>" +
-    analiseTreinoDiaModalTemplate();
+    analiseTreinoDiaModalTemplate() + trxInfoModalTemplate();
 }
 function acaoTrocarAbaTreinos(aba) { state.treinosAba = aba; render(); }
 function acaoAlternarModoAnaliseTreino(modo) { state.analiseTreinoModo = modo; render(); }
@@ -8744,6 +8860,8 @@ function recalcularJiuJitsuAntigos() {
   // muda -- meta, GET e consumo já fechados ficam como estão.
   let mudouDiario = false;
   const hoje = today();
+  const comRepetida = state.diarioKcal.filter((r) => r.date < hoje && Array.isArray(r.refeicoes) && new Set(r.refeicoes.map((x) => JSON.stringify(x))).size < r.refeicoes.length).map((r) => r.date);
+  comRepetida.forEach((dt) => fecharDiaAutomaticamente(dt));
   state.diarioKcal.forEach((r) => {
     if (r.date >= hoje) return;
     const doDia = state.treinos.filter((t) => t.date === r.date);
@@ -16183,6 +16301,7 @@ async function doInstall() {
 // fechado) que já tenha virado desde a última vez que o app foi aberto, pra abrir a tela já com os
 // cards/listas "de hoje" corretos (ver processarViradaDeDia()), sem precisar de um segundo render logo
 // em seguida.
+state.meals = dedupPorId(state.meals); state.treinos = dedupPorId(state.treinos); // registros repetidos guardados no aparelho
 processarViradaDeDia();
 recalcularJiuJitsuAntigos();
 render();
