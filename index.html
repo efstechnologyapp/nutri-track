@@ -1037,7 +1037,7 @@ body:has(.modal-overlay) .hamburger-btn{ display:none; }
 .nutrient-info-refeicao-nome{ font-size:13.5px; font-weight:600; color:#3d5a4f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .carbo-abs{ margin-left:6px; font-size:10.5px; font-weight:500; letter-spacing:.01em; }
 .carbo-abs-rapida{ color:#b9772e; } .carbo-abs-moderada{ color:#8a9a91; } .carbo-abs-lenta{ color:#4f8f62; }
-.nutrient-info-nota{ margin:8px 0 0; font-size:12px; line-height:1.5; color:#7c8c86; }
+.nutrient-info-secao .nutrient-info-nota, .nutrient-info-nota{ margin:8px 0 0; font-size:12px; line-height:1.5; color:#7c8c86; }
 .nutrient-info-refeicao-barra{ margin-top:5px; height:5px; border-radius:999px; background:#eef1ec; overflow:hidden; }
 .nutrient-info-refeicao-barra-fill{ height:100%; border-radius:999px; }
 .nutrient-info-refeicao-valor{ flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; font-size:12.5px; font-weight:700; color:#3d5a4f; line-height:1.3; }
@@ -6237,7 +6237,7 @@ function submitPerfil() {
 /* ===================== templates ===================== */
 // Versão exibida no menu, na tela de login e em "Sobre o App" (mesmo padrão do Custódia Digital e do app
 // do escritório). Atualizar junto com o CACHE_NAME do sw.js a cada versão publicada.
-const APP_VERSAO = "2.48";
+const APP_VERSAO = "2.49";
 const APP_VERSAO_DATA = "21/11/2026";
 const DEV = { nome: "EFS Technology", lema: "Soluções digitais sob medida", tel: "83 9 99944-7957", wa: "5583999447957", email: "efstechnology.app@gmail.com" };
 function authVersaoTemplate() {
@@ -11077,9 +11077,8 @@ const MACRO_GUIA = {
     objetivo: { deficit: "Em déficit, proteína alta (1,6–2,2 g/kg) protege o músculo — priorize-a em todas as refeições.", ganho: "Pra ganhar massa, 1,6–2,2 g/kg distribuídos em 4–5 refeições.", performance: "1,4–1,8 g/kg, com atenção ao pós-treino.", padrao: "1,2–1,6 g/kg costuma bastar; distribua ao longo do dia." },
   },
   carbs: {
-    tipos: [["Rápido (índice glicêmico alto)", "pão branco, tapioca, arroz branco, banana madura, mel — energia imediata"], ["Lento (índice glicêmico baixo)", "aveia, feijão, batata-doce, integrais, frutas com casca — energia estável e mais saciedade"], ["Açúcar adicionado", "refrigerante, doces — energia vazia; limite"]],
-    absorcao: [["Rápido", "a glicose começa a subir em 15–30 min, tem pico em 30–60 min e a energia dura cerca de 1–2 h"], ["Moderado", "pico em 45–90 min; energia por cerca de 2–3 h"], ["Lento", "pico em 1–2 h e liberação gradual por 3–4 h"]],
-    absorcaoNota: "Estimativa média. Comer o carbo junto com proteína, gordura ou fibra deixa qualquer um mais lento; sozinho e em jejum, ele fica mais rápido.",
+    tipos: [["Rápido (índice glicêmico alto)", "pão branco, tapioca, arroz branco, mandioca, banana madura, mel — energia imediata: a glicose sobe em 15–30 min, tem pico em 30–60 min e dura cerca de 1–2 h"], ["Moderado (índice glicêmico médio)", "banana, manga, macarrão, milho, arroz integral — pico em 45–90 min; energia por cerca de 2–3 h"], ["Lento (índice glicêmico baixo)", "aveia, feijão, batata-doce, frutas com casca, leite e iogurte — energia estável e mais saciedade: pico em 1–2 h e liberação gradual por 3–4 h"], ["Açúcar adicionado", "refrigerante, doces — se comporta como rápido; energia vazia, limite"]],
+    tiposNota: "Tempos médios. Comer o carbo junto com proteína, gordura ou fibra deixa qualquer um mais lento; sozinho e em jejum, ele fica mais rápido.",
     quando: [["3–4h antes do treino", "refeição com carbo lento + proteína"], ["30–60 min antes", "carbo rápido e leve, sem fibra nem gordura"], ["Até 2h depois", "carbo rápido + proteína, pra repor o glicogênio"], ["Resto do dia", "prefira os lentos, com fibra"]],
     objetivo: { deficit: "Em déficit, concentre o carbo em volta do treino e use os lentos no resto do dia.", ganho: "Carbo alto ajuda o superávit e o rendimento — não precisa ter medo dele.", performance: "É o principal combustível: aumente nos dias de treino longo ou intenso.", padrao: "Prefira os lentos e com fibra; os rápidos, perto do treino." },
   },
@@ -11102,10 +11101,8 @@ function macroGuiaTemplate(chave) {
   const fraseObjetivo = guia.objetivo[grupo] || guia.objetivo.padrao;
   const rotuloObjetivo = state.goals && state.goals.objetivo && OBJETIVOS_META[state.goals.objetivo] ? OBJETIVOS_META[state.goals.objetivo].label : "";
   return '<div class="nutrient-info-secao"><h3>Tipos</h3><ul class="nutrient-info-lista">' +
-      guia.tipos.map((t) => "<li><strong>" + esc(t[0]) + ":</strong> " + esc(t[1]) + "</li>").join("") + "</ul></div>" +
-    (guia.absorcao ? '<div class="nutrient-info-secao"><h3>Tempo médio de absorção</h3><ul class="nutrient-info-lista">' +
-      guia.absorcao.map((t) => "<li><strong>" + esc(t[0]) + ":</strong> " + esc(t[1]) + "</li>").join("") + "</ul>" +
-      (guia.absorcaoNota ? '<p class="nutrient-info-nota">' + esc(guia.absorcaoNota) + "</p>" : "") + "</div>" : "") +
+      guia.tipos.map((t) => "<li><strong>" + esc(t[0]) + ":</strong> " + esc(t[1]) + "</li>").join("") + "</ul>" +
+      (guia.tiposNota ? '<p class="nutrient-info-nota">' + esc(guia.tiposNota) + "</p>" : "") + "</div>" +
     '<div class="nutrient-info-secao"><h3>Quando priorizar</h3><ul class="nutrient-info-lista">' +
       guia.quando.map((t) => "<li><strong>" + esc(t[0]) + ":</strong> " + esc(t[1]) + "</li>").join("") + "</ul></div>" +
     '<div class="nutrient-info-secao"><h3>Para o seu objetivo' + (rotuloObjetivo ? " (" + esc(rotuloObjetivo) + ")" : "") + "</h3><p>" + esc(fraseObjetivo) + "</p></div>";
