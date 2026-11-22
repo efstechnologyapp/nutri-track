@@ -4800,6 +4800,7 @@ async function sincronizarDoServidorInterno() {
     if (typeof resposta.garminConectado === "boolean") { state.garminConectado = resposta.garminConectado; writeStorage(CHAVE_GARMIN_CONECTADO, state.garminConectado); }
     // Plano de treinos: se vier undefined (backend ainda sem essa aba), mantém o que está no aparelho.
     if (resposta.treinosPlanejados) { state.treinosPlanejados = mesclarTreinosPlanejados(resposta.treinosPlanejados); persistTreinosPlanejados(); }
+    recalcularJiuJitsuAntigos();
     render();
   } catch { /* falha de rede — mantém os dados locais e tenta de novo na próxima abertura */ }
 }
@@ -6130,7 +6131,7 @@ function submitPerfil() {
 /* ===================== templates ===================== */
 // Versão exibida no menu, na tela de login e em "Sobre o App" (mesmo padrão do Custódia Digital e do app
 // do escritório). Atualizar junto com o CACHE_NAME do sw.js a cada versão publicada.
-const APP_VERSAO = "2.34";
+const APP_VERSAO = "2.35";
 const APP_VERSAO_DATA = "21/11/2026";
 const DEV = { nome: "EFS Technology", lema: "Soluções digitais sob medida", tel: "83 9 99944-7957", wa: "5583999447957", email: "efstechnology.app@gmail.com" };
 function authVersaoTemplate() {
@@ -7124,15 +7125,16 @@ function calcularDesempenho(de, ate) {
   if (d.massaMagra && d.massaMagra.kg > 0) {
     const dias = state.diarioKcal.filter((r) => r.date >= de && r.date <= fim && diarioTemConsumo(r)).map((r) => {
       const doDia = state.treinos.filter((t) => t.date === r.date);
-      const kcalTreino = doDia.reduce((s, t) => s + (Number(t.caloriasQueimadas) || 0), 0);
+      const kcalTreino = doDia.reduce((s, t) => s + kcalLiquidaDoTreino(t), 0);
       const principal = doDia.slice().sort((a, b) => (b.caloriasQueimadas || 0) - (a.caloriasQueimadas || 0))[0];
-      return { date: r.date, ea: ((r.calories || 0) - kcalTreino) / d.massaMagra.kg, cat: principal ? principal.esporte : "" };
+      return { date: r.date, ea: ((r.calories || 0) - kcalTreino) / d.massaMagra.kg, cat: principal ? principal.esporte : "", est: !!r.consumoEstimado };
     });
     if (dias.length) {
       d.ea = media(dias.map((x) => x.ea));
-      const cats = {}; dias.forEach((x) => { (cats[x.cat] = cats[x.cat] || []).push(x.ea); });
-      d.eaCats = Object.keys(cats).map((k) => ({ cat: k, n: cats[k].length, ea: media(cats[k]) })).sort((a, b) => (a.cat === "") - (b.cat === "") || b.n - a.n);
+      const cats = {}; dias.forEach((x) => { (cats[x.cat] = cats[x.cat] || []).push(x); });
+      d.eaCats = Object.keys(cats).map((k) => ({ cat: k, n: cats[k].length, est: cats[k].filter((x) => x.est).length, ea: media(cats[k].map((x) => x.ea)) })).sort((a, b) => (a.cat === "") - (b.cat === "") || b.n - a.n);
       d.eaDias = dias.length;
+      d.eaEstimados = dias.filter((x) => x.est).length;
     }
   }
   d.prePos = trxPrePos(treinos);
@@ -7355,10 +7357,12 @@ function trxCorpoHtml(d) {
     h += trxCard(1, "Disponibilidade energética", "",
       '<div class="trx-ea n' + nivel + '"><div class="rel-sub2">Média do período</div><div class="n trx-n' + nivel + '">' + formatNumber(ea, 0) + ' kcal/kg</div>' +
         '<div class="faixas"><i style="left:calc(' + pos.toFixed(1) + '% - 2px)"></i></div><div class="lg"><span>&lt;30 baixa</span><span>30-45 ok pra perder gordura</span><span>45+ ideal</span></div>' +
-        "<p>É o que sobra de energia pro corpo depois do treino: (consumo − gasto no treino) ÷ massa magra (" + formatNumber(d.massaMagra.kg, 1) + " kg, " + esc(d.massaMagra.fonte) + "). Abaixo de 30 por muitos dias, o corpo poupa energia: hormônios, recuperação e massa muscular sofrem.</p></div>" +
-      '<table class="rel-tab"><tr><th></th><th>Dias</th><th>Disp. energética</th></tr>' + d.eaCats.map((c) => "<tr><td>" + esc(nomeCat(c.cat)) + "</td><td>" + c.n + '</td><td class="trx-n' + (c.ea < 30 ? 2 : c.ea < 45 ? 1 : 0) + '" style="font-weight:700">' + formatNumber(c.ea, 0) + "</td></tr>").join("") + "</table>" +
-      (pior ? '<div class="trx-rel-hint">Nos ' + esc(nomeCat(pior.cat).toLowerCase()) + ", <b>+" + formatNumber(extra) + " kcal</b> (de preferência carboidrato no pré ou pós) levam a disponibilidade pra ~30, sem mudar a meta dos outros dias.</div>" : "") +
-      '<p class="rel-nota">Usa os ' + d.eaDias + " dias consolidados do Diário de Kcal no período.</p>");
+        "<p>É o que sobra de energia pro corpo depois do treino: (consumo − gasto do treino além do repouso) ÷ massa magra (" + formatNumber(d.massaMagra.kg, 1) + " kg, " + esc(d.massaMagra.fonte) + "). Abaixo de 30 por muitos dias, o corpo poupa energia: hormônios, recuperação e massa muscular sofrem.</p></div>" +
+      '<table class="rel-tab"><tr><th></th><th>Dias</th><th>Disp. energética</th></tr>' + d.eaCats.map((c) => "<tr><td>" + esc(nomeCat(c.cat)) + "</td><td>" + c.n + (c.est ? ' <span class="rel-nota">(' + c.est + " est.)</span>" : "") + '</td><td class="trx-n' + (c.ea < 30 ? 2 : c.ea < 45 ? 1 : 0) + '" style="font-weight:700">' + formatNumber(c.ea, 0) + "</td></tr>").join("") + "</table>" +
+      (pior ? '<div class="trx-rel-hint">Nos ' + esc(nomeCat(pior.cat).toLowerCase()) + (extra <= 500
+        ? ", <b>+" + formatNumber(extra) + " kcal</b> (de preferência carboidrato no pré ou pós) levam a disponibilidade pra ~30, sem mudar a meta dos outros dias."
+        : ", faltariam ~" + formatNumber(extra) + " kcal pra chegar a 30. Comece com <b>+300 kcal</b> (de preferência carboidrato no pré ou pós), registre todas as refeições desses dias e acompanhe aqui.") + "</div>" : "") +
+      '<p class="rel-nota">Usa os ' + d.eaDias + " dias consolidados do Diário de Kcal no período" + (d.eaEstimados ? ", " + d.eaEstimados + (d.eaEstimados === 1 ? " deles com consumo estimado" : " deles com consumo estimado") + " (dia com treino e sem refeição registrada: entra a sua média dos dias completos)" : "") + ". Gasto do treino sem o repouso que o seu GET já conta; jiu-jitsu sem relógio calculado pelas rolas.</p>");
   } else {
     h += trxCard(1, "Disponibilidade energética", "", trxVazio(d.massaMagra ? "Precisa de dias consolidados no Diário de Kcal dentro do período." : "Registre uma bioimpedância (ou peso, altura e sexo no perfil) pra calcular a massa magra."));
   }
@@ -8701,6 +8705,44 @@ function metPorRitmo(esporte, velocidadeMediaKmh) {
   }
   return null;
 }
+// Pedido do usuário (até comprar a cinta de FC, já que não dá pra usar relógio no treino): a aula de jiu-jitsu
+// não é toda no mesmo ritmo. Compêndio de Atividades Físicas 2024: 10,3 MET pra artes marciais em ritmo
+// moderado (o jiu-jitsu entre os exemplos) e 5,3 MET pra prática em ritmo mais lento. O tempo de rola conta a
+// 10,3 e o resto da aula (aquecimento, técnica, drill) a 5,3; sem rolas informadas, supõe 35% da aula em rola.
+const MET_JJ_ROLA = 10.3, MET_JJ_TECNICA = 5.3, JJ_FRACAO_ROLA_PADRAO = 0.35;
+function metJiuJitsu(t) {
+  const dur = Number(t.duracaoMin) || 0;
+  if (!dur) return null;
+  const rola = t.rolas ? Math.min(dur, Number(t.rolas) * (Number(t.rolaMin) || 5)) : dur * JJ_FRACAO_ROLA_PADRAO;
+  return (rola * MET_JJ_ROLA + (dur - rola) * MET_JJ_TECNICA) / dur;
+}
+// Recalcula os jiu-jitsus registrados sem relógio na regra antiga (10 MET na aula inteira). Só mexe nos que
+// ainda estão nela (MET efetivo de 9 ou mais, sem rolas e sem Garmin), então é seguro rodar a cada abertura.
+function recalcularJiuJitsuAntigos() {
+  const reg = ultimoRegistroMedida("peso");
+  const peso = reg ? Number(reg.valor) : 0;
+  if (!peso) return;
+  const datas = new Set();
+  state.treinos.forEach((t) => {
+    if (t.esporte !== "Jiu-jitsu" || t.garminId || t.rolas || !(t.duracaoMin > 0) || !(t.caloriasQueimadas > 0)) return;
+    if ((t.caloriasQueimadas * 60) / (t.duracaoMin * peso) < 9) return;
+    const novo = estimarCaloriasQueimadas(t);
+    if (!novo || Math.abs(novo - t.caloriasQueimadas) <= 1) return;
+    t.caloriasQueimadas = novo;
+    datas.add(t.date);
+    if (state.account) enviarComFila("atualizarTreinoGoogle", [state.usuario.email, t]);
+  });
+  if (!datas.size) return;
+  persistTreinos();
+  // Só a coluna de calorias queimadas do Diário muda (meta, GET e consumo já fechados ficam como estão).
+  datas.forEach((d) => {
+    const r = state.diarioKcal.find((x) => x.date === d);
+    if (!r) return;
+    r.caloriasQueimadas = state.treinos.filter((t) => t.date === d).reduce((soma, t) => soma + (t.caloriasQueimadas || 0), 0);
+    if (state.account) enviarComFila("salvarDiarioKcalGoogle", [state.usuario.email, r]);
+  });
+  persistDiarioKcal();
+}
 // MET médio (fixo) pros esportes sem dado de ritmo -- valores aproximados de intensidade moderada do
 // Compêndio de Atividades Físicas. Menos precisos que os calculados por ritmo, mas melhores que nada.
 const MET_ESPORTE_FIXO = {
@@ -8754,6 +8796,7 @@ function estimarCaloriasQueimadas(treino) {
   if (treino.esporte === "Ciclismo" && treino.ciclismoModalidade === "Spinning") met = MET_SPINNING[treino.spinningIntensidade] || null;
   else if (treino.velocidadeMediaKmh) met = metPorRitmo(treino.esporte, treino.velocidadeMediaKmh);
   else if (treino.esporte === "Musculação") met = metMusculacao(treino.gruposMusculares, treino.duracaoMin);
+  else if (treino.esporte === "Jiu-jitsu") met = metJiuJitsu(treino);
   else met = MET_ESPORTE_FIXO[treino.esporte] || null;
   if (!met) return null;
   return met * pesoKg * (treino.duracaoMin / 60);
@@ -13106,20 +13149,34 @@ function diarioKcalMicrosTemplate(r) {
 // ao vivo da calorimetria mais recente a cada render. Só cai pro valor ao vivo (ultimaCalorimetria()) em
 // registros de antes dessa coluna existir (r.get null) -- mesmo padrão de degradação usado pra
 // metaCalorias/objetivo (ver diarioKcalMetaAtingida()).
+// Gasto de repouso (1 MET) no tempo dos treinos com calorias de um dia -- o pedaço que o GET já conta.
+function repousoDoTreino(t) {
+  const reg = ultimoRegistroMedida("peso");
+  const peso = reg ? Number(reg.valor) : pesoReferenciaKg();
+  return ((Number(t.duracaoMin) || 0) * peso) / 60;
+}
+function repousoDosTreinosDoDia(date) {
+  return state.treinos.filter((t) => t.date === date && t.caloriasQueimadas > 0).reduce((s, t) => s + repousoDoTreino(t), 0);
+}
+function kcalLiquidaDoTreino(t) { return Math.max(0, (Number(t.caloriasQueimadas) || 0) - repousoDoTreino(t)); }
 function diarioKcalGastoTotalInfo(r) {
   let get = r.get;
   if (get == null) {
     const ultimoCalo = ultimaCalorimetria();
     get = ultimoCalo && ultimoCalo.get ? Number(ultimoCalo.get) : null;
   }
-  const atividades = r.caloriasQueimadas || 0;
-  return { get: get, atividades: atividades, gastoTotal: get != null ? get + atividades : null };
+  // Pedido do usuário: o GET já conta o repouso do dia inteiro -- inclusive o tempo do treino. Somar o gasto
+  // BRUTO do treino contaria esse pedaço duas vezes, então entra só o que o treino gastou a mais.
+  const bruto = r.caloriasQueimadas || 0;
+  const repouso = Math.min(bruto, repousoDosTreinosDoDia(r.date));
+  const atividades = bruto - repouso;
+  return { get: get, atividades: atividades, bruto: bruto, repouso: repouso, gastoTotal: get != null ? get + atividades : null };
 }
 function diarioKcalGastosTemplate(r) {
   const info = diarioKcalGastoTotalInfo(r);
   const linhas = [
     '<div class="diario-kcal-gastos-linha">' + icon("flame") + " Em repouso (GET): " + (info.get != null ? formatNumber(info.get) + " kcal" : "sem calorimetria registrada") + "</div>",
-    '<div class="diario-kcal-gastos-linha">' + icon("flame") + " Atividades/treinos/esportes: " + formatNumber(info.atividades) + " kcal" + (info.atividades > 0 ? " (estimativa)" : "") + "</div>",
+    '<div class="diario-kcal-gastos-linha">' + icon("flame") + " Atividades/treinos/esportes: " + formatNumber(info.atividades) + " kcal" + (info.atividades > 0 ? " (estimativa" + (info.repouso > 0 ? ": " + formatNumber(info.bruto) + " do treino − " + formatNumber(info.repouso) + " de repouso que o GET já conta" : "") + ")" : "") + "</div>",
   ];
   // O saldo do dia (consumido − gasto total) não aparece mais aqui -- ficou só na seção "Análise do
   // objetivo:" (diarioKcalAnaliseObjetivoTemplate()), que já mostra o mesmo saldo junto do status de
@@ -14332,7 +14389,7 @@ function diarioKcalHojeGastosTemplate(r) {
   const info = diarioKcalGastoTotalInfo(r);
   const linhas = [
     '<div class="diario-kcal-hoje-linha">' + icon("flame") + " Em repouso (GET): " + (info.get != null ? formatNumber(info.get) + " kcal" : "sem calorimetria registrada") + "</div>",
-    '<div class="diario-kcal-hoje-linha">' + icon("flame") + " Atividades/treinos/esportes: " + formatNumber(info.atividades) + " kcal" + (info.atividades > 0 ? " (estimativa)" : "") + "</div>",
+    '<div class="diario-kcal-hoje-linha">' + icon("flame") + " Atividades/treinos/esportes: " + formatNumber(info.atividades) + " kcal" + (info.atividades > 0 ? " (estimativa" + (info.repouso > 0 ? ": " + formatNumber(info.bruto) + " do treino − " + formatNumber(info.repouso) + " de repouso que o GET já conta" : "") + ")" : "") + "</div>",
   ];
   if (info.gastoTotal != null) {
     linhas.push('<div class="diario-kcal-hoje-linha">' + icon("flame") + " Gasto total estimado até agora: " + formatNumber(info.gastoTotal) + " kcal</div>");
@@ -16114,6 +16171,7 @@ async function doInstall() {
 // cards/listas "de hoje" corretos (ver processarViradaDeDia()), sem precisar de um segundo render logo
 // em seguida.
 processarViradaDeDia();
+recalcularJiuJitsuAntigos();
 render();
 initInstallPrompt();
 if (state.usuario) sincronizarDoServidor();
