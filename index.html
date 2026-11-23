@@ -3586,6 +3586,7 @@ const state = {
   // bioimpedanciaCardFlipWrapperTemplate()/acaoIrParaPaginaBio(). Fica só na memória, reseta ao
   // recarregar a página (mesmo espírito de nutrientCardsFlipped/resumoCardPagina acima).
   bioCardPagina: 0,
+  bioComposicaoAparelho: null, // aparelho escolhido na página Composição corporal (null = o da medição mais recente)
   historicoAbaAtiva: "bioimpedancia", // "bioimpedancia" | "calorimetria"
   bioFormValores: {},
   caloFormValores: {},
@@ -4026,6 +4027,16 @@ const EXAME_INFO = {
       "O Gasto Energético Total (GET) soma a essa TMB a energia gasta com atividade física, digestão e demais movimentos do dia -- é a partir dele que se calcula quantas calorias comer pra manter, perder ou ganhar peso.",
       "É a partir da TMB registrada aqui que este app estima sua \"idade metabólica\" (ver seção abaixo) e sugere sua meta diária de calorias.",
     ],
+    // Quociente respiratório (v2.51, pedido do usuário): ajuda a saber, pelo próprio laudo, se em jejum o corpo
+    // já usa gordura como combustível principal.
+    extraTitulo: "Quociente respiratório (QR): gordura ou carboidrato?",
+    extra: [
+      "Na calorimetria indireta, o aparelho mede o oxigênio que você consome e o gás carbônico que você solta. A divisão dos dois (CO₂ ÷ O₂) é o quociente respiratório, que no laudo pode aparecer como QR, RQ ou \"quociente respiratório\".",
+      "Como ler, com o exame feito em jejum e em repouso: perto de 0,70 = energia vindo quase toda da gordura; 0,80–0,85 = mistura, com a gordura predominando; perto de 1,00 = quase todo carboidrato.",
+      "Ou seja: um QR baixo em jejum mostra que, naquele momento, seu corpo já estava queimando gordura como combustível principal. Um valor perto de 1,00 em jejum sugere muito carboidrato recente ou que o jejum não foi respeitado.",
+      "Só vale como referência se o exame seguiu o preparo (normalmente 8–12 h de jejum, sem treino antes e em repouso). Fórmulas preditivas, como a usada neste app quando não há exame, não medem o QR.",
+    ],
+    extraFonte: "Ferrannini E — The theoretical bases of indirect calorimetry: a review, Metabolism (1988).",
     fonte: "Mifflin MD, St Jeor ST, et al. — A new predictive equation for resting energy expenditure in healthy individuals, The American Journal of Clinical Nutrition (1990).",
   },
 };
@@ -4036,8 +4047,8 @@ function ultimoRegistroMedida(tipo) {
 // A altura agora vem do registro mais recente de Bioimpedância e Calorimetria (não é mais um campo
 // avulso) — é lá que a pessoa informa a altura junto com o resto dos dados do exame/balança.
 function ultimaBioimpedancia() {
-  const registros = state.bioimpedancia.slice().sort((a, b) => b.id - a.id);
-  return registros.length ? registros[0] : null;
+  const registros = ordenarBioPorData(state.bioimpedancia);
+  return registros.length ? registros[registros.length - 1] : null;
 }
 function ultimaCalorimetria() {
   const registros = state.calorimetria.slice().sort((a, b) => b.id - a.id);
@@ -5648,7 +5659,7 @@ function acaoSalvarRefeicao() {
   const novaRefeicao = Object.assign({}, total, {
     id: Date.now(), date: dataRefeicao, name: mealName, description: description,
     detected: state.preview.map((f) => f.label),
-    time: antiga ? antiga.time : (horaInformada || new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })),
+    time: horaInformada || (antiga ? antiga.time : new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })),
     // Guarda o detalhamento por alimento (nome, quantidade e todos os nutrientes daquele alimento
     // específico) — é o que permite abrir uma refeição no histórico e ver o que cada alimento
     // individualmente contribuiu, e não só o total da refeição.
@@ -5710,9 +5721,12 @@ function acaoEditarRefeicao(id) {
   const descEl = document.getElementById("meal-description");
   const customEl = document.getElementById("meal-nome-custom");
   const dataEl = document.getElementById("meal-data");
+  const horaEl = document.getElementById("meal-hora");
   if (descEl) descEl.value = m.description || "";
   if (customEl) customEl.value = ehTipoPadrao ? "" : m.name;
   if (dataEl) dataEl.value = m.date;
+  if (horaEl) horaEl.value = m.time || "";
+  state.mealHora = m.time || "";
   // Ressincroniza o state com o que acabou de ser escrito no DOM -- sem isso, um re-render causado por
   // outra coisa (ex.: uma sincronização em segundo plano terminando) reverteria os campos pro valor vazio
   // que o captureFormState() capturou acima.
@@ -5766,13 +5780,15 @@ function acaoCancelarEdicaoDataRefeicao() { state.mealDetalheEditandoData = fals
 // backend (só salvar/remover -- ver salvarRefeicaoGoogle()/removerRefeicaoGoogle() no Code.gs), então a
 // correção é feita como remover o registro antigo e recriar um novo, idêntico, só que com a data certa
 // e um id novo -- reaproveita os dois endpoints que já existem, sem precisar mexer na planilha/backend.
-function acaoEditarDataRefeicao(id, novaData) {
+function acaoEditarDataRefeicao(id, novaData, novaHora) {
   if (!novaData) { toastError("Selecione uma data."); return; }
   if (novaData > today()) { toastError("A data não pode ser no futuro."); return; }
   const m = state.meals.find((meal) => meal.id === id);
   if (!m) return;
-  if (m.date === novaData) { state.mealDetalheEditandoData = false; render(); return; }
-  const corrigida = Object.assign({}, m, { id: Date.now(), date: novaData });
+  const hora = novaHora || m.time;
+  if (novaData === today() && hora && hora > new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })) { toastError("O horário não pode ser no futuro."); return; }
+  if (m.date === novaData && m.time === hora) { state.mealDetalheEditandoData = false; render(); return; }
+  const corrigida = Object.assign({}, m, { id: Date.now(), date: novaData, time: hora });
   state.meals = state.meals.filter((meal) => meal.id !== id).concat([corrigida]);
   persistMeals();
   if (state.account) {
@@ -5781,7 +5797,7 @@ function acaoEditarDataRefeicao(id, novaData) {
   }
   state.mealDetalheId = corrigida.id;
   state.mealDetalheEditandoData = false;
-  toastSuccess("Data da refeição corrigida para " + dateLabel(novaData) + ".");
+  toastSuccess(m.date === novaData ? "Horário da refeição corrigido para " + hora + "." : "Refeição movida para " + dateLabel(novaData) + (hora ? ", às " + hora : "") + ".");
   // Se o dia antigo e/ou o dia novo já estiverem encerrados no Diário de Kcal, ressincroniza os dois --
   // mesmo padrão de acaoSalvarTreino() ao mudar a data de um treino já salvo.
   sincronizarDiarioKcalDoDia(m.date);
@@ -6237,7 +6253,7 @@ function submitPerfil() {
 /* ===================== templates ===================== */
 // Versão exibida no menu, na tela de login e em "Sobre o App" (mesmo padrão do Custódia Digital e do app
 // do escritório). Atualizar junto com o CACHE_NAME do sw.js a cada versão publicada.
-const APP_VERSAO = "2.49";
+const APP_VERSAO = "2.52";
 const APP_VERSAO_DATA = "21/11/2026";
 const DEV = { nome: "EFS Technology", lema: "Soluções digitais sob medida", tel: "83 9 99944-7957", wa: "5583999447957", email: "efstechnology.app@gmail.com" };
 function authVersaoTemplate() {
@@ -11253,7 +11269,7 @@ function exameInfoBioimpedanciaSecaoTemplate() {
   }
   if (ultimoBio.massaMuscular != null) {
     const textoMassaMuscular = sexoUsuario ? comparacaoMassaMuscularLimiarTexto(ultimoBio.massaMuscular, sexoUsuario) : null;
-    partes.push('<p class="calo-conclusao-razao"><strong>Massa muscular:</strong> ' + (textoMassaMuscular || ("seu valor medido foi de " + formatNumber(ultimoBio.massaMuscular, 1) + " kg; informe seu sexo no perfil para comparar com o limiar de referência.")) + "</p>");
+    partes.push('<p class="calo-conclusao-razao"><strong>Músculo esquelético:</strong> ' + (textoMassaMuscular || ("seu valor medido foi de " + formatNumber(ultimoBio.massaMuscular, 1) + " kg; informe seu sexo no perfil para comparar com o limiar de referência.")) + "</p>");
   }
   if (!partes.length) {
     return '<p class="calo-conclusao-dica">' + icon("help") + " Cadastre seu peso, altura, % de gordura e massa muscular na Bioimpedância para ver essa comparação." + "</p>";
@@ -11303,7 +11319,9 @@ function exameInfoModalTemplate() {
       '<div class="nutrient-info-secao"><h3>' + esc(info.secaoTitulo) + "</h3>" +
         secaoEspecificaHtml +
       "</div>" +
-      '<p class="nutrient-info-fonte">' + icon("help") + " Fonte: " + esc(info.fonte) + "</p>" +
+      (info.extra ? '<div class="nutrient-info-secao"><h3>' + esc(info.extraTitulo) + "</h3>" +
+        '<ul class="nutrient-info-lista">' + info.extra.map((f) => "<li>" + esc(f) + "</li>").join("") + "</ul></div>" : "") +
+      '<p class="nutrient-info-fonte">' + icon("help") + " Fonte: " + esc(info.fonte) + (info.extraFonte ? " · " + esc(info.extraFonte) : "") + "</p>" +
     "</div></div>";
 }
 
@@ -11484,14 +11502,15 @@ function mealDetalheModalTemplate() {
       // histórico. Fica escondido atrás de um botão "Corrigir data" pra não poluir o modal por padrão.
       (state.mealDetalheEditandoData
         ? '<div class="meal-detalhe-data-editar">' +
-            '<label class="field-label">Corrigir data da refeição</label>' +
+            '<label class="field-label">Corrigir data e horário da refeição</label>' +
             '<div class="meal-detalhe-data-editar-row">' +
               '<input type="date" id="meal-detalhe-data-input" class="field-input" value="' + esc(m.date) + '" max="' + esc(today()) + '"/>' +
-              '<button class="meal-detalhe-data-salvar-btn" onclick="acaoEditarDataRefeicao(' + m.id + ', document.getElementById(\'meal-detalhe-data-input\').value)">Salvar</button>' +
+              '<input type="time" id="meal-detalhe-hora-input" class="field-input" value="' + esc(m.time || "") + '"/>' +
+              '<button class="meal-detalhe-data-salvar-btn" onclick="acaoEditarDataRefeicao(' + m.id + ', document.getElementById(\'meal-detalhe-data-input\').value, document.getElementById(\'meal-detalhe-hora-input\').value)">Salvar</button>' +
               '<button class="meal-detalhe-data-cancelar-btn" onclick="acaoCancelarEdicaoDataRefeicao()">Cancelar</button>' +
             "</div>" +
           "</div>"
-        : '<button class="meal-detalhe-data-editar-btn" onclick="acaoAbrirEdicaoDataRefeicao()">' + icon("edit") + " Corrigir data</button>"
+        : '<button class="meal-detalhe-data-editar-btn" onclick="acaoAbrirEdicaoDataRefeicao()">' + icon("edit") + " Corrigir data e horário</button>"
       ) +
       '<div class="meal-detalhe-total"><div class="meal-detalhe-total-row"><span>Total da refeição</span><span>' + formatNumber(m.calories) + " kcal</span></div>" +
       '<div class="meal-detalhe-total-macros">P ' + formatNumber(m.protein, 1) + " · C " + formatNumber(m.carbs, 1) + " · G " + formatNumber(m.fat, 1) + " · F " + formatNumber(m.fiber, 1) + "</div></div>" +
@@ -11630,7 +11649,7 @@ function acaoEditarBioimpedancia(id) {
   state.bioAbaFormulario = "bioimpedancia";
   anexoSelecionadoBio = null;
   anexoSelecionadoCalo = null;
-  const valores = { data: registro.date };
+  const valores = { data: registro.date, hora: registro.time || "", aparelho: registro.aparelho || "", condicao: registro.condicao || "" };
   BIOIMPEDANCIA_CAMPOS.forEach((c) => { valores[c] = registro[c] != null ? String(registro[c]) : ""; });
   state.bioFormValores = valores;
   state.caloFormValores = {};
@@ -11686,11 +11705,93 @@ function acaoAbrirHistoricoBioimpedancia(aba) {
 function acaoTrocarAbaHistoricoBioimpedancia(aba) { state.historicoAbaAtiva = aba; render(); }
 function acaoFecharHistoricoBioimpedancia() { acaoIrParaPaginaBio(0); }
 
-const BIOIMPEDANCIA_CAMPOS = ["altura", "peso", "gordura", "massaMagra", "massaMuscular", "aguaCorporal", "gorduraVisceral"];
+// gorduraKg acrescentado no FINAL (opcional -- quando o aparelho mostra a gordura em kg; em branco, o
+// app usa peso × % quando precisar). massaMuscular continua com esse nome interno (pra não quebrar o
+// histórico), mas é exibido como "Músculo esquelético", que é o que as balanças/clínicas medem.
+const BIOIMPEDANCIA_CAMPOS = ["altura", "peso", "gordura", "massaMagra", "massaMuscular", "aguaCorporal", "gorduraVisceral", "gorduraKg"];
+// Aparelho que fez a medição -- cada aparelho só é comparado com ele mesmo (balanças diferentes medem
+// diferente: a de casa chega a marcar ~3 kg de gordura a mais que a da clínica no mesmo período).
+const BIO_APARELHOS = [
+  { valor: "casa", label: "Balança de casa" },
+  { valor: "endocrinologista", label: "Endocrinologista" },
+  { valor: "nutrologo", label: "Nutrólogo" },
+  { valor: "clinica", label: "Clínica (não identificado)" },
+  { valor: "outro", label: "Outro" },
+];
+// Condição da medição -- hidratação, refeição e treino mexem na leitura da bioimpedância (a mesma balança
+// variou ~1 kg de gordura entre a manhã e a noite do mesmo dia).
+const BIO_CONDICOES = [
+  { valor: "", label: "Não informada" },
+  { valor: "jejum", label: "Em jejum, ao acordar" },
+  { valor: "dia", label: "Durante o dia" },
+  { valor: "noite", label: "À noite" },
+  { valor: "pos_treino", label: "Após treino" },
+];
+function bioAparelhoLabel(valor) { const a = BIO_APARELHOS.find((x) => x.valor === valor); return a ? a.label : (valor ? String(valor) : "Aparelho não informado"); }
+function bioCondicaoLabel(valor) { const c = BIO_CONDICOES.find((x) => x.valor === valor); return c && valor ? c.label : ""; }
+// Gordura em kg: a medida pelo aparelho, quando houver; senão peso × %.
+function bioGorduraKg(r) {
+  if (!r) return null;
+  if (r.gorduraKg != null && r.gorduraKg !== "") return Number(r.gorduraKg);
+  if (r.peso != null && r.gordura != null) return Math.round(Number(r.peso) * Number(r.gordura)) / 100;
+  return null;
+}
+// Ordem cronológica REAL da medição (data, depois hora) -- não a ordem em que foi cadastrada (id): um
+// exame antigo lançado hoje não pode virar "o mais recente".
+function ordenarBioPorData(lista) {
+  return lista.slice().sort((a, b) => (a.date !== b.date ? (a.date < b.date ? -1 : 1) : String(a.time || "") !== String(b.time || "") ? (String(a.time || "") < String(b.time || "") ? -1 : 1) : a.id - b.id));
+}
 // idadeMetabolica morou aqui, mas passou pro formulário de Calorimetria a pedido do usuário -- faz mais
 // sentido junto da TMB, já que é a partir dela que a estimativa é calculada (ver
 // acaoEstimarIdadeMetabolica() logo abaixo). Continua opcional, igual antes.
-const CALORIMETRIA_CAMPOS = ["tmb", "get", "idadeMetabolica"];
+// qr/pctGordura/pctCarbo/fatorAtividade acrescentados no FINAL -- todos opcionais, vêm do laudo (QR =
+// quociente respiratório; % de gordura/carboidrato queimados em repouso; fator de atividade usado no
+// laudo pra chegar ao GET = TMB × fator).
+const CALORIMETRIA_CAMPOS = ["tmb", "get", "idadeMetabolica", "qr", "pctGordura", "pctCarbo", "fatorAtividade"];
+// Tabela de Lusk (QR não proteico → % das calorias vindas de carboidrato), usada só pra PREENCHER os
+// percentuais quando o laudo traz o QR mas não os percentuais. Lusk G., "The Elements of the Science of
+// Nutrition" (1928); reproduzida em Frayn KN, J Appl Physiol 55:628 (1983). Com QR 0,87 dá ~57/43, perto
+// dos 57,5/42,5 do laudo real.
+const LUSK_QR_CARBO = [[0.70, 0], [0.75, 15.6], [0.80, 33.4], [0.85, 50.7], [0.90, 67.5], [0.95, 84.0], [1.00, 100]];
+function combustivelPorQr(qr) {
+  const q = Number(qr);
+  if (!q) return null;
+  const t = LUSK_QR_CARBO;
+  let carbo;
+  if (q <= t[0][0]) carbo = 0;
+  else if (q >= t[t.length - 1][0]) carbo = 100;
+  else {
+    for (let i = 1; i < t.length; i++) {
+      if (q <= t[i][0]) { const [x0, y0] = t[i - 1], [x1, y1] = t[i]; carbo = y0 + ((q - x0) / (x1 - x0)) * (y1 - y0); break; }
+    }
+  }
+  carbo = Math.round(carbo * 10) / 10;
+  return { carbo: carbo, gordura: Math.round((100 - carbo) * 10) / 10 };
+}
+// Digitou um dos percentuais à mão: o outro vira o complemento (somam 100%, já que o QR não proteico só
+// divide entre gordura e carboidrato) -- sem render(), direto no DOM.
+function acaoPctCombustivelComplementar(qual) {
+  const el = document.getElementById("calo-" + qual);
+  const outro = document.getElementById("calo-" + (qual === "pctGordura" ? "pctCarbo" : "pctGordura"));
+  if (!el || !outro) return;
+  el.dataset.auto = "";
+  const v = Number(el.value.trim().replace(",", "."));
+  if (el.value.trim() === "" || isNaN(v) || v < 0 || v > 100) return;
+  outro.value = Math.round((100 - v) * 10) / 10;
+  outro.dataset.auto = "";
+}
+// Ao digitar o QR: preenche % gordura/% carboidrato SÓ se estiverem vazios (nunca sobrescreve o que veio
+// do laudo). Escreve direto no DOM, sem render() -- mesmo padrão das outras calculadoras deste formulário.
+function acaoQrPreencherCombustivel() {
+  const qrEl = document.getElementById("calo-qr");
+  const gEl = document.getElementById("calo-pctGordura");
+  const cEl = document.getElementById("calo-pctCarbo");
+  if (!qrEl || !gEl || !cEl) return;
+  const comb = combustivelPorQr(qrEl.value.trim().replace(",", "."));
+  if (!comb) return;
+  if (!gEl.value || gEl.dataset.auto === "1") { gEl.value = comb.gordura; gEl.dataset.auto = "1"; }
+  if (!cEl.value || cEl.dataset.auto === "1") { cEl.value = comb.carbo; cEl.dataset.auto = "1"; }
+}
 
 // Perfis de Nível de Atividade Física (NAF) usados pra ESTIMAR o GET a partir da TMB quando a pessoa não
 // sabe/não tem o valor do próprio exame (ver getCampoTemplate()/acaoCalcularGetPerfil() logo abaixo).
@@ -11774,6 +11875,8 @@ function acaoCalcularGetPerfil() {
   const get = Math.round(tmb * perfil.fator);
   const inputGet = document.getElementById("calo-get");
   if (inputGet) inputGet.value = get;
+  const inputFator = document.getElementById("calo-fatorAtividade");
+  if (inputFator) inputFator.value = perfil.fator;
 
   const resultadoEl = document.getElementById("calo-perfil-resultado");
   if (resultadoEl) {
@@ -11956,7 +12059,7 @@ function conclusaoIdadeMetabolicaHtml(idadeMetabolicaValor, tmbValor) {
 
   if (ultimaBio && (ultimaBio.massaMuscular != null || ultimaBio.gordura != null)) {
     const partes = [];
-    if (ultimaBio.massaMuscular != null) partes.push(formatNumber(ultimaBio.massaMuscular, 1) + " kg de massa muscular");
+    if (ultimaBio.massaMuscular != null) partes.push(formatNumber(ultimaBio.massaMuscular, 1) + " kg de músculo esquelético");
     if (ultimaBio.gordura != null) partes.push(formatNumber(ultimaBio.gordura, 1) + "% de gordura corporal");
     // Comparação com valores de referência (pedido do usuário -- mesma lógica da "TMB esperada" acima:
     // não basta dizer "mais" ou "menos" sem mostrar contra o quê). Gordura tem uma faixa esperada
@@ -12043,6 +12146,13 @@ function acaoSalvarBioimpedancia() {
     valores[c] = el ? el.value.trim().replace(",", ".") : "";
   });
   if (!valores.altura || isNaN(Number(valores.altura))) { toastError("Informe a altura."); return; }
+  const aparelhoEl = document.getElementById("bio-aparelho");
+  const aparelho = aparelhoEl ? aparelhoEl.value : "";
+  if (!aparelho) { toastError("Informe o aparelho que fez a medição."); return; }
+  const condicaoEl = document.getElementById("bio-condicao");
+  const condicao = condicaoEl ? condicaoEl.value : "";
+  const horaEl = document.getElementById("bio-hora");
+  const hora = horaEl ? horaEl.value : "";
   if (anexoSelecionadoBio && !state.account) { toastError("Conecte sua conta do Google para anexar arquivos."); return; }
 
   const arquivoAnexo = anexoSelecionadoBio;
@@ -12055,6 +12165,9 @@ function acaoSalvarBioimpedancia() {
     const registro = state.bioimpedancia.find((r) => r.id === editandoId);
     if (!registro) { toastError("Registro não encontrado."); return; }
     registro.date = data;
+    if (hora) registro.time = hora;
+    registro.aparelho = aparelho;
+    registro.condicao = condicao;
     BIOIMPEDANCIA_CAMPOS.forEach((c) => { registro[c] = valores[c] ? Number(valores[c]) : null; });
     if (arquivoAnexo) registro.anexoUrl = ""; // preenchido de novo quando o anexo terminar de enviar
     persistBioimpedancia();
@@ -12075,7 +12188,7 @@ function acaoSalvarBioimpedancia() {
   // "gruda" no registro já salvo quando terminar (ver processarAnexoBioimpedanciaEmSegundoPlano).
   const now = new Date();
   const novoRegistro = Object.assign(
-    { id: Date.now(), date: data, time: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }), anexoUrl: "" },
+    { id: Date.now(), date: data, time: hora || now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }), anexoUrl: "", aparelho: aparelho, condicao: condicao },
     BIOIMPEDANCIA_CAMPOS.reduce((acc, c) => { acc[c] = valores[c] ? Number(valores[c]) : null; return acc; }, {})
   );
   state.bioimpedancia = state.bioimpedancia.concat([novoRegistro]);
@@ -12132,7 +12245,11 @@ function acaoSalvarCalorimetria() {
   if (!tmbFonte) { toastError("Selecione de onde veio o valor da TMB (exame de calorimetria indireta ou balança de bioimpedância)."); return; }
   if (!valores.tmb || isNaN(Number(valores.tmb))) { toastError("Informe a Taxa Metabólica Basal (TMB)."); return; }
   if (!valores.get || isNaN(Number(valores.get))) { toastError("Informe o Gasto Energético Total (GET)."); return; }
+  if (valores.qr && (isNaN(Number(valores.qr)) || Number(valores.qr) < 0.6 || Number(valores.qr) > 1.3)) { toastError("QR fora da faixa esperada (0,60 a 1,30) -- confira o laudo."); return; }
+  if ((valores.pctGordura && (Number(valores.pctGordura) < 0 || Number(valores.pctGordura) > 100)) || (valores.pctCarbo && (Number(valores.pctCarbo) < 0 || Number(valores.pctCarbo) > 100))) { toastError("Os percentuais de combustível devem ficar entre 0 e 100."); return; }
   if (anexoSelecionadoCalo && !state.account) { toastError("Conecte sua conta do Google para anexar arquivos."); return; }
+  const extrasCalo = {};
+  ["qr", "pctGordura", "pctCarbo", "fatorAtividade"].forEach((c) => { extrasCalo[c] = valores[c] ? Number(valores[c]) : null; });
   // TMB final: com desconto de 10% quando a fonte é balança de bioimpedância (ver
   // TMB_DESCONTO_BIOIMPEDANCIA/tmbComDesconto()); usada como digitada quando é exame de calorimetria.
   const tmbFinal = tmbComDesconto(Number(valores.tmb), tmbFonte);
@@ -12149,6 +12266,7 @@ function acaoSalvarCalorimetria() {
     registro.tmbFonte = tmbFonte;
     registro.get = Number(valores.get);
     registro.idadeMetabolica = valores.idadeMetabolica ? Number(valores.idadeMetabolica) : null;
+    Object.assign(registro, extrasCalo);
     if (arquivoAnexo) registro.anexoUrl = "";
     persistCalorimetria();
     state.showFormBioimpedancia = false;
@@ -12169,6 +12287,7 @@ function acaoSalvarCalorimetria() {
     id: Date.now(), date: data, time: now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
     tmb: tmbFinal, tmbFonte: tmbFonte, get: Number(valores.get), idadeMetabolica: valores.idadeMetabolica ? Number(valores.idadeMetabolica) : null, anexoUrl: "",
   };
+  Object.assign(novoRegistro, extrasCalo);
   state.calorimetria = state.calorimetria.concat([novoRegistro]);
   persistCalorimetria();
   state.showFormBioimpedancia = false;
@@ -12333,11 +12452,20 @@ function bioimpedanciaFormCamposTemplate() {
   return '' +
     '<div class="bioimpedancia-form-grid">' +
       '<div><label class="field-label">Data da medição</label><input id="bio-data" type="date" class="field-input" value="' + esc(valores.data != null ? valores.data : today()) + '"/></div>' +
+      '<div><label class="field-label">Hora da medição</label><input id="bio-hora" type="time" class="field-input" value="' + esc(valores.hora ? valores.hora : new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })) + '"/></div>' +
+      '<div><label class="field-label">Aparelho</label><select id="bio-aparelho" class="field-input">' +
+        '<option value="">Selecione...</option>' +
+        BIO_APARELHOS.map((a) => '<option value="' + a.valor + '"' + (valores.aparelho === a.valor ? " selected" : "") + ">" + esc(a.label) + "</option>").join("") +
+      "</select></div>" +
+      '<div><label class="field-label">Condição</label><select id="bio-condicao" class="field-input">' +
+        BIO_CONDICOES.map((c) => '<option value="' + c.valor + '"' + ((valores.condicao || "") === c.valor ? " selected" : "") + ">" + esc(c.label) + "</option>").join("") +
+      "</select></div>" +
       campo("altura", "Altura", "cm", "Ex.: 172") +
       campo("peso", "Peso", "kg", "Ex.: 78,5") +
       campo("gordura", "% de gordura corporal", "%", "Ex.: 22,4") +
+      campo("gorduraKg", "Gordura em kg (opcional)", "", "Em branco = peso × %") +
       campo("massaMagra", "Massa magra", "kg", "Ex.: 60,8") +
-      campo("massaMuscular", "Massa muscular", "kg", "Ex.: 55,2") +
+      campo("massaMuscular", "Músculo esquelético", "kg", "Ex.: 38,5") +
       campo("aguaCorporal", "Água corporal", "%", "Ex.: 55,0") +
       campo("gorduraVisceral", "Gordura visceral", "nível", "Ex.: 8") +
     "</div>" +
@@ -12358,12 +12486,29 @@ function calorimetriaFormCamposTemplate() {
       tmbCampoTemplate() +
       getCampoTemplate() +
       idadeMetabolicaCampoTemplate() +
+      caloExtrasLaudoTemplate() +
     "</div>" +
     anexoCampoTemplate("calo-anexo-input", anexoSelecionadoCalo, "onAnexoCaloSelecionado", "acaoRemoverAnexoSelecionadoCalo") +
     '<div class="bioimpedancia-form-acoes">' +
       '<button class="bioimpedancia-btn-secundario" onclick="acaoFecharFormBioimpedancia()">Cancelar</button>' +
       '<button class="btn-primary" onclick="acaoSalvarCalorimetria()">' + icon("check") + (state.calorimetriaEditandoId != null ? " Salvar alterações" : " Salvar") + "</button>" +
     "</div>";
+}
+// Dados extras do laudo de calorimetria (todos opcionais). O QR preenche os percentuais pela tabela de
+// Lusk só quando eles estão vazios (ver acaoQrPreencherCombustivel()).
+function caloExtrasLaudoTemplate() {
+  const valores = state.caloFormValores || {};
+  const campo = (id, label, step, placeholder, extra) =>
+    '<div><label class="field-label">' + label + '</label>' +
+    '<input id="calo-' + id + '" type="number" min="0" step="' + step + '" class="field-input" value="' + esc(valores[id] != null ? valores[id] : "") + '" placeholder="' + placeholder + '"' + (extra || "") + "/></div>";
+  return '<div class="get-campo">' +
+    '<label class="field-label"><strong>Outros dados do laudo (opcional)</strong></label>' +
+    campo("qr", "Quociente respiratório (QR)", "0.01", "Ex.: 0,87", ' oninput="acaoQrPreencherCombustivel()"') +
+    campo("pctGordura", "Gordura queimada em repouso (%)", "0.1", "Ex.: 42,5", ' oninput="acaoPctCombustivelComplementar(\'pctGordura\')"') +
+    campo("pctCarbo", "Carboidrato queimado em repouso (%)", "0.1", "Ex.: 57,5", ' oninput="acaoPctCombustivelComplementar(\'pctCarbo\')"') +
+    campo("fatorAtividade", "Fator de atividade usado no GET", "0.01", "Ex.: 1,6") +
+    '<p class="micro-fonte-nota">' + icon("help") + " Se o laudo trouxer só o QR, os percentuais são preenchidos pela tabela de Lusk (QR não proteico) -- confira e corrija pelo laudo quando ele informar. O fator de atividade é o multiplicador que o laudo usou (GET = TMB × fator).</p>" +
+  "</div>";
 }
 function bioimpedanciaFormTemplate() {
   const aba = state.bioAbaFormulario;
@@ -12396,11 +12541,12 @@ function dataCurta(dateStr) {
 // deveria acontecer, já que altura é obrigatória, mas por segurança) não mostra legenda nenhuma.
 function valoresBioimpedanciaLegenda(r) {
   const partes = [];
+  partes.push(bioAparelhoLabel(r.aparelho) + (r.time ? " às " + r.time : "") + (bioCondicaoLabel(r.condicao) ? " (" + bioCondicaoLabel(r.condicao).toLowerCase() + ")" : ""));
   if (r.altura != null) partes.push("Altura: " + formatNumber(r.altura, 1) + " cm");
   if (r.peso != null) partes.push("Peso: " + formatNumber(r.peso, 1) + " kg");
-  if (r.gordura != null) partes.push("Gordura: " + formatNumber(r.gordura, 1) + "%");
+  if (r.gordura != null) { const kg = bioGorduraKg(r); partes.push("Gordura: " + formatNumber(r.gordura, 1) + "%" + (kg != null ? " (" + formatNumber(kg, 1) + " kg" + (r.gorduraKg == null ? ", calculado" : "") + ")" : "")); }
   if (r.massaMagra != null) partes.push("Massa magra: " + formatNumber(r.massaMagra, 1) + " kg");
-  if (r.massaMuscular != null) partes.push("Massa muscular: " + formatNumber(r.massaMuscular, 1) + " kg");
+  if (r.massaMuscular != null) partes.push("Músculo esquelético: " + formatNumber(r.massaMuscular, 1) + " kg");
   if (r.aguaCorporal != null) partes.push("Água corporal: " + formatNumber(r.aguaCorporal, 1) + "%");
   if (r.gorduraVisceral != null) partes.push("Gordura visceral: nível " + formatNumber(r.gorduraVisceral, 1));
   return partes.length ? partes.join(" · ") : null;
@@ -12412,6 +12558,9 @@ function valoresCalorimetriaLegenda(r) {
   if (r.tmb != null) partes.push("TMB: " + formatNumber(r.tmb) + " kcal" + (r.tmbFonte === "bioimpedancia" ? " (balança, -10%)" : ""));
   if (r.get != null) partes.push("GET: " + formatNumber(r.get) + " kcal");
   if (r.idadeMetabolica != null) partes.push("Idade metabólica: " + formatNumber(r.idadeMetabolica, 1) + " anos");
+  if (r.qr != null) partes.push("QR: " + formatNumber(r.qr, 2));
+  if (r.pctGordura != null || r.pctCarbo != null) partes.push("Combustível em repouso: " + (r.pctGordura != null ? formatNumber(r.pctGordura, 1) + "% gordura" : "") + (r.pctGordura != null && r.pctCarbo != null ? " / " : "") + (r.pctCarbo != null ? formatNumber(r.pctCarbo, 1) + "% carboidrato" : ""));
+  if (r.fatorAtividade != null) partes.push("Fator de atividade: " + formatNumber(r.fatorAtividade, 2));
   return partes.length ? partes.join(" · ") : null;
 }
 // valoresLegenda: função que devolve o texto da legenda de valores de UM registro (ou null/"" pra não
@@ -12458,7 +12607,7 @@ function historicoListaTemplate(registros, tipoLabel, acaoRemover, acaoEditar, v
 // (pedido do usuário) -- ver ajustarAlturaBioCard().
 function historicoBioimpedanciaTemplate() {
   const aba = state.historicoAbaAtiva;
-  const registrosBio = state.bioimpedancia.slice().sort((a, b) => b.id - a.id);
+  const registrosBio = ordenarBioPorData(state.bioimpedancia).reverse();
   const registrosCalo = state.calorimetria.slice().sort((a, b) => b.id - a.id);
   // Título mais específico que só "Histórico de registros" (pedido do usuário usa essa expressão mais
   // completa) -- de propósito: essa página agora fica SEMPRE montada no DOM (mesmo espírito das outras
@@ -12516,7 +12665,7 @@ function bioimpedanciaResumoPaginaTemplate() {
       '<div class="bioimpedancia-resumo-item bioimpedancia-resumo-item-multi">' +
         cabecalhoColuna("Bioimpedância", ultimoBio, "bioimpedancia") +
         linha(ultimoBio && ultimoBio.peso ? formatNumber(ultimoBio.peso, 1) : "—", "Peso (kg)") +
-        linha(ultimoBio && ultimoBio.massaMuscular ? formatNumber(ultimoBio.massaMuscular, 1) : "—", "Massa musc. (kg)") +
+        linha(ultimoBio && ultimoBio.massaMuscular ? formatNumber(ultimoBio.massaMuscular, 1) : "—", "Músc. esquel. (kg)") +
         linha(ultimoBio && ultimoBio.gordura ? formatNumber(ultimoBio.gordura, 1) : "—", "Gordura (%)") +
       "</div>" +
       '<div class="bioimpedancia-resumo-item bioimpedancia-resumo-item-multi">' +
@@ -14002,7 +14151,16 @@ function evolucaoMedidaClassificacaoNotaTemplate(registroMaisRecente) {
 // evolucaoDataNoFiltro()/o filtro de data de propósito -- sempre compara o primeiro com o último
 // registro de toda a história.
 function evolucaoBioimpedanciaSerie() {
-  return state.bioimpedancia.slice().sort((a, b) => (a.date === b.date ? a.id - b.id : a.date < b.date ? -1 : 1));
+  return ordenarBioPorData(state.bioimpedancia);
+}
+// Séries separadas por aparelho (cada aparelho só se compara com ele mesmo), só as que têm 2+ registros,
+// da que tem a medição mais recente pra mais antiga.
+function evolucaoBioimpedanciaGrupos() {
+  const grupos = {};
+  evolucaoBioimpedanciaSerie().forEach((r) => { const k = r.aparelho || ""; (grupos[k] = grupos[k] || []).push(r); });
+  return Object.keys(grupos).map((k) => ({ aparelho: k, serie: grupos[k] }))
+    .filter((g) => g.serie.length >= 2)
+    .sort((a, b) => { const da = a.serie[a.serie.length - 1], db = b.serie[b.serie.length - 1]; return ordenarBioPorData([da, db])[0] === da ? 1 : -1; });
 }
 // Métricas de composição corporal comparadas primeiro x último registro de TODA a história (ver nota
 // acima) -- diferente do peso, a Bioimpedância costuma ter poucos registros no total, então em vez de um
@@ -14010,19 +14168,23 @@ function evolucaoBioimpedanciaSerie() {
 // no último".
 const EVOLUCAO_METRICAS_BIOIMPEDANCIA = [
   { chave: "gordura", label: "Gordura corporal", unidade: "%", digits: 1 },
-  { chave: "massaMuscular", label: "Massa muscular", unidade: "kg", digits: 1 },
+  { chave: "massaMuscular", label: "Músculo esquelético", unidade: "kg", digits: 1 },
+  { chave: "gorduraKgCalc", label: "Gordura em kg", unidade: "kg", digits: 1 },
   { chave: "massaMagra", label: "Massa magra", unidade: "kg", digits: 1 },
   { chave: "aguaCorporal", label: "Água corporal", unidade: "%", digits: 1 },
   { chave: "gorduraVisceral", label: "Gordura visceral", unidade: "", digits: 1 },
 ];
-function evolucaoBioimpedanciaComparacao() {
-  const serie = evolucaoBioimpedanciaSerie();
+function evolucaoBioimpedanciaComparacao(serieParam) {
+  // Sem série informada: usa o aparelho da medição mais recente (nunca mistura aparelhos).
+  const grupos = serieParam ? null : evolucaoBioimpedanciaGrupos();
+  const serie = serieParam || (grupos.length ? grupos[0].serie : []);
   if (serie.length < 2) return [];
   return EVOLUCAO_METRICAS_BIOIMPEDANCIA.map((m) => {
-    const comValor = serie.filter((r) => r[m.chave] != null && r[m.chave] !== "");
+    const valorDe = (r) => (m.chave === "gorduraKgCalc" ? bioGorduraKg(r) : r[m.chave]);
+    const comValor = serie.filter((r) => valorDe(r) != null && valorDe(r) !== "");
     if (comValor.length < 2) return null;
-    const inicial = Number(comValor[0][m.chave]);
-    const atual = Number(comValor[comValor.length - 1][m.chave]);
+    const inicial = Number(valorDe(comValor[0]));
+    const atual = Number(valorDe(comValor[comValor.length - 1]));
     return Object.assign({ inicial: inicial, atual: atual, delta: atual - inicial }, m);
   }).filter(Boolean);
 }
@@ -14680,44 +14842,49 @@ function evolucaoPeriodoFiltroTemplate() {
 // página central do card virável de Bioimpedância e Calorimetria, na aba Medidas (ver
 // bioimpedanciaCardFlipWrapperTemplate()); a função continua com esse nome só por não valer a pena
 // renomear (nenhuma mudança de conteúdo, só de onde é chamada).
+function acaoEscolherAparelhoComposicao(aparelho) { state.bioComposicaoAparelho = aparelho; render(); }
 function evolucaoComposicaoCardTemplate() {
-  const comparacao = evolucaoBioimpedanciaComparacao();
-  // Datas do primeiro e do último exame de Bioimpedância de todo o histórico (ver
-  // evolucaoBioimpedanciaSerie()) -- mostradas UMA ÚNICA VEZ, como cabeçalho da coluna de valores (pedido
-  // do usuário), em vez de repetidas em cada linha da comparação.
-  const serieBio = evolucaoBioimpedanciaSerie();
-  const dataInicial = serieBio.length ? serieBio[0].date : null;
-  const dataFinal = serieBio.length ? serieBio[serieBio.length - 1].date : null;
+  // Uma comparação (primeiro → último registro) POR APARELHO -- aparelhos diferentes medem diferente, então
+  // nunca são comparados entre si. O aparelho da medição mais recente vem primeiro.
+  const grupos = evolucaoBioimpedanciaGrupos();
+  const blocoGrupo = (g, comAbas) => {
+    const comparacao = evolucaoBioimpedanciaComparacao(g.serie);
+    if (!comparacao.length) return "";
+    const dataInicial = g.serie[0].date, dataFinal = g.serie[g.serie.length - 1].date;
+    return '<div class="evolucao-comparacao-header">' +
+        '<span class="evolucao-comparacao-header-label">' + (comAbas ? "" : "<strong>" + esc(bioAparelhoLabel(g.aparelho)) + "</strong> · ") + g.serie.length + " registros</span>" +
+        '<span class="evolucao-comparacao-header-datas">' + dataCurta(dataInicial) + " → " + dataCurta(dataFinal) + "</span>" +
+      "</div>" +
+      '<div class="evolucao-comparacao-list">' +
+        comparacao.map((c) => {
+          const melhorSeDiminui = c.chave === "gordura" || c.chave === "gorduraVisceral" || c.chave === "gorduraKgCalc";
+          const neutro = c.delta === 0;
+          const positivo = !neutro && (melhorSeDiminui ? c.delta < 0 : c.delta > 0);
+          // Linha principal (label + valores) e o delta ficam em blocos SEPARADOS -- posição do delta
+          // sempre consistente (pedido do usuário).
+          return '<div class="evolucao-comparacao-row">' +
+            '<div class="evolucao-comparacao-row-principal">' +
+              '<span class="evolucao-comparacao-label">' + esc(c.label) + "</span>" +
+              '<span class="evolucao-comparacao-valores">' + formatNumber(c.inicial, c.digits) + c.unidade + " → " + formatNumber(c.atual, c.digits) + c.unidade + "</span>" +
+            "</div>" +
+            '<span class="evolucao-comparacao-delta ' + (neutro ? "" : positivo ? "evolucao-delta-positivo" : "evolucao-delta-negativo") + '">' + (c.delta > 0 ? "+" : "") + formatNumber(c.delta, c.digits) + c.unidade + "</span>" +
+          "</div>";
+        }).join("") +
+      "</div>";
+  };
+  // Um aparelho por vez (abas), pra não esticar o card -- começa no da medição mais recente.
+  const validos = grupos.filter((g) => evolucaoBioimpedanciaComparacao(g.serie).length);
+  const ativo = validos.find((g) => g.aparelho === state.bioComposicaoAparelho) || validos[0];
   return '' +
     '<div class="medidas-section">' +
       '<h2 class="medidas-section-title">' + icon("activity") + " Composição corporal</h2>" +
-      (comparacao.length ?
-        '<p class="imc-empty">Comparação entre o primeiro e o último registro de Bioimpedância de todo o histórico (não é afetado pelo filtro de período acima).</p>' +
-        '<div class="evolucao-comparacao-header">' +
-          '<span class="evolucao-comparacao-header-label"></span>' +
-          '<span class="evolucao-comparacao-header-datas">' + dataCurta(dataInicial) + " → " + dataCurta(dataFinal) + "</span>" +
-        "</div>" +
-        '<div class="evolucao-comparacao-list">' +
-          comparacao.map((c) => {
-            const melhorSeDiminui = c.chave === "gordura" || c.chave === "gorduraVisceral";
-            const neutro = c.delta === 0;
-            const positivo = !neutro && (melhorSeDiminui ? c.delta < 0 : c.delta > 0);
-            // Linha principal (label + valores) e o delta ficam em blocos SEPARADOS (não dependendo de
-            // quebra automática do flex-wrap pela largura do texto) -- antes, com valores curtos (ex.:
-            // "Gordura visceral", sem "%"/"kg"), a linha inteira cabia numa única linha e o delta acabava
-            // ficando colado do lado direito dos valores, em vez de embaixo do rótulo como nas outras
-            // linhas (pedido do usuário: posição do delta sempre consistente).
-            return '<div class="evolucao-comparacao-row">' +
-              '<div class="evolucao-comparacao-row-principal">' +
-                '<span class="evolucao-comparacao-label">' + esc(c.label) + "</span>" +
-                '<span class="evolucao-comparacao-valores">' + formatNumber(c.inicial, c.digits) + c.unidade + " → " + formatNumber(c.atual, c.digits) + c.unidade + "</span>" +
-              "</div>" +
-              '<span class="evolucao-comparacao-delta ' + (neutro ? "" : positivo ? "evolucao-delta-positivo" : "evolucao-delta-negativo") + '">' + (c.delta > 0 ? "+" : "") + formatNumber(c.delta, c.digits) + c.unidade + "</span>" +
-            "</div>";
-          }).join("") +
-        "</div>"
+      (ativo ?
+        '<p class="imc-empty">Primeiro → último registro do mesmo aparelho, em todo o histórico. Aparelhos diferentes medem diferente, por isso não são comparados entre si.</p>' +
+        (validos.length > 1 ? '<div class="bioimpedancia-form-tabs">' + validos.map((g) =>
+          '<button class="bioimpedancia-form-tab' + (g === ativo ? " active" : "") + '" onclick="acaoEscolherAparelhoComposicao(\'' + esc(g.aparelho) + '\')">' + esc(bioAparelhoLabel(g.aparelho)) + "</button>").join("") + "</div>" : "") +
+        blocoGrupo(ativo, validos.length > 1)
         :
-        '<p class="imc-empty">Cadastre pelo menos 2 registros de Bioimpedância (com a mesma métrica preenchida nos dois) para ver a comparação entre o primeiro e o último aqui.</p>'
+        '<p class="imc-empty">Cadastre pelo menos 2 registros de Bioimpedância no mesmo aparelho para ver a comparação entre o primeiro e o último aqui.</p>'
       ) +
     "</div>";
 }
@@ -15627,7 +15794,7 @@ function nutricaoTabTemplate() {
           sugestaoBotaoTemplate() +
           (state.mealTipo === "Outro" ? '<input id="meal-nome-custom" class="meal-input" placeholder="Nome da refeição" value="' + esc(state.mealNomeCustom) + '"/>' : "") +
           '<div><label class="meal-form-label">Data</label><input id="meal-data" type="date" class="meal-input" max="' + esc(today()) + '" value="' + esc(state.mealData || today()) + '"/></div>' +
-          (editandoRefeicao ? "" : '<div><label class="meal-form-label">Horário (opcional)</label><input id="meal-hora" type="time" class="meal-input" value="' + esc(state.mealHora) + '"/></div>') +
+          '<div><label class="meal-form-label">Horário' + (editandoRefeicao ? "" : " (opcional)") + '</label><input id="meal-hora" type="time" class="meal-input" value="' + esc(state.mealHora) + '"/></div>' +
           (state.mealTipo === "Exposição Solar"
             ? exposicaoSolarCamposTemplate()
             : '<div class="meal-description-wrap">' +
@@ -16258,9 +16425,10 @@ function avaliacaoNotaComposicao() {
   const nota = partes.reduce((s, n) => s + n, 0) / partes.length;
   const detalhe = [
     gordura ? "Gordura corporal: " + (gordura.delta > 0 ? "+" : "") + formatNumber(gordura.delta, 1) + " p.p. (de " + formatNumber(gordura.inicial, 1) + "% pra " + formatNumber(gordura.atual, 1) + "%)" : null,
-    musculo ? "Massa muscular: " + (musculo.delta > 0 ? "+" : "") + formatNumber(musculo.delta, 1) + " kg" : null,
+    musculo ? "Músculo esquelético: " + (musculo.delta > 0 ? "+" : "") + formatNumber(musculo.delta, 1) + " kg" : null,
   ].filter(Boolean).join(" · ");
-  return { nota: Math.round(nota * 10) / 10, detalhe: detalhe + " (comparando 1º x último registro de Bioimpedância de toda a história, mesmo padrão da Evolução)" };
+  const grupoRecente = evolucaoBioimpedanciaGrupos()[0];
+  return { nota: Math.round(nota * 10) / 10, detalhe: detalhe + " (1º x último registro do mesmo aparelho" + (grupoRecente ? " -- " + bioAparelhoLabel(grupoRecente.aparelho) : "") + ", em todo o histórico)" };
 }
 // Referência genérica de consistência (não é uma prescrição médica -- OMS/ACSM falam em minutos, não
 // "sessões"; 3x/semana é só uma referência comum pra quem já combina esporte + musculação).
@@ -16548,7 +16716,7 @@ function captureFormState() {
   const bioDataEl = document.getElementById("bio-data");
   if (bioDataEl) {
     const valores = { data: bioDataEl.value };
-    BIOIMPEDANCIA_CAMPOS.forEach((c) => {
+    BIOIMPEDANCIA_CAMPOS.concat(["hora", "aparelho", "condicao"]).forEach((c) => {
       const el = document.getElementById("bio-" + c);
       if (el) valores[c] = el.value;
     });
