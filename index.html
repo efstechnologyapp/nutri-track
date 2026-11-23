@@ -1250,6 +1250,16 @@ body:has(.modal-overlay) .hamburger-btn{ display:none; }
 .pm-agora-titulo{ font-family:'Fraunces',serif; font-size:18px; font-weight:600; color:#fff; margin-bottom:4px; }
 .pm-agora-desc{ font-size:13px; line-height:1.5; color:#cfe3d4; }
 .pm-alvos{ display:flex; flex-wrap:wrap; gap:6px; margin:10px 0; }
+.guia-btn{ display:inline-flex; align-items:center; gap:4px; margin-left:auto; padding:3px 10px; border-radius:999px; border:1px solid currentColor; background:transparent; color:inherit; font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:none; cursor:pointer; }
+.guia-btn .icon{ width:13px; height:13px; }
+.guia-momento{ border:1px solid #e3e9e0; border-radius:14px; padding:12px 14px; margin-top:10px; }
+.guia-momento.atual{ border:2px solid #6c8d68; background:#f3f8ef; }
+.guia-momento-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:14px; font-weight:700; color:#1b3f34; }
+.guia-momento-head small{ font-weight:600; color:#7c8c86; font-size:11.5px; }
+.guia-aqui{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#fff; background:#6c8d68; padding:3px 8px; border-radius:999px; white-space:nowrap; }
+.guia-meta{ margin:6px 0 2px; font-size:12px; font-weight:700; color:#4f7a4a; }
+.guia-linha{ margin:6px 0 0; font-size:13px; line-height:1.5; color:#3d5a4f; }
+.guia-linha b{ color:#1b3f34; }
 .pm-alvo{ font-size:12px; font-weight:700; padding:5px 10px; border-radius:999px; background:rgba(255,255,255,.12); color:#fff; }
 .pm-aviso{ border-radius:14px; padding:12px; background:#fdf3e1; color:#7a5212; font-size:13px; line-height:1.5; display:flex; gap:8px; }
 .pm-aviso .icon{ width:16px; height:16px; flex-shrink:0; margin-top:2px; }
@@ -3435,6 +3445,7 @@ const state = {
   // padrão do de cima, só que pros campos de Bioimpedância e Calorimetria) está aberto -- ver
   // exameInfoModalTemplate()/acaoAbrirInfoExame().
   infoExameAberto: null,
+  guiaPrePos: null, // { esporte, momento, ini } -- guia "o que comer no pré e no pós" aberto (ver guiaPrePosModalTemplate())
   // "hrv" | "bodyBattery" | "sono" | null -- qual modal de informação da aba Recuperação está aberto
   // (mesmo padrão de infoExameAberto acima) -- ver recuperacaoInfoModalTemplate()/acaoAbrirInfoRecuperacao().
   infoRecuperacaoAberto: null,
@@ -6253,7 +6264,7 @@ function submitPerfil() {
 /* ===================== templates ===================== */
 // Versão exibida no menu, na tela de login e em "Sobre o App" (mesmo padrão do Custódia Digital e do app
 // do escritório). Atualizar junto com o CACHE_NAME do sw.js a cada versão publicada.
-const APP_VERSAO = "2.52";
+const APP_VERSAO = "2.54";
 const APP_VERSAO_DATA = "21/11/2026";
 const DEV = { nome: "EFS Technology", lema: "Soluções digitais sob medida", tel: "83 9 99944-7957", wa: "5583999447957", email: "efstechnology.app@gmail.com" };
 function authVersaoTemplate() {
@@ -7310,7 +7321,7 @@ function trxPrePos(treinos) {
     if (antes) { const meta = metasPreTreino(t.esporte, ini - hhmmParaMin(antes.time) >= 150 ? "refeicao" : "lanche", peso, null); preOk = !meta.leve && (antes.carbs || 0) >= meta.carb * 0.85; }
     const pos = refeicaoPosDoTreino(t);
     let posOk = null;
-    if (pos) { const mp = metasPosTreino([{ esporte: t.esporte, duracaoMin: t.duracaoMin }], peso, null); posOk = mp.leve ? null : (pos.protein || 0) >= mp.prot * 0.85; }
+    if (pos) { const mp = metasPosTreino([{ esporte: t.esporte, duracaoMin: t.duracaoMin, caloriasQueimadas: t.caloriasQueimadas }], peso, null); posOk = mp.leve ? null : (pos.protein || 0) >= mp.prot * 0.85; }
     return { t: t, preOk: preOk, posOk: posOk, recordes: recordesDoTreino(t).length };
   });
   const grupo = (l) => ({ n: l.length, esforco: l.filter((x) => x.t.esforco).length ? media(l.filter((x) => x.t.esforco).map((x) => Number(x.t.esforco))) : null, recordes: l.reduce((s, x) => s + x.recordes, 0) });
@@ -9829,13 +9840,13 @@ function pesoReferenciaKg() {
 const PERFIL_ESPORTE = { "Musculação": "forca", "Corrida": "endurance", "Ciclismo": "endurance", "Natação": "endurance", "Caminhada": "leve",
   "Jiu-jitsu": "intermitente", "Muay Thai": "intermitente", "Boxe": "intermitente", "Futebol": "intermitente", "Tênis": "intermitente" };
 const PERFIS_TREINO = {
-  forca: { nome: "força", preRefeicao: { carb: 0.4, prot: 0.3 }, preLanche: { carb: 0.25, prot: 0.1 }, posProt: 0.4, posCarbBase: 0.25, posCarbHora: 0.15,
+  forca: { nome: "força", metRef: 5.0, preRefeicao: { carb: 0.4, prot: 0.3 }, preLanche: { carb: 0.25, prot: 0.1 }, posProt: 0.4, posCarbBase: 0.25, posCarbHora: 0.15,
     durante: "Água em goles entre as séries; na musculação não precisa de carboidrato durante.",
     pos: "Na musculação a prioridade é a proteína, pra reconstruir o músculo; o carboidrato repõe o que o treino gastou." },
-  endurance: { nome: "endurance", preRefeicao: { carb: 1.0, prot: 0.2 }, preLanche: { carb: 0.5, prot: 0 }, posProt: 0.3, posCarbBase: 0.3, posCarbHora: 0.4,
+  endurance: { nome: "endurance", metRef: 8.0, preRefeicao: { carb: 1.0, prot: 0.2 }, preLanche: { carb: 0.5, prot: 0 }, posProt: 0.3, posCarbBase: 0.3, posCarbHora: 0.4,
     durante: "Até ~75 min, água basta. Acima disso, 30–60 g de carboidrato por hora (gel, bebida esportiva ou banana), a partir de uns 45 min.",
     pos: "Em treino de resistência a prioridade é repor o glicogênio (carboidrato) que foi gasto; a proteína ajuda na recuperação." },
-  intermitente: { nome: "intermitente/luta", preRefeicao: { carb: 0.7, prot: 0.25 }, preLanche: { carb: 0.35, prot: 0.1 }, posProt: 0.35, posCarbBase: 0.3, posCarbHora: 0.3,
+  intermitente: { nome: "intermitente/luta", metRef: 7.0, preRefeicao: { carb: 0.7, prot: 0.25 }, preLanche: { carb: 0.35, prot: 0.1 }, posProt: 0.35, posCarbBase: 0.3, posCarbHora: 0.3,
     durante: "Água entre os rounds/trocas. Se passar de ~90 min, ~30 g de carboidrato por hora (bebida esportiva ou fruta).",
     pos: "Esforço explosivo gasta muito glicogênio: carboidrato pra repor e proteína pra recuperar o músculo." },
   leve: { nome: "leve", leve: true, durante: "Água se sentir sede.", pos: "Atividade leve: não precisa de pós-treino específico, siga a próxima refeição normal dentro da meta do dia." },
@@ -9844,6 +9855,58 @@ const PERFIL_ORDEM = ["endurance", "intermitente", "forca", "leve"];
 function perfilDoEsporte(esporte) { return PERFIL_ESPORTE[esporte] || "intermitente"; }
 function objetivoEmDeficit() { const o = state.goals.objetivo; return o === "emagrecimento" || o === "definicao"; }
 function arred5(v) { return Math.max(0, Math.round(v / 5) * 5); }
+// ===== carga do treino (v2.53, pedido do usuário) =====
+// As metas g/kg dos perfis acima valem pra ~1h de um treino típico do perfil. A "carga" de um treino é
+// medida em horas desse treino típico: kcal ÷ (MET de referência do perfil × peso) -- kcal/h = MET × kg.
+// MET de referência (Compêndio de Atividades Físicas, os mesmos valores já usados no app): força 5,0
+// (musculação entre moderada 3,5 e vigorosa 6,0), endurance 8,0 (corrida ~8 km/h, ciclismo moderado),
+// intermitente 7,0 (jiu-jitsu com ~35% de rola, futebol, tênis). Sem kcal, a carga é a duração em horas.
+// Assim um treino mais longo OU mais puxado (quando a cinta/relógio medir o gasto real) pede mais carbo.
+function horasEquivalentes(esporte, duracaoMin, kcal, peso) {
+  const pf = PERFIS_TREINO[perfilDoEsporte(esporte)];
+  const horas = (Number(duracaoMin) || 0) / 60;
+  if (Number(kcal) > 0 && peso > 0 && pf.metRef) {
+    const eq = Number(kcal) / (pf.metRef * peso);
+    // Proteção contra um gasto absurdo/errado: no máximo o dobro e no mínimo metade da duração.
+    return horas > 0 ? Math.min(horas * 2, Math.max(horas * 0.5, eq)) : eq;
+  }
+  return horas || 1;
+}
+// Treino típico da pessoa NAQUELE esporte: média de duração e de kcal de TODOS os treinos já registrados
+// nele (pedido do usuário: considerar todo o histórico). null quando ainda não há nenhum registro.
+function historicoEsporte(esporte) {
+  const lista = (state.treinos || []).filter((t) => t.esporte === esporte && Number(t.duracaoMin) > 0);
+  if (!lista.length) return null;
+  const comKcal = lista.filter((t) => Number(t.caloriasQueimadas) > 0);
+  return { n: lista.length, duracaoMin: Math.round(media(lista.map((t) => Number(t.duracaoMin)))), kcal: comKcal.length ? Math.round(media(comKcal.map((t) => Number(t.caloriasQueimadas)))) : null };
+}
+// Sessão prevista (antes de registrar): o treino típico do histórico; sem histórico, ~1h (e avisa).
+function sessaoTipica(esporte) {
+  const h = historicoEsporte(esporte);
+  return { esporte: esporte, duracaoMin: h ? h.duracaoMin : 60, caloriasQueimadas: h ? h.kcal : null, historico: h, prevista: true };
+}
+function textoSessaoTipica(sessao) {
+  const h = sessao && sessao.historico;
+  return h ? "pelo seu " + esc(sessao.esporte) + " típico: ~" + h.duracaoMin + " min" + (h.kcal ? " e ~" + formatNumber(h.kcal, 0) + " kcal" : "") + " (média dos seus " + h.n + " treino" + (h.n > 1 ? "s" : "") + ")"
+    : "por um treino de ~1h (ainda não há " + esc(sessao ? sessao.esporte : "") + " registrado pra calcular a sua média)";
+}
+// Minutos entre a última refeição com proteína de verdade (15 g ou mais) e o início do treino, no dia.
+// null = nenhuma refeição assim antes do treino (conta como "faz tempo").
+// Treino típico acima de 90 min em perfil intermitente/endurance: carbo durante (ACSM/AND/DC 2016:
+// 30–60 g/h em sessões de 1–2,5h; o app sugere a ponta baixa por causa do déficit).
+// Limites do app pra gordura/fibra no pré-treino (a referência -- ACSM/AND/DC 2016 -- só diz "pouca gordura
+// e fibra perto do treino", sem número): lanche = até 2h30 antes; refeição = 2h30 ou mais.
+const PRE_TREINO_LIMITES = { lanche: { gordura: 5, fibra: 3 }, refeicao: { gordura: 15, fibra: 99 } };
+function duranteLongoTexto(esporte, tipica) {
+  const chave = perfilDoEsporte(esporte);
+  if (!tipica || !tipica.historico || tipica.duracaoMin <= 90 || (chave !== "intermitente" && chave !== "endurance")) return "";
+  return "Água em goles ao longo do treino. Seu " + esc(esporte) + " costuma durar ~" + tipica.duracaoMin + " min: leve ~20–30 g de carboidrato pra beber durante (ex.: 500 ml de isotônico ou de água de coco).";
+}
+function minDesdeUltimaProteina(data, iniMin) {
+  const antes = state.meals.filter((m) => m.date === data && m.time && m.name !== "Exposição Solar" && (m.protein || 0) >= 15 && hhmmParaMin(m.time) <= iniMin)
+    .sort((a, b) => b.time.localeCompare(a.time))[0];
+  return antes ? iniMin - hhmmParaMin(antes.time) : null;
+}
 function kcalDasMetas(m) { return (m.prot || 0) * 4 + (m.carb || 0) * 4 + 8 * 9; } // + ~8 g de gordura que costuma vir junto
 function ajustarMetasAoOrcamento(m, kcalDisponivel) {
   if (kcalDisponivel == null || m.leve) return m;
@@ -9854,11 +9917,23 @@ function ajustarMetasAoOrcamento(m, kcalDisponivel) {
   return m;
 }
 // Pré-treino: fase "refeicao" (2h30 ou mais antes) ou "lanche" (30 min a 2h30).
-function metasPreTreino(esporte, fase, peso, kcalDisponivel) {
+// v2.53: o carbo é proporcional à carga do SEU treino típico naquele esporte (histórico inteiro -- ver
+// sessaoTipica()/horasEquivalentes()), entre 0,75× e 1,5× da meta de ~1h; a proteína sobe pra ~0,25 g/kg
+// quando a última refeição com proteína foi há 3h ou mais antes do treino (ISSN, Kerksick et al. 2017:
+// 0,25–0,4 g/kg a cada 3–4h). Peso (g/kg), objetivo (×0,75 no déficit) e o que resta de kcal continuam valendo.
+// opcoes: { data, ini } -- dia e início do treino (min), pra checar a última proteína. Sem isso, não checa.
+function metasPreTreino(esporte, fase, peso, kcalDisponivel, opcoes) {
   const chave = perfilDoEsporte(esporte), pf = PERFIS_TREINO[chave];
   if (pf.leve) return { leve: true, perfil: chave, pf: pf };
   const base = fase === "refeicao" ? pf.preRefeicao : pf.preLanche;
-  return ajustarMetasAoOrcamento({ perfil: chave, pf: pf, carb: arred5(base.carb * peso * (objetivoEmDeficit() ? 0.75 : 1)), prot: arred5(base.prot * peso), minCarb: 10 }, kcalDisponivel);
+  const tipica = sessaoTipica(esporte);
+  const fator = Math.min(1.5, Math.max(0.75, horasEquivalentes(esporte, tipica.duracaoMin, tipica.caloriasQueimadas, peso)));
+  let protKg = base.prot, minProt = null;
+  if (opcoes && opcoes.data && opcoes.ini != null) {
+    minProt = minDesdeUltimaProteina(opcoes.data, opcoes.ini);
+    if (minProt == null || minProt >= 180) protKg = Math.max(protKg, 0.25);
+  }
+  return ajustarMetasAoOrcamento({ perfil: chave, pf: pf, carb: arred5(base.carb * fator * peso * (objetivoEmDeficit() ? 0.75 : 1)), prot: arred5(protKg * peso), minCarb: 10, tipica: tipica, fator: fator, minDesdeProteina: minProt }, kcalDisponivel);
 }
 // Pós-treino: sessões = [{ esporte, duracaoMin }] (treinos em sequência somam). Carbo = base do perfil
 // mais exigente + uma parte por hora de cada sessão; proteína = a maior entre os perfis.
@@ -9867,8 +9942,11 @@ function metasPosTreino(sessoes, peso, kcalDisponivel) {
   if (!validas.length) return { leve: true, perfil: "leve", pf: PERFIS_TREINO.leve, duracaoMin: sessoes.reduce((a, x) => a + (x.duracaoMin || 0), 0) };
   const pfs = validas.map((x) => PERFIS_TREINO[perfilDoEsporte(x.esporte)]);
   const chave = PERFIL_ORDEM.find((k) => validas.some((x) => perfilDoEsporte(x.esporte) === k));
-  const gkg = Math.max.apply(null, pfs.map((x) => x.posCarbBase)) + validas.reduce((a, x) => a + PERFIS_TREINO[perfilDoEsporte(x.esporte)].posCarbHora * (x.duracaoMin || 60) / 60, 0);
+  // v2.53: a parte "por hora" usa a carga REGISTRADA de cada sessão (duração e kcal -- ver
+  // horasEquivalentes()); antes de registrar, quem chama passa a sessão típica do histórico (sessaoTipica()).
+  const gkg = Math.max.apply(null, pfs.map((x) => x.posCarbBase)) + validas.reduce((a, x) => a + PERFIS_TREINO[perfilDoEsporte(x.esporte)].posCarbHora * horasEquivalentes(x.esporte, x.duracaoMin || 60, x.caloriasQueimadas, peso), 0);
   return ajustarMetasAoOrcamento({ perfil: chave, pf: PERFIS_TREINO[chave], duracaoMin: sessoes.reduce((a, x) => a + (x.duracaoMin || 0), 0),
+    kcal: sessoes.reduce((a, x) => a + (Number(x.caloriasQueimadas) || 0), 0), prevista: sessoes.some((x) => x.prevista), sessaoTipica: sessoes.find((x) => x.prevista) || null,
     carb: arred5(gkg * peso * (objetivoEmDeficit() ? 0.75 : 1)), prot: arred5(Math.max.apply(null, pfs.map((x) => x.posProt)) * peso), minCarb: 15 }, kcalDisponivel);
 }
 function textoAjusteKcal(m) {
@@ -9930,8 +10008,10 @@ function planoTreinoModalTemplate() {
   const fase = real ? "pos" : agora >= ini ? "durante" : ini - agora >= 150 ? "refeicao" : ini - agora >= 30 ? "lanche" : "agua";
   const falta = ini - agora;
   const faltaTxt = falta >= 60 ? Math.floor(falta / 60) + "h" + (falta % 60 ? String(falta % 60).padStart(2, "0") : "") : falta + " min";
-  // Pós previsto (~60 min) só pra reservar carbo/kcal antes do treino; o pós de verdade usa o treino registrado.
-  const posPrevisto = metasPosTreino([{ esporte: p.esporte, duracaoMin: 60 }], peso, null);
+  // Pós previsto pelo SEU treino típico nesse esporte (média do histórico, ver sessaoTipica()) só pra reservar
+  // carbo/kcal antes do treino; o pós de verdade usa a duração e as kcal do treino registrado.
+  const tipicaPlano = sessaoTipica(p.esporte);
+  const posPrevisto = metasPosTreino([tipicaPlano], peso, null);
   const reservaKcal = posPrevisto.leve ? 0 : kcalDasMetas(posPrevisto), reservaCarbo = posPrevisto.leve ? 0 : posPrevisto.carb;
   const refeicoesHoje = mealsDesdeUltimoEncerramento().slice().sort((a, b) => (a.time || "").localeCompare(b.time || ""));
   // Refeição recente (pelo horário registrado) antes do treino: muda a recomendação de "lanche" pra "só
@@ -9945,27 +10025,29 @@ function planoTreinoModalTemplate() {
   if (pf.leve && fase !== "pos" && fase !== "durante") {
     agoraBloco = { rotulo: falta > 0 ? "Agora · faltam " + faltaTxt : "Agora", titulo: "Sem pré-treino específico", desc: "Caminhada é atividade leve: siga sua alimentação normal, dentro da meta do dia. Só evite sair de estômago muito cheio.", alvos: ["Água"] };
   } else if (fase === "refeicao") {
-    const m = metasPreTreino(p.esporte, "refeicao", peso, kcalRestante != null ? kcalRestante - reservaKcal : null);
+    const m = metasPreTreino(p.esporte, "refeicao", peso, kcalRestante != null ? kcalRestante - reservaKcal : null, { data: today(), ini: ini });
     m.prePos = true;
     const c = Math.min(m.carb, Math.max(10, carboRestante - reservaCarbo));
-    agoraBloco = { rotulo: "Agora · faltam " + faltaTxt, titulo: "Refeição pré-treino", desc: descPre[chavePerfil], alvos: ["Proteína ~" + m.prot + " g", "Carbo ~" + c + " g (lento)", "Gordura baixa"], ex: chavePerfil === "endurance" ? "arroz ou macarrão + frango, pão + banana + mel, tapioca + ovos" : "arroz + feijão + frango, batata-doce + carne magra ou pão + ovos + fruta" };
+    agoraBloco = { rotulo: "Agora · faltam " + faltaTxt, titulo: "Refeição pré-treino", desc: descPre[chavePerfil] + " Calculado " + textoSessaoTipica(tipicaPlano) + ".", alvos: ["Proteína ~" + m.prot + " g", "Carbo ~" + c + " g (lento)", "Gordura baixa"], ex: chavePerfil === "endurance" ? "arroz ou macarrão + frango, pão + banana + mel, tapioca + ovos" : "arroz + feijão + frango, batata-doce + carne magra ou pão + ovos + fruta" };
     avisoAjuste(m);
   } else if (fase === "lanche" && !comeuHaPouco) {
-    const m = metasPreTreino(p.esporte, "lanche", peso, kcalRestante != null ? kcalRestante - reservaKcal : null);
+    const m = metasPreTreino(p.esporte, "lanche", peso, kcalRestante != null ? kcalRestante - reservaKcal : null, { data: today(), ini: ini });
     m.prePos = true;
     const c = Math.min(m.carb, Math.max(10, carboRestante - reservaCarbo));
-    agoraBloco = { rotulo: "Agora · faltam " + faltaTxt, titulo: "Lanche rápido e leve", desc: "Pouco tempo pra digerir: carboidrato de absorção rápida, sem fibra nem gordura.", alvos: ["Carbo ~" + c + " g (rápido)"].concat(m.prot ? ["Proteína opcional ~" + m.prot + " g"] : []), ex: "banana" + (chavePerfil === "endurance" ? " com mel" : "") + ", pão francês com geleia ou tapioca simples" };
+    const protLonge = m.minDesdeProteina == null || m.minDesdeProteina >= 180;
+    agoraBloco = { rotulo: "Agora · faltam " + faltaTxt, titulo: "Lanche rápido e leve", desc: "Pouco tempo pra digerir: carboidrato de absorção rápida, sem fibra nem gordura. Calculado " + textoSessaoTipica(tipicaPlano) + "." + (protLonge && m.prot ? " Sua última refeição com proteína " + (m.minDesdeProteina == null ? "não foi hoje" : "foi há " + Math.floor(m.minDesdeProteina / 60) + "h" + String(m.minDesdeProteina % 60).padStart(2, "0") + " do treino") + ": vale incluir proteína." : ""),
+      alvos: ["Carbo ~" + c + " g (rápido)"].concat(m.prot ? [(protLonge ? "Proteína ~" : "Proteína opcional ~") + m.prot + " g", "Gordura até ~5 g"] : []), ex: "banana" + (chavePerfil === "endurance" ? " com mel" : "") + ", pão francês com geleia ou tapioca simples" };
     avisoAjuste(m);
   } else if (fase === "lanche" || fase === "agua") {
     agoraBloco = { rotulo: "Agora · faltam " + faltaTxt, titulo: "Não coma agora, só água", desc: comeuHaPouco ? "Você comeu há pouco e isso já cobre o pré-treino. Comer mais só aumenta o risco de desconforto." : "Falta pouco pro treino: comer agora mais atrapalha do que ajuda.", alvos: ["Água 300–500 ml"] };
   } else if (fase === "durante") {
     agoraBloco = { rotulo: "Treino em andamento", titulo: "Hidrate-se", desc: pf.durante + " Ao terminar, registre o treino: o pós-treino aparece aqui, calculado pelo treino que você fez.", alvos: ["Água em goles, a cada 15–20 min"] };
   } else {
-    posMetas = metasPosTreino([{ esporte: real.esporte, duracaoMin: real.duracaoMin }], peso, kcalRestante);
+    posMetas = metasPosTreino([{ esporte: real.esporte, duracaoMin: real.duracaoMin, caloriasQueimadas: real.caloriasQueimadas }], peso, kcalRestante);
     if (posMetas.leve) {
       agoraBloco = { rotulo: "Depois da " + esc(real.esporte.toLowerCase()), titulo: "Sem pós-treino específico", desc: pf.pos, alvos: ["Água"] };
     } else {
-      agoraBloco = { rotulo: "Pós-treino · até " + minParaHhmm(fim + 120), titulo: "Hora de repor e reconstruir", desc: posMetas.pf.pos + " Calculado pelo seu treino: " + posMetas.pf.nome + " · " + (real.duracaoMin || 0) + " min" + (objetivoEmDeficit() ? ", ajustado ao seu déficit" : "") + ".", alvos: ["Proteína ~" + posMetas.prot + " g", "Carbo ~" + posMetas.carb + " g (rápido)"], ex: "arroz + carne ou frango, pão + ovos, ou iogurte/whey + banana" };
+      agoraBloco = { rotulo: "Pós-treino · até " + minParaHhmm(fim + 120), titulo: "Hora de repor e reconstruir", desc: posMetas.pf.pos + " Calculado pelo seu treino registrado: " + posMetas.pf.nome + " · " + (real.duracaoMin || 0) + " min" + (Number(real.caloriasQueimadas) > 0 ? " · " + formatNumber(real.caloriasQueimadas, 0) + " kcal" : "") + (objetivoEmDeficit() ? ", ajustado ao seu déficit" : "") + ".", alvos: ["Proteína ~" + posMetas.prot + " g", "Carbo ~" + posMetas.carb + " g (rápido)"], ex: "arroz + carne ou frango, pão + ovos, ou iogurte/whey + banana" };
       avisoAjuste(posMetas);
     }
   }
@@ -9979,12 +10061,13 @@ function planoTreinoModalTemplate() {
   const dicaNoite = fase === "pos" && ini >= 18 * 60 ? '<div class="pm-dica">' + icon("moon") + "<div>Treino à noite: faça do pós-treino o seu jantar e evite cafeína. É no sono que o músculo se reconstrói.</div></div>" : "";
   const passos = [];
   if (fase === "refeicao" && ini - 60 > agora && !pf.leve) passos.push([minParaHhmm(ini - 60) + "–" + minParaHhmm(ini - 30), "<b>Lanche rápido, só se tiver fome:</b> uma fruta (carboidrato rápido)."]);
-  if (fase !== "pos" && fase !== "durante") passos.push(["A partir de " + minParaHhmm(ini), "<b>Treino.</b> " + pf.durante]);
-  if (fase !== "pos") passos.push(["Até 2h depois", posPrevisto.leve ? "<b>Pós-treino:</b> não precisa de nada específico." : "<b>Pós-treino (" + pf.nome + "):</b> ~" + posPrevisto.prot + " g de proteína + ~" + posPrevisto.carb + " g de carboidrato pra um treino de ~1h. A quantidade certa aparece aqui quando você registrar o treino (duração real)."]);
+  if (fase !== "pos" && fase !== "durante") passos.push(["A partir de " + minParaHhmm(ini), "<b>Treino.</b> " + (duranteLongoTexto(p.esporte, tipicaPlano) || pf.durante)]);
+  if (fase !== "pos") passos.push([tipicaPlano.historico ? "Até 2h depois de ~" + minParaHhmm(ini + tipicaPlano.duracaoMin) : "Até 2h depois", posPrevisto.leve ? "<b>Pós-treino:</b> não precisa de nada específico." : "<b>Pós-treino (" + pf.nome + "):</b> ~" + posPrevisto.prot + " g de proteína + ~" + posPrevisto.carb + " g de carboidrato, previsto " + textoSessaoTipica(tipicaPlano) + ". Quando você registrar o treino, o valor é recalculado pela duração e pelas kcal reais."]);
   const protPos = posMetas && !posMetas.leve ? posMetas.prot : 0;
   if (fase === "pos" && protPos && (restante.protein || 0) - protPos > 15) passos.push(["Antes de dormir", "<b>Ainda vai faltar proteína</b> (~" + Math.round(restante.protein - protPos) + " g): iogurte ou queijo cottage, de digestão lenta."]);
   if (fase === "pos") passos.push(["Amanhã", "<b>Recuperação:</b> confira o HRV e o Body Battery na aba Recuperação."]);
-  const agoraHtml = '<div class="pm-agora"><div class="pm-bloco-titulo">' + icon("clock") + " " + agoraBloco.rotulo + "</div>" +
+  const guiaBtn = pf.leve ? "" : guiaPrePosBtnTemplate(p.esporte, fase, ini);
+  const agoraHtml = '<div class="pm-agora"><div class="pm-bloco-titulo">' + icon("clock") + " " + agoraBloco.rotulo + guiaBtn + "</div>" +
     '<div class="pm-agora-titulo">' + agoraBloco.titulo + '</div><div class="pm-agora-desc">' + agoraBloco.desc + "</div>" +
     '<div class="pm-alvos">' + agoraBloco.alvos.map((a) => '<span class="pm-alvo">' + a + "</span>").join("") + "</div>" +
     (agoraBloco.ex ? '<div class="pm-agora-desc">Ex.: ' + agoraBloco.ex + ".</div>" : "") + "</div>";
@@ -10026,8 +10109,8 @@ function treinoDaRefeicao(data, horaMin, opcoes) {
     if (ult && hhmmParaMin(t.horaInicio) - hhmmParaMin(ult.horaFim) <= 30) {
       treinos[treinos.length - 1] = Object.assign({}, ult, { esporte: ult.esporte + " + " + t.esporte, horaFim: t.horaFim > ult.horaFim ? t.horaFim : ult.horaFim,
         duracaoMin: (ult.duracaoMin || 0) + (t.duracaoMin || 0), caloriasQueimadas: (ult.caloriasQueimadas || 0) + (t.caloriasQueimadas || 0),
-        sessoes: ult.sessoes.concat([{ esporte: t.esporte, duracaoMin: t.duracaoMin }]) });
-    } else treinos.push(Object.assign({}, t, { sessoes: [{ esporte: t.esporte, duracaoMin: t.duracaoMin }] }));
+        sessoes: ult.sessoes.concat([{ esporte: t.esporte, duracaoMin: t.duracaoMin, caloriasQueimadas: t.caloriasQueimadas }]) });
+    } else treinos.push(Object.assign({}, t, { sessoes: [{ esporte: t.esporte, duracaoMin: t.duracaoMin, caloriasQueimadas: t.caloriasQueimadas }] }));
   });
   const pos = treinos.map((t) => ({ t, d: horaMin - hhmmParaMin(t.horaFim) })).filter((x) => x.d >= 0 && x.d <= 180).sort((a, b) => a.d - b.d)[0];
   const planos = state.treinosPlanejados.filter((p) => p.date === data && p.hora && !p.naoRealizado && !planoTreinoRealizado(p));
@@ -10040,7 +10123,7 @@ function treinoDaRefeicao(data, horaMin, opcoes) {
   if (opcoes && opcoes.semPergunta) return null;
   const comecou = planos.find((p) => horaMin >= hhmmParaMin(p.hora) && horaMin - hhmmParaMin(p.hora) <= 300);
   if (!comecou) return null;
-  if (state.mealPosResposta === "sim") return { fase: "pos", plano: comecou, esporte: comecou.esporte, sessoes: [{ esporte: comecou.esporte, duracaoMin: 60 }], minDepois: null };
+  if (state.mealPosResposta === "sim") return { fase: "pos", plano: comecou, esporte: comecou.esporte, sessoes: [sessaoTipica(comecou.esporte)], minDepois: null };
   if (state.mealPosResposta === "nao") return null;
   return { fase: "pergunta", plano: comecou, esporte: comecou.esporte };
 }
@@ -10145,11 +10228,11 @@ function refeicaoTreinoTemplate(total) {
     let pAnimal = 0, pVegetal = 0;
     state.preview.forEach((f) => { const n = normalizeText(f.label), pr = f.values.protein || 0; if (PROTEINA_ANIMAL_RX.test(n)) pAnimal += pr; else if (PROTEINA_VEGETAL_RX.test(n)) pVegetal += pr; });
     const vegetal = (total.protein || 0) >= 5 && pVegetal / total.protein >= 0.5;
-    const mp = metasPosTreino(ctx.sessoes || [{ esporte: ctx.esporte, duracaoMin: 60 }], peso, kcalAntes);
+    const mp = metasPosTreino(ctx.sessoes || [sessaoTipica(ctx.esporte)], peso, kcalAntes);
     if (mp.leve) linha("nota", "<b>" + esc(ctx.esporte) + " (atividade leve)</b>: " + mp.pf.pos);
     const protAlvo = mp.leve ? 0 : arred5(mp.prot * (vegetal ? 1.25 : 1));
     if (!mp.leve) {
-    const perfilTxt = mp.pf.nome + " · " + mp.duracaoMin + " min";
+    const perfilTxt = mp.pf.nome + " · " + mp.duracaoMin + " min" + (mp.kcal > 0 ? " · " + formatNumber(mp.kcal, 0) + " kcal" : "") + (mp.prevista ? " previstos" : "");
     const vp = veredito(total.protein, protAlvo, "g");
     if (!vp.ok) pendencias++;
     linha(vp.ok ? "ok" : "alerta", "<b>Proteína</b> " + g(total.protein) + " de ~" + protAlvo + " g: " + vp.txt + resolveu("protein", vp.ok) +
@@ -10180,7 +10263,7 @@ function refeicaoTreinoTemplate(total) {
       if (ctx.proximo && pctRap < 25) pendencias++; // só pesa de verdade com outro treino em poucas horas
     }
     }
-    if (ctx.minDepois == null) linha("nota", "<b>Horário</b>: usei um treino de ~1h. Registre o treino (com o horário de término) pra conferir quantidade e horário com precisão.");
+    if (ctx.minDepois == null) linha("nota", "<b>Horário</b>: o treino ainda não foi registrado, então calculei " + textoSessaoTipica(mp.sessaoTipica || sessaoTipica(ctx.esporte)) + ". Registre o treino (com o horário de término) pra calcular pela duração e pelas kcal reais.");
     else if (ctx.minDepois <= 120) linha("ok", "<b>Horário</b> " + (ctx.minDepois < 60 ? ctx.minDepois + " min" : Math.floor(ctx.minDepois / 60) + "h" + String(ctx.minDepois % 60).padStart(2, "0")) + " depois de terminar: dentro da janela ideal (até 2h).");
     else { pendencias++; linha("alerta", "<b>Horário</b>: mais de 2h depois de terminar. Ainda vale, mas já passou da melhor janela."); }
     if (ctx.proximo) {
@@ -10201,10 +10284,11 @@ function refeicaoTreinoTemplate(total) {
     const m = ctx.minAntes;
     const faltaTxt = m >= 60 ? Math.floor(m / 60) + "h" + (m % 60 ? String(m % 60).padStart(2, "0") : "") : m + " min";
     titulo = "Pré-treino · " + esc(ctx.esporte) + " às " + minParaHhmm(ctx.ini) + " (em " + faltaTxt + ")";
-    // Metas do perfil da modalidade, dentro da meta de kcal (reservando o pós-treino previsto de ~1h).
-    const posPrev = metasPosTreino([{ esporte: ctx.esporte, duracaoMin: 60 }], peso, null);
+    // Metas do perfil da modalidade, dentro da meta de kcal (reservando o pós-treino previsto pelo seu
+    // treino típico nesse esporte -- ver sessaoTipica()).
+    const posPrev = metasPosTreino([sessaoTipica(ctx.esporte)], peso, null);
     const kcalPre = kcalAntes != null ? kcalAntes - (posPrev.leve ? 0 : kcalDasMetas(posPrev)) : null;
-    const mPre = metasPreTreino(ctx.esporte, m >= 150 ? "refeicao" : "lanche", peso, kcalPre);
+    const mPre = metasPreTreino(ctx.esporte, m >= 150 ? "refeicao" : "lanche", peso, kcalPre, { data: data, ini: ctx.ini });
     mPre.prePos = true;
     const ajusteTxt = mPre.ajustado ? '<div class="rt-sub">' + textoAjusteKcal(mPre) + "</div>" : "";
     if (mPre.leve) {
@@ -10213,22 +10297,27 @@ function refeicaoTreinoTemplate(total) {
       const protPre = mPre.prot;
       const vc = veredito(total.carbs, mPre.carb, "g");
       if (!vc.ok) pendencias++;
-      linha(vc.ok ? "ok" : "alerta", "<b>Carboidrato</b> " + g(total.carbs) + " de ~" + mPre.carb + " g (" + mPre.pf.nome + "): " + vc.txt + resolveu("carbs", vc.ok) + (vc.ok ? "" : '<div class="rt-sub">Complete com: ' + esc(sugestaoComplemento("carbs", mPre.carb - total.carbs, labels)) + ".</div>") + ajusteTxt);
+      linha(vc.ok ? "ok" : "alerta", "<b>Carboidrato</b> " + g(total.carbs) + " de ~" + mPre.carb + " g (" + mPre.pf.nome + ", " + textoSessaoTipica(mPre.tipica) + "): " + vc.txt + resolveu("carbs", vc.ok) + (vc.ok ? "" : '<div class="rt-sub">Complete com: ' + esc(sugestaoComplemento("carbs", mPre.carb - total.carbs, labels)) + ".</div>") + ajusteTxt);
       if (pctRap != null) linha("ok", "<b>Tipo do carboidrato</b>: " + (pctRap <= 60 ? "lento ou misto — bom com esse tempo até o treino: libera energia aos poucos." : pctRap + "% rápido — com esse tempo até o treino, um pouco de carboidrato lento (feijão, batata-doce, aveia, integrais) segura melhor a energia."));
       const vp = veredito(total.protein, protPre, "g");
       if (!vp.ok) pendencias++;
       linha(vp.ok ? "ok" : "alerta", "<b>Proteína</b> " + g(total.protein) + " de ~" + protPre + " g: " + vp.txt + resolveu("protein", vp.ok));
-      const gOk = (total.fat || 0) <= 20;
+      const gOk = (total.fat || 0) <= PRE_TREINO_LIMITES.refeicao.gordura;
       if (!gOk) pendencias++;
-      linha(gOk ? "ok" : "alerta", "<b>Gordura</b> " + g(total.fat) + (gOk ? ": na medida (até ~20 g)." : ": acima de ~20 g, atrasa a digestão e pode pesar no treino."));
+      linha(gOk ? "ok" : "alerta", "<b>Gordura</b> " + g(total.fat) + (gOk ? ": na medida (até ~" + PRE_TREINO_LIMITES.refeicao.gordura + " g)." : ": acima de ~" + PRE_TREINO_LIMITES.refeicao.gordura + " g, atrasa a digestão e pode pesar no treino."));
     } else if (m >= 30) {
       const vc = veredito(total.carbs, mPre.carb, "g");
       if (!vc.ok) pendencias++;
-      linha(vc.ok ? "ok" : "alerta", "<b>Carboidrato</b> " + g(total.carbs) + " de ~" + mPre.carb + " g (" + mPre.pf.nome + "): " + vc.txt + resolveu("carbs", vc.ok) + ajusteTxt);
+      linha(vc.ok ? "ok" : "alerta", "<b>Carboidrato</b> " + g(total.carbs) + " de ~" + mPre.carb + " g (" + mPre.pf.nome + ", " + textoSessaoTipica(mPre.tipica) + "): " + vc.txt + resolveu("carbs", vc.ok) + ajusteTxt);
+      if (mPre.minDesdeProteina == null || mPre.minDesdeProteina >= 180) {
+        const vpl = veredito(total.protein, mPre.prot, "g");
+        if (!vpl.ok) pendencias++;
+        linha(vpl.ok ? "ok" : "alerta", "<b>Proteína</b> " + g(total.protein) + " de ~" + mPre.prot + " g: " + vpl.txt + '<div class="rt-sub">Sua última refeição com proteína ' + (mPre.minDesdeProteina == null ? "não foi hoje" : "foi há mais de 3h do treino") + ": um pouco de proteína agora ajuda a recuperar o músculo.</div>");
+      }
       if (pctRap != null) linha(pctRap >= 50 ? "ok" : "alerta", "<b>Tipo do carboidrato</b>: " + (pctRap >= 50 ? pctRap + "% rápido — ideal perto do treino." : "predomina lento/fibroso: perto do treino, prefira rápido (banana, pão francês, tapioca)."));
-      const leve = (total.fat || 0) <= 10 && (total.fiber || 0) <= 5;
+      const leve = (total.fat || 0) <= PRE_TREINO_LIMITES.lanche.gordura && (total.fiber || 0) <= PRE_TREINO_LIMITES.lanche.fibra;
       if (!leve) pendencias++;
-      linha(leve ? "ok" : "alerta", "<b>Gordura e fibra</b> " + g(total.fat) + " · " + g(total.fiber) + (leve ? ": baixas, digestão rápida." : ": perto do treino demoram a digerir, risco de desconforto."));
+      linha(leve ? "ok" : "alerta", "<b>Gordura e fibra</b> " + g(total.fat) + " · " + g(total.fiber) + (leve ? ": baixas, digestão rápida." : ": perto do treino (até ~" + PRE_TREINO_LIMITES.lanche.gordura + " g de gordura e ~" + PRE_TREINO_LIMITES.lanche.fibra + " g de fibra) demoram a digerir, risco de desconforto."));
     } else {
       const leve = (total.calories || 0) <= 200 && (total.fat || 0) <= 5;
       if (!leve) pendencias++;
@@ -10248,7 +10337,9 @@ function refeicaoTreinoTemplate(total) {
   state.rtAtual = atual;
   const resumo = pendencias ? '<div class="rt-resumo alerta">' + icon("alert") + " " + (pendencias === 1 ? "Quase lá: falta 1 ponto" : "Faltam " + pendencias + " pontos") + " pra refeição ficar ideal como " + (ctx.fase === "pos" ? "pós" : "pré") + "-treino.</div>"
     : '<div class="rt-resumo ok">' + icon("check") + " Refeição adequada como " + (ctx.fase === "pos" ? "pós" : "pré") + "-treino.</div>";
-  return '<div class="rt-bloco"><div class="rt-head">' + emojiEsporte(ctx.esporte) + " " + titulo + "</div>" + resumo + linhas.join("") + "</div>";
+  const momentoGuia = ctx.fase === "pos" ? "pos" : ctx.minAntes >= 150 ? "refeicao" : "lanche";
+  const guiaBtn = PERFIS_TREINO[perfilDoEsporte(ctx.esporte)].leve ? "" : guiaPrePosBtnTemplate(ctx.esporte, momentoGuia, ctx.ini != null ? ctx.ini : null);
+  return '<div class="rt-bloco"><div class="rt-head" style="display:flex;align-items:center;gap:6px">' + emojiEsporte(ctx.esporte) + " " + titulo + guiaBtn + "</div>" + resumo + linhas.join("") + "</div>";
 }
 // ===================== sugestão de refeição (pedido do usuário) =====================
 // Botão "Sugestão de refeição" abaixo do tipo de refeição: abre um modal com 2-3 opções montadas a partir
@@ -10329,6 +10420,15 @@ function alocarRestante(tipos, perfil, rest) {
   });
   return out;
 }
+// Janelas de treino de hoje (min): registrados (início–fim) e planejados ainda não feitos (horário + duração
+// típica do histórico daquele esporte, ver sessaoTipica()).
+function janelasTreinoHoje() {
+  const hoje = today();
+  const reg = state.treinos.filter((t) => t.date === hoje && t.horaInicio && t.horaFim).map((t) => ({ ini: hhmmParaMin(t.horaInicio), fim: hhmmParaMin(t.horaFim), sessao: { esporte: t.esporte, duracaoMin: t.duracaoMin, caloriasQueimadas: t.caloriasQueimadas } }));
+  const plan = (state.treinosPlanejados || []).filter((p) => p.date === hoje && p.hora && !p.naoRealizado && !planoTreinoRealizado(p))
+    .map((p) => { const sessao = sessaoTipica(p.esporte); return { ini: hhmmParaMin(p.hora), fim: hhmmParaMin(p.hora) + sessao.duracaoMin, sessao: sessao }; });
+  return reg.concat(plan);
+}
 function garminDeHoje() { return (state.garmin || []).find((g) => g.date === today()) || null; }
 function contextoRecuperacaoHoje() {
   const g = garminDeHoje();
@@ -10360,6 +10460,12 @@ function descricaoAjustada(alimentos, kProt, kOutros) {
   }
   return partes.length ? partes.join(", ") : null;
 }
+// Combinações leves pro pré-treino (pouca gordura e fibra -- ver PRE_TREINO_LIMITES): as quantidades
+// são ajustadas à meta, como as demais sugestões.
+const SUGESTAO_PRE_TREINO = {
+  lanche: [["1 unidade de banana", "30 g de whey protein"], ["1 unidade de pao frances", "30 g de whey protein"], ["1 unidade de banana", "300 ml de agua de coco", "30 g de whey protein"]],
+  refeicao: [["120 g de arroz branco", "100 g de peito de frango"], ["200 g de batata doce", "120 g de bife de patinho"], ["2 unidades de pao frances", "30 g de whey protein", "1 unidade de banana"]],
+};
 const SUGESTAO_GENERICAS = {
   principal: [["150 g de bife de patinho", "120 g de arroz branco", "100 g de feijao", "100 g de salada mista"], ["150 g de peito de frango", "200 g de batata doce", "100 g de salada mista"], ["2 unidades de ovo cozido", "150 g de cuscuz", "100 g de peito de frango"]],
   leve: [["1 pote de iogurte natural", "30 g de whey protein"], ["1 unidade de banana", "30 g de whey protein"], ["2 unidades de ovo cozido", "1 unidade de pao frances"]],
@@ -10376,21 +10482,34 @@ function sugestoesDeRefeicao(tipo) {
   const chips = [];
   // Treino: a refeição escolhida pode ser o pré ou o pós (metas do perfil da modalidade, sem passar do que resta).
   const horaRef = Math.max(agora, perfil[tipo].hora - 60);
+  let preTreino = null;
   const ctx = treinoDaRefeicao(hoje, horaRef, { semPergunta: true });
   const posFeitoHoje = state.treinos.filter((t) => t.date === hoje && t.horaFim).some((t) => refeicaoPosDoTreino(t));
   if (ctx && ctx.fase === "pos" && !refeicaoPosDoTreino(ctx.treino)) {
     const mp = metasPosTreino(ctx.sessoes, peso, Math.max(0, rest.calories || 0));
     if (!mp.leve) { alvo.prot = Math.max(alvo.prot, mp.prot); alvo.carb = Math.max(alvo.carb, mp.carb); chips.push(["treino", "Esta refeição é o seu pós-treino (" + esc(ctx.esporte) + ")"]); }
   } else if (ctx && ctx.fase === "pre" && !PERFIS_TREINO[perfilDoEsporte(ctx.esporte)].leve) {
-    const mPre = metasPreTreino(ctx.esporte, ctx.minAntes >= 150 ? "refeicao" : "lanche", peso, null);
-    alvo.carb = Math.max(alvo.carb, mPre.carb); alvo.fat = Math.min(alvo.fat, ctx.minAntes >= 150 ? 20 : 10);
-    chips.push(["treino", "Pré-treino: " + esc(ctx.esporte) + " às " + minParaHhmm(ctx.ini)]);
+    // Reserva o pós-treino previsto pelo seu treino típico (média do histórico) antes de dar o pré.
+    const posPrev = metasPosTreino([sessaoTipica(ctx.esporte)], peso, null);
+    const kcalPre = Math.max(0, (rest.calories || 0) - (posPrev.leve ? 0 : kcalDasMetas(posPrev)));
+    const mPre = metasPreTreino(ctx.esporte, ctx.minAntes >= 150 ? "refeicao" : "lanche", peso, kcalPre, { data: hoje, ini: ctx.ini });
+    preTreino = { fase: ctx.minAntes >= 150 ? "refeicao" : "lanche", metas: mPre };
+    alvo.carb = Math.max(alvo.carb, mPre.carb); alvo.prot = Math.max(alvo.prot, mPre.prot);
+    alvo.fat = Math.min(alvo.fat, PRE_TREINO_LIMITES[preTreino.fase].gordura);
+    chips.push(["treino", "Pré-treino: " + esc(ctx.esporte) + " às " + minParaHhmm(ctx.ini) + " · " + (mPre.tipica.historico ? "seu treino típico: ~" + mPre.tipica.duracaoMin + " min" + (mPre.tipica.caloriasQueimadas ? " · ~" + formatNumber(mPre.tipica.caloriasQueimadas, 0) + " kcal" : "") + " (média de " + mPre.tipica.historico.n + ")" : "sem histórico desse esporte, considerei ~1h")]);
   } else if (posFeitoHoje) chips.push(["ok", "✓ Pós-treino de hoje já feito: nada de carbo extra de treino aqui"]);
   alvo.kcal = Math.min(Math.max(alvo.kcal, alvo.prot * 4 + alvo.carb * 4 + alvo.fat * 9 * 0.8), Math.max(0, rest.calories || 0));
   // As outras refeições pendentes dividem o que sobrar depois desta.
   const outrosTipos = sit.pendentes.filter((t) => t !== tipo);
   const restDepois = { calories: (rest.calories || 0) - alvo.kcal, protein: (rest.protein || 0) - alvo.prot, carbs: (rest.carbs || 0) - alvo.carb, fat: (rest.fat || 0) - alvo.fat };
   const outros = alocarRestante(outrosTipos, perfil, restDepois);
+  // Refeição cujo horário habitual cai DENTRO de um treino de hoje (planejado pela duração típica, ou
+  // registrado) vira o pós-treino, no término previsto + 15 min.
+  const janelas = janelasTreinoHoje();
+  const outrosInfo = outrosTipos.map((t) => {
+    const h = perfil[t].hora, j = janelas.find((x) => h >= x.ini && h < x.fim);
+    return j ? { tipo: t, hora: j.fim + 15, pos: true, metasPos: metasPosTreino([j.sessao], peso, null) } : { tipo: t, hora: h, pos: false };
+  }).sort((a, b) => a.hora - b.hora);
   const rec = contextoRecuperacaoHoje();
   const noturna = tipo === "Jantar" || tipo === "Ceia";
   if (rec && rec.cansado) chips.push(["aviso", (rec.sono != null ? "Sono " + rec.sono : "") + (rec.sono != null && rec.bb != null ? " · " : "") + (rec.bb != null ? "Body Battery " + rec.bb : "") + (noturna ? ": refeição sem exagero e sem cafeína" : ": prefira comida de verdade a doces")]);
@@ -10425,8 +10544,11 @@ function sugestoesDeRefeicao(tipo) {
     const tipicidade = alimentos.reduce((a, x) => a + (freq[x.label] || 0), 0) / alimentos.length;
     cands.push({ origem: (m.name === "Ceia" ? "Sua " : "Seu ") + m.name.toLowerCase() + " de " + rotuloDiaPlano(m.date).toLowerCase() + (m.name === "Ceia" ? ", ajustada" : ", ajustado"), alimentos: alimentos, tipicidade: tipicidade });
   });
+  // Pré-treino: entram também combinações leves próprias pro pré (e as do histórico pesadas demais saem,
+  // ver filtro logo abaixo).
+  if (preTreino) SUGESTAO_PRE_TREINO[preTreino.fase].forEach((itens) => cands.push({ origem: "Combinação pré-treino", texto: itens.join(", "), tipicidade: 0 }));
   // Combinações padrão só quando o histórico desse tipo de refeição não dá 3 opções.
-  if (cands.length < 3) SUGESTAO_GENERICAS[SUGESTAO_PRINCIPAIS.includes(tipo) ? "principal" : "leve"].forEach((itens) => cands.push({ origem: "Combinação do app", texto: itens.join(", "), tipicidade: 0 }));
+  if (!preTreino && cands.length < 3) SUGESTAO_GENERICAS[SUGESTAO_PRINCIPAIS.includes(tipo) ? "principal" : "leve"].forEach((itens) => cands.push({ origem: "Combinação do app", texto: itens.join(", "), tipicidade: 0 }));
   const opcoes = [];
   cands.slice(0, 40).forEach((c) => {
     let desc;
@@ -10453,7 +10575,8 @@ function sugestoesDeRefeicao(tipo) {
     const cafeina = /\b(cafe|coca|refrigerante|energetico|cha preto|cha mate)\b/.test(normalizeText(desc));
     if (cafeina && agora >= 14 * 60) return; // nada de cafeína à tarde/noite
     if (rec && rec.cansado && tipo === "Ceia" && /\b(iogurte|cottage|leite|caseina|queijo)\b/.test(normalizeText(desc))) score -= 0.2;
-    if (c.origem === "Combinação do app") score += 0.15;
+    if (c.origem === "Combinação do app" || c.origem === "Combinação pré-treino") score += 0.15;
+    if (preTreino && ((t.fat || 0) > PRE_TREINO_LIMITES[preTreino.fase].gordura || (t.fiber || 0) > PRE_TREINO_LIMITES[preTreino.fase].fibra)) return; // pesado demais pro pré
     score -= 0.4 * (c.tipicidade || 0); // mais parecida com o que você costuma comer nesse tipo de refeição
     if (itens.length > 4) score += 0.1 * (itens.length - 4);
     opcoes.push({ origem: c.origem, desc: desc, itens: itens, total: t, score: score, cobre: cobre, errK: errK, errP: errP });
@@ -10464,7 +10587,7 @@ function sugestoesDeRefeicao(tipo) {
   escolhidas.forEach((o, i) => {
     o.porque = i === 0 ? (o.errP <= o.errK ? "fecha melhor a proteína" : "mais perto da meta de kcal") : o.cobre.length ? "mais " + o.cobre[0] : o.total.fat < alvo.fat * 0.8 ? "mais leve na gordura" : "outra opção";
   });
-  return { tipo: tipo, perfil: perfil, sit: sit, rest: rest, alvo: alvo, outros: outros, outrosTipos: outrosTipos, chips: chips, opcoes: escolhidas, lacunas: lacunas };
+  return { tipo: tipo, perfil: perfil, sit: sit, rest: rest, alvo: alvo, outros: outros, outrosTipos: outrosTipos, outrosInfo: outrosInfo, chips: chips, opcoes: escolhidas, lacunas: lacunas };
 }
 function acaoAbrirSugestaoRefeicao() { state.sugestaoAberta = true; render(); }
 function acaoFecharSugestaoRefeicao() { state.sugestaoAberta = false; render(); }
@@ -10491,7 +10614,7 @@ function sugestaoModalTemplate() {
   const artigo = state.mealTipo === "Ceia" ? "a ceia" : "o " + state.mealTipo.toLowerCase();
   const chipsHtml = ['<span class="sg-chip">Restam ' + n0(r.rest.calories) + " kcal · " + n0(r.rest.protein) + " g prot · " + n0(r.rest.carbs) + " g carbo · " + n0(r.rest.fat) + " g gord</span>"]
     .concat(r.sit.puladas.length ? ['<span class="sg-chip">Sem registro: ' + esc(r.sit.puladas.join(", ").toLowerCase()) + " (dividido entre as próximas)</span>"] : [])
-    .concat(r.outrosTipos.length ? ['<span class="sg-chip">Ainda podem vir: ' + r.outrosTipos.map((t) => esc(t.toLowerCase()) + " (~" + minParaHhmm(r.perfil[t].hora) + ")").join(", ") + "</span>"] : [])
+    .concat(r.outrosInfo.length ? ['<span class="sg-chip">Ainda podem vir: ' + r.outrosInfo.map((o) => esc(o.tipo.toLowerCase()) + (o.pos ? " como pós-treino" : "") + " (~" + minParaHhmm(o.hora) + ")").join(", ") + "</span>"] : [])
     .concat(r.chips.map((c) => '<span class="sg-chip' + (c[0] === "ok" ? " ok" : c[0] === "aviso" ? " aviso" : "") + '">' + c[1] + "</span>")).join("");
   const semKcal = (r.rest.calories || 0) <= 50;
   const metaHtml = '<div class="sg-meta"><div class="t">Meta pr' + (state.mealTipo === "Ceia" ? "a ceia" : "o " + esc(state.mealTipo.toLowerCase())) + "</div>" +
@@ -10508,7 +10631,9 @@ function sugestaoModalTemplate() {
   const somaOutros = r.outrosTipos.reduce((a, t) => a + ((r.outros[t] || {}).kcal || 0), 0);
   const protOutros = r.outrosTipos.reduce((a, t) => a + ((r.outros[t] || {}).prot || 0), 0);
   const rodape = best && !semKcal ? '<div class="sg-fecha">' +
-      (r.outrosTipos.length ? r.outrosTipos.map((t) => "<b>" + esc(t) + " (~" + minParaHhmm(r.perfil[t].hora) + "), se tiver fome:</b> ~" + n0((r.outros[t] || {}).kcal) + " kcal · ~" + n0((r.outros[t] || {}).prot) + " g prot").join("<br>") + "<br>" : "") +
+      (r.outrosInfo.length ? r.outrosInfo.map((o) => o.pos && o.metasPos && !o.metasPos.leve
+        ? "<b>" + esc(o.tipo) + " como pós-treino (~" + minParaHhmm(o.hora) + "):</b> ~" + n0((r.outros[o.tipo] || {}).kcal) + " kcal · ~" + o.metasPos.prot + " g prot + ~" + o.metasPos.carb + " g carbo" + (o.metasPos.prevista ? " (previsto pelo seu treino típico; recalcula quando registrar)" : "")
+        : "<b>" + esc(o.tipo) + " (~" + minParaHhmm(o.hora) + "), se tiver fome:</b> ~" + n0((r.outros[o.tipo] || {}).kcal) + " kcal · ~" + n0((r.outros[o.tipo] || {}).prot) + " g prot").join("<br>") + "<br>" : "") +
       "<b>Fechando o dia com a opção 1" + (r.outrosTipos.length ? " + as próximas" : "") + ":</b> ~" + n0(comido.calories + best.total.calories + somaOutros) + " de " + n0(state.goals.calories) + " kcal · proteína ~" + n0(comido.protein + best.total.protein + protOutros) + " de " + n0(state.goals.protein) + " g" +
       (function () { const sobra = (state.goals.calories || 0) - (comido.calories + best.total.calories + somaOutros); return sobra > 150 ? "<br>Sobram ~" + n0(sobra) + " kcal" + (objetivoEmDeficit() ? ": no seu objetivo, tudo bem não comer tudo (fica um déficit maior)." : ": dá pra completar com um lanche, se tiver fome.") : ""; })() + "</div>" : "";
   return '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharSugestaoRefeicao();}"><div class="modal-card plano-modal" style="max-width:520px">' +
@@ -11299,6 +11424,76 @@ function exameInfoCalorimetriaSecaoTemplate() {
 // exame e, por último, a seção específica com os dados pessoais do usuário (ver
 // exameInfoBioimpedanciaSecaoTemplate()/exameInfoCalorimetriaSecaoTemplate() acima) -- mesmo formato
 // visual do modal de informações de macro/micronutrientes (nutrientInfoModalTemplate() acima).
+// ===== Guia "o que comer no pré e no pós" (v2.54, pedido do usuário) =====
+// Mostra, por momento (refeição pré, lanche pré, durante, pós e antes de dormir), o TIPO de carboidrato
+// (rápido/moderado/lento -- mesma classificação de ABSORCAO_CARBO), o tipo de proteína e o que evitar, com
+// as quantidades já calculadas pelo app pro treino típico da pessoa naquele esporte (ver metasPreTreino()/
+// metasPosTreino()/sessaoTipica()). O momento atual vem destacado. Fontes: ACSM/AND/DC 2016 e ISSN 2017.
+function guiaPrePosBtnTemplate(esporte, momento, ini) {
+  return '<button type="button" class="guia-btn" onclick="event.stopPropagation(); acaoAbrirGuiaPrePos(\'' + esc(esporte).replace(/'/g, "") + "', '" + momento + "', " + (ini != null ? ini : "null") + ')">' + icon("info") + " Guia</button>";
+}
+function acaoAbrirGuiaPrePos(esporte, momento, ini) { state.guiaPrePos = { esporte: esporte, momento: momento, ini: ini }; render(); }
+function acaoFecharGuiaPrePos() { state.guiaPrePos = null; render(); }
+function guiaPrePosModalTemplate() {
+  const g = state.guiaPrePos;
+  if (!g) return "";
+  const chave = perfilDoEsporte(g.esporte), pf = PERFIS_TREINO[chave];
+  if (pf.leve) return "";
+  const peso = pesoReferenciaKg();
+  const tipica = sessaoTipica(g.esporte);
+  const op = g.ini != null ? { data: today(), ini: g.ini } : null;
+  const mRef = metasPreTreino(g.esporte, "refeicao", peso, null, op);
+  const mLan = metasPreTreino(g.esporte, "lanche", peso, null, op);
+  const mPos = metasPosTreino([tipica], peso, null);
+  // "agua" (menos de 30 min) e "durante" caem no momento mais próximo da tabela.
+  const atual = g.momento === "agua" ? "lanche" : g.momento;
+  const longo = tipica.historico && tipica.duracaoMin > 90 && (chave === "intermitente" || chave === "endurance");
+  const momentos = [
+    { chave: "refeicao", titulo: "Refeição pré", quando: "2h30 a 4h antes", meta: "~" + mRef.carb + " g de carbo · ~" + mRef.prot + " g de proteína",
+      carbo: "<b>Lento ou misto</b>, libera energia aos poucos: arroz, batata-doce, cuscuz, pão + fruta, aveia.",
+      prot: "<b>Magra</b>: frango, patinho, ovos, peixe.",
+      gord: "Moderadas (até ~" + PRE_TREINO_LIMITES.refeicao.gordura + " g de gordura). Evite fritura e porções muito grandes." },
+    { chave: "lanche", titulo: "Lanche pré", quando: "30 min a 2h30 antes", meta: "~" + mLan.carb + " g de carbo · ~" + mLan.prot + " g de proteína",
+      carbo: "<b>Rápido ou moderado, com pouca fibra</b>: banana, pão francês, tapioca, água de coco, mel ou geleia.",
+      prot: "<b>Rápida e leve</b>: whey, iogurte desnatado ou Fit.",
+      gord: "Mínimas (até ~" + PRE_TREINO_LIMITES.lanche.gordura + " g de gordura e ~" + PRE_TREINO_LIMITES.lanche.fibra + " g de fibra)." },
+    { chave: "durante", titulo: "Durante", quando: longo ? "seu treino costuma durar ~" + tipica.duracaoMin + " min" : "",
+      meta: longo ? "~20–30 g de carbo no total" : "",
+      carbo: longo ? "<b>Rápido e líquido</b>: isotônico ou água de coco (~500 ml)." : esc(pf.durante),
+      prot: "Não precisa.", hid: "Água em goles ao longo do treino." },
+    { chave: "pos", titulo: "Pós-treino", quando: "até 2h depois", meta: mPos.leve ? "" : "~" + mPos.carb + " g de carbo · ~" + mPos.prot + " g de proteína (pelo treino típico; recalcula quando registrar)",
+      carbo: "<b>Rápido</b>, repõe o glicogênio mais depressa: arroz branco, pão francês, tapioca, batata, banana.",
+      prot: "<b>Rica em leucina</b> (o aminoácido que liga a construção do músculo): whey, ovos, frango, carne magra, iogurte.",
+      gord: "Liberadas: deixam a digestão mais lenta, mas não atrapalham a recuperação." + (chave === "forca" ? " Na musculação, a prioridade é a proteína." : "") },
+    { chave: "noite", titulo: "Antes de dormir", quando: "se ainda faltar proteína no dia", meta: "",
+      carbo: "Pouco ou nenhum.", prot: "<b>De digestão lenta</b> (caseína): iogurte, queijo cottage, leite.", gord: "Normais." },
+  ];
+  const bloco = (m) => '<div class="guia-momento' + (m.chave === atual ? " atual" : "") + '">' +
+    '<div class="guia-momento-head"><span>' + m.titulo + (m.quando ? " <small>· " + m.quando + "</small>" : "") + "</span>" + (m.chave === atual ? '<span class="guia-aqui">Você está aqui</span>' : "") + "</div>" +
+    (m.meta ? '<div class="guia-meta">' + m.meta + "</div>" : "") +
+    '<p class="guia-linha"><b>Carboidrato:</b> ' + m.carbo + "</p>" +
+    '<p class="guia-linha"><b>Proteína:</b> ' + m.prot + "</p>" +
+    (m.gord ? '<p class="guia-linha"><b>Gordura e fibra:</b> ' + m.gord + "</p>" : "") +
+    (m.hid ? '<p class="guia-linha"><b>Hidratação:</b> ' + m.hid + "</p>" : "") + "</div>";
+  return '' +
+    '<div class="modal-overlay" onclick="if(event.target===this){acaoFecharGuiaPrePos();}">' +
+    '<div class="modal-card nutrient-info-modal">' +
+      '<div class="meal-detalhe-head"><div class="nutrient-info-modal-title">' +
+        '<div class="nutrient-icon" style="background:#eef5e8;color:#4f7a4a">' + icon("info") + "</div>" +
+        "<h2>O que comer no pré e no pós · " + esc(g.esporte) + "</h2>" +
+      "</div>" +
+      '<button class="meal-detalhe-close" aria-label="Fechar" onclick="acaoFecharGuiaPrePos()">' + icon("x") + "</button></div>" +
+      '<p class="nutrient-info-nota">Quantidades calculadas ' + textoSessaoTipica(tipica) + ", com seu peso (" + formatNumber(peso, 1) + " kg)" + (objetivoEmDeficit() ? " e seu objetivo de emagrecimento" : "") + ". No dia, o app ainda ajusta ao que resta da sua meta de kcal.</p>" +
+      momentos.map(bloco).join("") +
+      '<div class="nutrient-info-secao"><h3>Evite no lanche pré</h3><ul class="nutrient-info-lista">' +
+        "<li>Fritura, castanhas e chips: gordura demais, demoram a sair do estômago.</li>" +
+        "<li>Feijão, chia, linhaça e integrais: fibra demais perto do treino.</li>" +
+        "<li>Chocolate: o açúcar é absorvido de forma moderada, mas ~30% dele é gordura, então pesa. Prefira banana, pão ou tapioca.</li>" +
+        "<li>Cafeína se o treino é à noite: atrapalha o sono, que é quando o músculo se recupera.</li>" +
+      "</ul></div>" +
+      '<p class="nutrient-info-fonte">' + icon("help") + " Fontes: Thomas DT et al., posição conjunta ACSM/AND/DC sobre nutrição e desempenho, Med Sci Sports Exerc (2016); Kerksick CM et al., posição da ISSN sobre momento das refeições, JISSN (2017). Os limites de gordura e fibra são regra do app: as fontes só dizem \"pouca gordura e fibra perto do treino\".</p>" +
+    "</div></div>";
+}
 function exameInfoModalTemplate() {
   const tipo = state.infoExameAberto;
   if (!tipo) return "";
@@ -16657,7 +16852,7 @@ function homeTemplate() {
   return '' +
     '<div class="app-shell">' +
     '<button class="hamburger-btn" onclick="acaoAbrirSidebar()" aria-label="Abrir menu"><span></span></button>' +
-    sidebarTemplate() + editarPerfilTemplate() + sobreAppTemplate() + sugestaoModalTemplate() + garminModalTemplate() + mealDetalheModalTemplate() + nutrientInfoModalTemplate() + exameInfoModalTemplate() + recuperacaoInfoModalTemplate() + cadastrarProdutoModalTemplate() + analiseConsumoDiaModalTemplate() + autonomiaInfoModalTemplate() + planoTreinoModalTemplate() + sugHorarioModalTemplate() + planejarTreinoModalTemplate() + montarPlanoModalTemplate() +
+    sidebarTemplate() + editarPerfilTemplate() + sobreAppTemplate() + sugestaoModalTemplate() + garminModalTemplate() + mealDetalheModalTemplate() + nutrientInfoModalTemplate() + exameInfoModalTemplate() + recuperacaoInfoModalTemplate() + cadastrarProdutoModalTemplate() + analiseConsumoDiaModalTemplate() + autonomiaInfoModalTemplate() + planoTreinoModalTemplate() + sugHorarioModalTemplate() + planejarTreinoModalTemplate() + montarPlanoModalTemplate() + guiaPrePosModalTemplate() +
     '<div class="home-content"><div class="home-inner">' +
     (state.account ? fullHomeTemplate() : lockedTemplate()) +
     "</div></div></div>";
